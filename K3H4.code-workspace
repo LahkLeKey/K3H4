@@ -1,0 +1,59 @@
+{
+	"folders": [
+		{
+			"path": "."
+		}
+	],
+	"settings": {},
+	"tasks": {
+		"version": "2.0.0",
+		"tasks": [
+			{
+				"label": "bun:dev",
+				"type": "shell",
+				"command": "bun",
+				"args": ["run", "dev"],
+				"options": {
+					"cwd": "${workspaceFolder}/apps/www.k3h4.io"
+				},
+				"isBackground": true,
+				"problemMatcher": [
+					{
+						"owner": "bun",
+						"fileLocation": "autoDetect",
+						"pattern": [
+							{
+								"regexp": "^\\s*(.+?):(\\d+):(\\d+):\\s*(error|warning)\\s*:?\\s*(.*)$",
+								"file": 1,
+								"line": 2,
+								"column": 3,
+								"severity": 4,
+								"message": 5
+							}
+						],
+						"background": {
+							"activeOnStart": true,
+							"beginsPattern": "^bun run dev",
+							"endsPattern": "Dev server running at http://localhost:[0-9]+"
+						}
+					}
+				]
+			}
+		]
+	},
+	"launch": {
+		"version": "0.2.0",
+		"configurations": [
+			{
+				"name": "Vite (Bun): Chrome",
+				"type": "pwa-chrome",
+				"request": "launch",
+				"url": "http://localhost:5173",
+				"webRoot": "${workspaceFolder}/apps/www.k3h4.io",
+				"preLaunchTask": "bun:dev",
+				"skipFiles": ["<node_internals>/**"]
+			}
+		],
+		"compounds": []
+	}
+}

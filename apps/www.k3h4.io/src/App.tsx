@@ -1,39 +1,40 @@
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { APITester } from "./APITester";
-import "./index.css";
+import { useState } from 'react'
 
-import logo from "./logo.svg";
-import reactLogo from "./react.svg";
+function App() {
+  const [count, setCount] = useState(0)
 
-export function App() {
   return (
-    <div className="container mx-auto p-8 text-center relative z-10">
-      <div className="flex justify-center items-center gap-8 mb-8">
-        <img
-          src={logo}
-          alt="Bun Logo"
-          className="h-36 p-6 transition-all duration-300 hover:drop-shadow-[0_0_2em_#646cffaa] scale-120"
-        />
-        <img
-          src={reactLogo}
-          alt="React Logo"
-          className="h-36 p-6 transition-all duration-300 hover:drop-shadow-[0_0_2em_#61dafbaa] [animation:spin_20s_linear_infinite]"
-        />
+    <main className="min-h-screen bg-slate-950 text-slate-100 flex items-center justify-center px-6">
+      <div className="max-w-3xl w-full space-y-8">
+        <div className="flex items-center justify-center">
+          <div className="flex h-24 w-24 items-center justify-center rounded-3xl bg-slate-900 ring-1 ring-slate-800 shadow-lg shadow-slate-900/50">
+            <img src="/k3h4.svg" className="h-14 w-14" alt="K3H4 logo" />
+          </div>
+        </div>
+
+        <div className="text-center space-y-2">
+          <h1 className="text-4xl font-semibold tracking-tight">K3H4</h1>
+          <p className="text-slate-300">Bundled with Bun, styled with Tailwind.</p>
+        </div>
+
+        <div className="bg-slate-900/60 border border-slate-800 rounded-2xl px-8 py-6 shadow-xl shadow-slate-900/40 space-y-4">
+          <button
+            onClick={() => setCount((value) => value + 1)}
+            className="w-full rounded-xl bg-gradient-to-r from-amber-300 via-amber-200 to-amber-300 text-slate-950 font-semibold py-3 text-lg shadow-md shadow-amber-500/30 hover:shadow-lg hover:-translate-y-px transition"
+          >
+            count is {count}
+          </button>
+          <p className="text-sm text-slate-400">
+            Edit <code className="text-amber-200">src/App.tsx</code> and save to rebuild.
+          </p>
+        </div>
+
+        <p className="text-center text-sm text-slate-400">
+          Docs: bun.sh/docs · tailwindcss.com/docs
+        </p>
       </div>
-      <Card>
-        <CardHeader className="gap-4">
-          <CardTitle className="text-3xl font-bold">Bun + React</CardTitle>
-          <CardDescription>
-            Edit <code className="rounded bg-muted px-[0.3rem] py-[0.2rem] font-mono">src/App.tsx</code> and save to
-            test HMR
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <APITester />
-        </CardContent>
-      </Card>
-    </div>
-  );
+    </main>
+  )
 }
 
-export default App;
+export default App
