@@ -1,0 +1,21 @@
+{
+  "$schema": "https://registry.shadcn.com/schema.json",
+  "name": "k3h4",
+  "description": "K3H4 internal shadcn/ui registry",
+  "repos": [],
+  "dependencies": {},
+  "devDependencies": {},
+  "peerDependencies": {},
+  "aliases": {
+    "components": "@/components",
+    "utils": "@/lib/utils"
+  },
+  "style": "default",
+  "rsc": false,
+  "tailwind": {
+    "config": "tailwind.config.ts",
+    "css": "src/index.css",
+    "baseColor": "zinc",
+    "cssVariables": true
+  }
+}

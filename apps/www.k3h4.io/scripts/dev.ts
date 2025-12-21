@@ -37,6 +37,32 @@ function watchStatic() {
   }
 }
 
+async function buildCss() {
+  const stylesPath = path.join(outdir, 'styles.css')
+  const tailwind = Bun.spawn({
+    cmd: [
+      'bun',
+      'x',
+      'tailwindcss',
+      '-i',
+      path.join(root, 'src', 'index.css'),
+      '-o',
+      stylesPath,
+      '--config',
+      path.join(root, 'tailwind.config.ts'),
+    ],
+    cwd: root,
+    stdout: 'inherit',
+    stderr: 'inherit',
+  })
+
+  const exitCode = await tailwind.exited
+  if (exitCode !== 0) {
+    console.error('Tailwind one-off build failed')
+    process.exit(exitCode ?? 1)
+  }
+}
+
 function startCssWatcher() {
   const stylesPath = path.join(outdir, 'styles.css')
   const tailwind = Bun.spawn({
@@ -75,6 +101,7 @@ function startCssWatcher() {
 async function start() {
   await cleanDist()
   await copyStatic()
+  await buildCss()
   watchStatic()
   startCssWatcher()
 
