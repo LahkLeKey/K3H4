@@ -1,7 +1,7 @@
 {
   "$schema": "https://registry.shadcn.com/schema.json",
   "name": "k3h4",
-  "description": "K3H4 internal shadcn/ui registry",
+  "description": "Single warm/cool hybrid theme (light-warm, dark-cool) with Minnesota vibes: snow white base, pine green primary, lightpole yellow highlights, cascading sky blue accents",
   "repos": [],
   "dependencies": {},
   "devDependencies": {},
@@ -10,12 +10,12 @@
     "components": "@/components",
     "utils": "@/lib/utils"
   },
-  "style": "default",
+  "style": "k3h4-warm-cool",
   "rsc": false,
   "tailwind": {
     "config": "tailwind.config.ts",
     "css": "src/index.css",
-    "baseColor": "zinc",
+    "baseColor": "custom",
     "cssVariables": true
   }
 }

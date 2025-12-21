@@ -40,11 +40,20 @@ async function readComponentFiles(name: string): Promise<ItemFile[]> {
   ]
 }
 
+const componentMeta: Record<string, Partial<RegistryItem>> = {
+  "map-background": {
+    dependencies: {
+      "maplibre-gl": "^5.0.0",
+    },
+  },
+}
+
 async function buildItem(name: string): Promise<RegistryItem> {
   const files = await readComponentFiles(name)
   return {
     name,
     type: "registry:ui",
+    ...componentMeta[name],
     files,
   }
 }

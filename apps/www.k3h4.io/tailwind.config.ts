@@ -59,6 +59,13 @@ const config: Config = {
           ring: "hsl(var(--sidebar-ring))",
         },
       },
+      boxShadow: {
+        sm: "0 4px 0 0 hsl(var(--foreground)/0.04), 0 12px 24px -16px hsl(var(--foreground)/0.28)",
+        DEFAULT:
+          "0 8px 0 0 hsl(var(--primary)/0.08), 0 18px 36px -18px hsl(var(--foreground)/0.28)",
+        md: "0 10px 0 0 hsl(var(--primary)/0.1), 0 24px 46px -22px hsl(var(--foreground)/0.35)",
+        lg: "0 14px 0 0 hsl(var(--primary)/0.12), 0 30px 60px -26px hsl(var(--foreground)/0.4)",
+      },
       borderRadius: {
         lg: "var(--radius)",
         md: "calc(var(--radius) - 2px)",

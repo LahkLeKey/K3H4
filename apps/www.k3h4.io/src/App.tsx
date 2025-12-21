@@ -21,6 +21,7 @@ import { Separator } from './components/ui/separator'
 import { Switch } from './components/ui/switch'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './components/ui/tabs'
 import { Textarea } from './components/ui/textarea'
+import { MapBackground } from './components/ui/map-background'
 
 type ComponentDemo = {
   id: string
@@ -153,10 +154,14 @@ function App() {
   const [selected, setSelected] = useState<string>(demos[0]?.id ?? 'buttons')
 
   return (
-    <div className="min-h-screen bg-background text-foreground">
-      <div className="pointer-events-none fixed inset-0 -z-10 bg-[radial-gradient(circle_at_top,_rgba(255,255,255,0.08),_transparent_35%),radial-gradient(circle_at_20%_20%,_rgba(94,234,212,0.06),_transparent_25%),radial-gradient(circle_at_80%_10%,_rgba(139,92,246,0.06),_transparent_25%)]" aria-hidden />
+    <div className="relative min-h-screen text-foreground">
+      <MapBackground className="fixed inset-0 -z-20 h-screen w-screen" />
+      <div
+        className="pointer-events-none fixed inset-0 -z-10 bg-gradient-to-b from-background/5 via-background/10 to-background/20"
+        aria-hidden
+      />
 
-      <header className="sticky top-0 z-30 border-b bg-background/80 backdrop-blur">
+      <header className="sticky top-0 z-30 border-b bg-background/60 backdrop-blur border-[hsl(var(--foreground)/0.15)]">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-3">
           <div className="flex items-center gap-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 ring-1 ring-primary/30">
@@ -200,7 +205,7 @@ function App() {
       </header>
 
       <main className="mx-auto flex max-w-6xl flex-col gap-12 px-6 pb-16 pt-10">
-        <section className="grid gap-8 rounded-3xl border bg-card/50 px-8 py-10 shadow-lg shadow-black/5 backdrop-blur" id="hero">
+        <section className="glass-surface grid gap-8 px-8 py-10" id="hero">
           <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
             <Badge variant="secondary" className="gap-2">
               <Sparkles className="h-3.5 w-3.5" /> Bun + shadcn + Tailwind
@@ -264,11 +269,11 @@ function App() {
             </div>
           </div>
 
-          <Card id="components" className="border-foreground/5 shadow-sm">
+          <Card id="components" className="glass-surface">
             <CardHeader className="space-y-4">
               <div className="flex flex-wrap items-center gap-4">
                 <Tabs value={selected} onValueChange={setSelected} className="w-full">
-                  <TabsList className="flex w-full flex-wrap justify-start gap-2 bg-muted/40 p-1">
+                  <TabsList className="flex w-full flex-wrap justify-start gap-2 bg-background/40 backdrop-blur p-1 border rounded-xl border-[hsl(var(--foreground)/0.1)]">
                     {demos.map((demo) => (
                       <TabsTrigger key={demo.id} value={demo.id} className="data-[state=active]:bg-background">
                         {demo.name}
@@ -283,7 +288,7 @@ function App() {
                           <p className="text-sm text-muted-foreground">{demo.summary}</p>
                         </div>
                         <Select value={selected} onValueChange={setSelected}>
-                          <SelectTrigger className="w-[200px]">
+                          <SelectTrigger className="w-[200px] bg-background/60 backdrop-blur border-[hsl(var(--foreground)/0.2)]">
                             <SelectValue placeholder="Choose component" />
                           </SelectTrigger>
                           <SelectContent>
@@ -296,7 +301,7 @@ function App() {
                         </Select>
                       </div>
                       <Separator className="my-4" />
-                      <div className="rounded-2xl border bg-muted/30 p-6">
+                      <div className="rounded-2xl border bg-background/60 backdrop-blur p-6 border-[hsl(var(--foreground)/0.12)]">
                         {demo.render}
                       </div>
                     </TabsContent>
@@ -307,7 +312,7 @@ function App() {
           </Card>
         </section>
 
-        <section className="rounded-3xl border bg-card/50 px-6 py-8 shadow-sm">
+        <section className="glass-surface px-6 py-8">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div className="space-y-2">
               <h3 className="text-xl font-semibold">Workflow</h3>
