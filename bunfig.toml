@@ -1,0 +1,4 @@
+[alias]
+"@/components" = "./apps/www.k3h4.io/src/components"
+"@/lib" = "./apps/www.k3h4.io/src/lib"
+"@/hooks" = "./apps/www.k3h4.io/src/hooks"

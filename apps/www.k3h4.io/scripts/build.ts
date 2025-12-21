@@ -63,6 +63,7 @@ async function build() {
     format: 'esm',
     splitting: true,
     publicPath: '/',
+    tsconfig: path.join(root, 'tsconfig.app.json'),
     loader: {
       '.svg': 'file',
     },

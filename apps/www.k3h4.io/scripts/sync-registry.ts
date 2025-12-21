@@ -24,7 +24,7 @@ type RegistryItem = {
 }
 
 const root = path.resolve(path.join(import.meta.dirname, ".."))
-const componentsDir = path.join(root, "@", "components", "ui")
+const componentsDir = path.join(root, "src", "components", "ui")
 const registryDir = path.join(root, "registry", "k3h4")
 
 async function readComponentFiles(name: string): Promise<ItemFile[]> {
