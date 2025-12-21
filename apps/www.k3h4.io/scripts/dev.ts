@@ -37,10 +37,46 @@ function watchStatic() {
   }
 }
 
+function startCssWatcher() {
+  const stylesPath = path.join(outdir, 'styles.css')
+  const tailwind = Bun.spawn({
+    cmd: [
+      'bun',
+      'x',
+      'tailwindcss',
+      '-i',
+      path.join(root, 'src', 'index.css'),
+      '-o',
+      stylesPath,
+      '--watch',
+      '--poll',
+      '--config',
+      path.join(root, 'tailwind.config.ts'),
+    ],
+    cwd: root,
+    stdout: 'inherit',
+    stderr: 'inherit',
+  })
+
+  const teardown = () => tailwind.kill()
+  process.on('exit', teardown)
+  process.on('SIGINT', () => {
+    teardown()
+    process.exit()
+  })
+  process.on('SIGTERM', () => {
+    teardown()
+    process.exit()
+  })
+
+  return tailwind
+}
+
 async function start() {
   await cleanDist()
   await copyStatic()
   watchStatic()
+  startCssWatcher()
 
   const build = await Bun.build({
     entrypoints: [path.join(root, 'src', 'main.tsx')],
