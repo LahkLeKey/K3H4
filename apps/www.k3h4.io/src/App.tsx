@@ -117,7 +117,7 @@ const demos: ComponentDemo[] = [
         <Card>
           <CardHeader>
             <CardTitle>Component velocity</CardTitle>
-            <CardDescription>Ship faster with a curated library.</CardDescription>
+            <CardDescription>Ship faster with systems I build.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex items-center justify-between rounded-lg border px-3 py-2">
@@ -137,11 +137,11 @@ const demos: ComponentDemo[] = [
           </CardHeader>
           <CardContent className="flex items-center gap-4">
             <Avatar>
-              <AvatarFallback>K3</AvatarFallback>
+              <AvatarFallback>KH</AvatarFallback>
             </Avatar>
             <div>
-              <p className="text-sm font-medium">k3h4/ui</p>
-              <p className="text-sm text-muted-foreground">Bun + React + shadcn</p>
+              <p className="text-sm font-medium">Kyle Halek</p>
+              <p className="text-sm text-muted-foreground">Product engineer · Design systems</p>
             </div>
           </CardContent>
         </Card>
@@ -168,8 +168,8 @@ function App() {
               <Sparkles className="h-5 w-5 text-primary" />
             </div>
             <div>
-              <p className="text-sm uppercase tracking-[0.18em] text-muted-foreground">K3H4</p>
-              <p className="text-sm font-semibold">UI Library</p>
+              <p className="text-sm uppercase tracking-[0.18em] text-muted-foreground">Kyle Halek</p>
+              <p className="text-sm font-semibold">Product Engineer • Hastings, MN 55033</p>
             </div>
           </div>
 
@@ -184,11 +184,11 @@ function App() {
               <DropdownMenuContent align="end">
                 <DropdownMenuLabel>Navigate</DropdownMenuLabel>
                 <DropdownMenuItem asChild>
-                  <a href="#components">Components</a>
+                  <a href="#components">Featured work</a>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem asChild>
-                  <a href="mailto:hi@k3h4.io">Contact</a>
+                  <a href="mailto:hi@k3h4.io">Contact Kyle</a>
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -200,27 +200,27 @@ function App() {
         <section className="glass-surface grid gap-8 px-8 py-10" id="hero">
           <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
             <Badge variant="secondary" className="gap-2">
-              <Sparkles className="h-3.5 w-3.5" /> Bun + shadcn + Tailwind
+              <Sparkles className="h-3.5 w-3.5" /> Product engineer
             </Badge>
             <Separator orientation="vertical" className="h-6" />
-            <span>Live component previews built-in</span>
+            <span>Hastings, Minnesota • Building for the open web</span>
           </div>
           <div className="flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
             <div className="space-y-4">
               <h1 className="text-4xl font-semibold leading-tight tracking-tight md:text-5xl">
-                Build once. Preview instantly.
+                Kyle Halek — shipping resilient products.
               </h1>
               <p className="max-w-2xl text-lg text-muted-foreground">
-                A portfolio-grade UI system. Navigate, preview, and interact with every primitive without leaving the page.
+                Full-stack product engineer blending design systems, delightful UX, and production-grade reliability. From Hastings, MN, building interfaces that stay fast and feel intentional.
               </p>
               <div className="flex flex-wrap gap-3">
                 <Button className="gap-2" asChild>
                   <a href="#components">
-                    Browse components <ArrowRight className="h-4 w-4" />
+                    View featured work <ArrowRight className="h-4 w-4" />
                   </a>
                 </Button>
                 <Button variant="outline" asChild>
-                  <a href="mailto:hi@k3h4.io">Talk to us</a>
+                  <a href="mailto:hi@k3h4.io">Email Kyle</a>
                 </Button>
               </div>
             </div>
@@ -230,7 +230,7 @@ function App() {
         <section className="space-y-6" id="components">
           <div className="flex items-center justify-between flex-wrap gap-3">
             <div className="space-y-1">
-              <p className="text-sm uppercase tracking-[0.18em] text-muted-foreground">Library</p>
+              <p className="text-sm uppercase tracking-[0.18em] text-muted-foreground">Featured work</p>
               <h2 className="text-2xl font-semibold">Live component playground</h2>
             </div>
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
