@@ -1,5 +1,5 @@
 import { useState, type ReactNode } from 'react'
-import { ArrowRight, BookOpen, Boxes, Layers, Sparkles } from 'lucide-react'
+import { ArrowRight, Boxes, Layers, Sparkles } from 'lucide-react'
 
 import { Avatar, AvatarFallback } from './components/ui/avatar'
 import { Badge } from './components/ui/badge'
@@ -117,7 +117,7 @@ const demos: ComponentDemo[] = [
         <Card>
           <CardHeader>
             <CardTitle>Component velocity</CardTitle>
-            <CardDescription>Ship faster with a curated registry.</CardDescription>
+            <CardDescription>Ship faster with a curated library.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex items-center justify-between rounded-lg border px-3 py-2">
@@ -169,16 +169,11 @@ function App() {
             </div>
             <div>
               <p className="text-sm uppercase tracking-[0.18em] text-muted-foreground">K3H4</p>
-              <p className="text-sm font-semibold">UI Registry</p>
+              <p className="text-sm font-semibold">UI Library</p>
             </div>
           </div>
 
           <div className="flex items-center gap-2">
-            <Button variant="ghost" asChild>
-              <a href="#registry" className="flex items-center gap-2">
-                <BookOpen className="h-4 w-4" /> Registry
-              </a>
-            </Button>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="outline" className="gap-2">
@@ -188,9 +183,6 @@ function App() {
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
                 <DropdownMenuLabel>Navigate</DropdownMenuLabel>
-                <DropdownMenuItem asChild>
-                  <a href="#registry">Live registry</a>
-                </DropdownMenuItem>
                 <DropdownMenuItem asChild>
                   <a href="#components">Components</a>
                 </DropdownMenuItem>
@@ -211,7 +203,7 @@ function App() {
               <Sparkles className="h-3.5 w-3.5" /> Bun + shadcn + Tailwind
             </Badge>
             <Separator orientation="vertical" className="h-6" />
-            <span>Live component registry built-in</span>
+            <span>Live component previews built-in</span>
           </div>
           <div className="flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
             <div className="space-y-4">
@@ -219,12 +211,12 @@ function App() {
                 Build once. Preview instantly.
               </h1>
               <p className="max-w-2xl text-lg text-muted-foreground">
-                A portfolio-grade UI system with our own shadcn registry. Navigate, preview, and interact with every primitive without leaving the page.
+                A portfolio-grade UI system. Navigate, preview, and interact with every primitive without leaving the page.
               </p>
               <div className="flex flex-wrap gap-3">
                 <Button className="gap-2" asChild>
-                  <a href="#registry">
-                    Browse registry <ArrowRight className="h-4 w-4" />
+                  <a href="#components">
+                    Browse components <ArrowRight className="h-4 w-4" />
                   </a>
                 </Button>
                 <Button variant="outline" asChild>
@@ -232,35 +224,13 @@ function App() {
                 </Button>
               </div>
             </div>
-            <Card className="w-full max-w-sm self-start md:self-auto">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-base">
-                  <Sparkles className="h-4 w-4 text-primary" /> Registry status
-                </CardTitle>
-                <CardDescription>Preview components and sync to JSON.</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-3 text-sm">
-                <div className="flex items-center justify-between rounded-lg border px-3 py-2">
-                  <span className="text-muted-foreground">Components</span>
-                  <Badge variant="secondary">53</Badge>
-                </div>
-                <div className="flex items-center justify-between rounded-lg border px-3 py-2">
-                  <span className="text-muted-foreground">Registry path</span>
-                  <Badge className="font-mono text-xs">registry/k3h4</Badge>
-                </div>
-                <div className="flex items-center justify-between rounded-lg border px-3 py-2">
-                  <span className="text-muted-foreground">Sync</span>
-                  <Badge variant="outline">bun run registry:sync</Badge>
-                </div>
-              </CardContent>
-            </Card>
           </div>
         </section>
 
-        <section id="registry" className="space-y-6">
+        <section className="space-y-6" id="components">
           <div className="flex items-center justify-between flex-wrap gap-3">
             <div className="space-y-1">
-              <p className="text-sm uppercase tracking-[0.18em] text-muted-foreground">Registry</p>
+              <p className="text-sm uppercase tracking-[0.18em] text-muted-foreground">Library</p>
               <h2 className="text-2xl font-semibold">Live component playground</h2>
             </div>
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -312,18 +282,6 @@ function App() {
           </Card>
         </section>
 
-        <section className="glass-surface px-6 py-8">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <div className="space-y-2">
-              <h3 className="text-xl font-semibold">Workflow</h3>
-              <p className="text-sm text-muted-foreground">Edit components under @/components/ui, then sync the registry when ready.</p>
-            </div>
-            <div className="flex items-center gap-3 text-sm">
-              <Badge variant="secondary">bun run registry:sync</Badge>
-              <Badge variant="outline">shadcn add --registry ./registry/k3h4</Badge>
-            </div>
-          </div>
-        </section>
       </main>
     </div>
   )
