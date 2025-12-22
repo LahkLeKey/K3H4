@@ -1,6 +1,6 @@
 import { Navigate, Route, Routes } from 'react-router-dom'
 
-import { Navbar } from './components/navbar'
+import { Shell } from './components/shell'
 import { MapBackground } from './components/ui/map-background'
 import { HomePage } from './pages/home'
 import { BankingPage } from './pages/banking'
@@ -20,9 +20,7 @@ function App() {
         aria-hidden
       />
 
-      <Navbar />
-
-      <main className="mx-auto flex max-w-6xl flex-col gap-8 px-6 pb-16 pt-10">
+      <Shell>
         <Routes>
           <Route path="/" element={<HomePage />} />
           <Route path="/banking" element={<BankingPage />} />
@@ -34,7 +32,7 @@ function App() {
           <Route path="/contact" element={<ContactPage />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
-      </main>
+      </Shell>
     </div>
   )
 }

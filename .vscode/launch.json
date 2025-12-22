@@ -1,0 +1,18 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "API: Fastify (Bun)",
+      "type": "node",
+      "request": "launch",
+      "runtimeExecutable": "bun",
+      "runtimeArgs": ["run", "--watch", "src/server.ts"],
+      "cwd": "${workspaceFolder}/apps/api.k3h4.io",
+      "console": "integratedTerminal",
+      "env": {
+        "PORT": "3001",
+        "HOST": "0.0.0.0"
+      }
+    }
+  ]
+}
