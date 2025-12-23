@@ -2,9 +2,9 @@ app = "api-k3h4-io"
 primary_region = "iad"
 
 [build]
-  # Build from this app folder; paths are relative to this fly.toml.
-  dockerfile = "Dockerfile"
-  context = "."
+  # Monorepo-friendly: paths are relative to the repo root so GitHub/Fly webhooks can build.
+  dockerfile = "apps/api.k3h4.io/Dockerfile"
+  context = "apps/api.k3h4.io"
 
 [env]
   PORT = "8080"
