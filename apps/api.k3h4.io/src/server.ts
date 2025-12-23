@@ -30,7 +30,7 @@ await server.register(fastifySwaggerUi, {
 
 server.get("/health", async () => ({ status: "ok" }));
 
-const port = Number(process.env.PORT || 3001);
+const port = Number(process.env.PORT || 8080);
 const host = process.env.HOST || "0.0.0.0";
 
 try {
