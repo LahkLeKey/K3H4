@@ -2,7 +2,9 @@ app = "api-k3h4-io"
 primary_region = "iad"
 
 [build]
-  dockerfile = "./Dockerfile"
+  # Build from monorepo root: set context and Dockerfile path so webhooks work.
+  dockerfile = "apps/api.k3h4.io/Dockerfile"
+  context = "apps/api.k3h4.io"
 
 [env]
   PORT = "8080"
