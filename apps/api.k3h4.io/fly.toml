@@ -2,9 +2,9 @@ app = "api-k3h4-io"
 primary_region = "iad"
 
 [build]
-  # Build from monorepo root: set context and Dockerfile path so webhooks work.
-  dockerfile = "apps/api.k3h4.io/Dockerfile"
-  context = "apps/api.k3h4.io"
+  # Build from this app folder; paths are relative to this fly.toml.
+  dockerfile = "Dockerfile"
+  context = "."
 
 [env]
   PORT = "8080"
