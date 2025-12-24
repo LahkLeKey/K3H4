@@ -6,7 +6,9 @@ COPY package.json tsconfig.json prisma.config.ts ./
 COPY prisma ./prisma
 COPY src ./src
 
-ARG DATABASE_URL
+# Provide a non-sensitive build-time default so Prisma can generate.
+# Runtime will override via Fly secrets.
+ARG DATABASE_URL=postgres://placeholder:placeholder@localhost:5432/postgres
 ENV DATABASE_URL=${DATABASE_URL}
 ENV NODE_ENV=production
 
