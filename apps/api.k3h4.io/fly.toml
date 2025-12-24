@@ -6,6 +6,9 @@ primary_region = "iad"
   dockerfile = "Dockerfile"
   context = "."
 
+[deploy]
+  release_command = "bunx prisma migrate deploy"
+
 [env]
   PORT = "8080"
   HOST = "0.0.0.0"

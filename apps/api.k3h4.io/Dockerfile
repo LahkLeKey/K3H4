@@ -15,7 +15,6 @@ ENV NODE_ENV=production
 # Install all deps so prisma is available to generate the client
 RUN bun install
 RUN bunx prisma generate
-RUN bunx prisma migrate deploy
 
 ENV PORT=8080
 EXPOSE 8080
