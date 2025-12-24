@@ -8,6 +8,12 @@ primary_region = "iad"
 
 [deploy]
   release_command = "bunx prisma migrate deploy"
+  strategy = "rolling"
+
+[[vm]]
+  memory = "512mb"
+  cpu_kind = "shared"
+  cpus = 1
 
 [env]
   PORT = "8080"
