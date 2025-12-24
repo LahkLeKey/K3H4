@@ -6,7 +6,7 @@ import fastifyJwt from "@fastify/jwt";
 import fastifyCors from "@fastify/cors";
 import { PrismaClient } from "@prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
-import { randomBytes, scryptSync, timingSafeEqual } from "node:crypto";
+import { randomBytes } from "node:crypto";
 import { URLSearchParams } from "node:url";
 
 dotenv.config();
@@ -20,6 +20,7 @@ declare module "fastify" {
       sub: string;
       email: string;
     };
+    requestStartTime?: bigint;
   }
 }
 
@@ -34,13 +35,56 @@ const server = Fastify({
   logger: true,
 });
 
+// Verbose request lifecycle logging
+server.addHook("onRequest", async (request) => {
+  request.requestStartTime = process.hrtime.bigint();
+  request.log.info(
+    {
+      method: request.method,
+      url: request.url,
+      ip: request.ip,
+      userAgent: request.headers["user-agent"],
+    },
+    "incoming request",
+  );
+});
+
+server.addHook("onResponse", async (request, reply) => {
+  const durationMs = request.requestStartTime
+    ? Number((process.hrtime.bigint() - request.requestStartTime) / 1000000n)
+    : undefined;
+
+  request.log.info(
+    {
+      method: request.method,
+      url: request.url,
+      statusCode: reply.statusCode,
+      durationMs,
+      contentLength: reply.getHeader("content-length"),
+    },
+    "response sent",
+  );
+});
+
+server.addHook("onError", async (request, reply, error) => {
+  request.log.error(
+    {
+      err: error,
+      method: request.method,
+      url: request.url,
+      statusCode: reply.statusCode,
+    },
+    "request error",
+  );
+});
+
 const databaseUrl = process.env.DATABASE_URL;
 if (!databaseUrl) {
   throw new Error("DATABASE_URL is required for Prisma");
 }
 
 const prisma = new PrismaClient({
-  adapter: new PrismaPg(databaseUrl),
+  adapter: new PrismaPg({ connectionString: databaseUrl }),
 });
 
 // Basic OpenAPI definition for the service
@@ -92,50 +136,7 @@ const createSessionTokens = async (userId: string, email?: string) => {
   return { accessToken, refreshToken, expiresAt };
 };
 
-const hashPassword = (password: string): string => {
-  const salt = randomBytes(16);
-  const derived = scryptSync(password, salt, 32);
-  return `${salt.toString("hex")}:${derived.toString("hex")}`;
-};
-
-const verifyPassword = (password: string, stored: string): boolean => {
-  const [saltHex, hashHex] = stored.split(":");
-  if (!saltHex || !hashHex) return false;
-  const derived = scryptSync(password, Buffer.from(saltHex, "hex"), 32);
-  return timingSafeEqual(derived, Buffer.from(hashHex, "hex"));
-};
-
-server.post("/auth/register", async (request, reply) => {
-  const body = request.body as { email?: string; password?: string };
-  if (!body?.email || !body?.password) {
-    return reply.status(400).send({ error: "email and password are required" });
-  }
-
-  const existing = await prisma.user.findUnique({ where: { email: body.email } });
-  if (existing) {
-    return reply.status(409).send({ error: "user already exists" });
-  }
-
-  const passwordHash = hashPassword(body.password);
-  const user = await prisma.user.create({
-    data: { email: body.email, passwordHash, provider: "local", providerId: body.email },
-  });
-  return createSessionTokens(user.id, user.email ?? undefined);
-});
-
-server.post("/auth/login", async (request, reply) => {
-  const body = request.body as { email?: string; password?: string };
-  if (!body?.email || !body?.password) {
-    return reply.status(400).send({ error: "email and password are required" });
-  }
-
-  const user = await prisma.user.findFirst({ where: { provider: "local", email: body.email } });
-  if (!user || !user.passwordHash || !verifyPassword(body.password, user.passwordHash)) {
-    return reply.status(401).send({ error: "invalid credentials" });
-  }
-
-  return createSessionTokens(user.id, user.email ?? undefined);
-});
+// Local email/password auth removed; only OAuth flows are supported.
 
 server.post("/auth/github/callback", async (request, reply) => {
   const body = request.body as { code?: string; redirectUri?: string };
@@ -160,17 +161,53 @@ server.post("/auth/github/callback", async (request, reply) => {
     }),
   });
 
-  const tokenData = (await tokenRes.json()) as { access_token?: string; error?: string };
+  const tokenData = (await tokenRes.json()) as { access_token?: string; error?: string; error_description?: string };
   if (!tokenRes.ok || !tokenData.access_token) {
-    return reply.status(401).send({ error: tokenData.error || "GitHub auth failed" });
+    const isStaleCode = tokenData.error === "bad_verification_code";
+    return reply.status(401).send({
+      error: tokenData.error || "GitHub auth failed",
+      detail: tokenData.error_description ?? null,
+      staleCode: isStaleCode,
+    });
   }
 
   const userRes = await fetch("https://api.github.com/user", {
-    headers: { Authorization: `Bearer ${tokenData.access_token}`, Accept: "application/json" },
+    headers: {
+      Authorization: `Bearer ${tokenData.access_token}`,
+      Accept: "application/json",
+      "User-Agent": "k3h4-api",
+    },
   });
-  const ghUser = (await userRes.json()) as { id?: number; login?: string; name?: string; avatar_url?: string; email?: string };
+  const ghUser = (await userRes.json()) as { id?: number; login?: string; name?: string; avatar_url?: string; email?: string; message?: string };
   if (!userRes.ok || !ghUser.id) {
-    return reply.status(401).send({ error: "Unable to fetch GitHub profile" });
+    return reply.status(401).send({ error: "Unable to fetch GitHub profile", detail: ghUser.message ?? null, status: userRes.status });
+  }
+
+  let primaryEmail = ghUser.email ?? null;
+  if (!primaryEmail) {
+    try {
+      const emailRes = await fetch("https://api.github.com/user/emails", {
+        headers: {
+          Authorization: `Bearer ${tokenData.access_token}`,
+          Accept: "application/json",
+          "User-Agent": "k3h4-api",
+        },
+      });
+      if (emailRes.ok) {
+        const emails = (await emailRes.json()) as Array<{ email?: string; primary?: boolean; verified?: boolean }>;
+        const primary = emails.find((e) => e.primary && e.verified) || emails.find((e) => e.email);
+        primaryEmail = primary?.email ?? null;
+      } else {
+        const errBody = (await emailRes.json().catch(() => ({}))) as { message?: string };
+        return reply.status(401).send({ error: "Unable to fetch GitHub email", detail: errBody.message ?? null, status: emailRes.status });
+      }
+    } catch {
+      // best-effort; ignore
+    }
+  }
+
+  if (!primaryEmail) {
+    return reply.status(401).send({ error: "GitHub email not available; ensure user:email scope and a verified email" });
   }
 
   const providerId = ghUser.id.toString();
@@ -179,12 +216,12 @@ server.post("/auth/github/callback", async (request, reply) => {
     create: {
       provider: "github",
       providerId,
-      email: ghUser.email ?? null,
+      email: primaryEmail,
       displayName: ghUser.name ?? ghUser.login ?? null,
       avatarUrl: ghUser.avatar_url ?? null,
     },
     update: {
-      email: ghUser.email ?? null,
+      email: primaryEmail,
       displayName: ghUser.name ?? ghUser.login ?? null,
       avatarUrl: ghUser.avatar_url ?? null,
     },

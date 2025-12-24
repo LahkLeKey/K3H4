@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 
 import { Card } from '../components/ui/card'
@@ -11,6 +11,8 @@ export function GithubCallbackPage() {
     const apiBase = (import.meta as any)?.env?.API_URL || (globalThis as any)?.__API_URL__ || 'http://localhost:3001'
     const redirectUri = `${window.location.origin}/auth/github`
 
+    const hasRun = useRef(false)
+
     const searchParams = useMemo(() => new URLSearchParams(location.search), [location.search])
     const code = searchParams.get('code')
     const errorParam = searchParams.get('error')
@@ -20,6 +22,9 @@ export function GithubCallbackPage() {
 
     useEffect(() => {
         const run = async () => {
+            if (hasRun.current) return
+            hasRun.current = true
+
             if (errorParam) {
                 setStatus('error')
                 setMessage(errorParam)
@@ -40,7 +45,9 @@ export function GithubCallbackPage() {
                 })
                 const data = await res.json()
                 if (!res.ok) {
-                    throw new Error(data?.error || 'GitHub sign-in failed')
+                    const detail = data?.detail || data?.error || 'GitHub sign-in failed'
+                    const stale = data?.staleCode
+                    throw new Error(stale ? `${detail} — restart sign-in` : detail)
                 }
                 localStorage.setItem('k3h4.accessToken', data.accessToken)
                 localStorage.setItem('k3h4.refreshToken', data.refreshToken)
@@ -68,8 +75,18 @@ export function GithubCallbackPage() {
                     </p>
                 </div>
                 {isError ? (
+                    <div className="flex flex-col gap-3">
+                        <Button variant="default" onClick={() => navigate('/', { replace: true })}>
+                            Restart GitHub sign-in
+                        </Button>
+                        <Button variant="outline" onClick={() => navigate('/', { replace: true })}>
+                            Back home
+                        </Button>
+                    </div>
+                ) : null}
+                {status === 'success' ? (
                     <Button variant="outline" onClick={() => navigate('/', { replace: true })}>
-                        Back home
+                        Continue
                     </Button>
                 ) : null}
             </Card>

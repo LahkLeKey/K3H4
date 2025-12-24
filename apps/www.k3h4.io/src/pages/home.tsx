@@ -1,44 +1,44 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 
 import { Button } from '../components/ui/button'
 import { Card } from '../components/ui/card'
-import { Input } from '../components/ui/input'
-import { Label } from '../components/ui/label'
 import { Section } from '../components/section'
 
 export function HomePage() {
-    const apiBase = (globalThis as any)?.__API_URL__ || (import.meta as any)?.env?.API_URL || 'http://localhost:3001'
+    const apiBase = (globalThis as any)?.__API_URL__ || (import.meta as any)?.API_URL || 'http://localhost:3001'
     const redirectUri = `${window.location.origin}/auth/github`
-    const [email, setEmail] = useState('')
-    const [password, setPassword] = useState('')
     const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle')
     const [message, setMessage] = useState<string>('')
+    const [userEmail, setUserEmail] = useState<string | null>(null)
 
-    const handleLogin = async (event: React.FormEvent<HTMLFormElement>) => {
-        event.preventDefault()
-        setStatus('loading')
-        setMessage('')
-        try {
-            const res = await fetch(`${apiBase}/auth/login`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email, password }),
-            })
+    useEffect(() => {
+        const checkSession = async () => {
+            const token = localStorage.getItem('k3h4.accessToken')
+            if (!token) return
 
-            const data = await res.json()
-            if (!res.ok) {
-                throw new Error(data?.error || 'Login failed')
+            setStatus('loading')
+            setMessage('Checking your session…')
+            try {
+                const res = await fetch(`${apiBase}/auth/me`, {
+                    headers: { Authorization: `Bearer ${token}` },
+                })
+                const data = await res.json()
+                if (!res.ok || !data?.user) {
+                    throw new Error('Session expired — please sign in again')
+                }
+                setUserEmail(data.user.email ?? null)
+                setStatus('success')
+                setMessage(`Signed in as ${data.user.email ?? 'your account'}`)
+            } catch (err) {
+                localStorage.removeItem('k3h4.accessToken')
+                localStorage.removeItem('k3h4.refreshToken')
+                setStatus('idle')
+                setMessage(err instanceof Error ? err.message : '')
             }
-
-            localStorage.setItem('k3h4.accessToken', data.accessToken)
-            localStorage.setItem('k3h4.refreshToken', data.refreshToken)
-            setStatus('success')
-            setMessage('Signed in')
-        } catch (error) {
-            setStatus('error')
-            setMessage(error instanceof Error ? error.message : 'Something went wrong')
         }
-    }
+
+        checkSession()
+    }, [apiBase])
 
     const handleGithubLogin = async () => {
         setStatus('loading')
@@ -69,40 +69,19 @@ export function HomePage() {
             >
                 <div className="grid gap-4 md:grid-cols-[1.2fr,0.8fr]">
                     <Card className="border bg-background/70 p-6">
-                        <form className="space-y-4" onSubmit={handleLogin}>
-                            <div className="space-y-2">
-                                <Label htmlFor="email">Email</Label>
-                                <Input
-                                    id="email"
-                                    type="email"
-                                    required
-                                    value={email}
-                                    onChange={(e) => setEmail(e.target.value)}
-                                    placeholder="you@example.com"
-                                />
-                            </div>
-                            <div className="space-y-2">
-                                <Label htmlFor="password">Password</Label>
-                                <Input
-                                    id="password"
-                                    type="password"
-                                    required
-                                    value={password}
-                                    onChange={(e) => setPassword(e.target.value)}
-                                    placeholder="••••••••"
-                                />
-                            </div>
-                            <Button type="submit" className="w-full" disabled={status === 'loading'}>
-                                {status === 'loading' ? 'Signing in…' : 'Sign in'}
-                            </Button>
+                        <div className="space-y-4">
                             <Button
                                 type="button"
-                                variant="outline"
+                                variant="default"
                                 className="w-full"
                                 onClick={handleGithubLogin}
                                 disabled={status === 'loading'}
                             >
-                                Sign in with GitHub
+                                {status === 'loading'
+                                    ? 'Redirecting…'
+                                    : status === 'success'
+                                        ? 'Continue with GitHub'
+                                        : 'Sign in with GitHub'}
                             </Button>
                             {message ? (
                                 <p
@@ -115,10 +94,13 @@ export function HomePage() {
                                     {message}
                                 </p>
                             ) : null}
-                        </form>
+                            {userEmail ? (
+                                <p className="text-xs text-muted-foreground">Session active for {userEmail}</p>
+                            ) : null}
+                        </div>
                     </Card>
                     <div className="space-y-2 text-sm text-muted-foreground">
-                        <p>Sign in with your account to continue.</p>
+                        <p>Only GitHub OAuth is supported. No passwords or local accounts are stored.</p>
                     </div>
                 </div>
             </Section>

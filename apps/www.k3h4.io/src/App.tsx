@@ -1,9 +1,5 @@
-import { Navigate, Route, Routes } from 'react-router-dom'
-
 import { Shell } from './components/shell'
 import { MapBackground } from './components/ui/map-background'
-import { HomePage } from './pages/home'
-import { GithubCallbackPage } from './pages/github-callback'
 
 function App() {
   return (
@@ -14,13 +10,7 @@ function App() {
         aria-hidden
       />
 
-      <Shell>
-        <Routes>
-          <Route path="/" element={<HomePage />} />
-          <Route path="/auth/github" element={<GithubCallbackPage />} />
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
-      </Shell>
+      <Shell />
     </div>
   )
 }
