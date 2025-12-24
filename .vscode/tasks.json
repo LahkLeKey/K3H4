@@ -31,6 +31,36 @@
           }
         }
       ]
+    },
+    {
+      "label": "compose:up",
+      "type": "shell",
+      "command": "docker",
+      "args": ["compose", "up", "--build", "--wait"],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "isBackground": true,
+      "problemMatcher": []
+    },
+    {
+      "label": "compose:down",
+      "type": "shell",
+      "command": "docker",
+      "args": ["compose", "down"],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "compose:rebuild",
+      "dependsOn": ["compose:down", "compose:up"],
+      "dependsOrder": "sequence",
+      "type": "shell",
+      "command": "echo",
+      "args": ["compose rebuilt"],
+      "problemMatcher": []
     }
   ]
 }

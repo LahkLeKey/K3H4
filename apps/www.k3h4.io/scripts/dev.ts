@@ -2,11 +2,16 @@ import { cp, mkdir, rm } from 'node:fs/promises'
 import { watch } from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
+import * as dotenv from 'dotenv'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const root = path.join(__dirname, '..')
 const outdir = path.join(root, 'dist')
 const port = 5173
+
+dotenv.config({ path: path.join(root, '.env') })
+const env = process.env
+console.log('[web dev] API_URL=', env.API_URL, 'GITHUB_CLIENT_ID=', env.GITHUB_CLIENT_ID)
 
 async function cleanDist() {
   await rm(outdir, { recursive: true, force: true })
@@ -14,7 +19,10 @@ async function cleanDist() {
 
 async function copyStatic() {
   await mkdir(outdir, { recursive: true })
-  await Bun.write(path.join(outdir, 'index.html'), await Bun.file(path.join(root, 'index.html')).text())
+  const htmlSource = await Bun.file(path.join(root, 'index.html')).text()
+  const inject = `<script>window.__API_URL__=${JSON.stringify(env.API_URL || 'http://localhost:3001')};window.__GITHUB_CLIENT_ID=${JSON.stringify(env.GITHUB_CLIENT_ID || '')};</script>`
+  const htmlWithEnv = htmlSource.replace('</head>', `${inject}</head>`) || `${inject}${htmlSource}`
+  await Bun.write(path.join(outdir, 'index.html'), htmlWithEnv)
 
   try {
     await cp(path.join(root, 'public'), outdir, { recursive: true })
@@ -117,6 +125,10 @@ async function start() {
     tsconfig: path.join(root, 'tsconfig.app.json'),
     loader: {
       '.svg': 'file',
+    },
+      define: {
+        'import.meta.env.API_URL': JSON.stringify(env.API_URL || 'http://localhost:3001'),
+        'import.meta.env.GITHUB_CLIENT_ID': JSON.stringify(env.GITHUB_CLIENT_ID || ''),
     },
     watch: {
       onRebuild(result: Awaited<ReturnType<typeof Bun.build>>) {

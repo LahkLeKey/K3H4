@@ -3,13 +3,7 @@ import { Navigate, Route, Routes } from 'react-router-dom'
 import { Shell } from './components/shell'
 import { MapBackground } from './components/ui/map-background'
 import { HomePage } from './pages/home'
-import { BankingPage } from './pages/banking'
-import { LogisticsPage } from './pages/logistics'
-import { StaffingPage } from './pages/staffing'
-import { AdsPage } from './pages/ads'
-import { InboxPage } from './pages/inbox'
-import { ContactPage } from './pages/contact'
-import { UiComponentsPage } from './pages/ui'
+import { GithubCallbackPage } from './pages/github-callback'
 
 function App() {
   return (
@@ -23,13 +17,7 @@ function App() {
       <Shell>
         <Routes>
           <Route path="/" element={<HomePage />} />
-          <Route path="/banking" element={<BankingPage />} />
-          <Route path="/logistics" element={<LogisticsPage />} />
-          <Route path="/staffing" element={<StaffingPage />} />
-          <Route path="/ads" element={<AdsPage />} />
-          <Route path="/inbox" element={<InboxPage />} />
-          <Route path="/ui" element={<UiComponentsPage />} />
-          <Route path="/contact" element={<ContactPage />} />
+          <Route path="/auth/github" element={<GithubCallbackPage />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </Shell>

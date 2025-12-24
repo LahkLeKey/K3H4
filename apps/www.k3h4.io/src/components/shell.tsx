@@ -6,15 +6,7 @@ import { Button } from './ui/button'
 import { Input } from './ui/input'
 import { cn } from '../lib/utils'
 
-const navItems = [
-    { to: '/', label: 'Home', icon: Home },
-    { to: '/banking', label: 'Banking' },
-    { to: '/logistics', label: 'Logistics' },
-    { to: '/staffing', label: 'Staffing' },
-    { to: '/ads', label: 'Ads / OOH' },
-    { to: '/inbox', label: 'Inbox' },
-    { to: '/contact', label: 'Contact' },
-]
+const navItems = [{ to: '/', label: 'Home', icon: Home }]
 
 export function Shell({ children }: PropsWithChildren) {
     const location = useLocation()
@@ -25,7 +17,7 @@ export function Shell({ children }: PropsWithChildren) {
                 <div className="mx-auto flex w-full max-w-6xl flex-wrap items-center gap-3 px-4 py-4">
                     <Link to="/" className="flex items-center gap-2 text-sm font-semibold">
                         <div className="h-8 w-8 rounded-full bg-primary/10" />
-                        <span>K3H4 · Projects</span>
+                        <span>K3H4</span>
                     </Link>
                     <nav className="flex flex-1 flex-wrap items-center gap-2 text-sm">
                         {navItems.map((item) => {
@@ -49,11 +41,12 @@ export function Shell({ children }: PropsWithChildren) {
                             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                             <Input
                                 className="h-9 w-56 pl-9"
-                                placeholder="Search pages... (stub)"
-                                aria-label="Search pages"
+                                placeholder="Search (disabled)"
+                                aria-label="Search"
+                                disabled
                             />
                         </div>
-                        <Button variant="ghost" size="icon" aria-label="Notifications">
+                        <Button variant="ghost" size="icon" aria-label="Notifications" disabled>
                             <Bell className="h-4 w-4" />
                         </Button>
                     </div>

@@ -2,16 +2,15 @@
   "version": "0.2.0",
   "configurations": [
     {
-      "name": "API: Fastify (Bun)",
-      "type": "node",
+      "name": "Dev stack: bun run dev (root)",
+      "type": "node-terminal",
       "request": "launch",
-      "runtimeExecutable": "bun",
-      "runtimeArgs": ["run", "--watch", "src/server.ts"],
-      "cwd": "${workspaceFolder}/apps/api.k3h4.io",
-      "console": "integratedTerminal",
+      "command": "docker compose logs -f",
+      "cwd": "${workspaceFolder}",
+      "preLaunchTask": "compose:rebuild",
+      "postDebugTask": "compose:down",
       "env": {
-        "PORT": "3001",
-        "HOST": "0.0.0.0"
+        "COMPOSE_PROJECT_NAME": "k3h4-dev"
       }
     }
   ]
