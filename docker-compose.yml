@@ -1,0 +1,43 @@
+services:
+  api:
+    build:
+      context: ./apps/api.k3h4.io
+      dockerfile: Dockerfile
+      args:
+        DATABASE_URL: ${DATABASE_URL}
+        JWT_SECRET: ${JWT_SECRET:-change-me}
+    command: ["bun", "run", "src/server.ts"]
+    env_file:
+      - ./apps/api.k3h4.io/.env
+    environment:
+      - CORS_ORIGIN=http://localhost:5173
+      - PORT=8080
+      - HOST=0.0.0.0
+    ports:
+      - "3001:8080"
+    healthcheck:
+      test: ["CMD", "bun", "-e", "await fetch('http://localhost:8080/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+      start_period: 5s
+
+  web:
+    image: oven/bun:1.3.5
+    working_dir: /app
+    volumes:
+      - ./apps/www.k3h4.io:/app
+    command: ["sh", "-c", "bun install && bun run dev --host --port 5173"]
+    env_file:
+      - ./apps/www.k3h4.io/.env
+    ports:
+      - "5173:5173"
+    depends_on:
+      api:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "bun", "-e", "await fetch('http://localhost:5173').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+      start_period: 5s

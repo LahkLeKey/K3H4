@@ -1,0 +1,9 @@
+{
+  "name": "k3h4-monorepo",
+  "private": true,
+  "version": "0.0.0",
+  "scripts": {
+    "dev": "docker compose up --build",
+    "compose:down": "docker compose down"
+  }
+}
