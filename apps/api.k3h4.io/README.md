@@ -6,6 +6,8 @@ Fastify-based API service with Swagger UI.
 
 - `bun run dev` — start in watch mode on `http://localhost:3001`
 - `bun run start` — start once in production mode
+- `bun run prisma:generate` — regenerate Prisma client
+- `bun run prisma:migrate` — create/apply migrations (interactive; requires DATABASE_URL)
 
 ## Swagger UI
 
@@ -14,6 +16,12 @@ Available at `/docs` when the server is running.
 ## Health check
 
 `GET /health` returns `{ "status": "ok" }`.
+
+## Env
+
+Copy `.env.example` to `.env` and set values:
+- `DATABASE_URL` — direct PostgreSQL connection string (required for Prisma adapter at runtime)
+- `JWT_SECRET` — signing key for access tokens
 
 ## Fly.io deploy
 
