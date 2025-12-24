@@ -6,12 +6,8 @@ primary_region = "iad"
   dockerfile = "Dockerfile"
   context = "."
 
-[deploy]
-  release_command = "bunx prisma migrate deploy"
-  strategy = "rolling"
-
-[[vm]]
-  memory = "512mb"
+[vm]
+  memory = "2048mb"
   cpu_kind = "shared"
   cpus = 1
 
