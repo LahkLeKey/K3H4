@@ -4,6 +4,7 @@ import { cva, type VariantProps } from "class-variance-authority"
 import { PanelLeft } from "lucide-react"
 
 import { useIsMobile } from "../../hooks/use-mobile"
+import { useLocalStore } from "../../lib/store"
 import { cn } from "../../lib/utils"
 import { Button } from "./button"
 import { Input } from "./input"
@@ -72,26 +73,40 @@ const SidebarProvider = React.forwardRef<
     ref
   ) => {
     const isMobile = useIsMobile()
-    const [openMobile, setOpenMobile] = React.useState(false)
-
-    // This is the internal state of the sidebar.
-    // We use openProp and setOpenProp for control from outside the component.
-    const [_open, _setOpen] = React.useState(defaultOpen)
-    const open = openProp ?? _open
-    const setOpen = React.useCallback(
-      (value: boolean | ((value: boolean) => boolean)) => {
-        const openState = typeof value === "function" ? value(open) : value
+    const sidebarStore = useLocalStore<{
+      open: boolean
+      openMobile: boolean
+      setOpen: (value: boolean | ((value: boolean) => boolean)) => void
+      setOpenMobile: (value: boolean | ((value: boolean) => boolean)) => void
+    }>((set, get) => ({
+      open: openProp ?? defaultOpen,
+      openMobile: false,
+      setOpen: (value) => {
+        const resolved = typeof value === "function" ? value(get().open) : value
+        set({ open: resolved })
         if (setOpenProp) {
-          setOpenProp(openState)
-        } else {
-          _setOpen(openState)
+          setOpenProp(resolved)
         }
-
-        // This sets the cookie to keep the sidebar state.
-        document.cookie = `${SIDEBAR_COOKIE_NAME}=${openState}; path=/; max-age=${SIDEBAR_COOKIE_MAX_AGE}`
+        document.cookie = `${SIDEBAR_COOKIE_NAME}=${resolved}; path=/; max-age=${SIDEBAR_COOKIE_MAX_AGE}`
       },
-      [setOpenProp, open]
-    )
+      setOpenMobile: (value) => {
+        const resolved = typeof value === "function" ? value(get().openMobile) : value
+        set({ openMobile: resolved })
+      },
+    }))
+
+    const { open, openMobile, setOpen, setOpenMobile } = sidebarStore.useShallow((state) => ({
+      open: state.open,
+      openMobile: state.openMobile,
+      setOpen: state.setOpen,
+      setOpenMobile: state.setOpenMobile,
+    }))
+
+    React.useEffect(() => {
+      if (typeof openProp === "boolean") {
+        sidebarStore.setState({ open: openProp })
+      }
+    }, [openProp, sidebarStore])
 
     // Helper to toggle the sidebar.
     const toggleSidebar = React.useCallback(() => {

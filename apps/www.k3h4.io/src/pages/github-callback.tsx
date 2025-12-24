@@ -1,24 +1,21 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 
 import { Card } from '../components/ui/card'
 import { Spinner } from '../components/ui/spinner'
 import { Button } from '../components/ui/button'
+import { useAuthProfile } from '../hooks/use-auth-profile'
 
 export function GithubCallbackPage() {
     const location = useLocation()
     const navigate = useNavigate()
-    const apiBase = (import.meta as any)?.env?.API_URL || (globalThis as any)?.__API_URL__ || 'http://localhost:3001'
-    const redirectUri = `${window.location.origin}/auth/github`
 
     const hasRun = useRef(false)
 
     const searchParams = useMemo(() => new URLSearchParams(location.search), [location.search])
     const code = searchParams.get('code')
     const errorParam = searchParams.get('error')
-
-    const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle')
-    const [message, setMessage] = useState<string>('')
+    const { authStatus, authMessage, redirectUri, completeGithubCallback, setAuthState } = useAuthProfile()
 
     useEffect(() => {
         const run = async () => {
@@ -26,44 +23,23 @@ export function GithubCallbackPage() {
             hasRun.current = true
 
             if (errorParam) {
-                setStatus('error')
-                setMessage(errorParam)
+                setAuthState('error', errorParam)
                 return
             }
             if (!code) {
-                setStatus('error')
-                setMessage('Missing authorization code')
+                setAuthState('error', 'Missing authorization code')
                 return
             }
-            setStatus('loading')
-            setMessage('Signing you in with GitHub…')
-            try {
-                const res = await fetch(`${apiBase}/auth/github/callback`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ code, redirectUri }),
-                })
-                const data = await res.json()
-                if (!res.ok) {
-                    const detail = data?.detail || data?.error || 'GitHub sign-in failed'
-                    const stale = data?.staleCode
-                    throw new Error(stale ? `${detail} — restart sign-in` : detail)
-                }
-                localStorage.setItem('k3h4.accessToken', data.accessToken)
-                localStorage.setItem('k3h4.refreshToken', data.refreshToken)
-                setStatus('success')
-                setMessage('Signed in — redirecting…')
+            const result = await completeGithubCallback(code, redirectUri)
+            if (result.ok) {
                 setTimeout(() => navigate('/', { replace: true }), 600)
-            } catch (err) {
-                setStatus('error')
-                setMessage(err instanceof Error ? err.message : 'Something went wrong')
             }
         }
         run()
-    }, [apiBase, code, errorParam, navigate, redirectUri])
+    }, [code, completeGithubCallback, errorParam, navigate, redirectUri, setAuthState])
 
-    const isError = status === 'error'
-    const isLoading = status === 'loading'
+    const isError = authStatus === 'error'
+    const isLoading = authStatus === 'loading'
 
     return (
         <div className="flex items-center justify-center py-24">
@@ -71,7 +47,7 @@ export function GithubCallbackPage() {
                 <div className="flex items-center gap-3">
                     {isLoading ? <Spinner className="h-4 w-4" /> : null}
                     <p className={isError ? 'text-destructive' : 'text-muted-foreground'}>
-                        {message || 'Preparing GitHub sign-in…'}
+                        {authMessage || 'Preparing GitHub sign-in…'}
                     </p>
                 </div>
                 {isError ? (

@@ -313,6 +313,114 @@ server.get(
   },
 );
 
+const userProfileSelect = {
+  id: true,
+  email: true,
+  displayName: true,
+  avatarUrl: true,
+  preference: {
+    select: {
+      theme: true,
+      locale: true,
+      timezone: true,
+      marketingOptIn: true,
+      notifications: true,
+    },
+  },
+} as const;
+
+server.get(
+  "/profile",
+  {
+    preHandler: [server.authenticate],
+  },
+  async (request, reply) => {
+    const userId = (request.user as { sub: string }).sub;
+
+    // Ensure preference row exists
+    await prisma.userPreference.upsert({
+      where: { userId },
+      update: {},
+      create: { userId },
+    });
+
+    const profile = await prisma.user.findUnique({ where: { id: userId }, select: userProfileSelect });
+    if (!profile) return reply.status(404).send({ error: "User not found" });
+    return { profile };
+  },
+);
+
+server.patch(
+  "/profile",
+  {
+    preHandler: [server.authenticate],
+  },
+  async (request, reply) => {
+    const userId = (request.user as { sub: string }).sub;
+    const body = request.body as {
+      displayName?: string | null;
+      avatarUrl?: string | null;
+      preference?: {
+        theme?: string;
+        locale?: string;
+        timezone?: string;
+        marketingOptIn?: boolean;
+        notifications?: unknown;
+      };
+    };
+
+    const updates: { displayName?: string | null; avatarUrl?: string | null } = {};
+    if (body.displayName !== undefined) {
+      if (body.displayName !== null && typeof body.displayName !== "string") {
+        return reply.status(400).send({ error: "displayName must be string or null" });
+      }
+      updates.displayName = body.displayName;
+    }
+    if (body.avatarUrl !== undefined) {
+      if (body.avatarUrl !== null && typeof body.avatarUrl !== "string") {
+        return reply.status(400).send({ error: "avatarUrl must be string or null" });
+      }
+      updates.avatarUrl = body.avatarUrl;
+    }
+
+    const prefUpdates: Record<string, unknown> = {};
+    if (body.preference) {
+      const { theme, locale, timezone, marketingOptIn, notifications } = body.preference;
+      if (theme !== undefined) {
+        if (typeof theme !== "string") return reply.status(400).send({ error: "theme must be string" });
+        prefUpdates.theme = theme;
+      }
+      if (locale !== undefined) {
+        if (typeof locale !== "string") return reply.status(400).send({ error: "locale must be string" });
+        prefUpdates.locale = locale;
+      }
+      if (timezone !== undefined) {
+        if (typeof timezone !== "string") return reply.status(400).send({ error: "timezone must be string" });
+        prefUpdates.timezone = timezone;
+      }
+      if (marketingOptIn !== undefined) {
+        if (typeof marketingOptIn !== "boolean") return reply.status(400).send({ error: "marketingOptIn must be boolean" });
+        prefUpdates.marketingOptIn = marketingOptIn;
+      }
+      if (notifications !== undefined) {
+        prefUpdates.notifications = notifications;
+      }
+    }
+
+    const [updatedUser] = await prisma.$transaction([
+      prisma.user.update({ where: { id: userId }, data: updates }),
+      prisma.userPreference.upsert({
+        where: { userId },
+        update: prefUpdates,
+        create: { userId, ...prefUpdates },
+      }),
+    ]);
+
+    const profile = await prisma.user.findUnique({ where: { id: updatedUser.id }, select: userProfileSelect });
+    return { profile };
+  },
+);
+
 const port = Number(process.env.PORT || 8080);
 const host = process.env.HOST || "0.0.0.0";
 

@@ -8,7 +8,7 @@ datasource db {
 
 model User {
   id             String          @id @default(cuid())
-  email          String?         @unique
+  email          String          @unique
   passwordHash   String?
   provider       String
   providerId     String
@@ -17,6 +17,7 @@ model User {
   createdAt      DateTime        @default(now())
   updatedAt      DateTime        @updatedAt
   refreshTokens  RefreshToken[]
+  preference     UserPreference?
 
   @@unique([provider, providerId])
 }
@@ -28,4 +29,17 @@ model RefreshToken {
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   createdAt DateTime @default(now())
   expiresAt DateTime
+}
+
+model UserPreference {
+  id             String   @id @default(cuid())
+  userId         String   @unique
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  theme          String   @default("system")
+  locale         String   @default("en-US")
+  timezone       String   @default("UTC")
+  marketingOptIn Boolean  @default(false)
+  notifications  Json?    // arbitrary notification preferences
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 }
