@@ -5,6 +5,7 @@ import useEmblaCarousel, {
 import { ArrowLeft, ArrowRight } from "lucide-react"
 
 import { cn } from "../../lib/utils"
+import { useLocalStore } from "../../lib/store"
 import { Button } from "./button"
 
 type CarouselApi = UseEmblaCarouselType[1]
@@ -63,8 +64,26 @@ const Carousel = React.forwardRef<
       },
       plugins
     )
-    const [canScrollPrev, setCanScrollPrev] = React.useState(false)
-    const [canScrollNext, setCanScrollNext] = React.useState(false)
+    const carouselStore = useLocalStore<{
+      canScrollPrev: boolean
+      canScrollNext: boolean
+      setCanScrollPrev: (value: boolean) => void
+      setCanScrollNext: (value: boolean) => void
+    }>((set) => ({
+      canScrollPrev: false,
+      canScrollNext: false,
+      setCanScrollPrev: (value) => set({ canScrollPrev: value }),
+      setCanScrollNext: (value) => set({ canScrollNext: value }),
+    }))
+
+    const { canScrollPrev, canScrollNext, setCanScrollPrev, setCanScrollNext } = carouselStore.useShallow(
+      (state) => ({
+        canScrollPrev: state.canScrollPrev,
+        canScrollNext: state.canScrollNext,
+        setCanScrollPrev: state.setCanScrollPrev,
+        setCanScrollNext: state.setCanScrollNext,
+      })
+    )
 
     const onSelect = React.useCallback((api: CarouselApi) => {
       if (!api) {
