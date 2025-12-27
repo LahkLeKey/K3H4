@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 
-import type { AuthStatus } from "../../stores/auth-store";
+import type { AuthStatus, ProfileState } from "../../stores/auth-store";
 import type { NavItem } from "./nav-links";
 import { ShellContentSwitch } from "./content-switch";
 import { ShellHeader } from "./header";
@@ -12,6 +12,12 @@ export type ShellViewProps = {
     userEmail: string | null;
     authStatus: AuthStatus;
     authMessage: string;
+    profile: ProfileState | null;
+    profileLoading: boolean;
+    profileMessage: string;
+    setProfile: (updater: (prev: ProfileState | null) => ProfileState | null) => void;
+    onProfileSave: () => void;
+    onSignOut: () => void;
     onGithubLogin: () => void;
     brand?: ReactNode;
     actions?: ReactNode;
@@ -27,6 +33,12 @@ export function ShellView({
     userEmail,
     authStatus,
     authMessage,
+    profile,
+    profileLoading,
+    profileMessage,
+    setProfile,
+    onProfileSave,
+    onSignOut,
     onGithubLogin,
     brand,
     actions,
@@ -44,6 +56,12 @@ export function ShellView({
                 userEmail={userEmail}
                 authStatus={authStatus}
                 authMessage={authMessage}
+                profile={profile}
+                profileLoading={profileLoading}
+                profileMessage={profileMessage}
+                setProfile={setProfile}
+                onProfileSave={onProfileSave}
+                onSignOut={onSignOut}
                 brand={brand}
                 actions={actions}
                 onGithubLogin={onGithubLogin}

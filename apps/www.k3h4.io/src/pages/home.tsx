@@ -2,6 +2,7 @@ import { Button } from '../components/ui/button'
 import { Card } from '../components/ui/card'
 import { Section } from '../components/section'
 import { useAuthProfile } from '../hooks/use-auth-profile'
+import type { ProfileState } from '../stores/auth-store'
 
 export function HomePage() {
     const { authStatus, authMessage, userEmail, handleGithubLogin } = useAuthProfile()
@@ -53,6 +54,26 @@ export function HomePage() {
             </Section>
 
             {/* Projects section removed */}
+        </div>
+    )
+}
+
+type SignedInLandingProps = {
+    userEmail: string | null
+    profile: ProfileState | null
+}
+
+export function SignedInLanding({ userEmail, profile }: SignedInLandingProps) {
+    const name = profile?.displayName || userEmail || 'there'
+    return (
+        <div className="mx-auto w-full max-w-4xl space-y-6">
+            <Card className="border bg-background/80 p-8 shadow-sm">
+                <div className="space-y-3 text-center">
+                    <p className="text-sm text-muted-foreground">Welcome back</p>
+                    <h1 className="text-3xl font-semibold leading-tight">Hi {name}, you’re signed in.</h1>
+                    <p className="text-base text-muted-foreground">This is your minimal landing page. Hello world.</p>
+                </div>
+            </Card>
         </div>
     )
 }
