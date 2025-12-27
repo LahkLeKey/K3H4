@@ -2,6 +2,7 @@ const TELEMETRY_SOURCE = "web";
 const SESSION_STORAGE_KEY = "k3h4.sessionId";
 const MAX_QUEUE = 200;
 const FLUSH_INTERVAL_MS = 800;
+import { ACCESS_TOKEN_KEY } from "./constants";
 
 let apiBase: string | undefined = (globalThis as any)?.__API_URL__ || (import.meta as any)?.API_URL || undefined;
 let flushTimer: ReturnType<typeof setTimeout> | null = null;
@@ -50,7 +51,7 @@ async function flushQueue() {
   if (!queue.length || !apiBase) return;
   const batch = queue.splice(0, queue.length);
   const sessionId = getSessionId();
-  const token = typeof localStorage !== "undefined" ? localStorage.getItem("k3h4.accessToken") : null;
+  const token = typeof localStorage !== "undefined" ? localStorage.getItem(ACCESS_TOKEN_KEY) : null;
   const events = batch.map((evt) => ({
     eventType: evt.eventType,
     source: TELEMETRY_SOURCE,

@@ -2,6 +2,7 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 
 import { queryClient } from "../lib/query-client";
 import { trackTelemetry } from "../lib/telemetry";
+import { ACCESS_TOKEN_KEY } from "../lib/constants";
 
 export type BankTransaction = {
   id: string;
@@ -31,7 +32,7 @@ export const bankKeys = {
 
 function getToken() {
   if (typeof window === "undefined") return "";
-  return localStorage.getItem("k3h4.accessToken") || "";
+  return localStorage.getItem(ACCESS_TOKEN_KEY) || "";
 }
 
 function getAuthHeaders() {
