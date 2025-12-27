@@ -6,6 +6,10 @@ export type ProfileState = {
   email?: string | null;
   k3h4CoinBalance?: string | null;
   preference?: {
+    theme?: string;
+    locale?: string;
+    timezone?: string;
+    marketingOptIn?: boolean;
     note?: string | null;
   };
 };
@@ -37,7 +41,7 @@ type AuthStoreState = {
 const apiBase = (globalThis as any)?.__API_URL__ || (import.meta as any)?.API_URL || "http://localhost:3001";
 const redirectUri = `${window.location.origin}/auth/github`;
 
-export const authStore = createStore<AuthStoreState>((set, get) => ({
+export const authStore = createStore<AuthStoreState>((set) => ({
   apiBase,
   redirectUri,
   user: { status: "anonymous" },

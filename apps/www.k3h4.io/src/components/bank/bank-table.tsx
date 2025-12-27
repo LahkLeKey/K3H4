@@ -172,9 +172,10 @@ export function BankTable({ apiBase, userEmail }: BankTableProps) {
                     </TableHeader>
                     <TableBody>
                         {transactions.map((txn) => {
-                            const delta = Number.parseFloat(String(txn.delta ?? 0));
-                            const balanceValue = Number.parseFloat(String(txn.balance ?? 0));
-                            const deltaDisplay = Number.isFinite(delta) ? delta.toFixed(2) : "0.00";
+                            const amountValue = Number.parseFloat(String(txn.amount ?? 0));
+                            const signedAmount = txn.direction === "debit" ? -Math.abs(amountValue) : Math.abs(amountValue);
+                            const balanceValue = Number.parseFloat(String(txn.balanceAfter ?? 0));
+                            const deltaDisplay = Number.isFinite(signedAmount) ? signedAmount.toFixed(2) : "0.00";
                             const balanceDisplay = Number.isFinite(balanceValue) ? balanceValue.toFixed(2) : "0.00";
 
                             return (
@@ -183,7 +184,7 @@ export function BankTable({ apiBase, userEmail }: BankTableProps) {
                                         {txn.createdAt ? new Date(txn.createdAt).toLocaleString() : ""}
                                     </TableCell>
                                     <TableCell>{txn.note || ""}</TableCell>
-                                    <TableCell className="text-right font-mono">{delta > 0 ? "+" : ""}{deltaDisplay}</TableCell>
+                                    <TableCell className="text-right font-mono">{signedAmount > 0 ? "+" : ""}{deltaDisplay}</TableCell>
                                     <TableCell className="text-right font-mono">{balanceDisplay}</TableCell>
                                 </TableRow>
                             );

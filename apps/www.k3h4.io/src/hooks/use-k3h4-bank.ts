@@ -1,7 +1,7 @@
 import { useEffect, useMemo } from "react";
 
-import { bankStore, type TabKey } from "../stores/bank-store";
-import { type BankTransaction, type BankTransactionFilters, useBankBalanceQuery, useBankTransactionsQuery, useBankUpdateMutation } from "./use-bank-queries";
+import { bankStore } from "../stores/bank-store";
+import { type BankTransactionFilters, useBankBalanceQuery, useBankTransactionsQuery, useBankUpdateMutation } from "./use-bank-queries";
 
 export function useK3h4Bank(apiBase: string, filters?: Partial<BankTransactionFilters>) {
   const { amountInput, setAmountInput, note, setNote, activeTab, setActiveTab, apiBase: storeApiBase, setApiBase } = bankStore.useShallow((state) => ({
@@ -76,4 +76,3 @@ export function useK3h4Bank(apiBase: string, filters?: Partial<BankTransactionFi
 }
 
 export type { TabKey } from "../stores/bank-store";
-export type { BankTransaction } from "./use-bank-queries";
