@@ -15,117 +15,125 @@ const createSessionTokens = async (server: FastifyInstance, prisma: PrismaClient
 export function registerAuthRoutes(server: FastifyInstance, prisma: PrismaClient, recordTelemetry: RecordTelemetryFn) {
   // Local email/password auth removed; only OAuth flows are supported.
   server.post("/auth/github/callback", async (request, reply) => {
-    const body = request.body as { code?: string; redirectUri?: string };
-    if (!body?.code || !body?.redirectUri) {
-      return reply.status(400).send({ error: "code and redirectUri are required" });
-    }
-
-    const clientId = process.env.GITHUB_CLIENT_ID;
-    const clientSecret = process.env.GITHUB_CLIENT_SECRET;
-    if (!clientId || !clientSecret) {
-      return reply.status(500).send({ error: "GitHub OAuth not configured" });
-    }
-
-    const tokenRes = await fetch("https://github.com/login/oauth/access_token", {
-      method: "POST",
-      headers: { Accept: "application/json" },
-      body: new URLSearchParams({
-        client_id: clientId,
-        client_secret: clientSecret,
-        code: body.code,
-        redirect_uri: body.redirectUri,
-      }),
-    });
-
-    const tokenData = (await tokenRes.json()) as { access_token?: string; error?: string; error_description?: string };
-    if (!tokenRes.ok || !tokenData.access_token) {
-      await recordTelemetry(request, {
-        eventType: "auth.github.callback.failed",
-        source: "api",
-        payload: { code: body.code, detail: tokenData.error_description ?? tokenData.error ?? null },
-      });
-      const isStaleCode = tokenData.error === "bad_verification_code";
-      return reply.status(401).send({
-        error: tokenData.error || "GitHub auth failed",
-        detail: tokenData.error_description ?? null,
-        staleCode: isStaleCode,
-      });
-    }
-
-    const userRes = await fetch("https://api.github.com/user", {
-      headers: {
-        Authorization: `Bearer ${tokenData.access_token}`,
-        Accept: "application/json",
-        "User-Agent": "k3h4-api",
-      },
-    });
-    const ghUser = (await userRes.json()) as { id?: number; login?: string; name?: string; avatar_url?: string; email?: string; message?: string };
-    if (!userRes.ok || !ghUser.id) {
-      await recordTelemetry(request, {
-        eventType: "auth.github.callback.failed",
-        source: "api",
-        payload: { code: body.code, detail: ghUser.message ?? null },
-      });
-      return reply
-        .status(401)
-        .send({ error: "Unable to fetch GitHub profile", detail: ghUser.message ?? null, status: userRes.status });
-    }
-
-    let primaryEmail = ghUser.email ?? null;
-    if (!primaryEmail) {
-      try {
-        const emailRes = await fetch("https://api.github.com/user/emails", {
-          headers: {
-            Authorization: `Bearer ${tokenData.access_token}`,
-            Accept: "application/json",
-            "User-Agent": "k3h4-api",
-          },
-        });
-        if (emailRes.ok) {
-          const emails = (await emailRes.json()) as Array<{ email?: string; primary?: boolean; verified?: boolean }>;
-          const primary = emails.find((e) => e.primary && e.verified) || emails.find((e) => e.email);
-          primaryEmail = primary?.email ?? null;
-        } else {
-          const errBody = (await emailRes.json().catch(() => ({}))) as { message?: string };
-          return reply
-            .status(401)
-            .send({ error: "Unable to fetch GitHub email", detail: errBody.message ?? null, status: emailRes.status });
-        }
-      } catch {
-        // best-effort; ignore
+    try {
+      const body = request.body as { code?: string; redirectUri?: string };
+      if (!body?.code || !body?.redirectUri) {
+        return reply.status(400).send({ error: "code and redirectUri are required" });
       }
+
+      const clientId = process.env.GITHUB_CLIENT_ID;
+      const clientSecret = process.env.GITHUB_CLIENT_SECRET;
+      if (!clientId || !clientSecret) {
+        return reply.status(500).send({ error: "GitHub OAuth not configured" });
+      }
+
+      const tokenRes = await fetch("https://github.com/login/oauth/access_token", {
+        method: "POST",
+        headers: { Accept: "application/json" },
+        body: new URLSearchParams({
+          client_id: clientId,
+          client_secret: clientSecret,
+          code: body.code,
+          redirect_uri: body.redirectUri,
+        }),
+      });
+
+      const tokenData = (await tokenRes.json()) as { access_token?: string; error?: string; error_description?: string };
+      if (!tokenRes.ok || !tokenData.access_token) {
+        await recordTelemetry(request, {
+          eventType: "auth.github.callback.failed",
+          source: "api",
+          payload: { code: body.code, detail: tokenData.error_description ?? tokenData.error ?? null },
+        });
+        const isStaleCode = tokenData.error === "bad_verification_code";
+        return reply.status(401).send({
+          error: tokenData.error || "GitHub auth failed",
+          detail: tokenData.error_description ?? null,
+          staleCode: isStaleCode,
+        });
+      }
+
+      const userRes = await fetch("https://api.github.com/user", {
+        headers: {
+          Authorization: `Bearer ${tokenData.access_token}`,
+          Accept: "application/json",
+          "User-Agent": "k3h4-api",
+        },
+      });
+      const ghUser = (await userRes.json()) as { id?: number; login?: string; name?: string; avatar_url?: string; email?: string; message?: string };
+      if (!userRes.ok || !ghUser.id) {
+        await recordTelemetry(request, {
+          eventType: "auth.github.callback.failed",
+          source: "api",
+          payload: { code: body.code, detail: ghUser.message ?? null, status: userRes.status },
+        });
+        return reply
+          .status(401)
+          .send({ error: "Unable to fetch GitHub profile", detail: ghUser.message ?? null, status: userRes.status });
+      }
+
+      let primaryEmail = ghUser.email ?? null;
+      if (!primaryEmail) {
+        try {
+          const emailRes = await fetch("https://api.github.com/user/emails", {
+            headers: {
+              Authorization: `Bearer ${tokenData.access_token}`,
+              Accept: "application/json",
+              "User-Agent": "k3h4-api",
+            },
+          });
+          if (emailRes.ok) {
+            const emails = (await emailRes.json()) as Array<{ email?: string; primary?: boolean; verified?: boolean }>;
+            const primary = emails.find((e) => e.primary && e.verified) || emails.find((e) => e.email);
+            primaryEmail = primary?.email ?? null;
+          } else {
+            const errBody = (await emailRes.json().catch(() => ({}))) as { message?: string };
+            return reply
+              .status(401)
+              .send({ error: "Unable to fetch GitHub email", detail: errBody.message ?? null, status: emailRes.status });
+          }
+        } catch (err) {
+          request.log.warn({ err }, "github email fetch failed");
+        }
+      }
+
+      if (!primaryEmail) {
+        return reply.status(401).send({ error: "GitHub email not available; ensure user:email scope and a verified email" });
+      }
+
+      const providerId = ghUser.id.toString();
+      const user = await prisma.user.upsert({
+        where: { provider_providerId: { provider: "github", providerId } },
+        create: {
+          provider: "github",
+          providerId,
+          email: primaryEmail,
+          displayName: ghUser.name ?? ghUser.login ?? null,
+          avatarUrl: ghUser.avatar_url ?? null,
+        },
+        update: {
+          email: primaryEmail,
+          displayName: ghUser.name ?? ghUser.login ?? null,
+          avatarUrl: ghUser.avatar_url ?? null,
+        },
+      });
+
+      await recordTelemetry(request, {
+        eventType: "auth.github.callback.success",
+        source: "api",
+        payload: { providerId, email: user.email, redirectUri: body.redirectUri },
+      });
+
+      return createSessionTokens(server, prisma, user.id, user.email ?? undefined);
+    } catch (err) {
+      request.log.error({ err }, "github callback failed");
+      await recordTelemetry(request, {
+        eventType: "auth.github.callback.error",
+        source: "api",
+        payload: { message: err instanceof Error ? err.message : "unknown" },
+      });
+      return reply.status(500).send({ error: "GitHub auth failed" });
     }
-
-    if (!primaryEmail) {
-      return reply
-        .status(401)
-        .send({ error: "GitHub email not available; ensure user:email scope and a verified email" });
-    }
-
-    const providerId = ghUser.id.toString();
-    const user = await prisma.user.upsert({
-      where: { provider_providerId: { provider: "github", providerId } },
-      create: {
-        provider: "github",
-        providerId,
-        email: primaryEmail,
-        displayName: ghUser.name ?? ghUser.login ?? null,
-        avatarUrl: ghUser.avatar_url ?? null,
-      },
-      update: {
-        email: primaryEmail,
-        displayName: ghUser.name ?? ghUser.login ?? null,
-        avatarUrl: ghUser.avatar_url ?? null,
-      },
-    });
-
-    await recordTelemetry(request, {
-      eventType: "auth.github.callback.success",
-      source: "api",
-      payload: { providerId, email: user.email, redirectUri: body.redirectUri },
-    });
-
-    return createSessionTokens(server, prisma, user.id, user.email ?? undefined);
   });
 
   server.post("/auth/github/url", async (request, reply) => {
