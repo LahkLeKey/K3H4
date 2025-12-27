@@ -16,9 +16,9 @@ export function ProfilePanel({ userEmail, profile, profileLoading, profileMessag
     return (
         <div className="space-y-4">
             <div className="space-y-1">
-                <p className="text-xs uppercase tracking-wide text-muted-foreground">Profile</p>
-                <h1 className="text-xl font-semibold">{profile?.displayName || userEmail || 'Your profile'}</h1>
-                <p className="text-sm text-muted-foreground">Signed in as {userEmail ?? 'unknown'}</p>
+                <h2 className="text-lg font-semibold">Profile</h2>
+                <p className="text-sm text-muted-foreground">Basic details for your portfolio.</p>
+                <p className="text-xs text-muted-foreground">Signed in as {userEmail ?? 'unknown'}</p>
             </div>
             <div className="space-y-3">
                 <label className="space-y-1 text-sm text-muted-foreground">
