@@ -182,7 +182,8 @@ export const authStore = createStore<AuthStoreState>((set, get) => ({
       if (!res.ok || !data?.profile) {
         throw new Error(data?.error || "Unable to save profile");
       }
-      const nextEmail = data.profile.email ?? (get().user.status === "authenticated" ? get().user.email : "");
+      const currentUser = get().user;
+      const nextEmail = data.profile.email ?? (currentUser.status === "authenticated" ? currentUser.email : "");
       set({
         profile: data.profile,
         profileMessage: "Saved",

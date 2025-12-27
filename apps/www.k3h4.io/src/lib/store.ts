@@ -20,7 +20,7 @@ export function createStore<T extends object>(initializer: (set: BoundStore<T>["
 
 // Per-component store helper to avoid global cross-talk while keeping shallow selection by default.
 export function useLocalStore<T extends object>(initializer: (set: BoundStore<T>["setState"], get: BoundStore<T>["getState"]) => T): StoreWithShallow<T> {
-  const ref = useRef<StoreWithShallow<T>>();
+  const ref = useRef<StoreWithShallow<T> | null>(null);
   if (!ref.current) {
     ref.current = createStore(initializer);
   }
