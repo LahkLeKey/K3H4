@@ -1,9 +1,7 @@
 import { useEffect, useMemo, useRef } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 
-import { Card } from '../components/ui/card'
-import { Spinner } from '../components/ui/spinner'
-import { Button } from '../components/ui/button'
+import { CallbackStatusCard } from '../components/callback-status-card'
 import { useAuthProfile } from '../hooks/use-auth-profile'
 
 export function GithubCallbackPage() {
@@ -38,34 +36,12 @@ export function GithubCallbackPage() {
         run()
     }, [code, completeGithubCallback, errorParam, navigate, redirectUri, setAuthState])
 
-    const isError = authStatus === 'error'
-    const isLoading = authStatus === 'loading'
-
     return (
-        <div className="flex items-center justify-center py-24">
-            <Card className="w-full max-w-md space-y-4 border bg-background/70 p-6 text-sm">
-                <div className="flex items-center gap-3">
-                    {isLoading ? <Spinner className="h-4 w-4" /> : null}
-                    <p className={isError ? 'text-destructive' : 'text-muted-foreground'}>
-                        {authMessage || 'Preparing GitHub sign-in…'}
-                    </p>
-                </div>
-                {isError ? (
-                    <div className="flex flex-col gap-3">
-                        <Button variant="default" onClick={() => navigate('/', { replace: true })}>
-                            Restart GitHub sign-in
-                        </Button>
-                        <Button variant="outline" onClick={() => navigate('/', { replace: true })}>
-                            Back home
-                        </Button>
-                    </div>
-                ) : null}
-                {status === 'success' ? (
-                    <Button variant="outline" onClick={() => navigate('/', { replace: true })}>
-                        Continue
-                    </Button>
-                ) : null}
-            </Card>
-        </div>
+        <CallbackStatusCard
+            authStatus={authStatus}
+            authMessage={authMessage || ''}
+            onRestart={() => navigate('/', { replace: true })}
+            onContinue={() => navigate('/', { replace: true })}
+        />
     )
 }

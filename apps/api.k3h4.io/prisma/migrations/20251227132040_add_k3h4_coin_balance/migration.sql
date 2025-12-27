@@ -1,0 +1,2 @@
+-- AlterTable
+ALTER TABLE "User" ADD COLUMN     "k3h4CoinBalance" DECIMAL(18,2) NOT NULL DEFAULT 0;

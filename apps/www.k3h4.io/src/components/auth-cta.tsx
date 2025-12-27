@@ -11,7 +11,7 @@ type Props = {
 
 export function AuthCta({ userEmail, authStatus, authMessage, onGithubLogin }: Props) {
     const isLoading = authStatus === 'loading'
-    const primaryLabel = isLoading ? 'Redirecting…' : 'Login with GitHub'
+    const primaryLabel = isLoading ? 'Redirecting...' : 'Login with GitHub'
 
     return (
         <div className="mx-auto w-full max-w-3xl">

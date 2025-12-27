@@ -9,9 +9,9 @@ datasource db {
 model User {
   id             String          @id @default(cuid())
   email          String          @unique
-  passwordHash   String?
   provider       String
   providerId     String
+  k3h4CoinBalance Decimal         @default("0") @db.Decimal(18, 2) // sandbox-only play balance
   displayName    String?
   avatarUrl      String?
   createdAt      DateTime        @default(now())
@@ -19,6 +19,7 @@ model User {
   refreshTokens  RefreshToken[]
   preference     UserPreference?
   telemetry      TelemetryEvent[]
+  bankTransactions BankTransaction[]
 
   @@unique([provider, providerId])
 }
@@ -40,7 +41,7 @@ model UserPreference {
   locale         String   @default("en-US")
   timezone       String   @default("UTC")
   marketingOptIn Boolean  @default(false)
-  notifications  Json?    // arbitrary notification preferences
+  note           String?
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 }
@@ -59,4 +60,18 @@ model TelemetryEvent {
   @@index([userId])
   @@index([sessionId])
   @@index([eventType])
+}
+
+model BankTransaction {
+  id           String   @id @default(cuid())
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  amount       Decimal  @db.Decimal(18, 2)
+  kind         String
+  direction    String
+  note         String?
+  balanceAfter Decimal  @db.Decimal(18, 2)
+  createdAt    DateTime @default(now())
+
+  @@index([userId, createdAt])
 }
