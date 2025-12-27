@@ -3,13 +3,14 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { trackTelemetry } from "../lib/telemetry";
 import type { ProfileState, UserIdentity } from "../stores/auth-store";
 import { queryClient } from "../lib/query-client";
+import { ACCESS_TOKEN_KEY, REFRESH_TOKEN_KEY } from "../lib/constants";
 
 export type SessionResponse = { user?: { email?: string | null } };
 export type ProfileResponse = { profile: ProfileState };
 export type GithubUrlResponse = { authorizeUrl: string };
 export type GithubCallbackResponse = { accessToken: string; refreshToken: string; profile?: ProfileState };
 
-const getToken = () => (typeof window === "undefined" ? "" : localStorage.getItem("k3h4.accessToken") || "");
+const getToken = () => (typeof window === "undefined" ? "" : localStorage.getItem(ACCESS_TOKEN_KEY) || "");
 
 const authHeaders = () => {
   const token = getToken();
@@ -22,8 +23,8 @@ const authHeaders = () => {
 
 const clearAuthCaches = () => {
   if (typeof window !== "undefined") {
-    localStorage.removeItem("k3h4.accessToken");
-    localStorage.removeItem("k3h4.refreshToken");
+    localStorage.removeItem(ACCESS_TOKEN_KEY);
+    localStorage.removeItem(REFRESH_TOKEN_KEY);
   }
   queryClient.clear();
 };
@@ -98,8 +99,8 @@ export function useGithubCallbackMutation(apiBase: string) {
         "auth.github.callback.error",
       );
       void trackTelemetry("auth.github.callback.success", { redirectUri });
-      localStorage.setItem("k3h4.accessToken", data.accessToken);
-      localStorage.setItem("k3h4.refreshToken", data.refreshToken);
+      localStorage.setItem(ACCESS_TOKEN_KEY, data.accessToken);
+      localStorage.setItem(REFRESH_TOKEN_KEY, data.refreshToken);
       return data;
     },
     onSuccess: () => {

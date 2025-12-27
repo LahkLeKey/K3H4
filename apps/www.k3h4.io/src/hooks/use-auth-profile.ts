@@ -12,13 +12,14 @@ import {
   useProfileSaveMutation,
   useSessionQuery,
 } from "./use-auth-queries";
+import { ACCESS_TOKEN_KEY, REFRESH_TOKEN_KEY } from "../lib/constants";
 
 export type { ProfileState, UserIdentity } from "../stores/auth-store";
 
 export function useAuthProfile() {
   const queryClient = useQueryClient();
   const [hasToken, setHasToken] = useState<boolean>(() => {
-    return typeof window !== "undefined" ? Boolean(localStorage.getItem("k3h4.accessToken")) : false;
+    return typeof window !== "undefined" ? Boolean(localStorage.getItem(ACCESS_TOKEN_KEY)) : false;
   });
   const {
     apiBase,
@@ -57,7 +58,7 @@ export function useAuthProfile() {
   const profileSaveMutation = useProfileSaveMutation(apiBase);
 
   useEffect(() => {
-    const token = typeof window !== "undefined" ? localStorage.getItem("k3h4.accessToken") : null;
+    const token = typeof window !== "undefined" ? localStorage.getItem(ACCESS_TOKEN_KEY) : null;
     setHasToken(Boolean(token));
   }, [sessionQuery.data, sessionQuery.isPending]);
 
@@ -116,8 +117,8 @@ export function useAuthProfile() {
   };
 
   const handleSignOut = () => {
-    localStorage.removeItem("k3h4.accessToken");
-    localStorage.removeItem("k3h4.refreshToken");
+    localStorage.removeItem(ACCESS_TOKEN_KEY);
+    localStorage.removeItem(REFRESH_TOKEN_KEY);
     void queryClient.removeQueries({ queryKey: ["auth", "session"] });
     void queryClient.removeQueries({ queryKey: ["auth", "profile"] });
     setUser({ status: "anonymous" });
