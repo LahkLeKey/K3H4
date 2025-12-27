@@ -35,6 +35,35 @@ const server = Fastify({
   logger: true,
 });
 
+const getSessionId = (request: FastifyRequest) => {
+  const headerSession = request.headers["x-session-id"];
+  if (typeof headerSession === "string" && headerSession.trim().length > 0) return headerSession.trim();
+  if (Array.isArray(headerSession) && headerSession[0]) return headerSession[0].trim();
+  return request.id;
+};
+
+const recordTelemetry = async (
+  request: FastifyRequest,
+  params: { eventType: string; source: string; payload?: unknown; sessionId?: string; path?: string; userId?: string },
+) => {
+  try {
+    const sessionId = params.sessionId ?? getSessionId(request);
+    const userId = params.userId ?? (request.user as { sub?: string } | undefined)?.sub;
+    await prisma.telemetryEvent.create({
+      data: {
+        sessionId,
+        userId,
+        eventType: params.eventType,
+        source: params.source,
+        path: params.path ?? request.url,
+        payload: params.payload ? (params.payload as any) : undefined,
+      },
+    });
+  } catch (err) {
+    request.log.warn({ err }, "telemetry insert failed");
+  }
+};
+
 // Verbose request lifecycle logging
 server.addHook("onRequest", async (request) => {
   request.requestStartTime = process.hrtime.bigint();
@@ -128,6 +157,72 @@ server.decorate(
 
 server.get("/health", async () => ({ status: "ok" }));
 
+// Public telemetry intake; best-effort association with user/session
+server.post("/telemetry", async (request, reply) => {
+  const body = request.body as
+    | {
+        events?: Array<{ eventType?: string; source?: string; sessionId?: string; path?: string; payload?: unknown; userId?: string }>;
+        eventType?: string;
+        source?: string;
+        sessionId?: string;
+        path?: string;
+        payload?: unknown;
+        userId?: string;
+      }
+    | undefined;
+
+  const incomingEvents = Array.isArray(body?.events)
+    ? body?.events ?? []
+    : [body].filter((val): val is NonNullable<typeof body> => Boolean(val));
+
+  const normalizedEvents = incomingEvents
+    .map((evt) => ({
+      eventType: evt.eventType?.trim(),
+      source: evt.source?.trim(),
+      sessionId: evt.sessionId,
+      path: evt.path,
+      payload: evt.payload,
+      userId: evt.userId,
+    }))
+    .filter((evt) => evt.eventType && evt.source) as Array<{
+    eventType: string;
+    source: string;
+    sessionId?: string;
+    path?: string;
+    payload?: unknown;
+    userId?: string;
+  }>;
+
+  if (normalizedEvents.length === 0) {
+    return reply.status(400).send({ error: "eventType and source are required" });
+  }
+
+  // Optionally attach user if a valid token is present; do not fail intake on auth errors
+  const hasAuth = typeof request.headers.authorization === "string" && request.headers.authorization.length > 0;
+  if (hasAuth) {
+    try {
+      await request.jwtVerify();
+    } catch (err) {
+      request.log.debug({ err }, "telemetry token verification failed; continuing unauthenticated");
+    }
+  }
+
+  await Promise.all(
+    normalizedEvents.map((evt) =>
+      recordTelemetry(request, {
+        eventType: evt.eventType,
+        source: evt.source,
+        sessionId: evt.sessionId,
+        path: evt.path,
+        payload: evt.payload,
+        userId: evt.userId,
+      }),
+    ),
+  );
+
+  return { ok: true, recorded: normalizedEvents.length };
+});
+
 const createSessionTokens = async (userId: string, email?: string) => {
   const refreshToken = randomBytes(48).toString("hex");
   const expiresAt = new Date(Date.now() + 1000 * 60 * 60 * 24 * 30);
@@ -163,6 +258,11 @@ server.post("/auth/github/callback", async (request, reply) => {
 
   const tokenData = (await tokenRes.json()) as { access_token?: string; error?: string; error_description?: string };
   if (!tokenRes.ok || !tokenData.access_token) {
+    await recordTelemetry(request, {
+      eventType: "auth.github.callback.failed",
+      source: "api",
+      payload: { code: body.code, detail: tokenData.error_description ?? tokenData.error ?? null },
+    });
     const isStaleCode = tokenData.error === "bad_verification_code";
     return reply.status(401).send({
       error: tokenData.error || "GitHub auth failed",
@@ -180,6 +280,11 @@ server.post("/auth/github/callback", async (request, reply) => {
   });
   const ghUser = (await userRes.json()) as { id?: number; login?: string; name?: string; avatar_url?: string; email?: string; message?: string };
   if (!userRes.ok || !ghUser.id) {
+    await recordTelemetry(request, {
+      eventType: "auth.github.callback.failed",
+      source: "api",
+      payload: { code: body.code, detail: ghUser.message ?? null },
+    });
     return reply.status(401).send({ error: "Unable to fetch GitHub profile", detail: ghUser.message ?? null, status: userRes.status });
   }
 
@@ -225,6 +330,12 @@ server.post("/auth/github/callback", async (request, reply) => {
       displayName: ghUser.name ?? ghUser.login ?? null,
       avatarUrl: ghUser.avatar_url ?? null,
     },
+  });
+
+  await recordTelemetry(request, {
+    eventType: "auth.github.callback.success",
+    source: "api",
+    payload: { providerId, email: user.email, redirectUri: body.redirectUri },
   });
 
   return createSessionTokens(user.id, user.email ?? undefined);
@@ -346,6 +457,7 @@ server.get(
 
     const profile = await prisma.user.findUnique({ where: { id: userId }, select: userProfileSelect });
     if (!profile) return reply.status(404).send({ error: "User not found" });
+    await recordTelemetry(request, { eventType: "profile.fetch", source: "api" });
     return { profile };
   },
 );
@@ -417,6 +529,14 @@ server.patch(
     ]);
 
     const profile = await prisma.user.findUnique({ where: { id: updatedUser.id }, select: userProfileSelect });
+    await recordTelemetry(request, {
+      eventType: "profile.update",
+      source: "api",
+      payload: {
+        updatedFields: Object.keys(updates),
+        updatedPreferences: Object.keys(prefUpdates),
+      },
+    });
     return { profile };
   },
 );

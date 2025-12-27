@@ -1,14 +1,14 @@
 import { useEffect } from "react";
 
-import { authStore, type AuthStatus, type ProfileState } from "../stores/auth-store";
+import { authStore, type AuthStatus } from "../stores/auth-store";
 
-export type { ProfileState } from "../stores/auth-store";
+export type { ProfileState, UserIdentity } from "../stores/auth-store";
 
 export function useAuthProfile() {
   const {
     apiBase,
     redirectUri,
-    userEmail,
+    user,
     authStatus,
     authMessage,
     profile,
@@ -25,7 +25,7 @@ export function useAuthProfile() {
   } = authStore.useShallow((state) => ({
     apiBase: state.apiBase,
     redirectUri: state.redirectUri,
-    userEmail: state.userEmail,
+    user: state.user,
     authStatus: state.authStatus as AuthStatus,
     authMessage: state.authMessage,
     profile: state.profile,
@@ -48,7 +48,8 @@ export function useAuthProfile() {
   return {
     apiBase,
     redirectUri,
-    userEmail,
+    user,
+    userEmail: user.status === "authenticated" ? user.email : null,
     authStatus,
     authMessage,
     profile,

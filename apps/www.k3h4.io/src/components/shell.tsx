@@ -3,9 +3,13 @@ import { useLocation } from "react-router-dom";
 
 import { AuthCta } from "./auth-cta";
 import { GithubCallbackPage } from "../pages/github-callback";
-import { ShellHeader } from "./shell/header";
-import { SignedInPanels } from "./shell/signed-in-panels";
+import { ShellView } from "./shell/view";
+import { ShellBrand } from "./shell/brand";
+import { ShellActionBar } from "./shell/action-bar";
+import { SearchInput } from "./shell/search-input";
+import { AuthButton } from "./shell/auth-button";
 import { useAuthProfile } from "../hooks/use-auth-profile";
+import { ProfilePage } from "../pages/profile";
 
 const navItems = [{ to: "/", label: "Home" }];
 
@@ -27,38 +31,41 @@ export function Shell() {
     } = useAuthProfile();
 
     return (
-        <div className="min-h-screen bg-background text-foreground">
-            <ShellHeader
-                navItems={navItems}
-                pathname={pathname}
-                userEmail={userEmail}
-                authStatus={authStatus}
-                authMessage={authMessage}
-                onGithubLogin={handleGithubLogin}
-            />
-
-            <main className="mx-auto flex w-full max-w-6xl flex-col gap-8 px-4 pb-16 pt-8">
-                {isCallback ? (
-                    <GithubCallbackPage />
-                ) : userEmail ? (
-                    <SignedInPanels
-                        userEmail={userEmail}
-                        profile={profile}
-                        profileLoading={profileLoading}
-                        profileMessage={profileMessage}
-                        setProfile={setProfile}
-                        onSave={handleProfileSave}
-                        onSignOut={handleSignOut}
-                    />
-                ) : (
-                    <AuthCta
-                        userEmail={userEmail}
-                        authStatus={authStatus}
-                        authMessage={authMessage}
-                        onGithubLogin={handleGithubLogin}
-                    />
-                )}
-            </main>
-        </div>
+        <ShellView
+            navItems={navItems}
+            pathname={pathname}
+            userEmail={userEmail}
+            authStatus={authStatus}
+            authMessage={authMessage}
+            onGithubLogin={handleGithubLogin}
+            brand={<ShellBrand />}
+            actions={
+                <ShellActionBar>
+                    <SearchInput placeholder="Search (disabled)" disabled />
+                    <AuthButton userEmail={userEmail} authStatus={authStatus} onClick={handleGithubLogin} />
+                </ShellActionBar>
+            }
+            isCallback={isCallback}
+            callback={<GithubCallbackPage />}
+            signedIn={
+                <ProfilePage
+                    userEmail={userEmail}
+                    profile={profile}
+                    profileLoading={profileLoading}
+                    profileMessage={profileMessage}
+                    setProfile={setProfile}
+                    onSave={handleProfileSave}
+                    onSignOut={handleSignOut}
+                />
+            }
+            signedOut={
+                <AuthCta
+                    userEmail={userEmail}
+                    authStatus={authStatus}
+                    authMessage={authMessage}
+                    onGithubLogin={handleGithubLogin}
+                />
+            }
+        />
     );
 }

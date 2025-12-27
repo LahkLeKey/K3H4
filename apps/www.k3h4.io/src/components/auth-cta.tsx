@@ -1,9 +1,10 @@
 import { Button } from './ui/button'
 import { Card } from './ui/card'
+import type { AuthStatus } from '../stores/auth-store'
 
 type Props = {
     userEmail: string | null
-    authStatus: 'idle' | 'loading' | 'error'
+    authStatus: AuthStatus
     authMessage: string
     onGithubLogin: () => void
 }

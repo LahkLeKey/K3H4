@@ -4,6 +4,7 @@ import { HashRouter } from 'react-router-dom'
 
 import App from './App.tsx'
 import { ErrorBoundary } from './components/error-boundary'
+import { installTelemetryDomHooks, setTelemetryApiBase } from './lib/telemetry'
 
 // Normalize provider callbacks (GitHub) to HashRouter routes when the provider sends users back to /auth/github
 const path = window.location.pathname
@@ -17,6 +18,9 @@ const envApi = (import.meta as any)?.env?.API_URL
 const envGithub = (import.meta as any)?.env?.GITHUB_CLIENT_ID
 if (envApi) (globalThis as any).__API_URL__ = envApi
 if (envGithub) (globalThis as any).__GITHUB_CLIENT_ID = envGithub
+
+if (envApi) setTelemetryApiBase(envApi)
+installTelemetryDomHooks()
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

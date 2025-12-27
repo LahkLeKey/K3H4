@@ -3,7 +3,7 @@ import { Input } from './ui/input'
 import type { ProfileState } from '../hooks/use-auth-profile'
 
 type Props = {
-    userEmail: string
+    userEmail: string | null
     profile: ProfileState | null
     profileLoading: boolean
     profileMessage: string
@@ -17,8 +17,8 @@ export function ProfilePanel({ userEmail, profile, profileLoading, profileMessag
         <div className="space-y-4">
             <div className="space-y-1">
                 <p className="text-xs uppercase tracking-wide text-muted-foreground">Profile</p>
-                <h1 className="text-xl font-semibold">{profile?.displayName || 'Your profile'}</h1>
-                <p className="text-sm text-muted-foreground">Signed in as {userEmail}</p>
+                <h1 className="text-xl font-semibold">{profile?.displayName || userEmail || 'Your profile'}</h1>
+                <p className="text-sm text-muted-foreground">Signed in as {userEmail ?? 'unknown'}</p>
             </div>
             <div className="space-y-3">
                 <label className="space-y-1 text-sm text-muted-foreground">

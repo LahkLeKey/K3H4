@@ -1,4 +1,5 @@
 import { createStore } from "../lib/store";
+import { trackTelemetry } from "../lib/telemetry";
 
 export type ProfileState = {
   displayName?: string | null;
@@ -15,12 +16,16 @@ export type ProfileState = {
 
 export type AuthStatus = "idle" | "loading" | "error" | "success";
 
+export type UserIdentity =
+  | { status: "anonymous" }
+  | { status: "authenticated"; email: string };
+
 type ProfileUpdater = (prev: ProfileState | null) => ProfileState | null;
 
-type AuthStore = {
+type AuthStoreState = {
   apiBase: string;
   redirectUri: string;
-  userEmail: string | null;
+  user: UserIdentity;
   authStatus: AuthStatus;
   authMessage: string;
   profile: ProfileState | null;
@@ -39,26 +44,27 @@ type AuthStore = {
 const apiBase = (globalThis as any)?.__API_URL__ || (import.meta as any)?.API_URL || "http://localhost:3001";
 const redirectUri = `${window.location.origin}/auth/github`;
 
-export const authStore = createStore<AuthStore>((set, get) => ({
+export const authStore = createStore<AuthStoreState>((set, get) => ({
   apiBase,
   redirectUri,
-  userEmail: null,
+  user: { status: "anonymous" },
   authStatus: "idle",
   authMessage: "",
   profile: null,
   profileLoading: false,
   profileMessage: "",
-  setProfile: (updater) => set((state) => ({ profile: updater(state.profile) })),
+  setProfile: (updater) => set((state: AuthStoreState) => ({ profile: updater(state.profile) })),
   setProfileMessage: (message) => set({ profileMessage: message }),
   setAuthState: (status, message = "") => set({ authStatus: status, authMessage: message }),
   async checkSession() {
     const token = localStorage.getItem("k3h4.accessToken");
     if (!token) {
-      set({ userEmail: null, authStatus: "idle", authMessage: "", profile: null });
+      set({ user: { status: "anonymous" }, authStatus: "idle", authMessage: "", profile: null });
       return;
     }
 
     set({ authStatus: "loading", authMessage: "Checking session…" });
+    void trackTelemetry("auth.session.check.start");
     try {
       const res = await fetch(`${get().apiBase}/auth/me`, {
         headers: { Authorization: `Bearer ${token}` },
@@ -68,9 +74,11 @@ export const authStore = createStore<AuthStore>((set, get) => ({
         throw new Error("Session expired — sign in again");
       }
 
-      const signedInEmail = data.user.email ?? null;
+      const signedInEmail = data.user.email ?? "";
       set({
-        userEmail: signedInEmail,
+        user: signedInEmail
+          ? { status: "authenticated", email: signedInEmail }
+          : { status: "anonymous" },
         authStatus: "success",
         authMessage: signedInEmail ? `Signed in as ${signedInEmail}` : "Signed in",
       });
@@ -84,6 +92,7 @@ export const authStore = createStore<AuthStore>((set, get) => ({
         throw new Error("Unable to load profile");
       }
       set({ profile: profData.profile, profileMessage: "" });
+      void trackTelemetry("auth.session.check.success");
     } catch (err) {
       localStorage.removeItem("k3h4.accessToken");
       localStorage.removeItem("k3h4.refreshToken");
@@ -92,12 +101,14 @@ export const authStore = createStore<AuthStore>((set, get) => ({
         authMessage: err instanceof Error ? err.message : "Sign-in needed",
         profile: null,
       });
+      void trackTelemetry("auth.session.check.error", { message: err instanceof Error ? err.message : "error" });
     } finally {
       set({ profileLoading: false });
     }
   },
   async startGithubLogin() {
     set({ authStatus: "loading", authMessage: "Redirecting to GitHub…" });
+    void trackTelemetry("auth.github.start");
     try {
       const res = await fetch(`${get().apiBase}/auth/github/url`, {
         method: "POST",
@@ -108,34 +119,53 @@ export const authStore = createStore<AuthStore>((set, get) => ({
       if (!res.ok || !data?.authorizeUrl) {
         throw new Error(data?.error || "Unable to start GitHub login");
       }
+      void trackTelemetry("auth.github.redirect", { redirectUri: get().redirectUri });
       window.location.href = data.authorizeUrl;
     } catch (error) {
       set({
         authStatus: "error",
         authMessage: error instanceof Error ? error.message : "Unable to start GitHub login",
       });
+      void trackTelemetry("auth.github.start.error", { message: error instanceof Error ? error.message : "error" });
     }
   },
   signOut() {
     localStorage.removeItem("k3h4.accessToken");
     localStorage.removeItem("k3h4.refreshToken");
     set({
-      userEmail: null,
+      user: { status: "anonymous" },
       authStatus: "idle",
       authMessage: "Signed out",
       profile: null,
       profileMessage: "",
     });
+    void trackTelemetry("auth.signout");
   },
   async saveProfile() {
     const token = localStorage.getItem("k3h4.accessToken");
     const currentProfile = get().profile;
     if (!token) {
       set({ profileMessage: "Sign in to save preferences" });
+      void trackTelemetry("profile.save.blocked", { reason: "missing-token" });
       return;
     }
     set({ profileLoading: true, profileMessage: "Saving…" });
+    void trackTelemetry("profile.save.start");
     try {
+      const preferencePayload = {
+        theme: currentProfile?.preference?.theme,
+        locale: currentProfile?.preference?.locale,
+        timezone: currentProfile?.preference?.timezone,
+        marketingOptIn: currentProfile?.preference?.marketingOptIn,
+        notifications: currentProfile?.preference?.notifications,
+      };
+      const updatedFields: string[] = [];
+      if (currentProfile?.displayName !== undefined) updatedFields.push("displayName");
+      if (currentProfile?.avatarUrl !== undefined) updatedFields.push("avatarUrl");
+      const updatedPreferences = Object.entries(preferencePayload)
+        .filter(([, value]) => value !== undefined)
+        .map(([key]) => key);
+
       const res = await fetch(`${get().apiBase}/profile`, {
         method: "PATCH",
         headers: {
@@ -145,22 +175,26 @@ export const authStore = createStore<AuthStore>((set, get) => ({
         body: JSON.stringify({
           displayName: currentProfile?.displayName ?? null,
           avatarUrl: currentProfile?.avatarUrl ?? null,
-          preference: {
-            theme: currentProfile?.preference?.theme,
-            locale: currentProfile?.preference?.locale,
-            timezone: currentProfile?.preference?.timezone,
-            marketingOptIn: currentProfile?.preference?.marketingOptIn,
-            notifications: currentProfile?.preference?.notifications,
-          },
+          preference: preferencePayload,
         }),
       });
       const data = await res.json();
       if (!res.ok || !data?.profile) {
         throw new Error(data?.error || "Unable to save profile");
       }
-      set({ profile: data.profile, profileMessage: "Saved", userEmail: data.profile.email ?? get().userEmail });
+      const nextEmail = data.profile.email ?? (get().user.status === "authenticated" ? get().user.email : "");
+      set({
+        profile: data.profile,
+        profileMessage: "Saved",
+        user: nextEmail ? { status: "authenticated", email: nextEmail } : { status: "anonymous" },
+      });
+      void trackTelemetry("profile.save.success", {
+        updatedFields,
+        updatedPreferences,
+      });
     } catch (err) {
       set({ profileMessage: err instanceof Error ? err.message : "Save failed" });
+      void trackTelemetry("profile.save.error", { message: err instanceof Error ? err.message : "error" });
     } finally {
       set({ profileLoading: false });
     }
@@ -169,9 +203,11 @@ export const authStore = createStore<AuthStore>((set, get) => ({
     if (!code) {
       const error = "Missing authorization code";
       set({ authStatus: "error", authMessage: error });
+      void trackTelemetry("auth.github.callback.error", { reason: "missing-code" });
       return { ok: false, error };
     }
     set({ authStatus: "loading", authMessage: "Signing you in with GitHub…" });
+    void trackTelemetry("auth.github.callback.start");
     try {
       const res = await fetch(`${get().apiBase}/auth/github/callback`, {
         method: "POST",
@@ -186,14 +222,21 @@ export const authStore = createStore<AuthStore>((set, get) => ({
       }
       localStorage.setItem("k3h4.accessToken", data.accessToken);
       localStorage.setItem("k3h4.refreshToken", data.refreshToken);
-      set({ authStatus: "success", authMessage: "Signed in — redirecting…", userEmail: data?.profile?.email ?? null });
+      const nextEmail = data?.profile?.email ?? "";
+      set({
+        authStatus: "success",
+        authMessage: "Signed in — redirecting…",
+        user: nextEmail ? { status: "authenticated", email: nextEmail } : { status: "anonymous" },
+      });
       if (data?.profile) {
         set({ profile: data.profile });
       }
+      void trackTelemetry("auth.github.callback.success", { redirect });
       return { ok: true };
     } catch (err) {
       const error = err instanceof Error ? err.message : "Something went wrong";
       set({ authStatus: "error", authMessage: error });
+      void trackTelemetry("auth.github.callback.error", { message: error });
       return { ok: false, error };
     }
   },

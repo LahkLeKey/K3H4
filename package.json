@@ -5,5 +5,8 @@
   "scripts": {
     "dev": "docker compose up --build",
     "compose:down": "docker compose down"
+  },
+  "dependencies": {
+    "typescript": "^5.9.3"
   }
 }
