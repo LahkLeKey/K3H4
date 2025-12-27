@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { trackTelemetry } from "../lib/telemetry";
 import type { ProfileState, UserIdentity } from "../stores/auth-store";
+import { queryClient } from "../lib/query-client";
 
 export type SessionResponse = { user?: { email?: string | null } };
 export type ProfileResponse = { profile: ProfileState };
@@ -19,12 +20,23 @@ const authHeaders = () => {
   };
 };
 
+const clearAuthCaches = () => {
+  if (typeof window !== "undefined") {
+    localStorage.removeItem("k3h4.accessToken");
+    localStorage.removeItem("k3h4.refreshToken");
+  }
+  queryClient.clear();
+};
+
 async function fetchJson<T>(url: string, options: RequestInit, errorMetric: string): Promise<T> {
   const res = await fetch(url, options);
   const data = await res.json();
   if (!res.ok) {
     const message = (data as any)?.error || "Request failed";
-    void trackTelemetry(errorMetric, { message });
+    if (res.status >= 500) {
+      clearAuthCaches();
+    }
+    void trackTelemetry(errorMetric, { message, status: res.status });
     throw new Error(message);
   }
   return data as T;
