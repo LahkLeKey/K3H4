@@ -1,12 +1,12 @@
 import { useMemo } from "react";
 import { useLocation } from "react-router-dom";
 
-import { AuthCta } from "./auth-cta";
 import { GithubCallbackPage } from "../pages/github-callback";
+import { AuthAccessSection } from "./auth-access-section";
+import { BankTable } from "./bank/bank-table";
 import { ShellView } from "./shell/view";
 import { ShellBrand } from "./shell/brand";
 import { useAuthProfile } from "../hooks/use-auth-profile";
-import { SignedInLanding } from "../pages/home";
 
 const navItems = [{ to: "/", label: "Home" }];
 
@@ -15,6 +15,7 @@ export function Shell() {
     const pathname = location.pathname;
     const isCallback = useMemo(() => pathname.startsWith("/auth/github"), [pathname]);
     const {
+        apiBase,
         userEmail,
         authStatus,
         authMessage,
@@ -44,13 +45,14 @@ export function Shell() {
             brand={<ShellBrand />}
             isCallback={isCallback}
             callback={<GithubCallbackPage />}
-            signedIn={<SignedInLanding userEmail={userEmail} profile={profile} />}
+            signedIn={<BankTable apiBase={apiBase} userEmail={userEmail} />}
             signedOut={
-                <AuthCta
+                <AuthAccessSection
                     userEmail={userEmail}
                     authStatus={authStatus}
-                    authMessage={authMessage}
+                    authMessage={authMessage || ""}
                     onGithubLogin={handleGithubLogin}
+                    sideContent={<p>Only GitHub OAuth is supported. No passwords or local accounts are stored.</p>}
                 />
             }
         />
