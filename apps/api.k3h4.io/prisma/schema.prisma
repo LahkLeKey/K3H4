@@ -9,7 +9,6 @@ datasource db {
 model User {
   id             String          @id @default(cuid())
   email          String          @unique
-  passwordHash   String?
   provider       String
   providerId     String
   k3h4CoinBalance Decimal         @default("0") @db.Decimal(18, 2) // sandbox-only play balance
@@ -42,7 +41,7 @@ model UserPreference {
   locale         String   @default("en-US")
   timezone       String   @default("UTC")
   marketingOptIn Boolean  @default(false)
-  notifications  Json?    // arbitrary notification preferences
+  note           String?
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 }

@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import { useK3h4Bank } from "../../hooks/use-k3h4-bank";
 import { Badge } from "../ui/badge";
@@ -20,6 +20,12 @@ export type BankTableProps = {
 };
 
 export function BankTable({ apiBase, userEmail }: BankTableProps) {
+    const [page, setPage] = useState(0);
+    const [pageSize, setPageSize] = useState(10);
+    const [fromDate, setFromDate] = useState('');
+    const [toDate, setToDate] = useState('');
+    const [direction, setDirection] = useState<"" | "credit" | "debit">('');
+
     const {
         balance,
         loading,
@@ -27,6 +33,7 @@ export function BankTable({ apiBase, userEmail }: BankTableProps) {
         message,
         error,
         transactions,
+        totalTransactions,
         transactionsLoading,
         refreshBalance,
         refreshTransactions,
@@ -36,7 +43,14 @@ export function BankTable({ apiBase, userEmail }: BankTableProps) {
         setAmountInput,
         note,
         setNote,
-    } = useK3h4Bank(apiBase);
+    } = useK3h4Bank(apiBase, { page, pageSize, from: fromDate || undefined, to: toDate || undefined, direction });
+
+    useEffect(() => {
+        const maxPage = Math.max(0, Math.ceil((totalTransactions || 0) / pageSize) - 1);
+        if (page > maxPage) {
+            setPage(maxPage);
+        }
+    }, [totalTransactions, page, pageSize]);
 
     const formattedBalance = useMemo(() => {
         if (balance === null) return loading ? "Loading..." : "--";
@@ -83,6 +97,41 @@ export function BankTable({ apiBase, userEmail }: BankTableProps) {
             </CardHeader>
 
             <CardContent className="space-y-4">
+                <div className="grid gap-2 sm:grid-cols-[repeat(auto-fit,minmax(160px,1fr))]">
+                    <div className="space-y-1 text-sm">
+                        <label className="text-muted-foreground">From</label>
+                        <Input type="date" value={fromDate} onChange={(e) => { setPage(0); setFromDate(e.target.value); }} />
+                    </div>
+                    <div className="space-y-1 text-sm">
+                        <label className="text-muted-foreground">To</label>
+                        <Input type="date" value={toDate} onChange={(e) => { setPage(0); setToDate(e.target.value); }} />
+                    </div>
+                    <div className="space-y-1 text-sm">
+                        <label className="text-muted-foreground">Direction</label>
+                        <select
+                            className="w-full rounded-md border bg-background px-3 py-2 text-sm"
+                            value={direction}
+                            onChange={(e) => { setPage(0); setDirection(e.target.value as "" | "credit" | "debit"); }}
+                        >
+                            <option value="">All</option>
+                            <option value="credit">Credit</option>
+                            <option value="debit">Debit</option>
+                        </select>
+                    </div>
+                    <div className="space-y-1 text-sm">
+                        <label className="text-muted-foreground">Page size</label>
+                        <select
+                            className="w-full rounded-md border bg-background px-3 py-2 text-sm"
+                            value={pageSize}
+                            onChange={(e) => { setPage(0); setPageSize(Number(e.target.value) || 10); }}
+                        >
+                            {[10, 20, 50].map((size) => (
+                                <option key={size} value={size}>{size} rows</option>
+                            ))}
+                        </select>
+                    </div>
+                </div>
+
                 <div className="grid gap-2 sm:grid-cols-[1fr,1fr,auto,auto,auto]">
                     <Input
                         value={amountInput}
@@ -122,7 +171,7 @@ export function BankTable({ apiBase, userEmail }: BankTableProps) {
                         </TableRow>
                     </TableHeader>
                     <TableBody>
-                        {transactions.slice(0, 15).map((txn) => {
+                        {transactions.map((txn) => {
                             const delta = Number.parseFloat(String(txn.delta ?? 0));
                             const balanceValue = Number.parseFloat(String(txn.balance ?? 0));
                             const deltaDisplay = Number.isFinite(delta) ? delta.toFixed(2) : "0.00";
@@ -148,6 +197,30 @@ export function BankTable({ apiBase, userEmail }: BankTableProps) {
                         ) : null}
                     </TableBody>
                 </Table>
+                <div className="flex items-center justify-between pt-2 text-sm text-muted-foreground">
+                    <span>
+                        Showing {totalTransactions === 0 ? 0 : Math.min(totalTransactions, page * pageSize + 1)}-
+                        {Math.min(totalTransactions, (page + 1) * pageSize)} of {totalTransactions}
+                    </span>
+                    <div className="flex gap-2">
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setPage((p) => Math.max(0, p - 1))}
+                            disabled={page === 0}
+                        >
+                            Prev
+                        </Button>
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setPage((p) => (p + 1) * pageSize < totalTransactions ? p + 1 : p)}
+                            disabled={(page + 1) * pageSize >= totalTransactions}
+                        >
+                            Next
+                        </Button>
+                    </div>
+                </div>
             </CardContent>
         </Card>
     );

@@ -14,11 +14,19 @@ export type BankTransaction = {
 };
 
 export type BankBalanceResponse = { balance: string };
-export type BankTransactionsResponse = { transactions: BankTransaction[] };
+export type BankTransactionsResponse = { transactions: BankTransaction[]; total: number };
+
+export type BankTransactionFilters = {
+  page: number;
+  pageSize: number;
+  from?: string;
+  to?: string;
+  direction?: "credit" | "debit" | "";
+};
 
 export const bankKeys = {
   balance: (apiBase: string, token: string) => ["bank", "balance", apiBase, token || "anon"],
-  transactions: (apiBase: string, token: string) => ["bank", "transactions", apiBase, token || "anon"],
+  transactions: (apiBase: string, token: string, params: BankTransactionFilters) => ["bank", "transactions", apiBase, token || "anon", params],
 };
 
 function getToken() {
@@ -65,17 +73,28 @@ export function useBankBalanceQuery(apiBase: string) {
   });
 }
 
-export function useBankTransactionsQuery(apiBase: string) {
+export function useBankTransactionsQuery(apiBase: string, params: BankTransactionFilters) {
   const auth = getAuthHeaders();
   const enabled = !!auth?.token;
 
+  const searchParams = new URLSearchParams();
+  const limit = Math.max(1, Math.min(100, params.pageSize));
+  const offset = Math.max(0, params.page) * limit;
+  searchParams.set("limit", String(limit));
+  searchParams.set("offset", String(offset));
+  if (params.from) searchParams.set("from", params.from);
+  if (params.to) searchParams.set("to", params.to);
+  if (params.direction) searchParams.set("direction", params.direction);
+
+  const queryString = searchParams.toString();
+
   return useQuery({
-    queryKey: bankKeys.transactions(apiBase, auth?.token || ""),
+    queryKey: bankKeys.transactions(apiBase, auth?.token || "", params),
     enabled,
     queryFn: async () => {
       if (!auth) throw new Error("Sign in to access K3H4 Bank.");
-      const data = await fetchJson<BankTransactionsResponse>(`${apiBase}/bank/transactions?limit=50`, { headers: auth.headers }, "bank.transactions.fetch.error");
-      void trackTelemetry("bank.transactions.fetch.success", { count: Array.isArray(data.transactions) ? data.transactions.length : 0 });
+      const data = await fetchJson<BankTransactionsResponse>(`${apiBase}/bank/transactions?${queryString}`, { headers: auth.headers }, "bank.transactions.fetch.error");
+      void trackTelemetry("bank.transactions.fetch.success", { count: Array.isArray(data.transactions) ? data.transactions.length : 0, page: params.page, pageSize: limit });
       return data;
     },
   });
@@ -98,11 +117,7 @@ export function useBankUpdateMutation(apiBase: string) {
     onSuccess: (data) => {
       const token = getToken();
       queryClient.setQueryData(bankKeys.balance(apiBase, token), { balance: data.balance });
-      queryClient.setQueryData(bankKeys.transactions(apiBase, token), (prev: BankTransactionsResponse | undefined) => {
-        const current = prev?.transactions || [];
-        const next = data.transaction ? [data.transaction, ...current].slice(0, 50) : current;
-        return { transactions: next };
-      });
+      void queryClient.invalidateQueries({ queryKey: ["bank", "transactions", apiBase, token] });
     },
   });
 }

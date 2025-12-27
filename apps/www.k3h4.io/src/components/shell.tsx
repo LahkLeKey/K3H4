@@ -52,7 +52,6 @@ export function Shell() {
                     authStatus={authStatus}
                     authMessage={authMessage || ""}
                     onGithubLogin={handleGithubLogin}
-                    sideContent={<p>Only GitHub OAuth is supported. No passwords or local accounts are stored.</p>}
                 />
             }
         />

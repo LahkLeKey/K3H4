@@ -110,9 +110,7 @@ export function useProfileSaveMutation(apiBase: string) {
           method: "PATCH",
           headers: auth.headers,
           body: JSON.stringify({
-            displayName: profile?.displayName ?? null,
-            avatarUrl: profile?.avatarUrl ?? null,
-            preference: profile?.preference,
+            preference: profile?.preference ? { note: profile.preference.note ?? null } : undefined,
           }),
         },
         "auth.profile.save.error",

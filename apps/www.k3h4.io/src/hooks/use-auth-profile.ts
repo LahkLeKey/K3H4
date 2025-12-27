@@ -1,4 +1,5 @@
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 
 import { authStore, type AuthStatus } from "../stores/auth-store";
 import {
@@ -15,6 +16,10 @@ import {
 export type { ProfileState, UserIdentity } from "../stores/auth-store";
 
 export function useAuthProfile() {
+  const queryClient = useQueryClient();
+  const [hasToken, setHasToken] = useState<boolean>(() => {
+    return typeof window !== "undefined" ? Boolean(localStorage.getItem("k3h4.accessToken")) : false;
+  });
   const {
     apiBase,
     redirectUri,
@@ -52,6 +57,20 @@ export function useAuthProfile() {
   const profileSaveMutation = useProfileSaveMutation(apiBase);
 
   useEffect(() => {
+    const token = typeof window !== "undefined" ? localStorage.getItem("k3h4.accessToken") : null;
+    setHasToken(Boolean(token));
+  }, [sessionQuery.data, sessionQuery.isPending]);
+
+  useEffect(() => {
+    if (!hasToken) {
+      setUser({ status: "anonymous" });
+      setProfileFromServer(null);
+      setAuthState("idle", "");
+    }
+  }, [hasToken, setUser, setProfileFromServer, setAuthState]);
+
+  useEffect(() => {
+    if (!hasToken) return;
     if (sessionQuery.isPending) {
       setAuthState("loading", "Checking session...");
       return;
@@ -67,7 +86,7 @@ export function useAuthProfile() {
     } else {
       setAuthState("idle", "");
     }
-  }, [sessionQuery.isPending, sessionQuery.isError, sessionQuery.error, userIdentity, setAuthState, setUser]);
+  }, [hasToken, sessionQuery.isPending, sessionQuery.isError, sessionQuery.error, userIdentity, setAuthState, setUser]);
 
   useEffect(() => {
     if (profileQuery.data?.profile) {
@@ -99,9 +118,12 @@ export function useAuthProfile() {
   const handleSignOut = () => {
     localStorage.removeItem("k3h4.accessToken");
     localStorage.removeItem("k3h4.refreshToken");
+    void queryClient.removeQueries({ queryKey: ["auth", "session"] });
+    void queryClient.removeQueries({ queryKey: ["auth", "profile"] });
     setUser({ status: "anonymous" });
     setProfileFromServer(null);
     setAuthState("idle", "Signed out");
+    setHasToken(false);
   };
 
   const completeGithubCallback = async (code: string, redirect = redirectUri): Promise<{ ok: boolean; error?: string }> => {

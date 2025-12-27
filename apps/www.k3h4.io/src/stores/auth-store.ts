@@ -6,11 +6,7 @@ export type ProfileState = {
   email?: string | null;
   k3h4CoinBalance?: string | null;
   preference?: {
-    theme?: string;
-    locale?: string;
-    timezone?: string;
-    marketingOptIn?: boolean;
-    notifications?: unknown;
+    note?: string | null;
   };
 };
 
