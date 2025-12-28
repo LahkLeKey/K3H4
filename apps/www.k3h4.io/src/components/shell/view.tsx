@@ -21,6 +21,7 @@ export type ShellViewProps = {
     onGithubLogin: () => void;
     brand?: ReactNode;
     actions?: ReactNode;
+    tabs?: ReactNode;
     isCallback: boolean;
     callback: ReactNode;
     signedIn: ReactNode;
@@ -42,6 +43,7 @@ export function ShellView({
     onGithubLogin,
     brand,
     actions,
+    tabs,
     isCallback,
     callback,
     signedIn,
@@ -65,6 +67,7 @@ export function ShellView({
                 brand={brand}
                 actions={actions}
                 onGithubLogin={onGithubLogin}
+                tabs={tabs}
             />
 
             <ShellMain>
