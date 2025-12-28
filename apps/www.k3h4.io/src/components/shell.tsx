@@ -1,11 +1,13 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useLocation } from "react-router-dom";
 
 import { GithubCallbackPage } from "../pages/github-callback";
 import { AuthAccessSection } from "./auth-access-section";
 import { BankTable } from "./bank/bank-table";
+import { PersonaTable } from "./persona/persona-table";
 import { ShellView } from "./shell/view";
 import { ShellBrand } from "./shell/brand";
+import { TopTabs, type TopTabKey } from "./shell/top-tabs";
 import { useAuthProfile } from "../hooks/use-auth-profile";
 
 const navItems = [{ to: "/", label: "Home" }];
@@ -27,6 +29,12 @@ export function Shell() {
         handleSignOut,
         handleProfileSave,
     } = useAuthProfile();
+    const [activeTab, setActiveTab] = useState<TopTabKey>("bank");
+    const isAuthenticated = !!userEmail || authStatus === "success";
+
+    const signedInView = activeTab === "persona"
+        ? <PersonaTable apiBase={apiBase} userEmail={userEmail} />
+        : <BankTable apiBase={apiBase} userEmail={userEmail} />;
 
     return (
         <ShellView
@@ -43,9 +51,12 @@ export function Shell() {
             onSignOut={handleSignOut}
             onGithubLogin={handleGithubLogin}
             brand={<ShellBrand />}
+            tabs={isAuthenticated ? (
+                <TopTabs activeTab={activeTab} onChange={setActiveTab} />
+            ) : null}
             isCallback={isCallback}
             callback={<GithubCallbackPage />}
-            signedIn={<BankTable apiBase={apiBase} userEmail={userEmail} />}
+            signedIn={signedInView}
             signedOut={
                 <AuthAccessSection
                     userEmail={userEmail}

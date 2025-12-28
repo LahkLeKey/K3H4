@@ -9,6 +9,7 @@ import { PrismaPg } from "@prisma/adapter-pg";
 import { registerAuthRoutes } from "./routes/auth";
 import { registerBankRoutes } from "./routes/bank";
 import { registerProfileRoutes } from "./routes/profile";
+import { registerPersonaRoutes } from "./routes/persona";
 
 dotenv.config();
 
@@ -227,6 +228,7 @@ server.post("/telemetry", async (request, reply) => {
 registerAuthRoutes(server, prisma, recordTelemetry);
 registerProfileRoutes(server, prisma, recordTelemetry);
 registerBankRoutes(server, prisma, recordTelemetry);
+registerPersonaRoutes(server, prisma, recordTelemetry);
 
 const port = Number(process.env.PORT || 8080);
 const host = process.env.HOST || "0.0.0.0";

@@ -34,6 +34,7 @@ type ShellHeaderProps = {
     onSignOut: () => void;
     brand?: ReactNode;
     actions?: ReactNode;
+    tabs?: ReactNode;
     onGithubLogin: () => void;
 };
 
@@ -52,6 +53,7 @@ export function ShellHeader({
     onGithubLogin,
     brand,
     actions,
+    tabs,
 }: ShellHeaderProps) {
     const displayName = profile?.displayName || userEmail || "Your profile";
     const avatarUrl = profile?.avatarUrl || undefined;
@@ -113,6 +115,11 @@ export function ShellHeader({
                     </ShellActionBar>
                 )}
             </div>
+            {tabs ? (
+                <div className="mx-auto flex w-full max-w-6xl items-center px-4 pb-3">
+                    {tabs}
+                </div>
+            ) : null}
             <StatusLine>{userEmail ? `Signed in as ${userEmail}` : authMessage}</StatusLine>
         </header>
     );
