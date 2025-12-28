@@ -63,6 +63,18 @@ export function useAuthProfile() {
   }, [sessionQuery.data, sessionQuery.isPending]);
 
   useEffect(() => {
+    if (typeof window === "undefined") return;
+    const handler = () => {
+      setHasToken(false);
+      setUser({ status: "anonymous" });
+      setProfileFromServer(null);
+      setAuthState("idle", "Session expired - please sign in again");
+    };
+    window.addEventListener("k3h4:auth-signed-out", handler);
+    return () => window.removeEventListener("k3h4:auth-signed-out", handler);
+  }, [setAuthState, setProfileFromServer, setUser]);
+
+  useEffect(() => {
     if (!hasToken) {
       setUser({ status: "anonymous" });
       setProfileFromServer(null);
@@ -79,7 +91,10 @@ export function useAuthProfile() {
     }
     if (sessionQuery.isError) {
       setUser({ status: "anonymous" });
-      setAuthState("idle", sessionQuery.error instanceof Error ? sessionQuery.error.message : "");
+      setProfileFromServer(null);
+      setHasToken(false);
+      const message = sessionQuery.error instanceof Error ? sessionQuery.error.message : "";
+      setAuthState("idle", message || "Session expired - please sign in again");
       return;
     }
     setUser(userIdentity);

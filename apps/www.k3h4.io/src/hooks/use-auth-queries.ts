@@ -25,6 +25,7 @@ const clearAuthCaches = () => {
   if (typeof window !== "undefined") {
     localStorage.removeItem(ACCESS_TOKEN_KEY);
     localStorage.removeItem(REFRESH_TOKEN_KEY);
+    window.dispatchEvent(new Event("k3h4:auth-signed-out"));
   }
   queryClient.clear();
 };
@@ -34,11 +35,13 @@ async function fetchJson<T>(url: string, options: RequestInit, errorMetric: stri
   const data = await res.json();
   if (!res.ok) {
     const message = (data as any)?.error || "Request failed";
-    if (res.status >= 500) {
+    if (res.status === 401 || res.status === 403) {
+      clearAuthCaches();
+    } else if (res.status >= 500) {
       clearAuthCaches();
     }
     void trackTelemetry(errorMetric, { message, status: res.status });
-    throw new Error(message);
+    throw new Error(message || "Unauthorized");
   }
   return data as T;
 }
