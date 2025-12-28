@@ -2,7 +2,7 @@ import type { ReactNode } from "react";
 
 import { cn } from "../../lib/utils";
 
-export type TopTabKey = "bank" | "persona" | "agency";
+export type TopTabKey = "bank" | "persona" | "agency" | "freight";
 
 export type TopTabsProps = {
     activeTab: TopTabKey;
@@ -27,6 +27,11 @@ const tabs: { key: TopTabKey; label: string; description: string }[] = [
         key: "agency",
         label: "Assignment agency",
         description: "Staffing, timecards, and payouts",
+    },
+    {
+        key: "freight",
+        label: "Freight manager",
+        description: "Routing, pricing, k3h4c billing",
     },
 ];
 
