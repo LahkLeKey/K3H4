@@ -4,6 +4,7 @@ import { useLocation } from "react-router-dom";
 import { GithubCallbackPage } from "../pages/github-callback";
 import { AuthAccessSection } from "./auth-access-section";
 import { BankTable } from "./bank/bank-table";
+import { AssignmentAgency } from "./agency/assignment-agency";
 import { PersonaTable } from "./persona/persona-table";
 import { ShellView } from "./shell/view";
 import { ShellBrand } from "./shell/brand";
@@ -32,9 +33,11 @@ export function Shell() {
     const [activeTab, setActiveTab] = useState<TopTabKey>("bank");
     const isAuthenticated = !!userEmail || authStatus === "success";
 
-    const signedInView = activeTab === "persona"
-        ? <PersonaTable apiBase={apiBase} userEmail={userEmail} />
-        : <BankTable apiBase={apiBase} userEmail={userEmail} />;
+    const signedInView = (() => {
+        if (activeTab === "persona") return <PersonaTable apiBase={apiBase} userEmail={userEmail} />;
+        if (activeTab === "agency") return <AssignmentAgency apiBase={apiBase} userEmail={userEmail} />;
+        return <BankTable apiBase={apiBase} userEmail={userEmail} />;
+    })();
 
     return (
         <ShellView
