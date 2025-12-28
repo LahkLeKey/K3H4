@@ -21,6 +21,7 @@ model User {
   telemetry      TelemetryEvent[]
   bankTransactions BankTransaction[]
   personas       Persona[]
+  assignments    Assignment[]
 
   @@unique([provider, providerId])
 }
@@ -36,6 +37,9 @@ model Persona {
   tags      Json?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  assignments Assignment[]
+  assignmentPayouts AssignmentPayout[]
 
   @@index([userId, alias])
 }
@@ -90,4 +94,49 @@ model BankTransaction {
   createdAt    DateTime @default(now())
 
   @@index([userId, createdAt])
+}
+
+model Assignment {
+  id           String    @id @default(cuid())
+  userId       String
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  personaId    String
+  persona      Persona   @relation(fields: [personaId], references: [id], onDelete: Cascade)
+  title        String
+  hourlyRate   Decimal   @db.Decimal(18, 2)
+  status       String    @default("open")
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  timecards    AssignmentTimecard[]
+  payouts      AssignmentPayout[]
+
+  @@index([userId, personaId])
+}
+
+model AssignmentTimecard {
+  id           String   @id @default(cuid())
+  assignmentId String
+  assignment   Assignment @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
+  hours        Decimal  @db.Decimal(10, 2)
+  amount       Decimal  @db.Decimal(18, 2)
+  note         String?
+  status       String   @default("approved")
+  createdAt    DateTime @default(now())
+
+  @@index([assignmentId, status])
+}
+
+model AssignmentPayout {
+  id           String   @id @default(cuid())
+  assignmentId String
+  assignment   Assignment @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
+  personaId    String
+  persona      Persona  @relation(fields: [personaId], references: [id], onDelete: Cascade)
+  amount       Decimal  @db.Decimal(18, 2)
+  note         String?
+  invoiceUrl   String?
+  status       String   @default("paid")
+  createdAt    DateTime @default(now())
+
+  @@index([assignmentId, personaId])
 }
