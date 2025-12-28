@@ -73,7 +73,8 @@ export function useAuthProfile() {
   useEffect(() => {
     if (!hasToken) return;
     if (sessionQuery.isPending) {
-      setAuthState("loading", "Checking session...");
+      // Keep UI interactive while session check is in flight
+      setAuthState("idle", "");
       return;
     }
     if (sessionQuery.isError) {
