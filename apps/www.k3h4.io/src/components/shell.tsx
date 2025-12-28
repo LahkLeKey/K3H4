@@ -5,6 +5,7 @@ import { GithubCallbackPage } from "../pages/github-callback";
 import { AuthAccessSection } from "./auth-access-section";
 import { BankTable } from "./bank/bank-table";
 import { AssignmentAgency } from "./agency/assignment-agency";
+import { FreightManager } from "./freight/freight-manager";
 import { PersonaTable } from "./persona/persona-table";
 import { ShellView } from "./shell/view";
 import { ShellBrand } from "./shell/brand";
@@ -36,6 +37,7 @@ export function Shell() {
     const signedInView = (() => {
         if (activeTab === "persona") return <PersonaTable apiBase={apiBase} userEmail={userEmail} />;
         if (activeTab === "agency") return <AssignmentAgency apiBase={apiBase} userEmail={userEmail} />;
+        if (activeTab === "freight") return <FreightManager apiBase={apiBase} userEmail={userEmail} />;
         return <BankTable apiBase={apiBase} userEmail={userEmail} />;
     })();
 
