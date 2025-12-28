@@ -14,7 +14,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import { Input } from "../ui/input";
 import { Label } from "../ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../ui/table";
-import { Separator } from "../ui/separator";
 
 export type FreightManagerProps = {
     apiBase: string;
@@ -251,7 +250,13 @@ export function FreightManager({ apiBase, userEmail }: FreightManagerProps) {
     };
 
     const setPoint = (which: Target, lngLat: maplibregl.LngLatLike) => {
-        const [lng, lat] = Array.isArray(lngLat) ? lngLat : [lngLat.lng, lngLat.lat];
+        const toTuple = (value: maplibregl.LngLatLike): [number, number] => {
+            if (Array.isArray(value)) return [value[0], value[1]];
+            if ("lng" in value) return [value.lng, value.lat];
+            if ("lon" in value) return [value.lon, value.lat];
+            return [Number(form.originLng), Number(form.originLat)];
+        };
+        const [lng, lat] = toTuple(lngLat);
         setForm((prev) => ({
             ...prev,
             ...(which === "origin"
