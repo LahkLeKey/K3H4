@@ -20,7 +20,6 @@ export type WarehouseDashboardProps = {
     onNavigateFreight: () => void;
 };
 
-const makeId = () => Math.random().toString(36).slice(2, 8);
 
 export function WarehouseDashboard({ apiBase, userEmail, onNavigateFreight }: WarehouseDashboardProps) {
     const loadsQuery = useFreightLoadsQuery(apiBase);
