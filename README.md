@@ -67,10 +67,18 @@ bun run test --coverage
 
 <!-- coverage-start -->
 ## Latest Coverage
-Updated: 2025-12-29T13:20:38.092Z
+Updated: 2025-12-29T13:27:10.697Z
+
+Web (apps/www.k3h4.io)
+![Web (apps/www.k3h4.io) coverage](https://img.shields.io/badge/Web_(apps%2Fwww.k3h4.io)-91.64%25-blue)
+
+| App | %Stmts | %Branch | %Funcs | %Lines |
+| --- | ------ | ------- | ------ | ------ |
+| Web (apps/www.k3h4.io) | 91.64 | 65.18 | 77.43 | 91.64 |
+
+<details><summary>Full report</summary>
 
 ```
-Web (apps/www.k3h4.io)
 % Coverage report from v8
 -------------------|---------|----------|---------|---------|-------------------
 File               | % Stmts | % Branch | % Funcs | % Lines | Uncovered Line #s 
@@ -204,8 +212,20 @@ All files          |   91.64 |    65.18 |   77.43 |   91.64 |
   auth-store.ts    |     100 |      100 |     100 |     100 |                   
   bank-store.ts    |     100 |      100 |     100 |     100 |                   
 -------------------|---------|----------|---------|---------|-------------------
+```
+
+</details>
 
 API (apps/api.k3h4.io)
+![API (apps/api.k3h4.io) coverage](https://img.shields.io/badge/API_(apps%2Fapi.k3h4.io)-80.01%25-blue)
+
+| App | %Stmts | %Branch | %Funcs | %Lines |
+| --- | ------ | ------- | ------ | ------ |
+| API (apps/api.k3h4.io) | 80.01 | 77.05 | 95.83 | 80.01 |
+
+<details><summary>Full report</summary>
+
+```
 % Coverage report from v8
 -----------------|---------|----------|---------|---------|---------------------
 File             | % Stmts | % Branch | % Funcs | % Lines | Uncovered Line #s   
@@ -226,6 +246,8 @@ All files        |   80.01 |    77.05 |   95.83 |   80.01 |
   types.ts       |       0 |        0 |       0 |       0 |                     
   warehouse.ts   |     100 |    78.57 |     100 |     100 | 44,54-57,82,98-102  
 -----------------|---------|----------|---------|---------|---------------------
-
 ```
+
+</details>
+
 <!-- coverage-end -->

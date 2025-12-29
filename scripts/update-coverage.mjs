@@ -27,7 +27,8 @@ function runCommand({ label, cwd, command, args }) {
   const stderr = stripAnsi(result.stderr || "");
   const ok = result.status === 0;
   const summary = extractCoverage(stdout) || extractCoverage(stderr) || "Coverage summary not found.";
-  return { label, ok, summary, stdout, stderr, code: result.status ?? -1 };
+  const metrics = parseMetrics(summary);
+  return { label, ok, summary, stdout, stderr, code: result.status ?? -1, metrics };
 }
 
 function extractCoverage(text) {
@@ -50,6 +51,19 @@ function extractCoverage(text) {
   return tail;
 }
 
+function parseMetrics(summary) {
+  const line = summary.split(/\r?\n/).find((l) => l.trim().startsWith("All files"));
+  if (!line) return null;
+
+  // Parse the pipe-delimited v8 summary row to avoid NaN when spacing varies.
+  const match = line.match(/All files\s*\|\s*([\d.]+)\s*\|\s*([\d.]+)\s*\|\s*([\d.]+)\s*\|\s*([\d.]+)/);
+  if (!match) return null;
+
+  const [, stmts, branch, funcs, lines] = match;
+  const toNum = (s) => Number.parseFloat(s);
+  return { stmts: toNum(stmts), branch: toNum(branch), funcs: toNum(funcs), lines: toNum(lines) };
+}
+
 function updateReadme(snapshots) {
   const startMarker = "<!-- coverage-start -->";
   const endMarker = "<!-- coverage-end -->";
@@ -61,9 +75,7 @@ function updateReadme(snapshots) {
     "## Latest Coverage",
     `Updated: ${new Date().toISOString()}`,
     "",
-    "```",
-    ...snapshots.flatMap((snap) => [snap.label, snap.summary, ""]),
-    "```",
+    ...snapshots.map((snap) => renderSnapshot(snap)),
     endMarker,
   ].join("\n");
 
@@ -71,6 +83,21 @@ function updateReadme(snapshots) {
   const stripped = readme.replace(pattern, "").trim();
   const updated = `${stripped}\n\n${payload}\n`;
   writeFileSync(readmePath, updated);
+}
+
+function renderSnapshot(snap) {
+  const badge = snap.metrics
+    ? `![${snap.label} coverage](https://img.shields.io/badge/${encodeURIComponent(snap.label.replace(/\s+/g, "_"))}-${snap.metrics.lines.toFixed(2)}%25-blue)`
+    : "";
+  const table = snap.metrics
+    ? [
+        `| App | %Stmts | %Branch | %Funcs | %Lines |`,
+        `| --- | ------ | ------- | ------ | ------ |`,
+        `| ${snap.label} | ${snap.metrics.stmts.toFixed(2)} | ${snap.metrics.branch.toFixed(2)} | ${snap.metrics.funcs.toFixed(2)} | ${snap.metrics.lines.toFixed(2)} |`,
+      ].join("\n")
+    : "(Coverage summary not found)";
+
+  return [snap.label, badge, "", table, "", "<details><summary>Full report</summary>", "", "```", snap.summary, "```", "", "</details>", ""].join("\n");
 }
 
 const snapshots = targets.map(runCommand);
