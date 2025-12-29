@@ -88,7 +88,7 @@ describe("use-auth-queries", () => {
         (globalThis as any).fetch = fetchMock;
         const client = createClient();
 
-        const { result } = renderHook(() => useSessionQuery(apiBase), { wrapper: wrapper(client) });
+        renderHook(() => useSessionQuery(apiBase), { wrapper: wrapper(client) });
         await waitFor(() => expect(fetchMock).toHaveBeenCalled());
         expect(localStorage.getItem(ACCESS_TOKEN_KEY)).toBeNull();
         expect(localStorage.getItem(REFRESH_TOKEN_KEY)).toBeNull();

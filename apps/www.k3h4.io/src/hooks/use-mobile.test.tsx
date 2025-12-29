@@ -10,13 +10,13 @@ function mockMatchMedia(matches: boolean) {
         matches,
         media: "(max-width: 767px)",
         onchange: null,
-        addEventListener: (event: string, listener: (ev: MediaQueryListEvent) => void) => {
+        addEventListener: ((event: string, listener: EventListenerOrEventListenerObject) => {
             listeners[event] = listeners[event] || [];
-            listeners[event].push(listener);
-        },
-        removeEventListener: (event: string, listener: (ev: MediaQueryListEvent) => void) => {
+            listeners[event].push(listener as (ev: MediaQueryListEvent) => void);
+        }) as MediaQueryList["addEventListener"],
+        removeEventListener: ((event: string, listener: EventListenerOrEventListenerObject) => {
             listeners[event] = (listeners[event] || []).filter((l) => l !== listener);
-        },
+        }) as MediaQueryList["removeEventListener"],
         addListener: () => { },
         removeListener: () => { },
         dispatchEvent: () => true,
