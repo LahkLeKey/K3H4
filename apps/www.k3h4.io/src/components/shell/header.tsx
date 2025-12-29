@@ -34,7 +34,7 @@ type ShellHeaderProps = {
     onSignOut: () => void;
     brand?: ReactNode;
     actions?: ReactNode;
-    tabs?: ReactNode;
+    modulesMenu?: ReactNode;
     onGithubLogin: () => void;
 };
 
@@ -53,7 +53,7 @@ export function ShellHeader({
     onGithubLogin,
     brand,
     actions,
-    tabs,
+    modulesMenu,
 }: ShellHeaderProps) {
     const displayName = profile?.displayName || userEmail || "Your profile";
     const avatarUrl = profile?.avatarUrl || undefined;
@@ -68,6 +68,7 @@ export function ShellHeader({
                     activePath={pathname}
                     pillClassName="min-h-9"
                 />
+                {modulesMenu}
                 {actions ?? (
                     <ShellActionBar>
                         <SearchInput placeholder="Search (disabled)" disabled />
@@ -115,11 +116,6 @@ export function ShellHeader({
                     </ShellActionBar>
                 )}
             </div>
-            {tabs ? (
-                <div className="mx-auto flex w-full max-w-6xl items-center px-4 pb-3">
-                    {tabs}
-                </div>
-            ) : null}
             <StatusLine>{userEmail ? `Signed in as ${userEmail}` : authMessage}</StatusLine>
         </header>
     );
