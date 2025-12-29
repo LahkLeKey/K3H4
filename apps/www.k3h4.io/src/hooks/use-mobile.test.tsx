@@ -10,11 +10,11 @@ function mockMatchMedia(matches: boolean) {
         matches,
         media: "(max-width: 767px)",
         onchange: null,
-        addEventListener: (event, listener) => {
+        addEventListener: (event: string, listener: (ev: MediaQueryListEvent) => void) => {
             listeners[event] = listeners[event] || [];
             listeners[event].push(listener);
         },
-        removeEventListener: (event, listener) => {
+        removeEventListener: (event: string, listener: (ev: MediaQueryListEvent) => void) => {
             listeners[event] = (listeners[event] || []).filter((l) => l !== listener);
         },
         addListener: () => { },
@@ -35,8 +35,6 @@ describe("useIsMobile", () => {
     });
 
     it("returns true when viewport below breakpoint and reacts to changes", () => {
-        const addListenerSpy = vi.fn();
-        const removeListenerSpy = vi.fn();
         const mql = mockMatchMedia(true);
         mql.addEventListener = vi.fn(mql.addEventListener);
         mql.removeEventListener = vi.fn(mql.removeEventListener);

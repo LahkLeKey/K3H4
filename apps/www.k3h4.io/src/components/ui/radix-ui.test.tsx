@@ -29,7 +29,6 @@ import {
     AlertDialogTrigger,
 } from "./alert-dialog";
 import {
-    CommandDialog,
     CommandEmpty,
     CommandGroup,
     CommandInput,

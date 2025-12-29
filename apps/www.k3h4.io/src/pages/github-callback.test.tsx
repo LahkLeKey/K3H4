@@ -8,8 +8,8 @@ const mockNavigate = vi.fn();
 const mockUseAuthProfile = vi.fn();
 let locationSearch = "?code=abc";
 
-vi.mock("react-router-dom", async (orig) => {
-    const mod = await orig();
+vi.mock("react-router-dom", async () => {
+    const mod = await vi.importActual<typeof import("react-router-dom")>("react-router-dom");
     return { ...mod, useNavigate: () => mockNavigate, useLocation: () => ({ pathname: "/auth/github/callback", search: locationSearch }) };
 });
 

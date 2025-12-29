@@ -75,12 +75,13 @@ describe("ui extra primitives", () => {
     });
 
     it("renders resizable panels", () => {
+        const PanelGroup = ResizablePanelGroup as unknown as React.ComponentType<any>;
         render(
-            <ResizablePanelGroup direction="horizontal">
+            <PanelGroup direction="horizontal">
                 <ResizablePanel defaultSize={50}>One</ResizablePanel>
                 <ResizableHandle withHandle />
                 <ResizablePanel defaultSize={50}>Two</ResizablePanel>
-            </ResizablePanelGroup>
+            </PanelGroup>
         );
 
         expect(screen.getAllByText(/One|Two/)).toHaveLength(2);

@@ -1,6 +1,5 @@
 import { describe, it, expect } from "vitest";
 import { render, screen } from "@testing-library/react";
-import userEvent from "@testing-library/user-event";
 
 import { Avatar, AvatarFallback } from "./avatar";
 import { Badge } from "./badge";
@@ -11,7 +10,6 @@ import { Spinner } from "./spinner";
 
 describe("UI primitives", () => {
     it("renders button variants and asChild", async () => {
-        const user = userEvent.setup();
         render(
             <div>
                 <Button variant="destructive">Delete</Button>
