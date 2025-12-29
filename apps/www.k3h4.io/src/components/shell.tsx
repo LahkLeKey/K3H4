@@ -10,6 +10,9 @@ import { AssignmentAgency } from "./agency/assignment-agency";
 import { FreightManager } from "./freight/freight-manager";
 import { PersonaTable } from "./persona/persona-table";
 import { WarehouseDashboard } from "./warehouse/warehouse-dashboard";
+import { PosDashboard } from "./pos/pos-dashboard";
+import { AgricultureDashboard } from "./agriculture/agriculture-dashboard";
+import { CulinaryOps } from "./culinary/culinary-ops";
 import { ShellView } from "./shell/view";
 import { ShellBrand } from "./shell/brand";
 import { useAuthProfile } from "../hooks/use-auth-profile";
@@ -25,7 +28,7 @@ import {
     DropdownMenuTrigger,
 } from "./ui/dropdown-menu";
 
-type IndustryModuleKey = "bank" | "persona" | "agency" | "freight" | "warehouse";
+type IndustryModuleKey = "bank" | "persona" | "agency" | "freight" | "warehouse" | "pos" | "agriculture" | "culinary";
 
 type IndustryModule = {
     key: IndustryModuleKey;
@@ -151,6 +154,39 @@ export function Shell() {
                     apiBase={apiBase}
                     userEmail={userEmail}
                     onNavigateFreight={() => handleModuleChange("freight")}
+                />
+            ),
+        },
+        {
+            key: "pos",
+            label: "Point of Sale",
+            description: "Omni-channel checkout + receipts",
+            render: () => (
+                <PosDashboard apiBase={apiBase} userEmail={userEmail} />
+            ),
+        },
+        {
+            key: "agriculture",
+            label: "Agriculture",
+            description: "Farm logistics, lots, and yield tracking",
+            render: () => (
+                <AgricultureDashboard
+                    apiBase={apiBase}
+                    userEmail={userEmail}
+                    onNavigateFreight={() => handleModuleChange("freight")}
+                />
+            ),
+        },
+        {
+            key: "culinary",
+            label: "Culinary",
+            description: "Menus, prep, and supply chain",
+            render: () => (
+                <CulinaryOps
+                    apiBase={apiBase}
+                    userEmail={userEmail}
+                    onNavigatePos={() => handleModuleChange("pos")}
+                    onNavigateWarehouse={() => handleModuleChange("warehouse")}
                 />
             ),
         },

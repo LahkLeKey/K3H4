@@ -22,7 +22,7 @@ const serializePersona = (persona: {
 const buildFakerPersona = () => ({
   alias: faker.person.fullName(),
   account: faker.internet.email().toLowerCase(),
-  handle: `@${faker.internet.userName().toLowerCase()}`,
+  handle: `@${faker.internet.username().toLowerCase()}`,
   note: faker.hacker.phrase(),
   tags: [faker.hacker.noun(), faker.company.buzzNoun()].map((tag) => tag.toLowerCase()),
 });

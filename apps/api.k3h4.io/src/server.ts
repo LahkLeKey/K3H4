@@ -13,6 +13,9 @@ import { registerPersonaRoutes } from "./routes/persona";
 import { registerAssignmentRoutes } from "./routes/assignment";
 import { registerFreightRoutes } from "./routes/freight";
 import { registerWarehouseRoutes } from "./routes/warehouse";
+import { registerPosRoutes } from "./routes/pos";
+import { registerAgricultureRoutes } from "./routes/agriculture";
+import { registerCulinaryRoutes } from "./routes/culinary";
 
 dotenv.config();
 
@@ -235,6 +238,9 @@ registerPersonaRoutes(server, prisma, recordTelemetry);
 registerAssignmentRoutes(server, prisma, recordTelemetry);
 registerFreightRoutes(server, prisma, recordTelemetry);
 registerWarehouseRoutes(server, prisma, recordTelemetry);
+registerPosRoutes(server, prisma, recordTelemetry);
+registerAgricultureRoutes(server, prisma, recordTelemetry);
+registerCulinaryRoutes(server, prisma, recordTelemetry);
 
 const port = Number(process.env.PORT || 8080);
 const host = process.env.HOST || "0.0.0.0";

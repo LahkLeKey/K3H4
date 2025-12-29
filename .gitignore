@@ -1,3 +1,5 @@
 .env
 node_modules/
 **/node_modules/
+/apps/www.k3h4.io/coverage
+/apps/api.k3h4.io/coverage
