@@ -7,6 +7,7 @@ import { BankTable } from "./bank/bank-table";
 import { AssignmentAgency } from "./agency/assignment-agency";
 import { FreightManager } from "./freight/freight-manager";
 import { PersonaTable } from "./persona/persona-table";
+import { WarehouseDashboard } from "./warehouse/warehouse-dashboard";
 import { ShellView } from "./shell/view";
 import { ShellBrand } from "./shell/brand";
 import { TopTabs, type TopTabKey } from "./shell/top-tabs";
@@ -38,6 +39,7 @@ export function Shell() {
         if (activeTab === "persona") return <PersonaTable apiBase={apiBase} userEmail={userEmail} />;
         if (activeTab === "agency") return <AssignmentAgency apiBase={apiBase} userEmail={userEmail} />;
         if (activeTab === "freight") return <FreightManager apiBase={apiBase} userEmail={userEmail} />;
+        if (activeTab === "warehouse") return <WarehouseDashboard apiBase={apiBase} userEmail={userEmail} onNavigateFreight={() => setActiveTab("freight")} />;
         return <BankTable apiBase={apiBase} userEmail={userEmail} />;
     })();
 
