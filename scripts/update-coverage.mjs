@@ -97,7 +97,36 @@ function renderSnapshot(snap) {
       ].join("\n")
     : "(Coverage summary not found)";
 
-  return [snap.label, badge, "", table, "", "<details><summary>Full report</summary>", "", "```", snap.summary, "```", "", "</details>", ""].join("\n");
+  const fullReport = renderFullReport(snap.summary);
+
+  return [`### ${snap.label} ${badge}`.trim(), "", table, "", "<details><summary>Full report</summary>", "", fullReport, "", "</details>", ""].join("\n");
+}
+
+function renderFullReport(summary) {
+  const lines = summary.split(/\r?\n/);
+  const headerIndex = lines.findIndex((l) => l.includes("% Stmts") && l.includes("% Branch"));
+  if (headerIndex === -1) {
+    return ["```", summary, "```"].join("\n");
+  }
+
+  const parseRow = (line) => line.split("|").map((c) => c.trim()).filter(Boolean);
+  const header = parseRow(lines[headerIndex]);
+  if (!header.length) {
+    return ["```", summary, "```"].join("\n");
+  }
+
+  const rows = [`| ${header.join(" | ")} |`, `| ${header.map(() => "---").join(" | ")} |`];
+  for (let i = headerIndex + 1; i < lines.length; i += 1) {
+    const line = lines[i];
+    if (!line.includes("|")) continue;
+    const cells = parseRow(line);
+    if (!cells.length) continue;
+    const isDivider = cells.every((c) => /^-+$/.test(c));
+    if (isDivider) continue;
+    rows.push(`| ${cells.join(" | ")} |`);
+  }
+
+  return rows.join("\n");
 }
 
 const snapshots = targets.map(runCommand);
