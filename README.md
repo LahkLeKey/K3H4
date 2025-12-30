@@ -13,6 +13,7 @@ Public monorepo for the K3H4 platform: Fastify + Prisma API and a React (Bun + V
 ## Business Flows (orchestration)
 - Neighborhood Bakery: Culinary → Warehouse → Freight → POS → Bank (+ Graphics Engine for 3D menu lanes)
 - Farm Supply Loop: Agriculture → Freight → Warehouse → Culinary → Bank (+ Graphics Engine for plot overlays)
+- Retro Arcade: Graphics Engine (playable R3F arcade machines like Tetris/Snake/Invaders) → POS for sessions → Bank top-ups (k3h4-coin game cards) → Warehouse for physical prize payouts
 
 ## Prerequisites
 - Bun 1.3.x (repo scripts assume Bun)

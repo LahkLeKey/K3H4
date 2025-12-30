@@ -14,6 +14,7 @@ import { PosDashboard } from "./pos/pos-dashboard";
 import { AgricultureDashboard } from "./agriculture/agriculture-dashboard";
 import { CulinaryOps } from "./culinary/culinary-ops";
 import { GraphicsEngineModule } from "./graphics-engine/graphics-engine";
+import { ArcadeHub } from "./arcade/arcade-hub";
 import { ShellView } from "./shell/view";
 import { ShellBrand } from "./shell/brand";
 import { useAuthProfile } from "../hooks/use-auth-profile";
@@ -29,7 +30,7 @@ import {
     DropdownMenuTrigger,
 } from "./ui/dropdown-menu";
 
-type IndustryModuleKey = "bank" | "persona" | "agency" | "freight" | "warehouse" | "pos" | "agriculture" | "culinary" | "graphics";
+type IndustryModuleKey = "bank" | "persona" | "agency" | "freight" | "warehouse" | "pos" | "agriculture" | "culinary" | "graphics" | "arcade";
 
 type IndustryModule = {
     key: IndustryModuleKey;
@@ -38,7 +39,7 @@ type IndustryModule = {
     render: () => JSX.Element;
 };
 
-type BusinessScenarioKey = "bakery" | "farm";
+type BusinessScenarioKey = "bakery" | "farm" | "arcade";
 
 type BusinessScenarioModule = {
     key: IndustryModuleKey;
@@ -291,6 +292,12 @@ export function Shell() {
             ),
         },
         {
+            key: "arcade",
+            label: "Arcade",
+            description: "Retro arcade ops: cards, top-ups, prizes, and games",
+            render: () => <ArcadeHub apiBase={apiBase} userEmail={userEmail} />,
+        },
+        {
             key: "culinary",
             label: "Culinary",
             description: "Menus, prep, and supply chain",
@@ -332,6 +339,20 @@ export function Shell() {
                 { key: "culinary", label: "Culinary", role: "Share bake specs so runs match grain quality" },
                 { key: "graphics", label: "Graphics Engine", role: "Plot overlays and future simulation nodes" },
                 { key: "bank", label: "Bank", role: "Pay for deliveries and credit waste-to-feed buybacks" },
+            ],
+        },
+        {
+            key: "arcade",
+            label: "Retro Arcade",
+            description: "Physical arcade with playable Three.js machines and coin top-ups",
+            icon: Building2,
+            modules: [
+                { key: "arcade", label: "Arcade", role: "Operate cards, sessions, and prizes" },
+                { key: "graphics", label: "Graphics Engine", role: "3D arcade machine (Snake)" },
+                { key: "pos", label: "Point of Sale", role: "Sell plays, prizes, and session receipts" },
+                { key: "bank", label: "Bank", role: "Load k3h4-coin credits onto game cards" },
+                { key: "warehouse", label: "Warehouse", role: "Manage physical prize inventory" },
+                { key: "persona", label: "Persona", role: "Staff shifts and arcade attendants" },
             ],
         },
     ], []);
