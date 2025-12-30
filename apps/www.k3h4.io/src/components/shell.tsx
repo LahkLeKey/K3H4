@@ -13,6 +13,7 @@ import { WarehouseDashboard } from "./warehouse/warehouse-dashboard";
 import { PosDashboard } from "./pos/pos-dashboard";
 import { AgricultureDashboard } from "./agriculture/agriculture-dashboard";
 import { CulinaryOps } from "./culinary/culinary-ops";
+import { GraphicsEngineModule } from "./graphics-engine/graphics-engine";
 import { ShellView } from "./shell/view";
 import { ShellBrand } from "./shell/brand";
 import { useAuthProfile } from "../hooks/use-auth-profile";
@@ -28,7 +29,7 @@ import {
     DropdownMenuTrigger,
 } from "./ui/dropdown-menu";
 
-type IndustryModuleKey = "bank" | "persona" | "agency" | "freight" | "warehouse" | "pos" | "agriculture" | "culinary";
+type IndustryModuleKey = "bank" | "persona" | "agency" | "freight" | "warehouse" | "pos" | "agriculture" | "culinary" | "graphics";
 
 type IndustryModule = {
     key: IndustryModuleKey;
@@ -279,6 +280,17 @@ export function Shell() {
             ),
         },
         {
+            key: "graphics",
+            label: "Graphics Engine",
+            description: "R3F scenes for spatial planning and immersive flows",
+            render: () => (
+                <GraphicsEngineModule
+                    userEmail={userEmail}
+                    onNavigate={handleModuleChange}
+                />
+            ),
+        },
+        {
             key: "culinary",
             label: "Culinary",
             description: "Menus, prep, and supply chain",
@@ -303,6 +315,7 @@ export function Shell() {
                 { key: "culinary", label: "Culinary", role: "Menus, prep batches, and supply forecasts" },
                 { key: "warehouse", label: "Warehouse", role: "Ingredients, packaging, and staging for daily runs" },
                 { key: "freight", label: "Freight", role: "Inbound flour, dairy, and return routes for stale goods" },
+                { key: "graphics", label: "Graphics Engine", role: "3D menu staging, service lanes, and spatial promos" },
                 { key: "pos", label: "Point of Sale", role: "Counter, catering, and online checkout" },
                 { key: "bank", label: "Bank", role: "Settlements, rewards, and supplier payouts" },
             ],
@@ -317,6 +330,7 @@ export function Shell() {
                 { key: "freight", label: "Freight", role: "Deliver grain to bakery; schedule waste pickups" },
                 { key: "warehouse", label: "Warehouse", role: "Hold grain pre-shipment and returned scraps" },
                 { key: "culinary", label: "Culinary", role: "Share bake specs so runs match grain quality" },
+                { key: "graphics", label: "Graphics Engine", role: "Plot overlays and future simulation nodes" },
                 { key: "bank", label: "Bank", role: "Pay for deliveries and credit waste-to-feed buybacks" },
             ],
         },
