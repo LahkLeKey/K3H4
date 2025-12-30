@@ -4,7 +4,15 @@ Public monorepo for the K3H4 platform: Fastify + Prisma API and a React (Bun + V
 
 ## Projects
 - apps/api.k3h4.io — Fastify API with Prisma, JWT auth, and feature routes (auth, bank, freight, agriculture, culinary, POS, warehouse, personas).
-- apps/www.k3h4.io — React SPA built with Bun, Vite, TanStack Query, Radix UI, Tailwind.
+- apps/www.k3h4.io — React SPA built with Bun, Vite, TanStack Query, Radix UI, Tailwind, and a new Graphics Engine module (R3F + three.js) for reusable spatial scenes.
+
+## Industry Modules (web)
+- Bank, Persona, Agency (staffing), Freight, Warehouse, POS, Agriculture, Culinary
+- Graphics Engine (R3F): spatial canvas for plot drawing, freight lanes, and immersive flows reused across industries
+
+## Business Flows (orchestration)
+- Neighborhood Bakery: Culinary → Warehouse → Freight → POS → Bank (+ Graphics Engine for 3D menu lanes)
+- Farm Supply Loop: Agriculture → Freight → Warehouse → Culinary → Bank (+ Graphics Engine for plot overlays)
 
 ## Prerequisites
 - Bun 1.3.x (repo scripts assume Bun)
