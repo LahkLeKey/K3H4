@@ -32,6 +32,7 @@ import { trackTelemetry } from "../lib/telemetry";
 import { MODULE_STORAGE_KEY } from "../lib/constants";
 
 const dropdownButtonLabel = /industry module/i;
+const businessDropdownLabel = /business flow/i;
 const userStorageKey = `${MODULE_STORAGE_KEY}:user@test.com`;
 
 describe("Shell", () => {
@@ -70,6 +71,24 @@ describe("Shell", () => {
 
         await waitFor(() => expect(within(trigger).getByText("Culinary")).toBeInTheDocument());
         expect(trackTelemetry).toHaveBeenCalledWith("shell.module.select", { module: "culinary", userEmail: "user@test.com" });
+    });
+
+    it("switches business scenarios and syncs module selection", async () => {
+        const user = userEvent.setup();
+        renderWithQuery(
+            <MemoryRouter initialEntries={["/"]}>
+                <Shell />
+            </MemoryRouter>,
+        );
+
+        const businessTrigger = screen.getByRole("button", { name: businessDropdownLabel });
+        await user.click(businessTrigger);
+        await user.click(await screen.findByRole("menuitem", { name: /Farm Supply Loop/i }));
+
+        const moduleTrigger = screen.getByRole("button", { name: dropdownButtonLabel });
+        await waitFor(() => expect(within(moduleTrigger).getByText("Agriculture")).toBeInTheDocument());
+        expect(trackTelemetry).toHaveBeenCalledWith("shell.business.select", { business: "farm", userEmail: "user@test.com" });
+        expect(trackTelemetry).toHaveBeenCalledWith("shell.module.select", { module: "agriculture", userEmail: "user@test.com" });
     });
 
     it("persists selection to localStorage", async () => {
@@ -141,6 +160,7 @@ describe("Shell", () => {
         );
 
         expect(screen.queryByRole("button", { name: dropdownButtonLabel })).not.toBeInTheDocument();
+        expect(screen.queryByRole("button", { name: businessDropdownLabel })).not.toBeInTheDocument();
         expect(screen.getByText(/AuthAccess idle/)).toBeInTheDocument();
     });
 });
