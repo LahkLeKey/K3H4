@@ -32,6 +32,12 @@ model User {
   culinaryMenuItems CulinaryMenuItem[]
   culinaryPrepTasks CulinaryPrepTask[]
   culinarySupplierNeeds CulinarySupplierNeed[]
+  arcadeMachines ArcadeMachine[]
+  arcadeCards    ArcadeCard[]
+  arcadeTopUps   ArcadeTopUp[]
+  arcadePrizes   ArcadePrize[]
+  arcadeSessions ArcadeSession[]
+  arcadeRedemptions ArcadeRedemption[]
 
   @@unique([provider, providerId])
 }
@@ -326,4 +332,102 @@ model CulinarySupplierNeed {
   updatedAt DateTime @updatedAt
 
   @@index([userId, status])
+}
+
+model ArcadeMachine {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name        String
+  gameTitle   String
+  status      String   @default("idle")
+  location    String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  sessions    ArcadeSession[]
+
+  @@index([userId, status])
+}
+
+model ArcadeCard {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  label     String?
+  balance   Decimal  @db.Decimal(18, 2) @default("0")
+  status    String   @default("active")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  topUps    ArcadeTopUp[]
+  sessions  ArcadeSession[]
+  redemptions ArcadeRedemption[]
+
+  @@index([userId, status])
+}
+
+model ArcadeTopUp {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  cardId    String
+  card      ArcadeCard @relation(fields: [cardId], references: [id], onDelete: Cascade)
+  amount    Decimal  @db.Decimal(18, 2)
+  source    String   @default("k3h4-coin")
+  createdAt DateTime @default(now())
+
+  @@index([userId, cardId])
+}
+
+model ArcadePrize {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name      String
+  sku       String?
+  costCoins Decimal  @db.Decimal(18, 2)
+  stock     Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  redemptions ArcadeRedemption[]
+
+  @@index([userId, name])
+}
+
+model ArcadeSession {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  machineId   String
+  machine     ArcadeMachine @relation(fields: [machineId], references: [id], onDelete: Cascade)
+  cardId      String
+  card        ArcadeCard @relation(fields: [cardId], references: [id], onDelete: Cascade)
+  creditsSpent Decimal  @db.Decimal(18, 2)
+  score       Int?
+  rewardRedemptionId String?
+  rewardRedemption   ArcadeRedemption? @relation(fields: [rewardRedemptionId], references: [id], onDelete: SetNull)
+  startedAt   DateTime @default(now())
+  endedAt     DateTime?
+
+  @@index([userId, machineId])
+  @@index([userId, cardId])
+}
+
+model ArcadeRedemption {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  cardId    String?
+  card      ArcadeCard? @relation(fields: [cardId], references: [id], onDelete: SetNull)
+  prizeId   String
+  prize     ArcadePrize @relation(fields: [prizeId], references: [id], onDelete: Cascade)
+  status    String   @default("pending")
+  fulfilledAt DateTime?
+  createdAt DateTime @default(now())
+
+  sessions  ArcadeSession[]
+
+  @@index([userId, prizeId])
 }
