@@ -26,6 +26,7 @@ vi.mock("./warehouse/warehouse-dashboard", () => ({ WarehouseDashboard: () => <d
 vi.mock("./pos/pos-dashboard", () => ({ PosDashboard: () => <div>POS</div> }));
 vi.mock("./agriculture/agriculture-dashboard", () => ({ AgricultureDashboard: () => <div>Agriculture</div> }));
 vi.mock("./culinary/culinary-ops", () => ({ CulinaryOps: () => <div>Culinary</div> }));
+vi.mock("./graphics-engine/graphics-engine", () => ({ GraphicsEngineModule: () => <div>GraphicsEngine</div> }));
 
 import { Shell } from "./shell";
 import { trackTelemetry } from "../lib/telemetry";
