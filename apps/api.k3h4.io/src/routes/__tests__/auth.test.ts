@@ -239,4 +239,75 @@ describe("auth routes", () => {
     expect(res.statusCode).toBe(200);
     expect(res.json().user.email).toBe("user@test.com");
   });
+
+  it("deletes account when confirmation matches", async () => {
+    const prisma = {
+      telemetryEvent: { deleteMany: vi.fn().mockResolvedValue({ count: 1 }) },
+      bankTransaction: { deleteMany: vi.fn().mockResolvedValue({ count: 0 }) },
+      persona: { deleteMany: vi.fn().mockResolvedValue({ count: 0 }) },
+      assignmentTimecard: { deleteMany: vi.fn().mockResolvedValue({ count: 0 }) },
+      assignmentPayout: { deleteMany: vi.fn().mockResolvedValue({ count: 0 }) },
+      assignment: { deleteMany: vi.fn().mockResolvedValue({ count: 0 }) },
+      freightLoad: { deleteMany: vi.fn().mockResolvedValue({ count: 0 }) },
+      warehouseItem: { deleteMany: vi.fn().mockResolvedValue({ count: 0 }) },
+      posLineItem: { deleteMany: vi.fn().mockResolvedValue({ count: 0 }) },
+      posTicket: { deleteMany: vi.fn().mockResolvedValue({ count: 0 }) },
+      posStore: { deleteMany: vi.fn().mockResolvedValue({ count: 0 }) },
+      agricultureShipment: { deleteMany: vi.fn().mockResolvedValue({ count: 0 }) },
+      agricultureTask: { deleteMany: vi.fn().mockResolvedValue({ count: 0 }) },
+      agriculturePlot: { deleteMany: vi.fn().mockResolvedValue({ count: 0 }) },
+      culinaryPrepTask: { deleteMany: vi.fn().mockResolvedValue({ count: 0 }) },
+      culinarySupplierNeed: { deleteMany: vi.fn().mockResolvedValue({ count: 0 }) },
+      culinaryMenuItem: { deleteMany: vi.fn().mockResolvedValue({ count: 0 }) },
+      arcadeSession: { deleteMany: vi.fn().mockResolvedValue({ count: 0 }) },
+      arcadeRedemption: { deleteMany: vi.fn().mockResolvedValue({ count: 0 }) },
+      arcadePrize: { deleteMany: vi.fn().mockResolvedValue({ count: 0 }) },
+      arcadeTopUp: { deleteMany: vi.fn().mockResolvedValue({ count: 0 }) },
+      arcadeCard: { deleteMany: vi.fn().mockResolvedValue({ count: 0 }) },
+      arcadeMachine: { deleteMany: vi.fn().mockResolvedValue({ count: 0 }) },
+      userPreference: { deleteMany: vi.fn().mockResolvedValue({ count: 0 }) },
+      refreshToken: { deleteMany: vi.fn().mockResolvedValue({ count: 0 }) },
+      user: {
+        findUnique: vi.fn().mockResolvedValue({ id: userId, email: "user@test.com" }),
+        delete: vi.fn().mockResolvedValue({ id: userId }),
+      },
+      $transaction: vi.fn(async (operations: Promise<unknown>[]) => Promise.all(operations)),
+    };
+    const server = buildServer(prisma);
+    const res = await server.inject({ method: "POST", url: "/auth/delete", payload: { confirmText: "Delete-My-K3H4-Data" } });
+    expect(res.statusCode).toBe(200);
+    const jobId = res.json().jobId;
+    expect(jobId).toBeTruthy();
+
+    // poll status once; job should have completed synchronously in test mocks
+    const statusRes = await server.inject({ method: "GET", url: `/auth/delete/status?jobId=${jobId}` });
+    expect(statusRes.statusCode).toBe(200);
+    expect(statusRes.json().status).toBe("done");
+    expect(prisma.user.delete).toHaveBeenCalledWith({ where: { id: userId } });
+  });
+
+  it("rejects delete when confirmation text is wrong", async () => {
+    const prisma = {
+      telemetryEvent: { deleteMany: vi.fn() },
+      user: { findUnique: vi.fn(), delete: vi.fn() },
+      $transaction: vi.fn(),
+    };
+    const server = buildServer(prisma);
+    const res = await server.inject({ method: "POST", url: "/auth/delete", payload: { confirmText: "nope" } });
+    expect(res.statusCode).toBe(400);
+    expect(prisma.telemetryEvent.deleteMany).not.toHaveBeenCalled();
+    expect(recordTelemetry).not.toHaveBeenCalledWith(expect.anything(), expect.objectContaining({ eventType: "auth.delete.requested" }));
+  });
+
+  it("returns 404 when user is missing", async () => {
+    const prisma = {
+      telemetryEvent: { deleteMany: vi.fn() },
+      user: { findUnique: vi.fn().mockResolvedValue(null), delete: vi.fn() },
+      $transaction: vi.fn(),
+    };
+    const server = buildServer(prisma);
+    const res = await server.inject({ method: "POST", url: "/auth/delete", payload: { confirmText: "Delete-My-K3H4-Data" } });
+    expect(res.statusCode).toBe(404);
+    expect(prisma.user.delete).not.toHaveBeenCalled();
+  });
 });

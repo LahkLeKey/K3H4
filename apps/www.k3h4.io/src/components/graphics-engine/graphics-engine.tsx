@@ -1,4 +1,4 @@
-import { Suspense, useMemo, useState } from "react";
+import { Suspense, useMemo } from "react";
 import { Canvas } from "@react-three/fiber";
 import { Float, Grid, Html, Line, OrbitControls } from "@react-three/drei";
 
@@ -6,6 +6,7 @@ import { Section } from "../section";
 import { SectionCard } from "../shell/section-card";
 import { Badge } from "../ui/badge";
 import { Button } from "../ui/button";
+import { useLocalStore } from "../../lib/store";
 
 const cropPalette: Record<string, string> = {
     Corn: "#10b981",
@@ -48,6 +49,11 @@ type ExperienceNode = {
 export type GraphicsEngineModuleProps = {
     userEmail: string | null;
     onNavigate?: (key: ModuleKey) => void;
+};
+
+type GraphicsUiState = {
+    activeScene: SceneKey;
+    highlightedPlot: string | null;
 };
 
 function FarmPlotTile({ plot, highlighted, onHighlight }: { plot: FarmPlot; highlighted: boolean; onHighlight: (id: string | null) => void; }) {
@@ -155,8 +161,14 @@ function GraphicsCanvas({
 }
 
 export function GraphicsEngineModule({ userEmail, onNavigate }: GraphicsEngineModuleProps) {
-    const [activeScene, setActiveScene] = useState<SceneKey>("farm");
-    const [highlightedPlot, setHighlightedPlot] = useState<string | null>(null);
+    const uiStore = useLocalStore<GraphicsUiState>(() => ({
+        activeScene: "farm",
+        highlightedPlot: null,
+    }));
+
+    const { activeScene, highlightedPlot } = uiStore.useShallow((state: GraphicsUiState) => state);
+    const setActiveScene = (scene: SceneKey) => uiStore.setState({ activeScene: scene });
+    const setHighlightedPlot = (plotId: string | null) => uiStore.setState({ highlightedPlot: plotId });
 
     const farmPlots = useMemo<FarmPlot[]>(() => ([
         { id: "N-40", name: "North 40", crop: "Corn", acres: 40, health: 0.9, position: [-6, 0.02, 5], size: [5, 4] },

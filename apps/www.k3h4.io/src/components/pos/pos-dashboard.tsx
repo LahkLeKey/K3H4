@@ -1,9 +1,9 @@
 import type { ReactNode } from "react";
-import { useState } from "react";
 
 import { Section } from "../section";
 import { SectionCard } from "../shell/section-card";
 import { useCreatePosStore, useCreatePosTicket, usePosOverviewQuery } from "../../hooks/use-pos-queries";
+import { useLocalStore } from "../../lib/store";
 
 export type PosDashboardProps = {
     apiBase: string;
@@ -30,16 +30,39 @@ export function PosDashboard({ apiBase, userEmail }: PosDashboardProps) {
     const overview = usePosOverviewQuery(apiBase);
     const createStore = useCreatePosStore(apiBase);
     const createTicket = useCreatePosTicket(apiBase);
+    const uiStore = useLocalStore(() => ({
+        storeName: "",
+        storeChannel: "In-store",
+        ticketStoreName: "",
+        ticketChannel: "In-store",
+        ticketTotal: "75.00",
+        itemName: "Item",
+        itemPrice: "25.00",
+        itemQty: "3",
+        errors: null as string | null,
+    }));
 
-    const [storeName, setStoreName] = useState("");
-    const [storeChannel, setStoreChannel] = useState("In-store");
-    const [ticketStoreName, setTicketStoreName] = useState("");
-    const [ticketChannel, setTicketChannel] = useState("In-store");
-    const [ticketTotal, setTicketTotal] = useState("75.00");
-    const [itemName, setItemName] = useState("Item");
-    const [itemPrice, setItemPrice] = useState("25.00");
-    const [itemQty, setItemQty] = useState("3");
-    const [errors, setErrors] = useState<string | null>(null);
+    const {
+        storeName,
+        storeChannel,
+        ticketStoreName,
+        ticketChannel,
+        ticketTotal,
+        itemName,
+        itemPrice,
+        itemQty,
+        errors,
+    } = uiStore.useShallow((state) => state);
+
+    const setErrors = (value: string | null) => uiStore.setState({ errors: value });
+    const setStoreName = (value: string) => uiStore.setState({ storeName: value });
+    const setStoreChannel = (value: string) => uiStore.setState({ storeChannel: value });
+    const setTicketStoreName = (value: string) => uiStore.setState({ ticketStoreName: value });
+    const setTicketChannel = (value: string) => uiStore.setState({ ticketChannel: value });
+    const setTicketTotal = (value: string) => uiStore.setState({ ticketTotal: value });
+    const setItemName = (value: string) => uiStore.setState({ itemName: value });
+    const setItemPrice = (value: string) => uiStore.setState({ itemPrice: value });
+    const setItemQty = (value: string) => uiStore.setState({ itemQty: value });
     const headerActions: ReactNode = (
         <div className="text-xs text-muted-foreground">Demo data • Connected to {apiBase}</div>
     );

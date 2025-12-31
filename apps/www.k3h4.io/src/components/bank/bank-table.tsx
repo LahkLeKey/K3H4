@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo } from "react";
 
 import { useK3h4Bank } from "../../hooks/use-k3h4-bank";
 import { Badge } from "../ui/badge";
@@ -13,6 +13,7 @@ import {
     TableHeader,
     TableRow,
 } from "../ui/table";
+import { useLocalStore } from "../../lib/store";
 
 export type BankTableProps = {
     apiBase: string;
@@ -20,11 +21,21 @@ export type BankTableProps = {
 };
 
 export function BankTable({ apiBase, userEmail }: BankTableProps) {
-    const [page, setPage] = useState(0);
-    const [pageSize, setPageSize] = useState(10);
-    const [fromDate, setFromDate] = useState('');
-    const [toDate, setToDate] = useState('');
-    const [direction, setDirection] = useState<"" | "credit" | "debit">('');
+    const uiStore = useLocalStore(() => ({
+        page: 0,
+        pageSize: 10,
+        fromDate: '',
+        toDate: '',
+        direction: '' as "" | "credit" | "debit",
+    }));
+
+    const { page, pageSize, fromDate, toDate, direction } = uiStore.useShallow((state) => state);
+    const setPage = (updater: (prev: number) => number) => uiStore.setState((prev) => ({ page: updater(prev.page) }));
+    const setPageValue = (value: number) => uiStore.setState({ page: value });
+    const setPageSize = (value: number) => uiStore.setState({ pageSize: value });
+    const setFromDate = (value: string) => uiStore.setState({ fromDate: value });
+    const setToDate = (value: string) => uiStore.setState({ toDate: value });
+    const setDirection = (value: "" | "credit" | "debit") => uiStore.setState({ direction: value });
 
     const {
         balance,
@@ -48,7 +59,7 @@ export function BankTable({ apiBase, userEmail }: BankTableProps) {
     useEffect(() => {
         const maxPage = Math.max(0, Math.ceil((totalTransactions || 0) / pageSize) - 1);
         if (page > maxPage) {
-            setPage(maxPage);
+            setPageValue(maxPage);
         }
     }, [totalTransactions, page, pageSize]);
 
@@ -100,18 +111,18 @@ export function BankTable({ apiBase, userEmail }: BankTableProps) {
                 <div className="grid gap-2 sm:grid-cols-[repeat(auto-fit,minmax(160px,1fr))]">
                     <div className="space-y-1 text-sm">
                         <label className="text-muted-foreground">From</label>
-                        <Input type="date" value={fromDate} onChange={(e) => { setPage(0); setFromDate(e.target.value); }} />
+                        <Input type="date" value={fromDate} onChange={(e) => { setPageValue(0); setFromDate(e.target.value); }} />
                     </div>
                     <div className="space-y-1 text-sm">
                         <label className="text-muted-foreground">To</label>
-                        <Input type="date" value={toDate} onChange={(e) => { setPage(0); setToDate(e.target.value); }} />
+                        <Input type="date" value={toDate} onChange={(e) => { setPageValue(0); setToDate(e.target.value); }} />
                     </div>
                     <div className="space-y-1 text-sm">
                         <label className="text-muted-foreground">Direction</label>
                         <select
                             className="w-full rounded-md border bg-background px-3 py-2 text-sm"
                             value={direction}
-                            onChange={(e) => { setPage(0); setDirection(e.target.value as "" | "credit" | "debit"); }}
+                            onChange={(e) => { setPageValue(0); setDirection(e.target.value as "" | "credit" | "debit"); }}
                         >
                             <option value="">All</option>
                             <option value="credit">Credit</option>
@@ -123,7 +134,7 @@ export function BankTable({ apiBase, userEmail }: BankTableProps) {
                         <select
                             className="w-full rounded-md border bg-background px-3 py-2 text-sm"
                             value={pageSize}
-                            onChange={(e) => { setPage(0); setPageSize(Number(e.target.value) || 10); }}
+                            onChange={(e) => { setPageValue(0); setPageSize(Number(e.target.value) || 10); }}
                         >
                             {[10, 20, 50].map((size) => (
                                 <option key={size} value={size}>{size} rows</option>

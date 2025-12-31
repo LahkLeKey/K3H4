@@ -36,6 +36,11 @@ type ShellHeaderProps = {
     actions?: ReactNode;
     modulesMenu?: ReactNode;
     onGithubLogin: () => void;
+    // Delete props for ProfilePanel in dropdown
+    onDeleteAccount?: (confirmText: string) => Promise<void> | void;
+    deletingAccount?: boolean;
+    deleteProgress?: number;
+    deleteStatusText?: string;
 };
 
 export function ShellHeader({
@@ -54,6 +59,10 @@ export function ShellHeader({
     brand,
     actions,
     modulesMenu,
+    onDeleteAccount,
+    deletingAccount,
+    deleteProgress,
+    deleteStatusText,
 }: ShellHeaderProps) {
     const displayName = profile?.displayName || userEmail || "Your profile";
     const avatarUrl = profile?.avatarUrl || undefined;
@@ -93,6 +102,10 @@ export function ShellHeader({
                                             setProfile={setProfile}
                                             onSave={onProfileSave}
                                             onSignOut={onSignOut}
+                                            onDeleteAccount={onDeleteAccount}
+                                            deletingAccount={deletingAccount ?? false}
+                                            deleteProgress={deleteProgress ?? 0}
+                                            deleteStatusText={deleteStatusText ?? ""}
                                         />
                                     </div>
                                     <DropdownMenuSeparator />

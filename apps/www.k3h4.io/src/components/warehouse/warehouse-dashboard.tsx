@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 
 import { useFreightLoadsQuery } from "../../hooks/use-freight-queries";
 import {
@@ -13,6 +13,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import { Input } from "../ui/input";
 import { Label } from "../ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../ui/table";
+import { useLocalStore } from "../../lib/store";
 
 export type WarehouseDashboardProps = {
     apiBase: string;
@@ -26,7 +27,12 @@ export function WarehouseDashboard({ apiBase, userEmail, onNavigateFreight }: Wa
     const itemsQuery = useWarehouseItemsQuery(apiBase);
     const createItem = useCreateWarehouseItemMutation(apiBase);
     const updateItem = useUpdateWarehouseItemMutation(apiBase);
-    const [draft, setDraft] = useState({ sku: "", description: "", quantity: "1", location: "", freightLoadId: "" });
+    const uiStore = useLocalStore(() => ({
+        draft: { sku: "", description: "", quantity: "1", location: "", freightLoadId: "" },
+    }));
+
+    const { draft } = uiStore.useShallow((state) => state);
+    const setDraft = (updater: (prev: typeof draft) => typeof draft) => uiStore.setState((prev) => ({ draft: updater(prev.draft) }));
 
     const inboundLoads = useMemo(() => (loadsQuery.data ?? []).filter((l) => l.status !== "completed"), [loadsQuery.data]);
     const completedLoads = useMemo(() => (loadsQuery.data ?? []).filter((l) => l.status === "completed"), [loadsQuery.data]);
@@ -43,7 +49,7 @@ export function WarehouseDashboard({ apiBase, userEmail, onNavigateFreight }: Wa
             status: "stored",
             freightLoadId: draft.freightLoadId.trim() || undefined,
         });
-        setDraft({ sku: "", description: "", quantity: "1", location: "", freightLoadId: "" });
+        setDraft(prev => ({ ...prev, sku: "", description: "", quantity: "1", location: "", freightLoadId: "" }));
     };
 
     const toggleStatus = async (item: WarehouseItem) => {

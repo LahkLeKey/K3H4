@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import { Plus, RefreshCcw, Send, Sparkles } from "lucide-react";
 
 import { useK3h4Bank } from "../../hooks/use-k3h4-bank";
@@ -20,6 +20,7 @@ import {
     TableHeader,
     TableRow,
 } from "../ui/table";
+import { useLocalStore } from "../../lib/store";
 
 export type PersonaTableProps = {
     apiBase: string;
@@ -43,12 +44,20 @@ export function PersonaTable({ apiBase, userEmail }: PersonaTableProps) {
     const personasQuery = usePersonaListQuery(apiBase);
     const createPersona = useCreatePersonaMutation(apiBase);
     const generatePersona = useGeneratePersonaMutation(apiBase);
+    const uiStore = useLocalStore(() => ({
+        filter: "",
+        newPersona: { alias: "", account: "", handle: "", note: "" },
+        rowAmounts: {} as Record<string, string>,
+        rowNotes: {} as Record<string, string>,
+        inlineError: "",
+    }));
 
-    const [filter, setFilter] = useState("");
-    const [newPersona, setNewPersona] = useState({ alias: "", account: "", handle: "", note: "" });
-    const [rowAmounts, setRowAmounts] = useState<Record<string, string>>({});
-    const [rowNotes, setRowNotes] = useState<Record<string, string>>({});
-    const [inlineError, setInlineError] = useState<string>("");
+    const { filter, newPersona, rowAmounts, rowNotes, inlineError } = uiStore.useShallow((state) => state);
+    const setFilter = (value: string) => uiStore.setState({ filter: value });
+    const setNewPersona = (updater: (prev: typeof newPersona) => typeof newPersona) => uiStore.setState((prev) => ({ newPersona: updater(prev.newPersona) }));
+    const setRowAmounts = (updater: (prev: Record<string, string>) => Record<string, string>) => uiStore.setState((prev) => ({ rowAmounts: updater(prev.rowAmounts) }));
+    const setRowNotes = (updater: (prev: Record<string, string>) => Record<string, string>) => uiStore.setState((prev) => ({ rowNotes: updater(prev.rowNotes) }));
+    const setInlineError = (value: string) => uiStore.setState({ inlineError: value });
 
     const formattedBalance = useMemo(() => {
         if (balance === null) return loading ? "Loading..." : "--";
@@ -81,7 +90,7 @@ export function PersonaTable({ apiBase, userEmail }: PersonaTableProps) {
                 note: newPersona.note.trim() || undefined,
                 tags: ["custom"],
             });
-            setNewPersona({ alias: "", account: "", handle: "", note: "" });
+            setNewPersona(prev => ({ ...prev, alias: "", account: "", handle: "", note: "" }));
             setInlineError("");
         } catch (err) {
             setInlineError(err instanceof Error ? err.message : "Unable to add persona");

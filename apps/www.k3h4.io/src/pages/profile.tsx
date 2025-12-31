@@ -14,6 +14,10 @@ export function ProfilePage() {
         setProfile,
         handleProfileSave,
         handleSignOut,
+        handleDeleteAccount,
+        deletingAccount,
+        deleteProgress,
+        deleteStatusText,
         handleGithubLogin,
     } = useAuthProfile();
 
@@ -39,6 +43,10 @@ export function ProfilePage() {
             setProfile={setProfile}
             onSave={handleProfileSave}
             onSignOut={handleSignOut}
+            onDeleteAccount={handleDeleteAccount}
+            deletingAccount={deletingAccount}
+            deleteProgress={deleteProgress}
+            deleteStatusText={deleteStatusText}
         />
     );
 }

@@ -9,6 +9,14 @@ export type SessionResponse = { user?: { email?: string | null } };
 export type ProfileResponse = { profile: ProfileState };
 export type GithubUrlResponse = { authorizeUrl: string };
 export type GithubCallbackResponse = { accessToken: string; refreshToken: string; profile?: ProfileState };
+export type AccountDeleteResponse = { jobId: string; status: "queued" | "running" | "done" | "error" };
+export type AccountDeleteStatusResponse = {
+  jobId: string;
+  status: "queued" | "running" | "done" | "error";
+  progress: number;
+  message?: string;
+  counts?: Record<string, unknown>;
+};
 
 const getToken = () => (typeof window === "undefined" ? "" : localStorage.getItem(ACCESS_TOKEN_KEY) || "");
 
@@ -136,6 +144,50 @@ export function useProfileSaveMutation(apiBase: string) {
     },
     onSuccess: (data) => {
       queryClient.setQueryData(["auth", "profile"], data);
+    },
+  });
+}
+
+export function useAccountDeleteMutation(apiBase: string) {
+  const queryClient = useQueryClient();
+  return useMutation<AccountDeleteResponse, Error, { confirmText: string }>({
+    mutationKey: ["auth", "delete", apiBase],
+    mutationFn: async ({ confirmText }) => {
+      const auth = authHeaders();
+      if (!auth) throw new Error("Sign in to delete your data");
+      const data = await fetchJson<AccountDeleteResponse>(
+        `${apiBase}/auth/delete`,
+        { method: "POST", headers: auth.headers, body: JSON.stringify({ confirmText }) },
+        "auth.delete.error",
+      );
+      void trackTelemetry("auth.delete.started");
+      return data;
+    },
+    onSettled: () => {
+      void queryClient.invalidateQueries({ queryKey: ["auth", "session"] });
+      void queryClient.invalidateQueries({ queryKey: ["auth", "profile"] });
+    },
+  });
+}
+
+export function useAccountDeleteStatusQuery(apiBase: string, jobId: string | null) {
+  const auth = authHeaders();
+  return useQuery<AccountDeleteStatusResponse>({
+    queryKey: ["auth", "delete", "status", apiBase, jobId],
+    enabled: Boolean(jobId && auth?.token),
+    refetchInterval: (query) => {
+      // For TanStack Query v4, use query.state.data
+      const data = query.state.data;
+      if (!data) return 750;
+      return data.status === "done" || data.status === "error" ? false : 750;
+    },
+    queryFn: async () => {
+      if (!auth || !jobId) throw new Error("No delete job");
+      return fetchJson<AccountDeleteStatusResponse>(
+        `${apiBase}/auth/delete/status?jobId=${encodeURIComponent(jobId)}`,
+        { headers: auth.headers },
+        "auth.delete.status.error",
+      );
     },
   });
 }

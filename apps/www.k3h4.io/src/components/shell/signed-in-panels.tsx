@@ -27,6 +27,9 @@ export function SignedInPanels({ userEmail, profile, profileLoading, profileMess
                         setProfile={setProfile}
                         onSave={onSave}
                         onSignOut={onSignOut}
+                        deletingAccount={false}
+                        deleteProgress={0}
+                        deleteStatusText={""}
                     />
                 </SectionCard>
             }
