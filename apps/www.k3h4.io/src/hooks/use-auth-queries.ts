@@ -175,7 +175,9 @@ export function useAccountDeleteStatusQuery(apiBase: string, jobId: string | nul
   return useQuery<AccountDeleteStatusResponse>({
     queryKey: ["auth", "delete", "status", apiBase, jobId],
     enabled: Boolean(jobId && auth?.token),
-    refetchInterval: (data: AccountDeleteStatusResponse | undefined) => {
+    refetchInterval: (query) => {
+      // For TanStack Query v4, use query.state.data
+      const data = query.state.data;
       if (!data) return 750;
       return data.status === "done" || data.status === "error" ? false : 750;
     },

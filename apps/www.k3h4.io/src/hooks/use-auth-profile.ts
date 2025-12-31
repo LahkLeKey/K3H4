@@ -171,18 +171,19 @@ export function useAuthProfile() {
   };
 
   useEffect(() => {
-    if (!deleteStatusQuery.data) return;
-    setDeleteProgress(deleteStatusQuery.data.progress ?? deleteProgress);
-    setDeleteStatusText(deleteStatusQuery.data.message ?? "");
+    const data = deleteStatusQuery.data;
+    if (!data) return;
+    setDeleteProgress('progress' in data ? data.progress ?? deleteProgress : deleteProgress);
+    setDeleteStatusText('message' in data ? data.message ?? "" : "");
 
-    if (deleteStatusQuery.data.status === "done") {
+    if ('status' in data && data.status === "done") {
       setProfileMessage("Account deleted and local session cleared");
       handleSignOut();
       setDeleteJobId(null);
     }
 
-    if (deleteStatusQuery.data.status === "error") {
-      setProfileMessage(deleteStatusQuery.data.message || "Delete failed");
+    if ('status' in data && data.status === "error") {
+      setProfileMessage('message' in data ? data.message || "Delete failed" : "Delete failed");
       setDeleteJobId(null);
     }
   }, [deleteStatusQuery.data, deleteProgress, handleSignOut, setProfileMessage]);
