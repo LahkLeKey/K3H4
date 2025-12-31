@@ -175,9 +175,9 @@ export function useAccountDeleteStatusQuery(apiBase: string, jobId: string | nul
   return useQuery<AccountDeleteStatusResponse>({
     queryKey: ["auth", "delete", "status", apiBase, jobId],
     enabled: Boolean(jobId && auth?.token),
-    refetchInterval: (data) => {
+    refetchInterval: (data: AccountDeleteStatusResponse | undefined) => {
       if (!data) return 750;
-      return data?.status === "done" || data?.status === "error" ? false : 750;
+      return data.status === "done" || data.status === "error" ? false : 750;
     },
     queryFn: async () => {
       if (!auth || !jobId) throw new Error("No delete job");
