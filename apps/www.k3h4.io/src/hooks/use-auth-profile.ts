@@ -13,6 +13,9 @@ import {
   useProfileQuery,
   useProfileSaveMutation,
   useSessionQuery,
+  useLinkedinUrlMutation,
+  useLinkedinCallbackMutation,
+  useSignOutMutation,
 } from "./use-auth-queries";
 import { ACCESS_TOKEN_KEY, REFRESH_TOKEN_KEY } from "../lib/constants";
 import { useLocalStore } from "../lib/store";
@@ -20,6 +23,7 @@ import { useLocalStore } from "../lib/store";
 export type { ProfileState, UserIdentity } from "../stores/auth-store";
 
 export function useAuthProfile() {
+  // ...existing code...
   const queryClient = useQueryClient();
   const local = useLocalStore(() => ({
     hasToken: typeof window !== "undefined" ? Boolean(localStorage.getItem(ACCESS_TOKEN_KEY)) : false,
@@ -58,6 +62,23 @@ export function useAuthProfile() {
     setProfileFromServer: state.setProfileFromServer,
   }));
 
+  const linkedinUrlMutation = useLinkedinUrlMutation(apiBase);
+
+  const handleLinkedinLogin = async () => {
+    setAuthState("loading", "Redirecting to LinkedIn...");
+    try {
+      // Always use path-based LinkedIn callback for OAuth (no #), even if SPA is hash-based
+      let origin = window.location.origin;
+      // Remove trailing slash if present
+      if (origin.endsWith("/")) origin = origin.slice(0, -1);
+      const linkedinRedirectUri = origin + "/auth/linkedin/callback";
+      const result = await linkedinUrlMutation.mutateAsync({ redirectUri: linkedinRedirectUri });
+      window.location.href = result.authorizeUrl;
+    } catch (error) {
+      setAuthState("error", error instanceof Error ? error.message : "LinkedIn login failed");
+    }
+  };
+
   const sessionQuery = useSessionQuery(apiBase);
   const userIdentity = useMemo(() => deriveUser(sessionQuery.data), [sessionQuery.data]);
 
@@ -69,6 +90,24 @@ export function useAuthProfile() {
   const profileSaveMutation = useProfileSaveMutation(apiBase);
   const accountDeleteMutation = useAccountDeleteMutation(apiBase);
   const deleteStatusQuery = useAccountDeleteStatusQuery(apiBase, deleteJobId);
+
+  const linkedinCallbackMutation = useLinkedinCallbackMutation(apiBase);
+
+  const completeLinkedinCallback = async (code: string, redirect = redirectUri): Promise<{ ok: boolean; error?: string }> => {
+    setAuthState("loading", "Signing you in with LinkedIn...");
+    try {
+      const res = await linkedinCallbackMutation.mutateAsync({ code, redirectUri: redirect });
+      const nextUser = deriveUser({ user: { email: res.profile?.email ?? "" } } as SessionResponse);
+      setUser(nextUser);
+      if (res.profile) setProfileFromServer(res.profile);
+      setAuthState("success", "Signed in - redirecting...");
+      return { ok: true };
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Something went wrong";
+      setAuthState("error", message);
+      return { ok: false, error: message };
+    }
+  };
 
   useEffect(() => {
     const token = typeof window !== "undefined" ? localStorage.getItem(ACCESS_TOKEN_KEY) : null;
@@ -145,7 +184,13 @@ export function useAuthProfile() {
     }
   };
 
-  function handleSignOut() {
+  const signOutMutation = useSignOutMutation(apiBase);
+  async function handleSignOut() {
+    try {
+      await signOutMutation.mutateAsync();
+    } catch (err) {
+      // ignore error, always clear local session
+    }
     localStorage.removeItem(ACCESS_TOKEN_KEY);
     localStorage.removeItem(REFRESH_TOKEN_KEY);
     void queryClient.removeQueries({ queryKey: ["auth", "session"] });
@@ -227,9 +272,13 @@ export function useAuthProfile() {
     handleSignOut,
     handleDeleteAccount,
     handleProfileSave,
+    handleLinkedinLogin,
+    completeLinkedinCallback,
     deletingAccount: accountDeleteMutation.isPending || deleteStatusQuery.isFetching,
     deleteProgress,
     deleteStatusText,
     completeGithubCallback,
+    accountDeleteMutation,
+    deleteStatusQuery,
   };
 }

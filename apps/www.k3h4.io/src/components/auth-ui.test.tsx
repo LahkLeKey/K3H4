@@ -18,7 +18,7 @@ vi.mock("./section", () => ({ Section: ({ children }: { children: React.ReactNod
 describe("AuthCta", () => {
     it("shows login CTA and handles click", () => {
         const onLogin = vi.fn();
-        render(<AuthCta userEmail={null} authStatus="idle" authMessage="" onGithubLogin={onLogin} />);
+        render(<AuthCta userEmail={null} authStatus="idle" authMessage="" onGithubLogin={onLogin} onLinkedinLogin={onLogin} />);
 
         fireEvent.click(screen.getByRole("button", { name: /login with github/i }));
         expect(onLogin).toHaveBeenCalled();
@@ -26,7 +26,7 @@ describe("AuthCta", () => {
     });
 
     it("disables while loading and shows messages", () => {
-        render(<AuthCta userEmail="me@test.com" authStatus="loading" authMessage="busy" onGithubLogin={vi.fn()} />);
+        render(<AuthCta userEmail="me@test.com" authStatus="loading" authMessage="busy" onGithubLogin={vi.fn()} onLinkedinLogin={vi.fn()} />);
 
         expect(screen.getByRole("button", { name: /redirecting/i })).toBeDisabled();
         expect(screen.getByText("busy")).toBeInTheDocument();
@@ -37,7 +37,7 @@ describe("AuthCta", () => {
 describe("AuthAccessSection", () => {
     it("renders section with nested CTA", () => {
         render(
-            <AuthAccessSection authStatus="idle" authMessage="" userEmail={null} onGithubLogin={vi.fn()} eyebrow="Hello" title="T" description="D" />,
+            <AuthAccessSection authStatus="idle" authMessage="" userEmail={null} onGithubLogin={vi.fn()} onLinkedinLogin={vi.fn()} eyebrow="Hello" title="T" description="D" />,
         );
 
         expect(screen.getByTestId("section")).toBeInTheDocument();

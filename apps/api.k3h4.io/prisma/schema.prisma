@@ -38,6 +38,7 @@ model User {
   arcadePrizes   ArcadePrize[]
   arcadeSessions ArcadeSession[]
   arcadeRedemptions ArcadeRedemption[]
+  providerGrants ProviderGrant[]
 
   @@unique([provider, providerId])
 }
@@ -67,6 +68,20 @@ model RefreshToken {
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   createdAt DateTime @default(now())
   expiresAt DateTime
+}
+
+model ProviderGrant {
+  id         String   @id @default(cuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  provider   String
+  providerId String
+  accessToken String
+  scope      String?
+  expiresAt  DateTime?
+  createdAt  DateTime @default(now())
+
+  @@unique([provider, providerId])
 }
 
 model UserPreference {

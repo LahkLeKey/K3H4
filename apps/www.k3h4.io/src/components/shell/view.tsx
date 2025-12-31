@@ -19,6 +19,7 @@ export type ShellViewProps = {
     onProfileSave: () => void;
     onSignOut: () => void;
     onGithubLogin: () => void;
+    onLinkedinLogin: () => void;
     brand?: ReactNode;
     actions?: ReactNode;
     modulesMenu?: ReactNode;

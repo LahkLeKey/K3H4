@@ -7,11 +7,13 @@ type Props = {
     authStatus: AuthStatus
     authMessage: string
     onGithubLogin: () => void
+    onLinkedinLogin: () => void
 }
 
-export function AuthCta({ userEmail, authStatus, authMessage, onGithubLogin }: Props) {
+export function AuthCta({ userEmail, authStatus, authMessage, onGithubLogin, onLinkedinLogin }: Props) {
     const isLoading = authStatus === 'loading'
     const primaryLabel = isLoading ? 'Redirecting...' : 'Login with GitHub'
+    const linkedinLabel = isLoading ? 'Redirecting...' : 'Login with LinkedIn'
 
     return (
         <div className="mx-auto w-full max-w-3xl">
@@ -26,11 +28,20 @@ export function AuthCta({ userEmail, authStatus, authMessage, onGithubLogin }: P
                         <Button
                             type="button"
                             variant="default"
-                            className="w-full"
+                            className="w-full mb-2"
                             onClick={onGithubLogin}
                             disabled={isLoading}
                         >
                             {primaryLabel}
+                        </Button>
+                        <Button
+                            type="button"
+                            variant="outline"
+                            className="w-full"
+                            onClick={onLinkedinLogin}
+                            disabled={isLoading}
+                        >
+                            {linkedinLabel}
                         </Button>
                         {authMessage ? (
                             <p className={authStatus === 'error' ? 'text-sm text-destructive text-center' : 'text-sm text-center text-emerald-700'}>

@@ -3,7 +3,7 @@ import { BankTable } from '../components/bank/bank-table'
 import { useAuthProfile } from '../hooks/use-auth-profile'
 
 export function HomePage() {
-    const { apiBase, user, authStatus, authMessage, userEmail, handleGithubLogin } = useAuthProfile()
+    const { apiBase, user, authStatus, authMessage, userEmail, handleGithubLogin, handleLinkedinLogin } = useAuthProfile()
 
     if (user.status === 'authenticated') {
         return <BankTable apiBase={apiBase} userEmail={userEmail} />
@@ -15,6 +15,7 @@ export function HomePage() {
             authStatus={authStatus}
             authMessage={authMessage || ''}
             onGithubLogin={handleGithubLogin}
+            onLinkedinLogin={handleLinkedinLogin}
         />
     )
 }
