@@ -14,6 +14,7 @@ import {
   useProfileSaveMutation,
   useSessionQuery,
   useLinkedinUrlMutation,
+  useLinkedinCallbackMutation,
   useSignOutMutation,
 } from "./use-auth-queries";
 import { ACCESS_TOKEN_KEY, REFRESH_TOKEN_KEY } from "../lib/constants";
@@ -22,34 +23,6 @@ import { useLocalStore } from "../lib/store";
 export type { ProfileState, UserIdentity } from "../stores/auth-store";
 
 export function useAuthProfile() {
-    const completeLinkedinCallback = async (code: string, redirect = window.location.origin + "/auth/linkedin/callback"): Promise<{ ok: boolean; error?: string }> => {
-      setAuthState("loading", "Signing you in with LinkedIn...");
-      try {
-        // Call backend LinkedIn callback endpoint
-        const res = await fetch(apiBase + "/auth/linkedin/callback", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ code, redirectUri: redirect }),
-        });
-        const data = await res.json();
-        if (!res.ok || data.error) {
-          setAuthState("error", data.error || "LinkedIn sign-in failed");
-          return { ok: false, error: data.error };
-        }
-        // Set user and profile in state, matching GitHub logic
-        const nextUser = deriveUser({ user: { email: data.profile?.email ?? "" } } as SessionResponse);
-        setUser(nextUser);
-        if (data.profile) {
-          setProfileFromServer(data.profile);
-        }
-        setAuthState("success", "Signed in - redirecting...");
-        return { ok: true };
-      } catch (error) {
-        const message = error instanceof Error ? error.message : "Something went wrong";
-        setAuthState("error", message);
-        return { ok: false, error: message };
-      }
-    };
   // ...existing code...
   const queryClient = useQueryClient();
   const local = useLocalStore(() => ({
@@ -117,6 +90,24 @@ export function useAuthProfile() {
   const profileSaveMutation = useProfileSaveMutation(apiBase);
   const accountDeleteMutation = useAccountDeleteMutation(apiBase);
   const deleteStatusQuery = useAccountDeleteStatusQuery(apiBase, deleteJobId);
+
+  const linkedinCallbackMutation = useLinkedinCallbackMutation(apiBase);
+
+  const completeLinkedinCallback = async (code: string, redirect = redirectUri): Promise<{ ok: boolean; error?: string }> => {
+    setAuthState("loading", "Signing you in with LinkedIn...");
+    try {
+      const res = await linkedinCallbackMutation.mutateAsync({ code, redirectUri: redirect });
+      const nextUser = deriveUser({ user: { email: res.profile?.email ?? "" } } as SessionResponse);
+      setUser(nextUser);
+      if (res.profile) setProfileFromServer(res.profile);
+      setAuthState("success", "Signed in - redirecting...");
+      return { ok: true };
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Something went wrong";
+      setAuthState("error", message);
+      return { ok: false, error: message };
+    }
+  };
 
   useEffect(() => {
     const token = typeof window !== "undefined" ? localStorage.getItem(ACCESS_TOKEN_KEY) : null;

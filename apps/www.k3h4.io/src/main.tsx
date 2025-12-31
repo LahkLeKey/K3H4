@@ -22,17 +22,42 @@ if (window.location.pathname === '/auth/linkedin/callback') {
         document.body.innerHTML = `<h1>LinkedIn login failed</h1><pre>${data.error || 'Unknown error'}</pre>`;
         return;
       }
-      // Store tokens in localStorage
-      if (data.accessToken) localStorage.setItem('k3h4:access-token', data.accessToken);
-      if (data.refreshToken) localStorage.setItem('k3h4:refresh-token', data.refreshToken);
-      // Redirect to home and reload to ensure SPA picks up session
-      window.location.replace('/');
-      setTimeout(() => window.location.reload(), 100);
+      // Store tokens in localStorage (match frontend keys)
+      try {
+        if (data.accessToken) localStorage.setItem('k3h4.accessToken', data.accessToken);
+        if (data.refreshToken) localStorage.setItem('k3h4.refreshToken', data.refreshToken);
+      } catch (err) {
+        // ignore storage failures
+      }
+      // Redirect into the SPA hash route and reload so React picks up session
+      const hashRoot = '/#/';
+      window.location.replace(window.location.origin + hashRoot);
+      setTimeout(() => window.location.reload(), 150);
     } catch (err) {
       document.body.innerHTML = `<h1>LinkedIn login failed</h1><pre>${err instanceof Error ? err.message : err}</pre>`;
     }
   })();
 }
+
+// If landing on the initial sign-in page but localStorage already has tokens (set by the
+// provider callback handler), push the user into the hash router so the React app can
+// initialize session state. This avoids getting stuck on the sign-in UI after token set.
+try {
+  const access = typeof window !== 'undefined' ? localStorage.getItem('k3h4.accessToken') : null;
+  const refresh = typeof window !== 'undefined' ? localStorage.getItem('k3h4.refreshToken') : null;
+  const isRoot = window.location.pathname === '/' || window.location.pathname === '';
+  const hasNoHash = !window.location.hash || window.location.hash === '';
+  if (access && refresh && isRoot && hasNoHash) {
+    // Navigate into SPA hash route and reload so hooks pick up stored tokens
+    const to = window.location.origin + '/#/';
+    window.location.replace(to);
+    setTimeout(() => window.location.reload(), 150);
+  }
+} catch (err) {
+  // ignore storage or navigation errors
+}
+
+// Normalize provider callbacks (GitHub, LinkedIn) to HashRouter routes when the provider sends users back to /auth/github or /auth/linkedin/callback
 import { StrictMode } from 'react'
 import { QueryClientProvider } from '@tanstack/react-query'
 import { createRoot } from 'react-dom/client'
