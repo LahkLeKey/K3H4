@@ -9,6 +9,48 @@ export type SessionResponse = { user?: { email?: string | null } };
 export type ProfileResponse = { profile: ProfileState };
 export type GithubUrlResponse = { authorizeUrl: string };
 export type GithubCallbackResponse = { accessToken: string; refreshToken: string; profile?: ProfileState };
+export type LinkedinUrlResponse = { authorizeUrl: string };
+export type LinkedinCallbackResponse = { accessToken: string; refreshToken: string; profile?: ProfileState };
+export function useLinkedinUrlMutation(apiBase: string) {
+  return useMutation<{ authorizeUrl: string }, Error, { redirectUri: string }>(
+    {
+      mutationKey: ["auth", "linkedin", "url", apiBase],
+      mutationFn: async ({ redirectUri }) => {
+        const data = await fetchJson<LinkedinUrlResponse>(
+          `${apiBase}/auth/linkedin/url`,
+          { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ redirectUri }) },
+          "auth.linkedin.url.error",
+        );
+        void trackTelemetry("auth.linkedin.url.success", { redirectUri });
+        return data;
+      },
+    }
+  );
+}
+
+export function useLinkedinCallbackMutation(apiBase: string) {
+  const queryClient = useQueryClient();
+  return useMutation<LinkedinCallbackResponse, Error, { code: string; redirectUri: string }>(
+    {
+      mutationKey: ["auth", "linkedin", "callback", apiBase],
+      mutationFn: async ({ code, redirectUri }) => {
+        const data = await fetchJson<LinkedinCallbackResponse>(
+          `${apiBase}/auth/linkedin/callback`,
+          { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ code, redirectUri }) },
+          "auth.linkedin.callback.error",
+        );
+        void trackTelemetry("auth.linkedin.callback.success", { redirectUri });
+        localStorage.setItem(ACCESS_TOKEN_KEY, data.accessToken);
+        localStorage.setItem(REFRESH_TOKEN_KEY, data.refreshToken);
+        return data;
+      },
+      onSuccess: () => {
+        void queryClient.invalidateQueries({ queryKey: ["auth", "session"] });
+        void queryClient.invalidateQueries({ queryKey: ["auth", "profile"] });
+      },
+    }
+  );
+}
 export type AccountDeleteResponse = { jobId: string; status: "queued" | "running" | "done" | "error" };
 export type AccountDeleteStatusResponse = {
   jobId: string;

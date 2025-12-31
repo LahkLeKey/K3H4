@@ -10,6 +10,7 @@ export type AuthAccessSectionProps = {
     authMessage: string
     userEmail: string | null
     onGithubLogin: () => void
+    onLinkedinLogin: () => void
 }
 
 export function AuthAccessSection({
@@ -20,6 +21,7 @@ export function AuthAccessSection({
     authMessage,
     userEmail,
     onGithubLogin,
+    onLinkedinLogin,
 }: AuthAccessSectionProps) {
     return (
         <Section eyebrow={eyebrow} title={title} description={description}>
@@ -30,6 +32,7 @@ export function AuthAccessSection({
                         authStatus={authStatus}
                         authMessage={authMessage}
                         onGithubLogin={onGithubLogin}
+                        onLinkedinLogin={onLinkedinLogin}
                     />
                 </div>
             </div>

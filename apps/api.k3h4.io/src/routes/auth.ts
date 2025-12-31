@@ -230,6 +230,21 @@ export function registerAuthRoutes(server: FastifyInstance, prisma: PrismaClient
     return { authorizeUrl };
   });
 
+  server.post("/auth/linkedin/url", async (request, reply) => {
+    const body = request.body as { redirectUri?: string };
+    const clientId = process.env.LINKEDIN_CLIENT_ID;
+    if (!clientId) {
+      return reply.status(500).send({ error: "LinkedIn OAuth not configured" });
+    }
+    const redirectUri = body?.redirectUri;
+    if (!redirectUri) {
+      return reply.status(400).send({ error: "redirectUri is required" });
+    }
+    // LinkedIn scopes: r_liteprofile r_emailaddress openid
+    const authorizeUrl = `https://www.linkedin.com/oauth/v2/authorization?response_type=code&client_id=${encodeURIComponent(clientId)}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=openid%20profile%20email`;
+    return { authorizeUrl };
+  });
+
   server.post("/auth/linkedin/callback", async (request, reply) => {
     const body = request.body as { code?: string; redirectUri?: string };
     if (!body?.code || !body?.redirectUri) {

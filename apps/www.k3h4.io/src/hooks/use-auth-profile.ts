@@ -13,6 +13,7 @@ import {
   useProfileQuery,
   useProfileSaveMutation,
   useSessionQuery,
+  useLinkedinUrlMutation,
 } from "./use-auth-queries";
 import { ACCESS_TOKEN_KEY, REFRESH_TOKEN_KEY } from "../lib/constants";
 import { useLocalStore } from "../lib/store";
@@ -20,6 +21,7 @@ import { useLocalStore } from "../lib/store";
 export type { ProfileState, UserIdentity } from "../stores/auth-store";
 
 export function useAuthProfile() {
+  // ...existing code...
   const queryClient = useQueryClient();
   const local = useLocalStore(() => ({
     hasToken: typeof window !== "undefined" ? Boolean(localStorage.getItem(ACCESS_TOKEN_KEY)) : false,
@@ -57,6 +59,23 @@ export function useAuthProfile() {
     setUser: state.setUser,
     setProfileFromServer: state.setProfileFromServer,
   }));
+
+  // LinkedIn client ID from injected global or import.meta.env
+  const linkedinClientId = typeof window !== "undefined"
+    ? ((window as any).__LINKEDIN_CLIENT_ID || (import.meta as any).env?.LINKEDIN_CLIENT_ID || "")
+    : ((import.meta as any).env?.LINKEDIN_CLIENT_ID || "");
+
+  const linkedinUrlMutation = useLinkedinUrlMutation(apiBase);
+
+  const handleLinkedinLogin = async () => {
+    if (!linkedinClientId) {
+      setAuthState("error", "LinkedIn login is not configured.");
+      return;
+    }
+    setAuthState("loading", "Redirecting to LinkedIn...");
+    const result = await linkedinUrlMutation.mutateAsync({ redirectUri });
+    window.location.href = result.authorizeUrl;
+  };
 
   const sessionQuery = useSessionQuery(apiBase);
   const userIdentity = useMemo(() => deriveUser(sessionQuery.data), [sessionQuery.data]);
@@ -227,6 +246,7 @@ export function useAuthProfile() {
     handleSignOut,
     handleDeleteAccount,
     handleProfileSave,
+    handleLinkedinLogin,
     deletingAccount: accountDeleteMutation.isPending || deleteStatusQuery.isFetching,
     deleteProgress,
     deleteStatusText,

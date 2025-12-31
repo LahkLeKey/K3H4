@@ -199,21 +199,20 @@ export function Shell() {
     const isCallback = useMemo(() => pathname.startsWith("/auth/github"), [pathname]);
     const {
         apiBase,
-        userEmail,
         authStatus,
         authMessage,
         profile,
-        profileLoading,
         profileMessage,
         setProfile,
+        setAuthState,
+        user,
         handleGithubLogin,
-        handleSignOut,
+        handleLinkedinLogin,
         handleProfileSave,
-        handleDeleteAccount,
-        deletingAccount,
         deleteProgress,
         deleteStatusText,
     } = useAuthProfile();
+    const userEmail = user.status === "authenticated" ? user.email : null;
     const [activeModule, setActiveModule] = useState<IndustryModuleKey>("bank");
     const [activeBusiness, setActiveBusiness] = useState<BusinessScenarioKey>("bakery");
     const isAuthenticated = !!userEmail || authStatus === "success";
@@ -430,12 +429,13 @@ export function Shell() {
             authStatus={authStatus}
             authMessage={authMessage}
             profile={profile}
-            profileLoading={profileLoading}
+            profileLoading={false}
             profileMessage={profileMessage}
             setProfile={setProfile}
             onProfileSave={handleProfileSave}
-            onSignOut={handleSignOut}
+            onSignOut={() => setAuthState("idle", "Signed out")}
             onGithubLogin={handleGithubLogin}
+            onLinkedinLogin={handleLinkedinLogin}
             brand={<ShellBrand />}
             modulesMenu={moduleMenus}
             isCallback={isCallback}
@@ -448,10 +448,11 @@ export function Shell() {
                 authStatus={authStatus}
                 authMessage={authMessage || ""}
                 onGithubLogin={handleGithubLogin}
+                onLinkedinLogin={handleLinkedinLogin}
             />}
             // Pass delete props for dropdown ProfilePanel
-            onDeleteAccount={handleDeleteAccount}
-            deletingAccount={deletingAccount}
+            onDeleteAccount={undefined}
+            deletingAccount={false}
             deleteProgress={deleteProgress}
             deleteStatusText={deleteStatusText}
         />

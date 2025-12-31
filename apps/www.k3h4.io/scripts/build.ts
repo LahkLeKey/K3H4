@@ -18,7 +18,7 @@ async function copyStatic() {
   await mkdir(outdir, { recursive: true })
   const htmlSource = path.join(root, 'index.html')
   const html = await Bun.file(htmlSource).text()
-  const inject = `<script>window.__API_URL__=${JSON.stringify(env.API_URL || 'http://localhost:3001')};window.__GITHUB_CLIENT_ID=${JSON.stringify(env.GITHUB_CLIENT_ID || '')};</script>`
+  const inject = `<script>window.__API_URL__=${JSON.stringify(env.API_URL || 'http://localhost:3001')};window.__GITHUB_CLIENT_ID=${JSON.stringify(env.GITHUB_CLIENT_ID || '')};window.__LINKEDIN_CLIENT_ID=${JSON.stringify(env.LINKEDIN_CLIENT_ID || '')};</script>`
   const htmlWithEnv = html.replace('</head>', `${inject}</head>`) || `${inject}${html}`
   await Bun.write(path.join(outdir, 'index.html'), htmlWithEnv)
 
@@ -77,6 +77,7 @@ async function build() {
     define: {
       'import.meta.env.API_URL': JSON.stringify(env.API_URL || 'http://localhost:3001'),
       'import.meta.env.GITHUB_CLIENT_ID': JSON.stringify(env.GITHUB_CLIENT_ID || ''),
+      'import.meta.env.LINKEDIN_CLIENT_ID': JSON.stringify(env.LINKEDIN_CLIENT_ID || ''),
     },
   })
 
