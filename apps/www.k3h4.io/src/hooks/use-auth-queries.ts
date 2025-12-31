@@ -1,3 +1,26 @@
+export function useSignOutMutation(apiBase: string) {
+  const queryClient = useQueryClient();
+  return useMutation<{ ok: boolean }, Error, void>({
+    mutationKey: ["auth", "signout", apiBase],
+    mutationFn: async () => {
+      const auth = authHeaders();
+      if (!auth) throw new Error("Not signed in");
+      const res = await fetch(`${apiBase}/auth/signout`, {
+        method: "POST",
+        headers: auth.headers,
+      });
+      if (!res.ok) {
+        throw new Error("Signout failed");
+      }
+      void trackTelemetry("auth.signout.success");
+      return { ok: true };
+    },
+    onSettled: () => {
+      void queryClient.invalidateQueries({ queryKey: ["auth", "session"] });
+      void queryClient.invalidateQueries({ queryKey: ["auth", "profile"] });
+    },
+  });
+}
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { trackTelemetry } from "../lib/telemetry";

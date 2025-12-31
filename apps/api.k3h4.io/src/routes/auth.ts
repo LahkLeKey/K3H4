@@ -198,6 +198,26 @@ export function registerAuthRoutes(server: FastifyInstance, prisma: PrismaClient
         },
       });
 
+      // Persist provider grant so we can revoke on signout
+      try {
+        await (prisma as any).providerGrant.upsert({
+          where: { provider_providerId: { provider: "github", providerId } },
+          create: {
+            userId: user.id,
+            provider: "github",
+            providerId,
+            accessToken: tokenData.access_token ?? "",
+            scope: (tokenData as any).scope ?? null,
+          },
+          update: {
+            accessToken: tokenData.access_token ?? "",
+            scope: (tokenData as any).scope ?? null,
+          },
+        });
+      } catch (err) {
+        request.log.warn({ err }, "persisting github grant failed");
+      }
+
       await recordTelemetry(request, {
         eventType: "auth.github.callback.success",
         source: "api",
@@ -226,7 +246,7 @@ export function registerAuthRoutes(server: FastifyInstance, prisma: PrismaClient
     if (!redirectUri) {
       return reply.status(400).send({ error: "redirectUri is required" });
     }
-    const authorizeUrl = `https://github.com/login/oauth/authorize?client_id=${encodeURIComponent(clientId)}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=read:user%20user:email`;
+    const authorizeUrl = `https://github.com/login/oauth/authorize?client_id=${encodeURIComponent(clientId)}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=read:user%20user:email&prompt=login`;
     return { authorizeUrl };
   });
 
@@ -241,7 +261,7 @@ export function registerAuthRoutes(server: FastifyInstance, prisma: PrismaClient
       return reply.status(400).send({ error: "redirectUri is required" });
     }
     // LinkedIn scopes: r_liteprofile r_emailaddress openid
-    const authorizeUrl = `https://www.linkedin.com/oauth/v2/authorization?response_type=code&client_id=${encodeURIComponent(clientId)}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=openid%20profile%20email`;
+    const authorizeUrl = `https://www.linkedin.com/oauth/v2/authorization?response_type=code&client_id=${encodeURIComponent(clientId)}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=openid%20profile%20email&prompt=login`;
     return { authorizeUrl };
   });
 
@@ -282,22 +302,68 @@ export function registerAuthRoutes(server: FastifyInstance, prisma: PrismaClient
       return reply.status(401).send({ error: "Unable to fetch LinkedIn profile" });
     }
 
+    // LinkedIn may not return email in OIDC userinfo; fetch explicitly
+    let primaryEmail: string | null = profile.email ?? null;
+    if (!primaryEmail) {
+      try {
+        const emailRes = await fetch("https://api.linkedin.com/v2/emailAddress?q=members&projection=(elements*(handle~))", {
+          headers: { Authorization: `Bearer ${tokenData.access_token}` },
+        });
+        if (emailRes.ok) {
+          const emailBody = await emailRes.json();
+          const elements = (emailBody as any)?.elements;
+          primaryEmail = elements?.[0]?.['handle~']?.emailAddress ?? null;
+        } else {
+          const errBody = (await emailRes.json().catch(() => ({}))) as { message?: string };
+          request.log.warn({ status: emailRes.status, body: errBody }, "linkedin email fetch failed");
+        }
+      } catch (err) {
+        request.log.warn({ err }, "linkedin email fetch failed");
+      }
+    }
+
+    if (!primaryEmail) {
+      return reply.status(401).send({ error: "LinkedIn email not available; ensure r_emailaddress scope and a verified email" });
+    }
+
     const providerId = profile.sub;
     const user = await prisma.user.upsert({
       where: { provider_providerId: { provider: "linkedin", providerId } },
       create: {
         provider: "linkedin",
         providerId,
-        email: profile.email ?? "",
+        email: primaryEmail,
         displayName: profile.name ?? null,
         avatarUrl: profile.picture ?? null,
       },
       update: {
-        email: profile.email ?? "",
+        email: primaryEmail,
         displayName: profile.name ?? null,
         avatarUrl: profile.picture ?? null,
       },
     });
+
+    // Persist provider grant for LinkedIn
+    try {
+      const maybeExpires = (tokenData as any).expires_in ? new Date(Date.now() + Number((tokenData as any).expires_in) * 1000) : undefined;
+      await (prisma as any).providerGrant.upsert({
+        where: { provider_providerId: { provider: "linkedin", providerId } },
+        create: {
+          userId: user.id,
+          provider: "linkedin",
+          providerId,
+          accessToken: tokenData.access_token ?? "",
+          scope: null,
+          expiresAt: maybeExpires ?? null,
+        },
+        update: {
+          accessToken: tokenData.access_token ?? "",
+          expiresAt: maybeExpires ?? null,
+        },
+      });
+    } catch (err) {
+      request.log.warn({ err }, "persisting linkedin grant failed");
+    }
 
     return createSessionTokens(server, prisma, user.id, user.email ?? undefined);
   });
@@ -372,4 +438,89 @@ export function registerAuthRoutes(server: FastifyInstance, prisma: PrismaClient
         return { jobId, ...status };
       },
     );
+
+  server.post("/auth/signout", async (request, reply) => {
+    try {
+      // Try to identify user from Authorization Bearer token first
+      let userId: string | null = null;
+      try {
+        const auth = (request.headers.authorization as string) || (request.headers.Authorization as unknown as string) || "";
+        if (auth && auth.startsWith("Bearer ")) {
+          const token = auth.slice(7);
+          const payload = server.jwt.verify(token) as { sub?: string };
+          if (payload?.sub) userId = payload.sub;
+        }
+      } catch (err) {
+        // token expired/invalid - we'll try refresh token fallback
+      }
+
+      // If no userId from access token, accept refresh token in body or header
+      if (!userId) {
+        const body = request.body as { refreshToken?: string } | undefined;
+        const provided = body?.refreshToken || (request.headers["x-refresh-token"] as string | undefined) || null;
+        if (provided) {
+          const found = await prisma.refreshToken.findUnique({ where: { token: provided } });
+          if (found) userId = found.userId;
+        }
+      }
+
+      if (!userId) {
+        return reply.status(400).send({ error: "No valid session token provided" });
+      }
+
+      // Find stored provider grants and attempt to revoke them at provider
+      const grants = await (prisma as any).providerGrant.findMany({ where: { userId } });
+      for (const g of grants) {
+        try {
+          if (g.provider === "github") {
+            const clientId = process.env.GITHUB_CLIENT_ID;
+            const clientSecret = process.env.GITHUB_CLIENT_SECRET;
+            if (clientId && clientSecret && g.accessToken) {
+              const basic = Buffer.from(`${clientId}:${clientSecret}`).toString("base64");
+              // Best-effort revoke using GitHub Applications API
+              await fetch(`https://api.github.com/applications/${encodeURIComponent(clientId)}/token`, {
+                method: "DELETE",
+                headers: {
+                  Authorization: `Basic ${basic}`,
+                  Accept: "application/vnd.github.v3+json",
+                  "Content-Type": "application/json",
+                },
+                body: JSON.stringify({ access_token: g.accessToken }),
+              }).catch(() => null);
+            }
+          }
+          if (g.provider === "linkedin") {
+            const clientId = process.env.LINKEDIN_CLIENT_ID;
+            const clientSecret = process.env.LINKEDIN_CLIENT_SECRET;
+            if (clientId && clientSecret && g.accessToken) {
+              const params = new URLSearchParams();
+              params.set("token", g.accessToken);
+              // LinkedIn revoke - best-effort
+              await fetch("https://www.linkedin.com/oauth/v2/revoke", {
+                method: "POST",
+                headers: { "Content-Type": "application/x-www-form-urlencoded" },
+                body: params.toString(),
+              }).catch(() => null);
+            }
+          }
+        } catch (err) {
+          request.log.warn({ err, grant: g }, "revoke provider token failed");
+        }
+      }
+
+      // Remove provider grants and refresh tokens from DB to ensure server-side session state cleared
+      await (prisma as any).providerGrant.deleteMany({ where: { userId } }).catch(() => null);
+      await prisma.refreshToken.deleteMany({ where: { userId } });
+
+      await recordTelemetry(request, {
+        eventType: "auth.signout",
+        source: "api",
+        payload: { userId },
+      });
+      return { ok: true };
+    } catch (err) {
+      request.log.error({ err }, "signout failed");
+      return reply.status(500).send({ error: "Unable to sign out" });
+    }
+  });
 }

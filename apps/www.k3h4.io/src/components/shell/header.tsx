@@ -81,7 +81,7 @@ export function ShellHeader({
                 {actions ?? (
                     <ShellActionBar>
                         <SearchInput placeholder="Search (disabled)" disabled />
-                        {signedIn ? (
+                        {signedIn && (
                             <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
                                     <Button variant="ghost" size="icon" aria-label={displayName}>
@@ -115,16 +115,6 @@ export function ShellHeader({
                                     </DropdownMenuItem>
                                 </DropdownMenuContent>
                             </DropdownMenu>
-                        ) : (
-                            <Button
-                                variant="ghost"
-                                size="icon"
-                                aria-label={userEmail ? `Signed in as ${userEmail}` : "Sign in with GitHub"}
-                                onClick={onGithubLogin}
-                                disabled={authStatus === "loading"}
-                            >
-                                <User className="h-4 w-4" />
-                            </Button>
                         )}
                     </ShellActionBar>
                 )}

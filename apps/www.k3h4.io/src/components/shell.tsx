@@ -4,6 +4,7 @@ import { useLocation } from "react-router-dom";
 import { ArrowRight, Building2, Check, ChevronsUpDown, Croissant, Wheat } from "lucide-react";
 
 import { GithubCallbackPage } from "../pages/github-callback";
+import { LinkedinCallbackPage } from "../pages/linkedin-callback";
 import { AuthAccessSection } from "./auth-access-section";
 import { BankTable } from "./bank/bank-table";
 import { AssignmentAgency } from "./agency/assignment-agency";
@@ -196,7 +197,8 @@ function BusinessModuleMenu({ scenarios, activeKey, onSelectScenario, onSelectMo
 export function Shell() {
     const location = useLocation();
     const pathname = location.pathname;
-    const isCallback = useMemo(() => pathname.startsWith("/auth/github"), [pathname]);
+    const isGithubCallback = useMemo(() => pathname.startsWith("/auth/github"), [pathname]);
+    const isLinkedinCallback = useMemo(() => pathname.startsWith("/auth/linkedin/callback"), [pathname]);
     const {
         apiBase,
         authStatus,
@@ -204,14 +206,18 @@ export function Shell() {
         profile,
         profileMessage,
         setProfile,
-        setAuthState,
         user,
         handleGithubLogin,
         handleLinkedinLogin,
         handleProfileSave,
+        handleSignOut,
+        handleDeleteAccount,
         deleteProgress,
         deleteStatusText,
+        accountDeleteMutation,
+        deleteStatusQuery
     } = useAuthProfile();
+
     const userEmail = user.status === "authenticated" ? user.email : null;
     const [activeModule, setActiveModule] = useState<IndustryModuleKey>("bank");
     const [activeBusiness, setActiveBusiness] = useState<BusinessScenarioKey>("bakery");
@@ -433,13 +439,13 @@ export function Shell() {
             profileMessage={profileMessage}
             setProfile={setProfile}
             onProfileSave={handleProfileSave}
-            onSignOut={() => setAuthState("idle", "Signed out")}
+            onSignOut={handleSignOut}
             onGithubLogin={handleGithubLogin}
             onLinkedinLogin={handleLinkedinLogin}
             brand={<ShellBrand />}
             modulesMenu={moduleMenus}
-            isCallback={isCallback}
-            callback={<GithubCallbackPage />}
+            isCallback={isGithubCallback || isLinkedinCallback}
+            callback={isGithubCallback ? <GithubCallbackPage /> : isLinkedinCallback ? <LinkedinCallbackPage /> : null}
             signedIn={signedInView}
             signedOut={<AuthAccessSection
                 title="Sign in to access K3H4"
@@ -451,8 +457,8 @@ export function Shell() {
                 onLinkedinLogin={handleLinkedinLogin}
             />}
             // Pass delete props for dropdown ProfilePanel
-            onDeleteAccount={undefined}
-            deletingAccount={false}
+            onDeleteAccount={handleDeleteAccount}
+            deletingAccount={accountDeleteMutation.isPending || deleteStatusQuery.isFetching}
             deleteProgress={deleteProgress}
             deleteStatusText={deleteStatusText}
         />

@@ -14,6 +14,7 @@ import {
   useProfileSaveMutation,
   useSessionQuery,
   useLinkedinUrlMutation,
+  useSignOutMutation,
 } from "./use-auth-queries";
 import { ACCESS_TOKEN_KEY, REFRESH_TOKEN_KEY } from "../lib/constants";
 import { useLocalStore } from "../lib/store";
@@ -21,6 +22,34 @@ import { useLocalStore } from "../lib/store";
 export type { ProfileState, UserIdentity } from "../stores/auth-store";
 
 export function useAuthProfile() {
+    const completeLinkedinCallback = async (code: string, redirect = window.location.origin + "/auth/linkedin/callback"): Promise<{ ok: boolean; error?: string }> => {
+      setAuthState("loading", "Signing you in with LinkedIn...");
+      try {
+        // Call backend LinkedIn callback endpoint
+        const res = await fetch(apiBase + "/auth/linkedin/callback", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ code, redirectUri: redirect }),
+        });
+        const data = await res.json();
+        if (!res.ok || data.error) {
+          setAuthState("error", data.error || "LinkedIn sign-in failed");
+          return { ok: false, error: data.error };
+        }
+        // Set user and profile in state, matching GitHub logic
+        const nextUser = deriveUser({ user: { email: data.profile?.email ?? "" } } as SessionResponse);
+        setUser(nextUser);
+        if (data.profile) {
+          setProfileFromServer(data.profile);
+        }
+        setAuthState("success", "Signed in - redirecting...");
+        return { ok: true };
+      } catch (error) {
+        const message = error instanceof Error ? error.message : "Something went wrong";
+        setAuthState("error", message);
+        return { ok: false, error: message };
+      }
+    };
   // ...existing code...
   const queryClient = useQueryClient();
   const local = useLocalStore(() => ({
@@ -65,7 +94,12 @@ export function useAuthProfile() {
   const handleLinkedinLogin = async () => {
     setAuthState("loading", "Redirecting to LinkedIn...");
     try {
-      const result = await linkedinUrlMutation.mutateAsync({ redirectUri });
+      // Always use path-based LinkedIn callback for OAuth (no #), even if SPA is hash-based
+      let origin = window.location.origin;
+      // Remove trailing slash if present
+      if (origin.endsWith("/")) origin = origin.slice(0, -1);
+      const linkedinRedirectUri = origin + "/auth/linkedin/callback";
+      const result = await linkedinUrlMutation.mutateAsync({ redirectUri: linkedinRedirectUri });
       window.location.href = result.authorizeUrl;
     } catch (error) {
       setAuthState("error", error instanceof Error ? error.message : "LinkedIn login failed");
@@ -159,7 +193,13 @@ export function useAuthProfile() {
     }
   };
 
-  function handleSignOut() {
+  const signOutMutation = useSignOutMutation(apiBase);
+  async function handleSignOut() {
+    try {
+      await signOutMutation.mutateAsync();
+    } catch (err) {
+      // ignore error, always clear local session
+    }
     localStorage.removeItem(ACCESS_TOKEN_KEY);
     localStorage.removeItem(REFRESH_TOKEN_KEY);
     void queryClient.removeQueries({ queryKey: ["auth", "session"] });
@@ -242,9 +282,12 @@ export function useAuthProfile() {
     handleDeleteAccount,
     handleProfileSave,
     handleLinkedinLogin,
+    completeLinkedinCallback,
     deletingAccount: accountDeleteMutation.isPending || deleteStatusQuery.isFetching,
     deleteProgress,
     deleteStatusText,
     completeGithubCallback,
+    accountDeleteMutation,
+    deleteStatusQuery,
   };
 }

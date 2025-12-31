@@ -2,6 +2,8 @@
   "rewrites": [
     { "source": "/auth/github", "destination": "/" },
     { "source": "/auth/github/(.*)", "destination": "/" },
+    { "source": "/auth/linkedin", "destination": "/" },
+    { "source": "/auth/linkedin/(.*)", "destination": "/" },
     { "source": "/(.*)", "destination": "/" }
   ]
 }
