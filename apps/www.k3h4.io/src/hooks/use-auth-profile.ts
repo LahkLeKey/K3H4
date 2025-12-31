@@ -60,21 +60,16 @@ export function useAuthProfile() {
     setProfileFromServer: state.setProfileFromServer,
   }));
 
-  // LinkedIn client ID from injected global or import.meta.env
-  const linkedinClientId = typeof window !== "undefined"
-    ? ((window as any).__LINKEDIN_CLIENT_ID || (import.meta as any).env?.LINKEDIN_CLIENT_ID || "")
-    : ((import.meta as any).env?.LINKEDIN_CLIENT_ID || "");
-
   const linkedinUrlMutation = useLinkedinUrlMutation(apiBase);
 
   const handleLinkedinLogin = async () => {
-    if (!linkedinClientId) {
-      setAuthState("error", "LinkedIn login is not configured.");
-      return;
-    }
     setAuthState("loading", "Redirecting to LinkedIn...");
-    const result = await linkedinUrlMutation.mutateAsync({ redirectUri });
-    window.location.href = result.authorizeUrl;
+    try {
+      const result = await linkedinUrlMutation.mutateAsync({ redirectUri });
+      window.location.href = result.authorizeUrl;
+    } catch (error) {
+      setAuthState("error", error instanceof Error ? error.message : "LinkedIn login failed");
+    }
   };
 
   const sessionQuery = useSessionQuery(apiBase);
