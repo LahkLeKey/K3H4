@@ -21,7 +21,7 @@ const createSessionTokens = async (server: FastifyInstance, prisma: PrismaClient
   const refreshToken = randomBytes(48).toString("hex");
   const expiresAt = new Date(Date.now() + 1000 * 60 * 60 * 24 * 30);
   await prisma.refreshToken.create({ data: { token: refreshToken, userId, expiresAt } });
-  const accessToken = server.jwt.sign({ sub: userId, email }, { expiresIn: "15m" });
+  const accessToken = server.jwt.sign({ sub: userId, email: email ?? "" }, { expiresIn: "15m" });
   return { accessToken, refreshToken, expiresAt };
 };
 
@@ -288,12 +288,12 @@ export function registerAuthRoutes(server: FastifyInstance, prisma: PrismaClient
       create: {
         provider: "linkedin",
         providerId,
-        email: profile.email ?? null,
+        email: profile.email ?? "",
         displayName: profile.name ?? null,
         avatarUrl: profile.picture ?? null,
       },
       update: {
-        email: profile.email ?? null,
+        email: profile.email ?? "",
         displayName: profile.name ?? null,
         avatarUrl: profile.picture ?? null,
       },
