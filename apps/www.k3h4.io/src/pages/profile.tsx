@@ -19,6 +19,7 @@ export function ProfilePage() {
         deleteProgress,
         deleteStatusText,
         handleGithubLogin,
+        handleLinkedinLogin,
     } = useAuthProfile();
 
     if (user.status !== "authenticated") {
@@ -30,6 +31,7 @@ export function ProfilePage() {
                 authStatus={authStatus}
                 authMessage={authMessage || ""}
                 onGithubLogin={handleGithubLogin}
+                onLinkedinLogin={handleLinkedinLogin}
             />
         );
     }

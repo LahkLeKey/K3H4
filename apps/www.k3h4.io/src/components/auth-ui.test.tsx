@@ -37,7 +37,7 @@ describe("AuthCta", () => {
 describe("AuthAccessSection", () => {
     it("renders section with nested CTA", () => {
         render(
-            <AuthAccessSection authStatus="idle" authMessage="" userEmail={null} onGithubLogin={vi.fn()} eyebrow="Hello" title="T" description="D" />,
+            <AuthAccessSection authStatus="idle" authMessage="" userEmail={null} onGithubLogin={vi.fn()} onLinkedinLogin={vi.fn()} eyebrow="Hello" title="T" description="D" />,
         );
 
         expect(screen.getByTestId("section")).toBeInTheDocument();

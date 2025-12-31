@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { Home, LogOut, User } from "lucide-react";
+import { Home, LogOut } from "lucide-react";
 
 import { Button } from "../ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
@@ -35,7 +35,7 @@ type ShellHeaderProps = {
     brand?: ReactNode;
     actions?: ReactNode;
     modulesMenu?: ReactNode;
-    onGithubLogin: () => void;
+    onGithubLogin?: () => void;
     // Delete props for ProfilePanel in dropdown
     onDeleteAccount?: (confirmText: string) => Promise<void> | void;
     deletingAccount?: boolean;
@@ -55,7 +55,6 @@ export function ShellHeader({
     setProfile,
     onProfileSave,
     onSignOut,
-    onGithubLogin,
     brand,
     actions,
     modulesMenu,

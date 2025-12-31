@@ -10,7 +10,7 @@ if (window.location.pathname === '/auth/linkedin/callback') {
     document.body.innerHTML = '<h1>Signing in with LinkedIn...</h1>';
     try {
       // Use API base if available, else default to same-origin
-      const apiBase = (window.__API_URL__ || import.meta.env.API_URL || '').replace(/\/$/, '');
+      const apiBase = ((globalThis as any).__API_URL__ || (import.meta as any)?.env?.API_URL || '').replace(/\/$/, '');
       const url = apiBase ? `${apiBase}/auth/linkedin/callback` : '/auth/linkedin/callback';
       const res = await fetch(url, {
         method: 'POST',
