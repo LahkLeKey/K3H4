@@ -63,7 +63,7 @@ export function AssignmentAgency({ apiBase, userEmail }: AssignmentAgencyProps) 
                 personaId: form.personaId,
                 hourlyRate: hourly,
             });
-            setForm({ title: "", personaId: "", hourlyRate: form.hourlyRate });
+            setForm(prev => ({ ...prev, title: "", personaId: "", hourlyRate: form.hourlyRate }));
             setInlineError("");
         } catch (err) {
             setInlineError(err instanceof Error ? err.message : "Unable to create assignment");

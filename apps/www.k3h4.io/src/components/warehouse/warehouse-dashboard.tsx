@@ -49,7 +49,7 @@ export function WarehouseDashboard({ apiBase, userEmail, onNavigateFreight }: Wa
             status: "stored",
             freightLoadId: draft.freightLoadId.trim() || undefined,
         });
-        setDraft({ sku: "", description: "", quantity: "1", location: "", freightLoadId: "" });
+        setDraft(prev => ({ ...prev, sku: "", description: "", quantity: "1", location: "", freightLoadId: "" }));
     };
 
     const toggleStatus = async (item: WarehouseItem) => {

@@ -90,7 +90,7 @@ export function PersonaTable({ apiBase, userEmail }: PersonaTableProps) {
                 note: newPersona.note.trim() || undefined,
                 tags: ["custom"],
             });
-            setNewPersona({ alias: "", account: "", handle: "", note: "" });
+            setNewPersona(prev => ({ ...prev, alias: "", account: "", handle: "", note: "" }));
             setInlineError("");
         } catch (err) {
             setInlineError(err instanceof Error ? err.message : "Unable to add persona");
