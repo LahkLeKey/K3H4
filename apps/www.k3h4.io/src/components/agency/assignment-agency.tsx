@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import { CheckCircle2, FileText, HandCoins, Plus, Sparkles, Timer } from "lucide-react";
 
 import { usePersonaListQuery } from "../../hooks/use-persona-queries";
@@ -17,6 +17,7 @@ import { Label } from "../ui/label";
 import { Separator } from "../ui/separator";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../ui/table";
 import { InvoiceDialog } from "./invoice-dialog";
+import { useLocalStore } from "../../lib/store";
 
 export type AssignmentAgencyProps = {
     apiBase: string;
@@ -29,12 +30,20 @@ export function AssignmentAgency({ apiBase, userEmail }: AssignmentAgencyProps) 
     const createAssignment = useCreateAssignmentMutation(apiBase);
     const createTimecard = useCreateTimecardMutation(apiBase);
     const payTimecard = usePayTimecardMutation(apiBase);
+    const uiStore = useLocalStore(() => ({
+        form: { title: "", personaId: "", hourlyRate: "120" },
+        note: "",
+        inlineError: "",
+        hoursByAssignment: {} as Record<string, string>,
+        noteByAssignment: {} as Record<string, string>,
+    }));
 
-    const [form, setForm] = useState({ title: "", personaId: "", hourlyRate: "120" });
-    const [note, setNote] = useState("");
-    const [inlineError, setInlineError] = useState<string>("");
-    const [hoursByAssignment, setHoursByAssignment] = useState<Record<string, string>>({});
-    const [noteByAssignment, setNoteByAssignment] = useState<Record<string, string>>({});
+    const { form, note, inlineError, hoursByAssignment, noteByAssignment } = uiStore.useShallow((state) => state);
+    const setForm = (updater: (prev: typeof form) => typeof form) => uiStore.setState((prev) => ({ form: updater(prev.form) }));
+    const setNote = (value: string) => uiStore.setState({ note: value });
+    const setInlineError = (value: string) => uiStore.setState({ inlineError: value });
+    const setHoursByAssignment = (updater: (prev: Record<string, string>) => Record<string, string>) => uiStore.setState((prev) => ({ hoursByAssignment: updater(prev.hoursByAssignment) }));
+    const setNoteByAssignment = (updater: (prev: Record<string, string>) => Record<string, string>) => uiStore.setState((prev) => ({ noteByAssignment: updater(prev.noteByAssignment) }));
 
     const personaOptions = useMemo(() => personas.data ?? [], [personas.data]);
 

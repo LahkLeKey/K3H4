@@ -22,7 +22,7 @@ type Shipment = {
     eta?: string | null;
     freightLoadId?: string | null;
 };
-import { useState } from "react";
+import { useLocalStore } from "../../lib/store";
 
 import { Section } from "../section";
 import { SectionCard } from "../shell/section-card";
@@ -45,17 +45,45 @@ export function AgricultureDashboard({ apiBase, userEmail, onNavigateFreight }: 
     const createTask = useCreateAgricultureTask(apiBase);
     const createShipment = useCreateAgricultureShipment(apiBase);
 
-    const [plotName, setPlotName] = useState("");
-    const [plotCrop, setPlotCrop] = useState("Corn");
-    const [plotAcres, setPlotAcres] = useState("25");
-    const [taskTitle, setTaskTitle] = useState("Irrigate north field");
-    const [taskAssignee, setTaskAssignee] = useState("Crew A");
-    const [taskDueDate, setTaskDueDate] = useState("");
-    const [shipmentLot, setShipmentLot] = useState("LOT-001");
-    const [shipmentDestination, setShipmentDestination] = useState("Chicago DC");
-    const [shipmentMode, setShipmentMode] = useState("Truck");
-    const [shipmentFreightId, setShipmentFreightId] = useState("");
-    const [errors, setErrors] = useState<string | null>(null);
+    const uiStore = useLocalStore(() => ({
+        plotName: "",
+        plotCrop: "Corn",
+        plotAcres: "25",
+        taskTitle: "Irrigate north field",
+        taskAssignee: "Crew A",
+        taskDueDate: "",
+        shipmentLot: "LOT-001",
+        shipmentDestination: "Chicago DC",
+        shipmentMode: "Truck",
+        shipmentFreightId: "",
+        errors: null as string | null,
+    }));
+
+    const {
+        plotName,
+        plotCrop,
+        plotAcres,
+        taskTitle,
+        taskAssignee,
+        taskDueDate,
+        shipmentLot,
+        shipmentDestination,
+        shipmentMode,
+        shipmentFreightId,
+        errors,
+    } = uiStore.useShallow((state) => state);
+
+    const setErrors = (value: string | null) => uiStore.setState({ errors: value });
+    const setPlotName = (value: string) => uiStore.setState({ plotName: value });
+    const setPlotCrop = (value: string) => uiStore.setState({ plotCrop: value });
+    const setPlotAcres = (value: string) => uiStore.setState({ plotAcres: value });
+    const setTaskTitle = (value: string) => uiStore.setState({ taskTitle: value });
+    const setTaskAssignee = (value: string) => uiStore.setState({ taskAssignee: value });
+    const setTaskDueDate = (value: string) => uiStore.setState({ taskDueDate: value });
+    const setShipmentLot = (value: string) => uiStore.setState({ shipmentLot: value });
+    const setShipmentDestination = (value: string) => uiStore.setState({ shipmentDestination: value });
+    const setShipmentMode = (value: string) => uiStore.setState({ shipmentMode: value });
+    const setShipmentFreightId = (value: string) => uiStore.setState({ shipmentFreightId: value });
 
     return (
         <div className="space-y-6">

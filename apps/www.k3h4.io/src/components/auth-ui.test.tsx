@@ -11,6 +11,7 @@ import { ProfileView } from "./profile-view";
 import { CallbackStatusCard } from "./callback-status-card";
 import { ErrorBoundary } from "./error-boundary";
 import type { ProfileState } from "../stores/auth-store";
+import { ACCOUNT_DELETE_PHRASE } from "../lib/constants";
 
 vi.mock("./section", () => ({ Section: ({ children }: { children: React.ReactNode }) => <div data-testid="section">{children}</div> }));
 
@@ -90,6 +91,10 @@ describe("ProfilePanel", () => {
                 setProfile={setProfile}
                 onSave={onSave}
                 onSignOut={onSignOut}
+                onDeleteAccount={vi.fn()}
+                deletingAccount={false}
+                deleteProgress={0}
+                deleteStatusText=""
             />,
         );
 
@@ -111,6 +116,7 @@ describe("ProfileView", () => {
         const setProfile = vi.fn();
         const onSave = vi.fn();
         const onSignOut = vi.fn();
+        const onDeleteAccount = vi.fn();
         render(
             <ProfileView
                 userEmail="u@test.com"
@@ -120,6 +126,10 @@ describe("ProfileView", () => {
                 setProfile={setProfile as any}
                 onSave={onSave}
                 onSignOut={onSignOut}
+                onDeleteAccount={onDeleteAccount}
+                deletingAccount={false}
+                deleteProgress={0}
+                deleteStatusText=""
             />,
         );
 
@@ -129,6 +139,35 @@ describe("ProfileView", () => {
         expect(signedIn.length).toBeGreaterThan(0);
         fireEvent.click(screen.getByRole("button", { name: /save profile/i }));
         expect(onSave).toHaveBeenCalled();
+    });
+
+    it("requires double confirmation to delete", async () => {
+        const user = userEvent.setup();
+        const onDeleteAccount = vi.fn();
+        render(
+            <ProfilePanel
+                userEmail="user@test.com"
+                profile={{ displayName: "Name", avatarUrl: "" }}
+                profileLoading={false}
+                profileMessage=""
+                setProfile={vi.fn()}
+                onSave={vi.fn()}
+                onSignOut={vi.fn()}
+                onDeleteAccount={onDeleteAccount}
+                deletingAccount={false}
+                deleteProgress={0}
+                deleteStatusText=""
+            />,
+        );
+
+        await user.click(screen.getByRole("button", { name: /delete my account/i }));
+        const deleteAction = screen.getByRole("button", { name: /delete my data/i });
+        expect(deleteAction).toBeDisabled();
+
+        await user.click(screen.getByRole("button", { name: /i understand/i }));
+        await user.type(screen.getByPlaceholderText(new RegExp(ACCOUNT_DELETE_PHRASE, "i")), ACCOUNT_DELETE_PHRASE);
+        await user.click(deleteAction);
+        expect(onDeleteAccount).toHaveBeenCalledWith(ACCOUNT_DELETE_PHRASE);
     });
 });
 

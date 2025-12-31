@@ -209,6 +209,10 @@ export function Shell() {
         handleGithubLogin,
         handleSignOut,
         handleProfileSave,
+        handleDeleteAccount,
+        deletingAccount,
+        deleteProgress,
+        deleteStatusText,
     } = useAuthProfile();
     const [activeModule, setActiveModule] = useState<IndustryModuleKey>("bank");
     const [activeBusiness, setActiveBusiness] = useState<BusinessScenarioKey>("bakery");
@@ -418,7 +422,6 @@ export function Shell() {
             />
         </div>
     ) : null;
-
     return (
         <ShellView
             navItems={navItems}
@@ -438,14 +441,19 @@ export function Shell() {
             isCallback={isCallback}
             callback={<GithubCallbackPage />}
             signedIn={signedInView}
-            signedOut={
-                <AuthAccessSection
-                    userEmail={userEmail}
-                    authStatus={authStatus}
-                    authMessage={authMessage || ""}
-                    onGithubLogin={handleGithubLogin}
-                />
-            }
+            signedOut={<AuthAccessSection
+                title="Sign in to access K3H4"
+                description="Authenticate to use the demo platform."
+                userEmail={userEmail}
+                authStatus={authStatus}
+                authMessage={authMessage || ""}
+                onGithubLogin={handleGithubLogin}
+            />}
+            // Pass delete props for dropdown ProfilePanel
+            onDeleteAccount={handleDeleteAccount}
+            deletingAccount={deletingAccount}
+            deleteProgress={deleteProgress}
+            deleteStatusText={deleteStatusText}
         />
     );
 }

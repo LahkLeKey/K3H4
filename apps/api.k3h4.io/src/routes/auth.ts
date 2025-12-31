@@ -4,12 +4,92 @@ import { randomBytes } from "node:crypto";
 import { URLSearchParams } from "node:url";
 import { type RecordTelemetryFn } from "./types";
 
+const ACCOUNT_DELETE_PHRASE = "Delete-My-K3H4-Data";
+
+type DeleteJobStatus = {
+  userId: string;
+  status: "queued" | "running" | "done" | "error";
+  progress: number;
+  message?: string;
+  counts?: Record<string, unknown>;
+  updatedAt: number;
+};
+
+const deletionJobs = new Map<string, DeleteJobStatus>();
+
 const createSessionTokens = async (server: FastifyInstance, prisma: PrismaClient, userId: string, email?: string) => {
   const refreshToken = randomBytes(48).toString("hex");
   const expiresAt = new Date(Date.now() + 1000 * 60 * 60 * 24 * 30);
   await prisma.refreshToken.create({ data: { token: refreshToken, userId, expiresAt } });
   const accessToken = server.jwt.sign({ sub: userId, email }, { expiresIn: "15m" });
   return { accessToken, refreshToken, expiresAt };
+};
+
+const runDeleteJob = async (prisma: PrismaClient, jobId: string, userId: string, recordTelemetry: RecordTelemetryFn, request: any) => {
+  const updateStatus = (partial: Partial<DeleteJobStatus>) => {
+    const current = deletionJobs.get(jobId);
+    if (!current) return;
+    const next = { ...current, ...partial, updatedAt: Date.now() } as DeleteJobStatus;
+    deletionJobs.set(jobId, next);
+  };
+
+  try {
+    updateStatus({ status: "running", progress: 10, message: "Starting deletion" });
+
+    const steps: Array<{ key: string; action: () => Promise<unknown> }> = [
+      { key: "telemetry", action: () => prisma.telemetryEvent.deleteMany({ where: { userId } }) },
+      { key: "bankTransactions", action: () => prisma.bankTransaction.deleteMany({ where: { userId } }) },
+      { key: "personas", action: () => prisma.persona.deleteMany({ where: { userId } }) },
+      { key: "assignmentTimecards", action: () => prisma.assignmentTimecard.deleteMany({ where: { assignment: { userId } } }) },
+      { key: "assignmentPayouts", action: () => prisma.assignmentPayout.deleteMany({ where: { persona: { userId } } }) },
+      { key: "assignments", action: () => prisma.assignment.deleteMany({ where: { userId } }) },
+      { key: "freightLoads", action: () => prisma.freightLoad.deleteMany({ where: { userId } }) },
+      { key: "warehouseItems", action: () => prisma.warehouseItem.deleteMany({ where: { userId } }) },
+      { key: "posLineItems", action: () => prisma.posLineItem.deleteMany({ where: { ticket: { userId } } }) },
+      { key: "posTickets", action: () => prisma.posTicket.deleteMany({ where: { userId } }) },
+      { key: "posStores", action: () => prisma.posStore.deleteMany({ where: { userId } }) },
+      { key: "agricultureShipments", action: () => prisma.agricultureShipment.deleteMany({ where: { userId } }) },
+      { key: "agricultureTasks", action: () => prisma.agricultureTask.deleteMany({ where: { userId } }) },
+      { key: "agriculturePlots", action: () => prisma.agriculturePlot.deleteMany({ where: { userId } }) },
+      { key: "culinaryPrepTasks", action: () => prisma.culinaryPrepTask.deleteMany({ where: { userId } }) },
+      { key: "culinarySupplierNeeds", action: () => prisma.culinarySupplierNeed.deleteMany({ where: { userId } }) },
+      { key: "culinaryMenuItems", action: () => prisma.culinaryMenuItem.deleteMany({ where: { userId } }) },
+      { key: "arcadeSessions", action: () => prisma.arcadeSession.deleteMany({ where: { userId } }) },
+      { key: "arcadeRedemptions", action: () => prisma.arcadeRedemption.deleteMany({ where: { userId } }) },
+      { key: "arcadePrizes", action: () => prisma.arcadePrize.deleteMany({ where: { userId } }) },
+      { key: "arcadeTopUps", action: () => prisma.arcadeTopUp.deleteMany({ where: { userId } }) },
+      { key: "arcadeCards", action: () => prisma.arcadeCard.deleteMany({ where: { userId } }) },
+      { key: "arcadeMachines", action: () => prisma.arcadeMachine.deleteMany({ where: { userId } }) },
+      { key: "userPreferences", action: () => prisma.userPreference.deleteMany({ where: { userId } }) },
+      { key: "refreshTokens", action: () => prisma.refreshToken.deleteMany({ where: { userId } }) },
+      { key: "user", action: () => prisma.user.delete({ where: { id: userId } }) },
+    ];
+
+    const counts: Record<string, unknown> = {};
+
+    for (let i = 0; i < steps.length; i++) {
+      const step = steps[i];
+      const result = await step.action();
+      counts[step.key] = result;
+      const progress = Math.min(95, Math.round(((i + 1) / steps.length) * 100));
+      updateStatus({ progress, message: `Deleting ${step.key}` });
+    }
+
+    updateStatus({ status: "done", progress: 100, message: "Deletion complete", counts });
+
+    await recordTelemetry(request, {
+      eventType: "auth.delete.completed",
+      source: "api",
+      payload: { userId, counts },
+    });
+  } catch (err) {
+    updateStatus({ status: "error", progress: 100, message: err instanceof Error ? err.message : "unknown" });
+    await recordTelemetry(request, {
+      eventType: "auth.delete.error",
+      source: "api",
+      payload: { message: err instanceof Error ? err.message : "unknown" },
+    });
+  }
 };
 
 export function registerAuthRoutes(server: FastifyInstance, prisma: PrismaClient, recordTelemetry: RecordTelemetryFn) {
@@ -218,4 +298,63 @@ export function registerAuthRoutes(server: FastifyInstance, prisma: PrismaClient
       return { user };
     },
   );
+
+  server.post(
+    "/auth/delete",
+    {
+      preHandler: [server.authenticate],
+    },
+    async (request, reply) => {
+      try {
+        const userId = (request.user as { sub: string }).sub;
+        const body = request.body as { confirmText?: string } | undefined;
+
+        if (!body?.confirmText || body.confirmText !== ACCOUNT_DELETE_PHRASE) {
+          return reply.status(400).send({ error: `To delete your data, type '${ACCOUNT_DELETE_PHRASE}' exactly.` });
+        }
+
+        await recordTelemetry(request, {
+          eventType: "auth.delete.requested",
+          source: "api",
+          payload: { confirmationMatched: body.confirmText === ACCOUNT_DELETE_PHRASE },
+        });
+
+        const user = await prisma.user.findUnique({ where: { id: userId }, select: { id: true, email: true } });
+        if (!user) {
+          return reply.status(404).send({ error: "User not found" });
+        }
+
+        const jobId = randomBytes(12).toString("hex");
+        deletionJobs.set(jobId, { userId, status: "queued", progress: 5, updatedAt: Date.now(), message: "Queued" });
+
+        void runDeleteJob(prisma, jobId, userId, recordTelemetry, request);
+
+        return { jobId, status: "queued" };
+      } catch (err) {
+        request.log.error({ err }, "account delete failed");
+        await recordTelemetry(request, {
+          eventType: "auth.delete.error",
+          source: "api",
+          payload: { message: err instanceof Error ? err.message : "unknown" },
+        });
+        return reply.status(500).send({ error: "Unable to delete account right now" });
+      }
+    },
+  );
+
+    server.get(
+      "/auth/delete/status",
+      {
+        preHandler: [server.authenticate],
+      },
+      async (request, reply) => {
+        const userId = (request.user as { sub: string }).sub;
+        const jobId = (request.query as { jobId?: string } | undefined)?.jobId;
+        if (!jobId) return reply.status(400).send({ error: "jobId is required" });
+        const status = deletionJobs.get(jobId);
+        if (!status) return reply.status(404).send({ error: "Job not found" });
+        if (status.userId !== userId) return reply.status(403).send({ error: "Forbidden" });
+        return { jobId, ...status };
+      },
+    );
 }

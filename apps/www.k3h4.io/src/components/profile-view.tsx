@@ -12,9 +12,13 @@ export type ProfileViewProps = {
     setProfile: (updater: (prev: ProfileState | null) => ProfileState | null) => void
     onSave: () => void
     onSignOut: () => void
+    onDeleteAccount: (confirmText: string) => Promise<void> | void
+    deletingAccount: boolean
+    deleteProgress: number
+    deleteStatusText: string
 }
 
-export function ProfileView({ userEmail, profile, profileLoading, profileMessage, setProfile, onSave, onSignOut }: ProfileViewProps) {
+export function ProfileView({ userEmail, profile, profileLoading, profileMessage, setProfile, onSave, onSignOut, onDeleteAccount, deletingAccount, deleteProgress, deleteStatusText }: ProfileViewProps) {
     const displayName = profile?.displayName || userEmail || 'Your profile'
     const headline = profile?.preference?.timezone || profile?.preference?.locale || 'Update your details'
     const avatarUrl = profile?.avatarUrl || undefined
@@ -45,6 +49,10 @@ export function ProfileView({ userEmail, profile, profileLoading, profileMessage
                     setProfile={setProfile}
                     onSave={onSave}
                     onSignOut={onSignOut}
+                    onDeleteAccount={onDeleteAccount}
+                    deletingAccount={deletingAccount}
+                    deleteProgress={deleteProgress}
+                    deleteStatusText={deleteStatusText}
                 />
             </Card>
         </div>

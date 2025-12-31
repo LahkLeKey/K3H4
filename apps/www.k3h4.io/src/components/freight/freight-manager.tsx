@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 
@@ -14,6 +14,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import { Input } from "../ui/input";
 import { Label } from "../ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../ui/table";
+import { useLocalStore } from "../../lib/store";
 
 export type FreightManagerProps = {
     apiBase: string;
@@ -34,19 +35,27 @@ export function FreightManager({ apiBase, userEmail }: FreightManagerProps) {
     const originMarker = useRef<maplibregl.Marker | null>(null);
     const destinationMarker = useRef<maplibregl.Marker | null>(null);
     const routeLayerAdded = useRef(false);
-    const [selectedLoadId, setSelectedLoadId] = useState<string | null>(null);
-    const [showCompleted, setShowCompleted] = useState(false);
-    const [form, setForm] = useState({
-        title: "Hotshot lane",
-        originName: defaultOrigin.name,
-        originLat: String(defaultOrigin.lat),
-        originLng: String(defaultOrigin.lng),
-        destinationName: defaultDestination.name,
-        destinationLat: String(defaultDestination.lat),
-        destinationLng: String(defaultDestination.lng),
-        ratePerKm: "2",
-    });
-    const [inlineError, setInlineError] = useState<string>("");
+    const uiStore = useLocalStore(() => ({
+        selectedLoadId: null as string | null,
+        showCompleted: false,
+        form: {
+            title: "Hotshot lane",
+            originName: defaultOrigin.name,
+            originLat: String(defaultOrigin.lat),
+            originLng: String(defaultOrigin.lng),
+            destinationName: defaultDestination.name,
+            destinationLat: String(defaultDestination.lat),
+            destinationLng: String(defaultDestination.lng),
+            ratePerKm: "2",
+        },
+        inlineError: "",
+    }));
+
+    const { selectedLoadId, showCompleted, form, inlineError } = uiStore.useShallow((state) => state);
+    const setSelectedLoadId = (value: string | null) => uiStore.setState({ selectedLoadId: value });
+    const setShowCompleted = (updater: (prev: boolean) => boolean) => uiStore.setState((prev) => ({ showCompleted: updater(prev.showCompleted) }));
+    const setForm = (updater: (prev: typeof form) => typeof form) => uiStore.setState((prev) => ({ form: updater(prev.form) }));
+    const setInlineError = (value: string) => uiStore.setState({ inlineError: value });
 
     const filteredLoads = useMemo(() => {
         const list = loadsQuery.data ?? [];

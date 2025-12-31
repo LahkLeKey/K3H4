@@ -20,7 +20,7 @@ type SupplierNeed = {
     status: string;
     dueDate?: string | null;
 };
-import { useState } from "react";
+import { useLocalStore } from "../../lib/store";
 
 import { Section } from "../section";
 import { SectionCard } from "../shell/section-card";
@@ -44,21 +44,48 @@ export function CulinaryOps({ apiBase, userEmail, onNavigatePos, onNavigateWareh
     const createPrepTask = useCreateCulinaryPrepTask(apiBase);
     const createSupplierNeed = useCreateCulinarySupplierNeed(apiBase);
 
-    const [menuName, setMenuName] = useState("Signature bowl");
-    const [menuPrepMinutes, setMenuPrepMinutes] = useState("12");
-    const [menuCost, setMenuCost] = useState("4.50");
-    const [menuPrice, setMenuPrice] = useState("12.00");
+    const uiStore = useLocalStore(() => ({
+        menuName: "Signature bowl",
+        menuPrepMinutes: "12",
+        menuCost: "4.50",
+        menuPrice: "12.00",
+        prepTask: "Chop vegetables",
+        prepStation: "Garde manger",
+        prepDueAt: "",
+        supplierItem: "Greens case",
+        supplierQty: "3 cases",
+        supplierStatus: "open",
+        supplierDue: "",
+        errors: null as string | null,
+    }));
 
-    const [prepTask, setPrepTask] = useState("Chop vegetables");
-    const [prepStation, setPrepStation] = useState("Garde manger");
-    const [prepDueAt, setPrepDueAt] = useState("");
+    const {
+        menuName,
+        menuPrepMinutes,
+        menuCost,
+        menuPrice,
+        prepTask,
+        prepStation,
+        prepDueAt,
+        supplierItem,
+        supplierQty,
+        supplierStatus,
+        supplierDue,
+        errors,
+    } = uiStore.useShallow((state) => state);
 
-    const [supplierItem, setSupplierItem] = useState("Greens case");
-    const [supplierQty, setSupplierQty] = useState("3 cases");
-    const [supplierStatus, setSupplierStatus] = useState("open");
-    const [supplierDue, setSupplierDue] = useState("");
-
-    const [errors, setErrors] = useState<string | null>(null);
+    const setErrors = (value: string | null) => uiStore.setState({ errors: value });
+    const setMenuName = (value: string) => uiStore.setState({ menuName: value });
+    const setMenuPrepMinutes = (value: string) => uiStore.setState({ menuPrepMinutes: value });
+    const setMenuCost = (value: string) => uiStore.setState({ menuCost: value });
+    const setMenuPrice = (value: string) => uiStore.setState({ menuPrice: value });
+    const setPrepTask = (value: string) => uiStore.setState({ prepTask: value });
+    const setPrepStation = (value: string) => uiStore.setState({ prepStation: value });
+    const setPrepDueAt = (value: string) => uiStore.setState({ prepDueAt: value });
+    const setSupplierItem = (value: string) => uiStore.setState({ supplierItem: value });
+    const setSupplierQty = (value: string) => uiStore.setState({ supplierQty: value });
+    const setSupplierStatus = (value: string) => uiStore.setState({ supplierStatus: value });
+    const setSupplierDue = (value: string) => uiStore.setState({ supplierDue: value });
     return (
         <div className="space-y-6">
             <Section

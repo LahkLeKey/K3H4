@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 
 import { authStore, type AuthStatus } from "../stores/auth-store";
@@ -6,6 +6,8 @@ import {
   deriveUser,
   type GithubCallbackResponse,
   type SessionResponse,
+  useAccountDeleteStatusQuery,
+  useAccountDeleteMutation,
   useGithubCallbackMutation,
   useGithubUrlMutation,
   useProfileQuery,
@@ -13,14 +15,23 @@ import {
   useSessionQuery,
 } from "./use-auth-queries";
 import { ACCESS_TOKEN_KEY, REFRESH_TOKEN_KEY } from "../lib/constants";
+import { useLocalStore } from "../lib/store";
 
 export type { ProfileState, UserIdentity } from "../stores/auth-store";
 
 export function useAuthProfile() {
   const queryClient = useQueryClient();
-  const [hasToken, setHasToken] = useState<boolean>(() => {
-    return typeof window !== "undefined" ? Boolean(localStorage.getItem(ACCESS_TOKEN_KEY)) : false;
-  });
+  const local = useLocalStore(() => ({
+    hasToken: typeof window !== "undefined" ? Boolean(localStorage.getItem(ACCESS_TOKEN_KEY)) : false,
+    deleteJobId: null as string | null,
+    deleteProgress: 0,
+    deleteStatusText: "",
+  }));
+  const { hasToken, deleteJobId, deleteProgress, deleteStatusText } = local.useShallow((state) => state);
+  const setHasToken = (value: boolean) => local.setState({ hasToken: value });
+  const setDeleteJobId = (value: string | null) => local.setState({ deleteJobId: value });
+  const setDeleteProgress = (value: number) => local.setState({ deleteProgress: value });
+  const setDeleteStatusText = (value: string) => local.setState({ deleteStatusText: value });
   const {
     apiBase,
     redirectUri,
@@ -56,6 +67,8 @@ export function useAuthProfile() {
   const githubUrlMutation = useGithubUrlMutation(apiBase);
   const githubCallbackMutation = useGithubCallbackMutation(apiBase);
   const profileSaveMutation = useProfileSaveMutation(apiBase);
+  const accountDeleteMutation = useAccountDeleteMutation(apiBase);
+  const deleteStatusQuery = useAccountDeleteStatusQuery(apiBase, deleteJobId);
 
   useEffect(() => {
     const token = typeof window !== "undefined" ? localStorage.getItem(ACCESS_TOKEN_KEY) : null;
@@ -132,7 +145,7 @@ export function useAuthProfile() {
     }
   };
 
-  const handleSignOut = () => {
+  function handleSignOut() {
     localStorage.removeItem(ACCESS_TOKEN_KEY);
     localStorage.removeItem(REFRESH_TOKEN_KEY);
     void queryClient.removeQueries({ queryKey: ["auth", "session"] });
@@ -141,7 +154,38 @@ export function useAuthProfile() {
     setProfileFromServer(null);
     setAuthState("idle", "Signed out");
     setHasToken(false);
+  }
+
+  const handleDeleteAccount = async (confirmText: string) => {
+    setProfileMessage("Deleting account and wiping data...");
+    try {
+      const res = await accountDeleteMutation.mutateAsync({ confirmText });
+      setDeleteJobId(res.jobId);
+      setDeleteProgress(5);
+      setDeleteStatusText("Queued deletion job");
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Delete failed";
+      setProfileMessage(message);
+      throw error;
+    }
   };
+
+  useEffect(() => {
+    if (!deleteStatusQuery.data) return;
+    setDeleteProgress(deleteStatusQuery.data.progress ?? deleteProgress);
+    setDeleteStatusText(deleteStatusQuery.data.message ?? "");
+
+    if (deleteStatusQuery.data.status === "done") {
+      setProfileMessage("Account deleted and local session cleared");
+      handleSignOut();
+      setDeleteJobId(null);
+    }
+
+    if (deleteStatusQuery.data.status === "error") {
+      setProfileMessage(deleteStatusQuery.data.message || "Delete failed");
+      setDeleteJobId(null);
+    }
+  }, [deleteStatusQuery.data, deleteProgress, handleSignOut, setProfileMessage]);
 
   const completeGithubCallback = async (code: string, redirect = redirectUri): Promise<{ ok: boolean; error?: string }> => {
     setAuthState("loading", "Signing you in with GitHub...");
@@ -180,7 +224,11 @@ export function useAuthProfile() {
     setAuthState,
     handleGithubLogin,
     handleSignOut,
+    handleDeleteAccount,
     handleProfileSave,
+    deletingAccount: accountDeleteMutation.isPending || deleteStatusQuery.isFetching,
+    deleteProgress,
+    deleteStatusText,
     completeGithubCallback,
   };
 }
