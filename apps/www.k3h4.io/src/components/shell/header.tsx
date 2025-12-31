@@ -103,9 +103,9 @@ export function ShellHeader({
                                             onSave={onProfileSave}
                                             onSignOut={onSignOut}
                                             onDeleteAccount={onDeleteAccount}
-                                            deletingAccount={deletingAccount}
-                                            deleteProgress={deleteProgress}
-                                            deleteStatusText={deleteStatusText}
+                                            deletingAccount={deletingAccount ?? false}
+                                            deleteProgress={deleteProgress ?? 0}
+                                            deleteStatusText={deleteStatusText ?? ""}
                                         />
                                     </div>
                                     <DropdownMenuSeparator />
