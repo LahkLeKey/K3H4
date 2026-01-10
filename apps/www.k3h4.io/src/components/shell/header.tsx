@@ -24,6 +24,7 @@ type ShellHeaderProps = {
     navItems: NavItem[];
     pathname: string;
     userEmail: string | null;
+    swaggerUrl?: string;
     authStatus: AuthStatus;
     authMessage: string;
     profile: ProfileState | null;
@@ -47,6 +48,7 @@ export function ShellHeader({
     navItems,
     pathname,
     userEmail,
+    swaggerUrl,
     authStatus,
     authMessage,
     profile,
@@ -76,6 +78,13 @@ export function ShellHeader({
                     activePath={pathname}
                     pillClassName="min-h-9"
                 />
+                {swaggerUrl ? (
+                    <Button asChild variant="outline" className="ml-1">
+                        <a href={swaggerUrl} target="_blank" rel="noreferrer">
+                            Swagger
+                        </a>
+                    </Button>
+                ) : null}
                 {modulesMenu}
                 {actions ?? (
                     <ShellActionBar>

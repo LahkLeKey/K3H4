@@ -571,3 +571,100 @@ model ArcadeRedemption {
 
   @@index([userId, prizeId])
 }
+
+// USDA FAS datasets (ESR, GATS, PSD) cached artifacts and reference data
+model UsdaRegion {
+  id        String   @id @default(cuid())
+  dataset   String
+  code      String
+  name      String?
+  extra     Json?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([dataset, code])
+  @@index([dataset])
+}
+
+model UsdaCountry {
+  id         String   @id @default(cuid())
+  dataset    String
+  code       String
+  name       String?
+  regionCode String?
+  extra      Json?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@unique([dataset, code])
+  @@index([dataset, regionCode])
+}
+
+model UsdaCommodity {
+  id        String   @id @default(cuid())
+  dataset   String
+  code      String
+  name      String?
+  extra     Json?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([dataset, code])
+  @@index([dataset])
+}
+
+model UsdaUnit {
+  id        String   @id @default(cuid())
+  dataset   String
+  code      String
+  name      String?
+  extra     Json?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([dataset, code])
+  @@index([dataset])
+}
+
+model UsdaRelease {
+  id         String   @id @default(cuid())
+  dataset    String
+  scope      String
+  releasedOn DateTime
+  note       String?
+  fetchedAt  DateTime @default(now())
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@unique([dataset, scope])
+  @@index([dataset, releasedOn])
+}
+
+model UsdaCacheEntry {
+  id         String   @id @default(cuid())
+  dataset    String
+  endpoint   String
+  params     Json?
+  paramsHash String
+  payload    Json?
+  fetchedAt  DateTime @default(now())
+  expiresAt  DateTime?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@unique([dataset, endpoint, paramsHash])
+  @@index([dataset, endpoint])
+}
+
+model UsdaSyncState {
+  id            String   @id @default(cuid())
+  dataset       String
+  scope         String
+  lastReleaseOn DateTime?
+  lastSyncedAt  DateTime?
+  note          String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@unique([dataset, scope])
+}

@@ -108,7 +108,7 @@ export type AgricultureResourceCategory = {
   resources: AgricultureResource[];
 };
 
-const getAuthHeaders = (): AuthHeaders => {
+export const getAuthHeaders = (): AuthHeaders => {
   if (typeof window === "undefined") return null;
   const token = localStorage.getItem(ACCESS_TOKEN_KEY);
   if (!token) return null;

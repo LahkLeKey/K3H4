@@ -17,6 +17,7 @@ import { registerPosRoutes } from "./routes/pos";
 import { registerAgricultureRoutes } from "./routes/agriculture";
 import { registerCulinaryRoutes } from "./routes/culinary";
 import { registerArcadeRoutes } from "./routes/arcade";
+import { registerUsdaRoutes } from "./routes/usda";
 
 dotenv.config();
 
@@ -243,6 +244,7 @@ registerPosRoutes(server, prisma, recordTelemetry);
 registerAgricultureRoutes(server, prisma, recordTelemetry);
 registerCulinaryRoutes(server, prisma, recordTelemetry);
 registerArcadeRoutes(server, prisma, recordTelemetry);
+registerUsdaRoutes(server, prisma, recordTelemetry);
 
 const port = Number(process.env.PORT || 8080);
 const host = process.env.HOST || "0.0.0.0";

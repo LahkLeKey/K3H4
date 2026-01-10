@@ -12,6 +12,11 @@ import {
   useCreateAgricultureShipment,
   useCreateAgricultureTask,
 } from "../../hooks/use-agriculture-queries";
+import {
+  useUsdaEsrCommoditiesQuery,
+  useUsdaEsrReleaseQuery,
+  useUsdaPsdCommoditiesQuery,
+} from "../../hooks/use-usda-queries";
 import { trackTelemetry } from "../../lib/telemetry";
 import { Section } from "../section";
 import { Badge } from "../ui/badge";
@@ -100,6 +105,10 @@ export function AgricultureDashboard() {
   const inventoryQuery = useAgricultureInventoryQuery(apiBase);
   const plotsQuery = useAgriculturePlotsQuery(apiBase);
 
+  const usdaEsrCommoditiesQuery = useUsdaEsrCommoditiesQuery(apiBase);
+  const usdaEsrReleaseQuery = useUsdaEsrReleaseQuery(apiBase);
+  const usdaPsdCommoditiesQuery = useUsdaPsdCommoditiesQuery(apiBase);
+
   const plotMutation = useCreateAgriculturePlot(apiBase);
   const taskMutation = useCreateAgricultureTask(apiBase);
   const shipmentMutation = useCreateAgricultureShipment(apiBase);
@@ -155,6 +164,22 @@ export function AgricultureDashboard() {
   const displayedTasks = (tasksQuery.data?.tasks ?? []).slice(0, 8);
   const displayedResources = resourceRows.slice(0, 8);
   const displayedInventory = (inventoryQuery.data?.inventory ?? []).slice(0, 6);
+
+  const esrCommodities = Array.isArray(usdaEsrCommoditiesQuery.data) ? usdaEsrCommoditiesQuery.data : [];
+  const psdCommodities = Array.isArray(usdaPsdCommoditiesQuery.data) ? usdaPsdCommoditiesQuery.data : [];
+  const esrReleases = Array.isArray(usdaEsrReleaseQuery.data) ? usdaEsrReleaseQuery.data : [];
+
+  const formatCommodityLabel = (item: any) =>
+    item?.commodityName || item?.CommodityName || item?.name || item?.Commodity || item?.commodity || item?.description || item?.code || "Unknown";
+
+  const formatReleaseLabel = (item: any) =>
+    item?.releasedOn || item?.ReleaseDate || item?.releaseDate || item?.date || item?.DataReleaseDate || item?.dataReleaseDate || null;
+
+  const formatRaw = (item: any, max = 80) => {
+    const raw = JSON.stringify(item) ?? "";
+    if (!raw) return "—";
+    return raw.length > max ? `${raw.slice(0, max)}…` : raw;
+  };
 
   const handleResourceSearch = (value: string) => {
     setSearchTerm(value);
@@ -261,6 +286,7 @@ export function AgricultureDashboard() {
               <TabsTrigger value="inventory">Inventory</TabsTrigger>
               <TabsTrigger value="analytics">Analytics</TabsTrigger>
               <TabsTrigger value="operations">Operations</TabsTrigger>
+              <TabsTrigger value="usda">USDA</TabsTrigger>
             </TabsList>
             <span className="text-xs uppercase tracking-[0.3em] text-muted-foreground">Live tables</span>
           </div>
@@ -706,6 +732,139 @@ export function AgricultureDashboard() {
               </TableBody>
               <TableCaption>Inline operations keep the workflow close to the data.</TableCaption>
             </Table>
+          </TabsContent>
+
+          <TabsContent value="usda" className="mt-4 space-y-4">
+            <div className="grid gap-4 md:grid-cols-2">
+              <Card className="p-4 shadow-sm">
+                <div className="mb-3 flex items-center justify-between gap-2">
+                  <div>
+                    <p className="text-xs uppercase tracking-[0.3em] text-muted-foreground">ESR commodities</p>
+                    <p className="text-lg font-semibold text-foreground">Top listings</p>
+                  </div>
+                  <Badge variant="outline">{esrCommodities.length || "—"} items</Badge>
+                </div>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Name</TableHead>
+                      <TableHead>Raw</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {usdaEsrCommoditiesQuery.isLoading ? (
+                      <TableRow>
+                        <TableCell colSpan={2} className="text-muted-foreground">Loading ESR commodities…</TableCell>
+                      </TableRow>
+                    ) : usdaEsrCommoditiesQuery.isError ? (
+                      <TableRow>
+                        <TableCell colSpan={2} className="text-destructive">{formatErrorMessage(usdaEsrCommoditiesQuery.error)}</TableCell>
+                      </TableRow>
+                    ) : esrCommodities.length ? (
+                      esrCommodities.slice(0, 6).map((item, index) => (
+                        <TableRow key={index}>
+                          <TableCell className="font-semibold text-foreground">{formatCommodityLabel(item)}</TableCell>
+                          <TableCell>
+                            <code className="text-xs text-muted-foreground">{formatRaw(item)}</code>
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    ) : (
+                      <TableRow>
+                        <TableCell colSpan={2} className="text-muted-foreground">No ESR commodities available.</TableCell>
+                      </TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+              </Card>
+
+              <Card className="p-4 shadow-sm">
+                <div className="mb-3 flex items-center justify-between gap-2">
+                  <div>
+                    <p className="text-xs uppercase tracking-[0.3em] text-muted-foreground">PSD commodities</p>
+                    <p className="text-lg font-semibold text-foreground">Forecast catalog</p>
+                  </div>
+                  <Badge variant="outline">{psdCommodities.length || "—"} items</Badge>
+                </div>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Name</TableHead>
+                      <TableHead>Raw</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {usdaPsdCommoditiesQuery.isLoading ? (
+                      <TableRow>
+                        <TableCell colSpan={2} className="text-muted-foreground">Loading PSD commodities…</TableCell>
+                      </TableRow>
+                    ) : usdaPsdCommoditiesQuery.isError ? (
+                      <TableRow>
+                        <TableCell colSpan={2} className="text-destructive">{formatErrorMessage(usdaPsdCommoditiesQuery.error)}</TableCell>
+                      </TableRow>
+                    ) : psdCommodities.length ? (
+                      psdCommodities.slice(0, 6).map((item, index) => (
+                        <TableRow key={index}>
+                          <TableCell className="font-semibold text-foreground">{formatCommodityLabel(item)}</TableCell>
+                          <TableCell>
+                            <code className="text-xs text-muted-foreground">{formatRaw(item)}</code>
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    ) : (
+                      <TableRow>
+                        <TableCell colSpan={2} className="text-muted-foreground">No PSD commodities available.</TableCell>
+                      </TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+              </Card>
+            </div>
+
+            <Card className="p-4 shadow-sm">
+              <div className="mb-3 flex items-center justify-between gap-2">
+                <div>
+                  <p className="text-xs uppercase tracking-[0.3em] text-muted-foreground">ESR data releases</p>
+                  <p className="text-lg font-semibold text-foreground">Latest published dates</p>
+                </div>
+                <Badge variant="outline">{esrReleases.length || "—"} entries</Badge>
+              </div>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Release date</TableHead>
+                    <TableHead>Details</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {usdaEsrReleaseQuery.isLoading ? (
+                    <TableRow>
+                      <TableCell colSpan={2} className="text-muted-foreground">Loading release dates…</TableCell>
+                    </TableRow>
+                  ) : usdaEsrReleaseQuery.isError ? (
+                    <TableRow>
+                      <TableCell colSpan={2} className="text-destructive">{formatErrorMessage(usdaEsrReleaseQuery.error)}</TableCell>
+                    </TableRow>
+                  ) : esrReleases.length ? (
+                    esrReleases.slice(0, 8).map((item, index) => {
+                      const dateLabel = formatReleaseLabel(item);
+                      return (
+                        <TableRow key={index}>
+                          <TableCell className="font-semibold text-foreground">{dateLabel ? formatDate(dateLabel) : "—"}</TableCell>
+                          <TableCell>
+                            <code className="text-xs text-muted-foreground">{formatRaw(item, 120)}</code>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })
+                  ) : (
+                    <TableRow>
+                      <TableCell colSpan={2} className="text-muted-foreground">No release metadata available.</TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </Card>
           </TabsContent>
         </Tabs>
       </Card>
