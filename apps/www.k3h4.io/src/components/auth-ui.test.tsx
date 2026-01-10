@@ -28,7 +28,9 @@ describe("AuthCta", () => {
     it("disables while loading and shows messages", () => {
         render(<AuthCta userEmail="me@test.com" authStatus="loading" authMessage="busy" onGithubLogin={vi.fn()} onLinkedinLogin={vi.fn()} />);
 
-        expect(screen.getByRole("button", { name: /redirecting/i })).toBeDisabled();
+        const redirectButtons = screen.getAllByRole("button", { name: /redirecting/i });
+        expect(redirectButtons.length).toBe(2);
+        redirectButtons.forEach((button) => expect(button).toBeDisabled());
         expect(screen.getByText("busy")).toBeInTheDocument();
         expect(screen.getByText(/session active for me@test.com/i)).toBeInTheDocument();
     });
