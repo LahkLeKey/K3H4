@@ -29,6 +29,10 @@ model User {
   agriculturePlots AgriculturePlot[]
   agricultureTasks AgricultureTask[]
   agricultureShipments AgricultureShipment[]
+  agricultureCropPlans AgricultureCropPlan[]
+  agriculturePlotConditions AgriculturePlotCondition[]
+  agricultureInventories AgricultureInventory[]
+  agricultureInventoryMovements AgricultureInventoryMovement[]
   culinaryMenuItems CulinaryMenuItem[]
   culinaryPrepTasks CulinaryPrepTask[]
   culinarySupplierNeeds CulinarySupplierNeed[]
@@ -142,6 +146,81 @@ model Assignment {
   payouts      AssignmentPayout[]
 
   @@index([userId, personaId])
+}
+
+model AgricultureCropPlan {
+  id              String          @id @default(cuid())
+  userId          String
+  plotId          String
+  user            User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  plot            AgriculturePlot @relation(fields: [plotId], references: [id], onDelete: Cascade)
+  crop            String
+  phase           String          @default("planned")
+  status          String          @default("active")
+  startDate       DateTime
+  targetHarvestDate DateTime?
+  endDate         DateTime?
+  notes           String?
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+  tasks           AgricultureTask[]
+
+  @@index([userId, plotId])
+  @@index([userId, phase])
+}
+
+model AgriculturePlotCondition {
+  id          String          @id @default(cuid())
+  userId      String
+  plotId      String
+  user        User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  plot        AgriculturePlot @relation(fields: [plotId], references: [id], onDelete: Cascade)
+  recordedAt  DateTime        @default(now())
+  temperature Float?
+  moisture    Float?
+  ph          Decimal?        @db.Decimal(5, 2)
+  notes       String?
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  @@index([userId, plotId])
+  @@index([userId, recordedAt])
+}
+
+model AgricultureInventory {
+  id            String                        @id @default(cuid())
+  userId        String
+  user          User                          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  sku           String
+  description   String?
+  totalQuantity Decimal                       @db.Decimal(18, 2) @default("0")
+  unit          String
+  location      String?
+  status        String                        @default("active")
+  createdAt     DateTime                      @default(now())
+  updatedAt     DateTime                      @updatedAt
+  movements     AgricultureInventoryMovement[]
+
+  @@index([userId, sku])
+}
+
+model AgricultureInventoryMovement {
+  id            String             @id @default(cuid())
+  userId        String
+  user          User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  inventoryId   String
+  inventory     AgricultureInventory @relation(fields: [inventoryId], references: [id], onDelete: Cascade)
+  shipmentId    String?
+  shipment      AgricultureShipment? @relation(fields: [shipmentId], references: [id], onDelete: SetNull)
+  type          String
+  quantity      Decimal            @db.Decimal(18, 2)
+  reason        String?
+  createdAt     DateTime           @default(now())
+  updatedAt     DateTime           @updatedAt
+
+  @@index([userId])
+  @@index([inventoryId])
+  @@index([userId, shipmentId])
 }
 
 model AssignmentTimecard {
@@ -265,22 +344,39 @@ model AgriculturePlot {
   userId    String
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   name      String
+  fieldCode String?
   crop      String
   stage     String
   acres     Decimal  @db.Decimal(10, 2)
   health    String   @default("Unknown")
+  soilType  String?
+  irrigationZone String?
+  notes     String?
+  lastConditionAt DateTime?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  cropPlans AgricultureCropPlan[]
+  conditions AgriculturePlotCondition[]
+  tasks AgricultureTask[]
+
   @@index([userId, crop])
+  @@index([userId, fieldCode])
 }
 
 model AgricultureTask {
   id        String   @id @default(cuid())
   userId    String
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  plotId    String?
+  plot      AgriculturePlot? @relation(fields: [plotId], references: [id], onDelete: SetNull)
+  cropPlanId String?
+  cropPlan   AgricultureCropPlan? @relation(fields: [cropPlanId], references: [id], onDelete: SetNull)
   title     String
   assignee  String?
+  priority  Int      @default(2)
+  tags      Json?
+  notes     String?
   dueDate   DateTime?
   status    String   @default("pending")
   createdAt DateTime @default(now())
@@ -288,6 +384,8 @@ model AgricultureTask {
 
   @@index([userId, status])
   @@index([userId, dueDate])
+  @@index([userId, plotId])
+  @@index([userId, cropPlanId])
 }
 
 model AgricultureShipment {
@@ -300,11 +398,38 @@ model AgricultureShipment {
   eta           DateTime?
   freightLoadId String?
   freightLoad   FreightLoad? @relation(fields: [freightLoadId], references: [id], onDelete: SetNull)
+  inventoryMovements AgricultureInventoryMovement[]
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
   @@index([userId])
   @@index([userId, freightLoadId])
+}
+
+model AgricultureResourceCategory {
+  id          String                     @id @default(cuid())
+  slug        String                     @unique
+  title       String
+  description String?
+  createdAt   DateTime                   @default(now())
+  updatedAt   DateTime                   @updatedAt
+
+  resources   AgricultureResource[]
+}
+
+model AgricultureResource {
+  id          String                     @id @default(cuid())
+  categoryId  String
+  category    AgricultureResourceCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  title       String
+  summary     String
+  url         String
+  tags        String[]                   @default([])
+  source      String?
+  createdAt   DateTime                   @default(now())
+  updatedAt   DateTime                   @updatedAt
+
+  @@index([categoryId])
 }
 
 model CulinaryMenuItem {
@@ -445,4 +570,101 @@ model ArcadeRedemption {
   sessions  ArcadeSession[]
 
   @@index([userId, prizeId])
+}
+
+// USDA FAS datasets (ESR, GATS, PSD) cached artifacts and reference data
+model UsdaRegion {
+  id        String   @id @default(cuid())
+  dataset   String
+  code      String
+  name      String?
+  extra     Json?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([dataset, code])
+  @@index([dataset])
+}
+
+model UsdaCountry {
+  id         String   @id @default(cuid())
+  dataset    String
+  code       String
+  name       String?
+  regionCode String?
+  extra      Json?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@unique([dataset, code])
+  @@index([dataset, regionCode])
+}
+
+model UsdaCommodity {
+  id        String   @id @default(cuid())
+  dataset   String
+  code      String
+  name      String?
+  extra     Json?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([dataset, code])
+  @@index([dataset])
+}
+
+model UsdaUnit {
+  id        String   @id @default(cuid())
+  dataset   String
+  code      String
+  name      String?
+  extra     Json?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([dataset, code])
+  @@index([dataset])
+}
+
+model UsdaRelease {
+  id         String   @id @default(cuid())
+  dataset    String
+  scope      String
+  releasedOn DateTime
+  note       String?
+  fetchedAt  DateTime @default(now())
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@unique([dataset, scope])
+  @@index([dataset, releasedOn])
+}
+
+model UsdaCacheEntry {
+  id         String   @id @default(cuid())
+  dataset    String
+  endpoint   String
+  params     Json?
+  paramsHash String
+  payload    Json?
+  fetchedAt  DateTime @default(now())
+  expiresAt  DateTime?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@unique([dataset, endpoint, paramsHash])
+  @@index([dataset, endpoint])
+}
+
+model UsdaSyncState {
+  id            String   @id @default(cuid())
+  dataset       String
+  scope         String
+  lastReleaseOn DateTime?
+  lastSyncedAt  DateTime?
+  note          String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@unique([dataset, scope])
 }

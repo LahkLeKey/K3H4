@@ -1,336 +1,307 @@
-type Plot = {
-    id: string;
-    name: string;
-    crop: string;
-    stage: string;
-    acres: number;
-    health: string;
-};
+import { useLayoutEffect, useMemo, useRef, useState } from "react";
 
-type Task = {
-    id: string;
-    title: string;
-    assignee?: string | null;
-    dueDate?: string | null;
-};
-
-type Shipment = {
-    id: string;
-    lot: string;
-    destination: string;
-    mode: string;
-    eta?: string | null;
-    freightLoadId?: string | null;
-};
-import { useLocalStore } from "../../lib/store";
-
-import { Section } from "../section";
-import { SectionCard } from "../shell/section-card";
-import { useAgricultureOverviewQuery, useCreateAgriculturePlot, useCreateAgricultureShipment, useCreateAgricultureTask } from "../../hooks/use-agriculture-queries";
 import { trackTelemetry } from "../../lib/telemetry";
+import { agricultureDashboardStore } from "../../stores/agriculture-dashboard-store";
+import { Button } from "../ui/button";
+import { HudToolbar } from "../ui/hud-toolbar";
+import { ActionPanel } from "../ui/action-panel";
+import { PlotActionForm } from "./actions/plot-action";
+import { SeedsActionForm } from "./actions/seeds-action";
+import { WorkersActionForm } from "./actions/workers-action";
+import { AgricultureOverlay } from "./agriculture-overlay";
+import { PlotFocusCard } from "./plot-focus-card";
+import { PlotCanvas } from "./plot-canvas";
+import { SelectedPlotControlsCard } from "./selected-plot-controls-card";
+import { SeedInventoryCard, type SeedInventoryItem } from "./seed-inventory-card";
+import { useAgricultureDashboard } from "./use-agriculture-dashboard";
 
-export type AgricultureDashboardProps = {
-    apiBase: string;
-    userEmail: string | null;
-    onNavigateFreight?: () => void;
+type AgricultureDashboardProps = {
+  apiBase?: string;
+  userEmail?: string | null;
+  onNavigateFreight?: () => void;
 };
 
-export function AgricultureDashboard({ apiBase, userEmail, onNavigateFreight }: AgricultureDashboardProps) {
-    const overview = useAgricultureOverviewQuery(apiBase);
-    const plots = (overview.data?.plots as Plot[] | undefined) ?? [];
-    const tasks = (overview.data?.tasks as Task[] | undefined) ?? [];
-    const shipments = (overview.data?.shipments as Shipment[] | undefined) ?? [];
+const defaultApiBase = ((globalThis as any)?.__API_URL__ || (import.meta as any)?.API_URL || "http://localhost:3001").replace(/\/$/, "");
 
-    const createPlot = useCreateAgriculturePlot(apiBase);
-    const createTask = useCreateAgricultureTask(apiBase);
-    const createShipment = useCreateAgricultureShipment(apiBase);
+export function AgricultureDashboard({ apiBase: apiBaseOverride }: AgricultureDashboardProps = {}) {
+  const apiBase = (apiBaseOverride ?? defaultApiBase).replace(/\/$/, "");
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const [viewportHeight, setViewportHeight] = useState<number | null>(null);
+  const [seedInventory, setSeedInventory] = useState<SeedInventoryItem[]>([]);
+  const [selectedSeed, setSelectedSeed] = useState<string>("");
+  const [plotSeedOverrides, setPlotSeedOverrides] = useState<Record<string, string>>({});
+  const [showBankOverlay, setShowBankOverlay] = useState(false);
 
-    const uiStore = useLocalStore(() => ({
-        plotName: "",
-        plotCrop: "Corn",
-        plotAcres: "25",
-        taskTitle: "Irrigate north field",
-        taskAssignee: "Crew A",
-        taskDueDate: "",
-        shipmentLot: "LOT-001",
-        shipmentDestination: "Chicago DC",
-        shipmentMode: "Truck",
-        shipmentFreightId: "",
-        errors: null as string | null,
+  const {
+    highlightedPlot,
+    setHighlightedPlot,
+    searchTerm,
+    actionMode,
+    setActionMode,
+    plotName,
+    setPlotName,
+    plotCrop,
+    setPlotCrop,
+    plotAcres,
+    setPlotAcres,
+    plotCost,
+    setPlotCost,
+    seedCommodity,
+    setSeedCommodity,
+    seedCost,
+    setSeedCost,
+    workerTaskTitle,
+    setWorkerTaskTitle,
+    workerDueDate,
+    setWorkerDueDate,
+    workerAssignee,
+    setWorkerAssignee,
+    statusMessage,
+    setStatusMessage,
+  } = agricultureDashboardStore.useShallow((state) => state);
+
+  const {
+    bank,
+    filteredPlots,
+    activePlot,
+    plotMeshes,
+    seedOptions,
+    assigneeOptions,
+    derivedStatusMessage,
+    busy,
+    bankUpdateMutation,
+    balanceValue,
+    handleConfirmAddPlot,
+    handleConfirmBuySeeds,
+    handleConfirmScheduleWorkers,
+  } = useAgricultureDashboard({
+    apiBase,
+    highlightedPlot,
+    searchTerm,
+    plotName,
+    plotCrop,
+    plotAcres,
+    plotCost,
+    seedCommodity,
+    seedCost,
+    workerTaskTitle,
+    workerDueDate,
+    workerAssignee,
+    setActionMode,
+    setSignalsOpen: () => undefined,
+    setRosterOpen: () => undefined,
+    setWorkerDueDate,
+    setStatusMessage,
+  });
+
+  const handleAddPlot = () => setActionMode(actionMode === "plot" ? null : "plot");
+  const handleBuySeeds = () => setActionMode(actionMode === "seeds" ? null : "seeds");
+  const handleScheduleWorkers = () => setActionMode(actionMode === "workers" ? null : "workers");
+  const handleRefresh = () => trackTelemetry("agriculture.dashboard.refresh");
+
+  useLayoutEffect(() => {
+    const recompute = () => {
+      const top = containerRef.current?.getBoundingClientRect().top ?? 0;
+      const padding = 16; // leave breathing room to avoid scrollbars
+      setViewportHeight(Math.max(360, window.innerHeight - top - padding));
+    };
+    recompute();
+    window.addEventListener("resize", recompute);
+    return () => window.removeEventListener("resize", recompute);
+  }, []);
+
+  useLayoutEffect(() => {
+    if (!seedOptions.length || seedInventory.length) return;
+    const starter = seedOptions.slice(0, 6).map((option, index) => ({
+      code: option.code || `seed-${index}`,
+      label: option.label || `Seed ${index + 1}`,
+      quantity: 5,
     }));
+    setSeedInventory(starter);
+  }, [seedOptions, seedInventory.length]);
 
-    const {
-        plotName,
-        plotCrop,
-        plotAcres,
-        taskTitle,
-        taskAssignee,
-        taskDueDate,
-        shipmentLot,
-        shipmentDestination,
-        shipmentMode,
-        shipmentFreightId,
-        errors,
-    } = uiStore.useShallow((state) => state);
+  const missingPlotCoins = Math.max(0, (Number(plotCost) || 0) - (balanceValue || 0));
+  const shouldShowTopUp = statusMessage === "Insufficient K3H4 coin for plot purchase." && missingPlotCoins > 0;
 
-    const setErrors = (value: string | null) => uiStore.setState({ errors: value });
-    const setPlotName = (value: string) => uiStore.setState({ plotName: value });
-    const setPlotCrop = (value: string) => uiStore.setState({ plotCrop: value });
-    const setPlotAcres = (value: string) => uiStore.setState({ plotAcres: value });
-    const setTaskTitle = (value: string) => uiStore.setState({ taskTitle: value });
-    const setTaskAssignee = (value: string) => uiStore.setState({ taskAssignee: value });
-    const setTaskDueDate = (value: string) => uiStore.setState({ taskDueDate: value });
-    const setShipmentLot = (value: string) => uiStore.setState({ shipmentLot: value });
-    const setShipmentDestination = (value: string) => uiStore.setState({ shipmentDestination: value });
-    const setShipmentMode = (value: string) => uiStore.setState({ shipmentMode: value });
-    const setShipmentFreightId = (value: string) => uiStore.setState({ shipmentFreightId: value });
+  const activePlotOverrideCrop = activePlot ? plotSeedOverrides[activePlot.id] : undefined;
+  const activePlotWithOverride = activePlot ? { ...activePlot, crop: activePlotOverrideCrop || activePlot.crop } : activePlot;
+  const plotMeshesWithOverrides = useMemo(
+    () => plotMeshes.map((plot) => (plotSeedOverrides[plot.id] ? { ...plot, crop: plotSeedOverrides[plot.id] } : plot)),
+    [plotMeshes, plotSeedOverrides],
+  );
 
-    return (
-        <div className="space-y-6">
-            <Section
-                eyebrow="Agriculture"
-                title="Field and yield overview"
-                description="Track plots, tasks, and outbound lots"
-                actions={<div className="text-xs text-muted-foreground">User: {userEmail ?? "guest"}</div>}
-            >
-                {overview.isLoading ? <div className="text-sm text-muted-foreground">Loading agriculture overview…</div> : null}
-                {overview.isError ? <div className="text-sm text-destructive">{(overview.error as Error).message}</div> : null}
-                <div className="grid gap-4 md:grid-cols-3">
-                    {plots.length ? plots.map((plot) => (
-                        <SectionCard key={plot.id} tone="muted">
-                            <div className="flex items-center justify-between">
-                                <div className="text-sm font-semibold">{plot.name}</div>
-                                <span className="text-xs text-muted-foreground">{plot.acres} acres</span>
-                            </div>
-                            <div className="mt-2 flex items-center justify-between text-sm">
-                                <span>{plot.crop} · {plot.stage}</span>
-                                <span className="text-xs text-emerald-700">{plot.health}</span>
-                            </div>
-                        </SectionCard>
-                    )) : <div className="text-sm text-muted-foreground">No plots yet.</div>}
-                </div>
-            </Section>
+  const handleTopUpPlotCoins = async () => {
+    if (!shouldShowTopUp || bankUpdateMutation.isPending) return;
+    try {
+      await bankUpdateMutation.mutateAsync({ delta: missingPlotCoins, reason: `Top-up for plot ${plotName || "purchase"}` });
+      setStatusMessage(`Added ${missingPlotCoins} coin for plot purchase. Retry the action.`);
+    } catch (error: any) {
+      setStatusMessage(error?.message || "Unable to add coin right now.");
+    }
+  };
 
-            <div className="grid gap-4 lg:grid-cols-3">
-                <SectionCard className="lg:col-span-2">
-                    <div className="flex items-center justify-between">
-                        <h3 className="text-base font-semibold">Upcoming tasks</h3>
-                        <span className="text-xs text-muted-foreground">Synced to {apiBase}</span>
-                    </div>
-                    <div className="mt-4 space-y-2">
-                        {tasks.length ? tasks.map((task) => (
-                            <div key={task.id} className="flex items-center justify-between rounded-lg border bg-background/80 px-3 py-2">
-                                <div>
-                                    <div className="text-sm font-semibold">{task.title}</div>
-                                    <div className="text-xs text-muted-foreground">Assignee: {task.assignee ?? "Unassigned"}</div>
-                                </div>
-                                <span className="text-xs font-medium text-orange-700">{task.dueDate ? new Date(task.dueDate).toLocaleDateString() : "No due date"}</span>
-                            </div>
-                        )) : <div className="text-sm text-muted-foreground">No tasks yet.</div>}
-                    </div>
-                </SectionCard>
+  const handleConfirmBuySeedsWithInventory = async () => {
+    const success = await handleConfirmBuySeeds();
+    if (!success || !seedCommodity) return;
+    const label = seedOptions.find((item) => item.code === seedCommodity)?.label || seedCommodity;
+    setSeedInventory((prev) => {
+      const existing = prev.find((item) => item.code === seedCommodity);
+      if (existing) {
+        return prev.map((item) => (item.code === seedCommodity ? { ...item, quantity: item.quantity + 1 } : item));
+      }
+      return [...prev, { code: seedCommodity, label, quantity: 1 }];
+    });
+    setSelectedSeed(seedCommodity);
+  };
 
-                <SectionCard>
-                    <div className="flex items-center justify-between">
-                        <h3 className="text-base font-semibold">Outbound lots</h3>
-                        <span className="text-xs text-muted-foreground">Freight ready</span>
-                    </div>
-                    <div className="mt-4 space-y-2">
-                        {shipments.length ? shipments.map((shipment) => (
-                            <div key={shipment.id} className="rounded-lg border bg-muted/50 px-3 py-2 text-sm">
-                                <div className="flex items-center justify-between">
-                                    <span className="font-semibold">{shipment.lot}</span>
-                                    <span className="text-xs text-muted-foreground">{shipment.mode}</span>
-                                </div>
-                                <div className="flex items-center justify-between text-xs text-muted-foreground">
-                                    <span>{shipment.destination}</span>
-                                    <span>{shipment.eta ? new Date(shipment.eta).toLocaleDateString() : "ETA TBD"}</span>
-                                </div>
-                                {onNavigateFreight ? (
-                                    <button
-                                        type="button"
-                                        className="mt-2 text-xs font-semibold text-primary hover:underline"
-                                        onClick={() => {
-                                            void trackTelemetry("agriculture.shipment.viewFreight", { shipmentId: shipment.id, freightLinked: Boolean(shipment.freightLoadId) });
-                                            onNavigateFreight();
-                                        }}
-                                    >
-                                        View in freight
-                                    </button>
-                                ) : null}
-                            </div>
-                        )) : <div className="text-sm text-muted-foreground">No outbound lots yet.</div>}
-                    </div>
-                </SectionCard>
-            </div>
+  const handleApplySeedToPlot = () => {
+    if (!activePlot) {
+      setStatusMessage("Select a plot before planting.");
+      return;
+    }
+    if (!selectedSeed) {
+      setStatusMessage("Choose a seed to plant.");
+      return;
+    }
+    const inventoryItem = seedInventory.find((item) => item.code === selectedSeed);
+    if (!inventoryItem || inventoryItem.quantity <= 0) {
+      setStatusMessage("No inventory for that seed.");
+      return;
+    }
+    setSeedInventory((prev) => prev.map((item) => (item.code === selectedSeed ? { ...item, quantity: Math.max(0, item.quantity - 1) } : item)));
+    setPlotSeedOverrides((prev) => ({ ...prev, [activePlot.id]: inventoryItem.label }));
+    setStatusMessage(`Planted ${inventoryItem.label} on ${activePlot.name}.`);
+    void trackTelemetry("agriculture.dashboard.plant_seed", { plotId: activePlot.id, seed: inventoryItem.code });
+  };
 
-            <div className="grid gap-4 lg:grid-cols-3">
-                <SectionCard>
-                    <div className="flex items-center justify-between">
-                        <h3 className="text-base font-semibold">Add plot</h3>
-                        <span className="text-xs text-muted-foreground">Field inventory</span>
-                    </div>
-                    {errors ? <div className="mt-2 text-sm text-destructive">{errors}</div> : null}
-                    <form
-                        className="mt-4 space-y-3"
-                        onSubmit={async (e) => {
-                            e.preventDefault();
-                            setErrors(null);
-                            const acres = Number(plotAcres);
-                            if (!plotName.trim()) {
-                                setErrors("Plot name is required");
-                                return;
-                            }
-                            if (!acres || Number.isNaN(acres)) {
-                                setErrors("Acres must be a number");
-                                return;
-                            }
-                            try {
-                                await createPlot.mutateAsync({ name: plotName.trim(), crop: plotCrop, acres, stage: "Planning" });
-                                setPlotName("");
-                                setPlotCrop("Corn");
-                                setPlotAcres("25");
-                            } catch (err) {
-                                setErrors((err as Error).message);
-                            }
-                        }}
-                    >
-                        <label className="flex flex-col text-sm font-medium">
-                            Plot name
-                            <input className="mt-1 rounded-md border px-2 py-1 text-sm" value={plotName} onChange={(e) => setPlotName(e.target.value)} />
-                        </label>
-                        <label className="flex flex-col text-sm font-medium">
-                            Crop
-                            <input className="mt-1 rounded-md border px-2 py-1 text-sm" value={plotCrop} onChange={(e) => setPlotCrop(e.target.value)} />
-                        </label>
-                        <label className="flex flex-col text-sm font-medium">
-                            Acres
-                            <input
-                                className="mt-1 rounded-md border px-2 py-1 text-sm"
-                                value={plotAcres}
-                                onChange={(e) => setPlotAcres(e.target.value)}
-                                type="number"
-                                min="0"
-                                step="0.01"
-                            />
-                        </label>
-                        <button
-                            type="submit"
-                            className="w-full rounded-md bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground hover:opacity-90"
-                            disabled={createPlot.isPending}
-                        >
-                            {createPlot.isPending ? "Adding…" : "Add plot"}
-                        </button>
-                    </form>
-                </SectionCard>
+  const handleBankTopUp = async (delta: number) => {
+    try {
+      await bankUpdateMutation.mutateAsync({ delta, reason: "Bank overlay top-up" });
+      setStatusMessage(`Added ${delta} K3H4 coin to bank.`);
+    } catch (error: any) {
+      setStatusMessage(error?.message || "Unable to update bank.");
+    }
+  };
 
-                <SectionCard>
-                    <div className="flex items-center justify-between">
-                        <h3 className="text-base font-semibold">Add task</h3>
-                        <span className="text-xs text-muted-foreground">Work queue</span>
-                    </div>
-                    <form
-                        className="mt-4 space-y-3"
-                        onSubmit={async (e) => {
-                            e.preventDefault();
-                            setErrors(null);
-                            if (!taskTitle.trim()) {
-                                setErrors("Task title is required");
-                                return;
-                            }
-                            try {
-                                await createTask.mutateAsync({ title: taskTitle.trim(), assignee: taskAssignee || undefined, dueDate: taskDueDate || undefined });
-                                setTaskTitle("Irrigate north field");
-                                setTaskAssignee("Crew A");
-                                setTaskDueDate("");
-                            } catch (err) {
-                                setErrors((err as Error).message);
-                            }
-                        }}
-                    >
-                        <label className="flex flex-col text-sm font-medium">
-                            Title
-                            <input className="mt-1 rounded-md border px-2 py-1 text-sm" value={taskTitle} onChange={(e) => setTaskTitle(e.target.value)} />
-                        </label>
-                        <label className="flex flex-col text-sm font-medium">
-                            Assignee
-                            <input className="mt-1 rounded-md border px-2 py-1 text-sm" value={taskAssignee} onChange={(e) => setTaskAssignee(e.target.value)} />
-                        </label>
-                        <label className="flex flex-col text-sm font-medium">
-                            Due date
-                            <input className="mt-1 rounded-md border px-2 py-1 text-sm" value={taskDueDate} onChange={(e) => setTaskDueDate(e.target.value)} type="date" />
-                        </label>
-                        <button
-                            type="submit"
-                            className="w-full rounded-md bg-secondary px-3 py-2 text-sm font-semibold hover:opacity-90"
-                            disabled={createTask.isPending}
-                        >
-                            {createTask.isPending ? "Adding…" : "Add task"}
-                        </button>
-                    </form>
-                </SectionCard>
+  const actionOverlay = actionMode ? (
+    <ActionPanel eyebrow="Farm action" title={actionMode} onClose={() => setActionMode(null)}>
+      {actionMode === "plot" ? (
+        <PlotActionForm
+          plotName={plotName}
+          plotCrop={plotCrop}
+          plotAcres={plotAcres}
+          plotCost={plotCost}
+          busy={busy}
+          onPlotNameChange={setPlotName}
+          onPlotCropChange={setPlotCrop}
+          onPlotAcresChange={setPlotAcres}
+          onPlotCostChange={setPlotCost}
+          onConfirm={handleConfirmAddPlot}
+        />
+      ) : null}
 
-                <SectionCard>
-                    <div className="flex items-center justify-between">
-                        <h3 className="text-base font-semibold">Add shipment</h3>
-                        <span className="text-xs text-muted-foreground">Outbound lots</span>
-                    </div>
-                    <form
-                        className="mt-4 space-y-3"
-                        onSubmit={async (e) => {
-                            e.preventDefault();
-                            setErrors(null);
-                            if (!shipmentLot.trim()) {
-                                setErrors("Lot is required");
-                                return;
-                            }
-                            try {
-                                await createShipment.mutateAsync({
-                                    lot: shipmentLot.trim(),
-                                    destination: shipmentDestination.trim() || "",
-                                    mode: shipmentMode,
-                                    freightLoadId: shipmentFreightId || undefined,
-                                });
-                                setShipmentLot("LOT-001");
-                                setShipmentDestination("Chicago DC");
-                                setShipmentMode("Truck");
-                                setShipmentFreightId("");
-                            } catch (err) {
-                                setErrors((err as Error).message);
-                            }
-                        }}
-                    >
-                        <label className="flex flex-col text-sm font-medium">
-                            Lot
-                            <input className="mt-1 rounded-md border px-2 py-1 text-sm" value={shipmentLot} onChange={(e) => setShipmentLot(e.target.value)} />
-                        </label>
-                        <label className="flex flex-col text-sm font-medium">
-                            Destination
-                            <input className="mt-1 rounded-md border px-2 py-1 text-sm" value={shipmentDestination} onChange={(e) => setShipmentDestination(e.target.value)} />
-                        </label>
-                        <label className="flex flex-col text-sm font-medium">
-                            Mode
-                            <select className="mt-1 rounded-md border px-2 py-1 text-sm" value={shipmentMode} onChange={(e) => setShipmentMode(e.target.value)}>
-                                <option>Truck</option>
-                                <option>Rail</option>
-                                <option>Air</option>
-                                <option>Sea</option>
-                            </select>
-                        </label>
-                        <label className="flex flex-col text-sm font-medium">
-                            Freight load ID (optional)
-                            <input className="mt-1 rounded-md border px-2 py-1 text-sm" value={shipmentFreightId} onChange={(e) => setShipmentFreightId(e.target.value)} placeholder="link existing freight" />
-                        </label>
-                        <button
-                            type="submit"
-                            className="w-full rounded-md bg-muted px-3 py-2 text-sm font-semibold hover:opacity-90"
-                            disabled={createShipment.isPending}
-                        >
-                            {createShipment.isPending ? "Adding…" : "Add shipment"}
-                        </button>
-                    </form>
-                </SectionCard>
-            </div>
-        </div>
-    );
+      {actionMode === "seeds" ? (
+        <SeedsActionForm
+          seedOptions={seedOptions}
+          seedCommodity={seedCommodity}
+          seedCost={seedCost}
+          busy={busy}
+          onSeedCommodityChange={setSeedCommodity}
+          onSeedCostChange={setSeedCost}
+          onConfirm={handleConfirmBuySeedsWithInventory}
+        />
+      ) : null}
+
+      {actionMode === "workers" ? (
+        <WorkersActionForm
+          taskTitle={workerTaskTitle}
+          dueDate={workerDueDate}
+          assignee={workerAssignee}
+          assigneeOptions={assigneeOptions}
+          busy={busy}
+          onTaskTitleChange={setWorkerTaskTitle}
+          onDueDateChange={setWorkerDueDate}
+          onAssigneeChange={setWorkerAssignee}
+          onConfirm={handleConfirmScheduleWorkers}
+        />
+      ) : null}
+
+      {statusMessage ? <p className="text-xs text-muted-foreground">{statusMessage}</p> : null}
+      {shouldShowTopUp ? (
+        <HudToolbar className="justify-start p-0">
+          <Button size="sm" variant="secondary" onClick={handleTopUpPlotCoins} disabled={bankUpdateMutation.isPending}>
+            Add {missingPlotCoins} coin to proceed
+          </Button>
+        </HudToolbar>
+      ) : null}
+      {!statusMessage && derivedStatusMessage ? <p className="text-xs text-muted-foreground">{derivedStatusMessage}</p> : null}
+    </ActionPanel>
+  ) : null;
+
+  const footerOverlay = (
+    <>
+      <PlotFocusCard activePlot={activePlotWithOverride} />
+      <SelectedPlotControlsCard
+        activePlotName={activePlotWithOverride?.name}
+        onBuySeeds={handleBuySeeds}
+        onSchedule={handleScheduleWorkers}
+        onRefresh={handleRefresh}
+      />
+      <SeedInventoryCard
+        items={seedInventory}
+        selectedCode={selectedSeed}
+        onSelect={setSelectedSeed}
+        onApplyToPlot={handleApplySeedToPlot}
+        disabled={!activePlot}
+      />
+    </>
+  );
+
+  const overlay = () => (
+    <AgricultureOverlay
+      plotCount={filteredPlots.length}
+      balance={bank.balance}
+      actionOverlay={actionOverlay}
+      footerOverlay={footerOverlay}
+      bankOverlay={showBankOverlay ? (
+        <HudToolbar className="items-start">
+          <div className="flex flex-col">
+            <p className="text-xs uppercase tracking-[0.24em] text-muted-foreground">Bank</p>
+            <span className="text-sm font-semibold">Balance {bank.balance ?? "—"} coin</span>
+          </div>
+          <div className="flex gap-2">
+            <Button size="sm" variant="secondary" onClick={() => handleBankTopUp(10)}>+10 coin</Button>
+            <Button size="sm" variant="secondary" onClick={() => handleBankTopUp(25)}>+25 coin</Button>
+          </div>
+        </HudToolbar>
+      ) : null}
+      onAddPlot={handleAddPlot}
+      onBuySeeds={handleBuySeeds}
+      onSchedule={handleScheduleWorkers}
+      onRefresh={handleRefresh}
+      onToggleBank={() => setShowBankOverlay((prev) => !prev)}
+      bankOpen={showBankOverlay}
+    />
+  );
+
+  return (
+    <div
+      ref={containerRef}
+      className="relative isolate w-full overflow-hidden rounded-2xl border bg-white"
+      style={viewportHeight ? { height: `${viewportHeight}px`, maxHeight: `${viewportHeight}px` } : undefined}
+    >
+      <PlotCanvas
+        plots={plotMeshesWithOverrides}
+        highlightedId={highlightedPlot}
+        onSelect={setHighlightedPlot}
+        onAddPlot={handleAddPlot}
+        onBuySeeds={handleBuySeeds}
+        onSchedule={handleScheduleWorkers}
+        onRefresh={handleRefresh}
+        plotCount={filteredPlots.length}
+        balance={bank.balance}
+        overlay={overlay}
+      />
+    </div>
+  );
 }

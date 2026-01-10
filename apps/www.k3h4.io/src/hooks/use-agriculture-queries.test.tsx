@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 import {
     useAgricultureOverviewQuery,
+    useAgricultureResourcesQuery,
     useCreateAgriculturePlot,
     useCreateAgricultureTask,
     useCreateAgricultureShipment,
@@ -45,9 +46,9 @@ describe("useAgricultureQueries", () => {
         const fetchMock = vi.fn().mockResolvedValue({
             ok: true,
             json: async () => ({
-                plots: [],
-                tasks: [],
-                shipments: [],
+                plots: 0,
+                tasks: 0,
+                shipments: 0,
             }),
         });
         vi.stubGlobal("fetch", fetchMock);
@@ -84,7 +85,11 @@ describe("useAgricultureQueries", () => {
             body: JSON.stringify(payload),
         });
         expect(trackTelemetry).toHaveBeenCalledWith("agriculture.plot.success", { crop: "Corn" });
-        expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ["agriculture", "overview", apiBase] });
+        const invalidateScopes = ["overview", "plots", "plans", "tasks", "inventory", "analytics", "resources"];
+        expect(invalidateSpy).toHaveBeenCalledTimes(invalidateScopes.length);
+        invalidateScopes.forEach((scope, index) => {
+            expect(invalidateSpy).toHaveBeenNthCalledWith(index + 1, { queryKey: ["agriculture", scope, apiBase, token] });
+        });
     });
 
     it("returns an error when creating a task fails", async () => {
@@ -116,6 +121,40 @@ describe("useAgricultureQueries", () => {
             body: JSON.stringify(payload),
         });
         expect(trackTelemetry).toHaveBeenCalledWith("agriculture.shipment.success", { mode: "Rail", freightLinked: false });
-        expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ["agriculture", "overview", apiBase] });
+        const shipmentScopes = ["overview", "plots", "plans", "tasks", "inventory", "analytics", "resources"];
+        expect(invalidateSpy).toHaveBeenCalledTimes(shipmentScopes.length);
+        shipmentScopes.forEach((scope, index) => {
+            expect(invalidateSpy).toHaveBeenNthCalledWith(index + 1, { queryKey: ["agriculture", scope, apiBase, token] });
+        });
+    });
+
+    it("loads resource categories and tracks success", async () => {
+        const fetchMock = vi.fn().mockResolvedValue({
+            ok: true,
+            json: async () => ({
+                categories: [
+                    {
+                        id: "cat1",
+                        slug: "farm-management",
+                        title: "Farm Management",
+                        description: "Platforms and guides",
+                        resources: [],
+                    },
+                ],
+            }),
+        });
+        vi.stubGlobal("fetch", fetchMock);
+        const client = createClient();
+
+        const { result } = renderHook(() => useAgricultureResourcesQuery(apiBase), { wrapper: wrapper(client) });
+
+        await waitFor(() => expect(result.current.isSuccess).toBe(true));
+        expect(fetchMock).toHaveBeenCalledWith(`${apiBase}/agriculture/resources`, {
+            headers: {
+                Authorization: `Bearer ${token}`,
+                "Content-Type": "application/json",
+            },
+        });
+        expect(trackTelemetry).toHaveBeenCalledWith("agriculture.resources.success", { categories: 1 });
     });
 });

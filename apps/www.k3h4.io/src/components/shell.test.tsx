@@ -43,6 +43,7 @@ describe("Shell", () => {
         vi.clearAllMocks();
         useAuthProfileMock.mockReturnValue({
             apiBase: "https://api.example.com",
+            user: { status: "authenticated", email: "user@test.com" },
             userEmail: "user@test.com",
             authStatus: "success",
             authMessage: "",
@@ -51,8 +52,14 @@ describe("Shell", () => {
             profileMessage: "",
             setProfile: vi.fn(),
             handleGithubLogin: vi.fn(),
+            handleLinkedinLogin: vi.fn(),
             handleSignOut: vi.fn(),
             handleProfileSave: vi.fn(),
+            handleDeleteAccount: vi.fn(),
+            deleteProgress: 0,
+            deleteStatusText: "",
+            accountDeleteMutation: { isPending: false },
+            deleteStatusQuery: { isFetching: false },
         });
     });
 
@@ -87,7 +94,7 @@ describe("Shell", () => {
         await user.click(businessTrigger);
         await user.click(await screen.findByRole("menuitem", { name: /Farm Supply Loop/i }));
 
-        const moduleTrigger = screen.getByRole("button", { name: dropdownButtonLabel });
+        const moduleTrigger = await screen.findByRole("button", { name: dropdownButtonLabel, hidden: true });
         await waitFor(() => expect(within(moduleTrigger).getByText("Agriculture")).toBeInTheDocument());
         expect(trackTelemetry).toHaveBeenCalledWith("shell.business.select", { business: "farm", userEmail: "user@test.com" });
         expect(trackTelemetry).toHaveBeenCalledWith("shell.module.select", { module: "agriculture", userEmail: "user@test.com" });
@@ -143,6 +150,7 @@ describe("Shell", () => {
     it("shows signed out view and hides module switcher when unauthenticated", async () => {
         useAuthProfileMock.mockReturnValueOnce({
             apiBase: "https://api.example.com",
+            user: { status: "anonymous" },
             userEmail: null,
             authStatus: "idle",
             authMessage: "Please sign in",
@@ -151,8 +159,14 @@ describe("Shell", () => {
             profileMessage: "",
             setProfile: vi.fn(),
             handleGithubLogin: vi.fn(),
+            handleLinkedinLogin: vi.fn(),
             handleSignOut: vi.fn(),
             handleProfileSave: vi.fn(),
+            handleDeleteAccount: vi.fn(),
+            deleteProgress: 0,
+            deleteStatusText: "",
+            accountDeleteMutation: { isPending: false },
+            deleteStatusQuery: { isFetching: false },
         });
 
         renderWithQuery(

@@ -431,6 +431,7 @@ export function Shell() {
         <ShellView
             navItems={navItems}
             pathname={pathname}
+            swaggerUrl={apiBase ? `${apiBase}/docs` : undefined}
             userEmail={userEmail}
             authStatus={authStatus}
             authMessage={authMessage}

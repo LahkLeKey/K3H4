@@ -10,6 +10,7 @@ export type ShellViewProps = {
     navItems: NavItem[];
     pathname: string;
     userEmail: string | null;
+    swaggerUrl?: string;
     authStatus: AuthStatus;
     authMessage: string;
     profile: ProfileState | null;
@@ -46,6 +47,7 @@ export function ShellView({
     setProfile,
     onProfileSave,
     onSignOut,
+    swaggerUrl,
     onGithubLogin,
     brand,
     actions,
@@ -66,6 +68,7 @@ export function ShellView({
                 navItems={navItems}
                 pathname={pathname}
                 userEmail={userEmail}
+                swaggerUrl={swaggerUrl}
                 authStatus={authStatus}
                 authMessage={authMessage}
                 profile={profile}

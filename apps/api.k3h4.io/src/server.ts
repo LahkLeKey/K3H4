@@ -17,6 +17,7 @@ import { registerPosRoutes } from "./routes/pos";
 import { registerAgricultureRoutes } from "./routes/agriculture";
 import { registerCulinaryRoutes } from "./routes/culinary";
 import { registerArcadeRoutes } from "./routes/arcade";
+import { registerUsdaRoutes } from "./routes/usda";
 
 dotenv.config();
 
@@ -127,12 +128,25 @@ const prisma = new PrismaClient({
 
 // Basic OpenAPI definition for the service
 const openApiOptions = {
-  swagger: {
+  openapi: {
+    openapi: "3.0.0",
     info: {
       title: "K3H4 API",
-      description: "API for K3H4 services",
+      description:
+        "API for K3H4 services. To authorize, sign in at https://www.k3h4.dev (or the dev frontend), open devtools > Application > Local Storage, and copy the value of k3h4.accessToken. Paste the token in Authorize; the UI will send it as a Bearer token automatically.",
       version: "0.1.0",
     },
+    components: {
+      securitySchemes: {
+        bearerAuth: {
+          type: "http",
+          scheme: "bearer",
+          bearerFormat: "JWT",
+          description: "Paste your k3h4.accessToken; the UI prefixes Bearer for you.",
+        },
+      },
+    },
+    security: [{ bearerAuth: [] }],
     tags: [
       {
         name: "health",
@@ -145,6 +159,18 @@ const openApiOptions = {
 await server.register(fastifySwagger, openApiOptions);
 await server.register(fastifySwaggerUi, {
   routePrefix: "/docs",
+  uiHooks: {
+    onRequest: async (request, reply) => {
+      const auth = request.headers.authorization;
+      if (!auth) return; // allow read-only docs without a token
+      try {
+        await request.jwtVerify();
+      } catch (err) {
+        request.log.debug({ err }, "swagger ui auth failed");
+        return reply.status(401).send({ error: "Unauthorized" });
+      }
+    },
+  },
 });
 await server.register(fastifyCors, {
   origin: process.env.CORS_ORIGIN?.split(",") ?? ["*"],
@@ -243,6 +269,7 @@ registerPosRoutes(server, prisma, recordTelemetry);
 registerAgricultureRoutes(server, prisma, recordTelemetry);
 registerCulinaryRoutes(server, prisma, recordTelemetry);
 registerArcadeRoutes(server, prisma, recordTelemetry);
+registerUsdaRoutes(server, prisma, recordTelemetry);
 
 const port = Number(process.env.PORT || 8080);
 const host = process.env.HOST || "0.0.0.0";

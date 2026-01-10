@@ -12,6 +12,11 @@ const profileReturn: any = {};
 const githubUrlReturn: any = {};
 const githubCallbackReturn: any = {};
 const profileSaveReturn: any = {};
+const linkedinUrlReturn: any = {};
+const linkedinCallbackReturn: any = {};
+const accountDeleteReturn: any = {};
+const accountDeleteStatusReturn: any = {};
+const signOutReturn: any = {};
 const deriveUserMock = vi.fn();
 
 vi.mock("./use-auth-queries", () => ({
@@ -20,7 +25,12 @@ vi.mock("./use-auth-queries", () => ({
     useProfileQuery: () => profileReturn,
     useGithubUrlMutation: () => githubUrlReturn,
     useGithubCallbackMutation: () => githubCallbackReturn,
+    useLinkedinUrlMutation: () => linkedinUrlReturn,
+    useLinkedinCallbackMutation: () => linkedinCallbackReturn,
     useProfileSaveMutation: () => profileSaveReturn,
+    useAccountDeleteMutation: () => accountDeleteReturn,
+    useAccountDeleteStatusQuery: () => accountDeleteStatusReturn,
+    useSignOutMutation: () => signOutReturn,
 }));
 
 const apiBase = "https://api.example.com";
@@ -59,8 +69,21 @@ describe("useAuthProfile", () => {
         githubUrlReturn.error = null;
         githubCallbackReturn.mutateAsync = vi.fn();
         githubCallbackReturn.error = null;
+        linkedinUrlReturn.mutateAsync = vi.fn().mockResolvedValue({ authorizeUrl: "http://auth/linkedin" });
+        linkedinUrlReturn.error = null;
+        linkedinCallbackReturn.mutateAsync = vi.fn();
+        linkedinCallbackReturn.error = null;
         profileSaveReturn.mutateAsync = vi.fn();
         profileSaveReturn.isPending = false;
+        accountDeleteReturn.mutateAsync = vi.fn().mockResolvedValue({ jobId: "delete-job" });
+        accountDeleteReturn.isPending = false;
+        accountDeleteReturn.error = null;
+        accountDeleteStatusReturn.data = undefined;
+        accountDeleteStatusReturn.isFetching = false;
+        accountDeleteStatusReturn.error = null;
+        signOutReturn.mutateAsync = vi.fn().mockResolvedValue(undefined);
+        signOutReturn.error = null;
+        signOutReturn.isPending = false;
         authStore.setState({
             apiBase,
             redirectUri: "http://localhost/callback",
@@ -101,6 +124,7 @@ describe("useAuthProfile", () => {
 
         const { result } = renderHook(() => useAuthProfile(), { wrapper: wrapper(client) });
 
+        await waitFor(() => expect(result.current).not.toBeNull());
         await act(async () => {
             await result.current.handleGithubLogin();
         });
@@ -119,7 +143,10 @@ describe("useAuthProfile", () => {
 
         const { result } = renderHook(() => useAuthProfile(), { wrapper: wrapper(client) });
 
-        act(() => result.current.handleSignOut());
+        await waitFor(() => expect(result.current).not.toBeNull());
+        await act(async () => {
+            await result.current.handleSignOut();
+        });
 
         expect(localStorage.getItem(ACCESS_TOKEN_KEY)).toBeNull();
         expect(localStorage.getItem(REFRESH_TOKEN_KEY)).toBeNull();
@@ -140,7 +167,7 @@ describe("useAuthProfile", () => {
 
         const { result } = renderHook(() => useAuthProfile(), { wrapper: wrapper(client) });
 
-        await waitFor(() => expect(result.current.user.status).toBe("anonymous"));
+        await waitFor(() => expect(result.current?.user?.status).toBe("anonymous"));
         expect(setUserSpy).toHaveBeenCalledWith({ status: "anonymous" });
         expect(setAuthStateSpy).toHaveBeenCalledWith("idle", "expired");
     });
@@ -152,8 +179,9 @@ describe("useAuthProfile", () => {
 
         const { result } = renderHook(() => useAuthProfile(), { wrapper: wrapper(client) });
 
-        act(() => {
-            result.current.handleProfileSave();
+        await waitFor(() => expect(result.current).not.toBeNull());
+        await act(async () => {
+            await result.current.handleProfileSave();
         });
 
         expect(setProfileMessageSpy).toHaveBeenCalledWith("Nothing to save");

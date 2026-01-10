@@ -24,7 +24,7 @@ export function AuthAccessSection({
     onLinkedinLogin,
 }: AuthAccessSectionProps) {
     return (
-        <Section eyebrow={eyebrow} title={title} description={description}>
+        <Section eyebrow={eyebrow} title={title} description={description} align="center">
             <div className="flex justify-center">
                 <div className="w-full max-w-2xl">
                     <AuthCta
