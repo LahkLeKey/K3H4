@@ -157,7 +157,9 @@ await server.register(fastifySwagger, openApiOptions);
 await server.register(fastifySwaggerUi, {
   routePrefix: "/docs",
   uiHooks: {
-    onRequest: [server.authenticate],
+    onRequest: async (request, reply) => {
+      await server.authenticate(request, reply);
+    },
   },
 });
 await server.register(fastifyCors, {
