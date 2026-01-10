@@ -1,8 +1,11 @@
-import { Suspense, useEffect, useMemo, useState, type ReactNode } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
 import { Canvas } from "@react-three/fiber";
 import { ContactShadows, Grid, Html, Instances, Instance, MapControls, PerformanceMonitor, Sky, useCursor } from "@react-three/drei";
 
 import { normalizeHealth } from "./utils";
+import { agricultureDashboardStore } from "../../stores/agriculture-dashboard-store";
+import { bankStore } from "../../stores/bank-store";
+import { useAgricultureDashboard } from "./use-agriculture-dashboard";
 
 export type PlotMesh = {
     id: string;
@@ -600,102 +603,162 @@ function SystemStatusChips({ kpis }: { kpis?: FinancialKpis }) {
         </div>
     );
 }
-export function PlotCanvas({
-    plots,
-    highlightedId,
-    onSelect,
-    onAddPlot,
-    onBuySeeds,
-    onSchedule,
-    onRefresh,
-    plotCount,
-    balance,
-    k3h4Balance,
-    onSelectBank,
-    onSelectMarket,
-    onSelectBarn,
-    onSelectSilo,
-    onSelectHut,
-    overlay,
-    reducedMotion,
-    alerts,
-    keyboardNavigation,
-    day,
-    debt,
-    plotVitalsById,
-    logisticsPlan,
-    conversionRate,
-    conversionFeePct,
-    loanRatePct,
-    financialKpis,
-    onPlantPlot,
-    onWaterPlot,
-    onFertilizePlot,
-    onTreatPlot,
-    onHarvestPlot,
-    onAssignWorker,
-    tools,
-    activeTool,
-    onSelectTool,
-    workerKpi,
-    inventory,
-    animalAlerts,
-    showHowToPlay,
-    onCloseHowToPlay,
-}: {
-    plots: PlotMesh[];
-    highlightedId: string | null;
-    onSelect: (id: string | null) => void;
-    onAddPlot?: () => void;
-    onBuySeeds?: () => void;
-    onSchedule?: () => void;
-    onRefresh?: () => void;
-    plotCount?: number;
-    balance?: number | string | null;
-    k3h4Balance?: number | string | null;
-    onSelectBank?: () => void;
-    onSelectMarket?: () => void;
-    onSelectBarn?: () => void;
-    onSelectSilo?: () => void;
-    onSelectHut?: () => void;
-    overlay?: (context: {
-        plotCount?: number;
-        balance?: number | string | null;
-        k3h4Balance?: number | string | null;
-        day?: number | string | null;
-        debt?: number | string | null;
-        alerts?: string[];
-        onAddPlot?: () => void;
-        onBuySeeds?: () => void;
-        onSchedule?: () => void;
-        onRefresh?: () => void;
-    }) => ReactNode;
-    reducedMotion?: boolean;
-    alerts?: string[];
-    keyboardNavigation?: boolean;
-    day?: number | string | null;
-    debt?: number | string | null;
-    plotVitalsById?: Record<string, PlotVitals>;
-    logisticsPlan?: LogisticsPlan;
-    conversionRate?: number | string | null;
-    conversionFeePct?: number | string | null;
-    loanRatePct?: number | string | null;
-    financialKpis?: FinancialKpis;
-    onPlantPlot?: (id: string) => void;
-    onWaterPlot?: (id: string) => void;
-    onFertilizePlot?: (id: string) => void;
-    onTreatPlot?: (id: string) => void;
-    onHarvestPlot?: (id: string) => void;
-    onAssignWorker?: (id: string) => void;
-    tools?: ToolConfig[];
-    activeTool?: ToolId;
-    onSelectTool?: (id: ToolId) => void;
-    workerKpi?: WorkerKpi;
-    inventory?: InventorySummary;
-    animalAlerts?: number;
-    showHowToPlay?: boolean;
-    onCloseHowToPlay?: () => void;
-}) {
+export function PlotCanvas() {
+    const {
+        highlightedPlot,
+        searchTerm,
+        plotName,
+        plotCrop,
+        plotAcres,
+        plotCost,
+        seedCommodity,
+        seedCost,
+        workerTaskTitle,
+        workerDueDate,
+        workerAssignee,
+        setHighlightedPlot,
+        setActionMode,
+        setSignalsOpen,
+        setRosterOpen,
+        setWorkerDueDate,
+        setStatusMessage,
+    } = agricultureDashboardStore.useShallow((state) => ({
+        highlightedPlot: state.highlightedPlot,
+        searchTerm: state.searchTerm,
+        plotName: state.plotName,
+        plotCrop: state.plotCrop,
+        plotAcres: state.plotAcres,
+        plotCost: state.plotCost,
+        seedCommodity: state.seedCommodity,
+        seedCost: state.seedCost,
+        workerTaskTitle: state.workerTaskTitle,
+        workerDueDate: state.workerDueDate,
+        workerAssignee: state.workerAssignee,
+        setHighlightedPlot: state.setHighlightedPlot,
+        setActionMode: state.setActionMode,
+        setSignalsOpen: state.setSignalsOpen,
+        setRosterOpen: state.setRosterOpen,
+        setWorkerDueDate: state.setWorkerDueDate,
+        setStatusMessage: state.setStatusMessage,
+    }));
+
+    const { apiBase } = bankStore.useShallow((state) => ({ apiBase: state.apiBase }));
+
+    const dashboard = useAgricultureDashboard({
+        apiBase,
+        highlightedPlot,
+        searchTerm,
+        plotName,
+        plotCrop,
+        plotAcres,
+        plotCost,
+        seedCommodity,
+        seedCost,
+        workerTaskTitle,
+        workerDueDate,
+        workerAssignee,
+        setActionMode,
+        setSignalsOpen,
+        setRosterOpen,
+        setWorkerDueDate,
+        setStatusMessage,
+    });
+
+    const plots = dashboard.plotMeshes;
+    const highlightedId = highlightedPlot;
+    const onSelect = (id: string | null) => setHighlightedPlot(id);
+    const onAddPlot = dashboard.handleConfirmAddPlot;
+    const onBuySeeds = () => void dashboard.handleConfirmBuySeeds();
+    const onSchedule = dashboard.handleConfirmScheduleWorkers;
+    const onRefresh = () => {
+        void dashboard.plotsQuery.refetch();
+        void dashboard.overviewQuery.refetch();
+        void dashboard.analyticsQuery.refetch();
+        void dashboard.tasksQuery.refetch();
+        dashboard.bank.refreshBalance();
+    };
+
+    const plotCount = plots.length;
+    const balance = dashboard.bank.balance ?? "–";
+    const k3h4Balance = balance;
+    const day = dashboard.overviewQuery.data?.day ?? dashboard.overviewQuery.data?.daysElapsed ?? null;
+    const debt = (dashboard.analyticsQuery.data as any)?.debt ?? null;
+    const conversionRate = "1:10";
+    const conversionFeePct = "2%";
+    const loanRatePct = "5%";
+
+    const plotVitalsById = useMemo<Record<string, PlotVitals>>(() => ({}), []);
+    const logisticsPlan: LogisticsPlan | undefined = undefined;
+
+    const financialKpis: FinancialKpis = useMemo(() => ({
+        dailyPnL: (dashboard.analyticsQuery.data as any)?.pnl ?? "–",
+        burnRate: (dashboard.analyticsQuery.data as any)?.burnRate ?? "Stable",
+        receivables: (dashboard.analyticsQuery.data as any)?.receivables ?? "–",
+        slaRisk: "On track",
+        osrmStatus: "fallback",
+        usdaStatus: "live",
+    }), [dashboard.analyticsQuery.data]);
+
+    const onPlantPlot = (id: string) => setStatusMessage(`Queued plant for ${id}`);
+    const onWaterPlot = (id: string) => setStatusMessage(`Queued water for ${id}`);
+    const onFertilizePlot = (id: string) => setStatusMessage(`Queued fertilize for ${id}`);
+    const onTreatPlot = (id: string) => setStatusMessage(`Queued pest treatment for ${id}`);
+    const onHarvestPlot = (id: string) => setStatusMessage(`Queued harvest for ${id}`);
+    const onAssignWorker = (id: string) => {
+        setRosterOpen(true);
+        setStatusMessage(`Assign worker to ${id}`);
+    };
+
+    const onSelectBank = () => setSignalsOpen(true);
+    const onSelectMarket = () => setSignalsOpen(true);
+    const onSelectBarn = () => setRosterOpen(true);
+    const onSelectSilo = () => setSignalsOpen(true);
+    const onSelectHut = () => setRosterOpen(true);
+
+    const tools: ToolConfig[] = useMemo(
+        () => [
+            { id: "select", label: "Select", hotkey: "1" },
+            { id: "plant", label: "Plant", hotkey: "2" },
+            { id: "water", label: "Water", hotkey: "3" },
+            { id: "fertilize", label: "Fertilize", hotkey: "4" },
+            { id: "treat", label: "Treat", hotkey: "5" },
+            { id: "harvest", label: "Harvest", hotkey: "6" },
+            { id: "assign", label: "Assign", hotkey: "7" },
+        ],
+        [],
+    );
+
+    const activeTool: ToolId | undefined = undefined;
+    const onSelectTool = (id: ToolId) => setStatusMessage(`Selected tool ${id}`);
+
+    const tasks = dashboard.tasksQuery.data?.tasks ?? [];
+    const workerKpi: WorkerKpi = {
+        busyPercent: tasks.length > 0 ? Math.min(100, Math.round((tasks.filter((task: any) => task.status !== "completed").length / tasks.length) * 100)) : 0,
+        workersTotal: undefined,
+    };
+
+    const inventory: InventorySummary = {
+        seeds: (dashboard.overviewQuery.data as any)?.seeds ?? "–",
+        fertilizer: (dashboard.overviewQuery.data as any)?.fertilizer ?? "–",
+        feed: (dashboard.overviewQuery.data as any)?.feed ?? "–",
+        harvest: (dashboard.overviewQuery.data as any)?.harvest ?? "–",
+    };
+
+    const animalAlerts = (dashboard.analyticsQuery.data as any)?.animalAlerts ?? 0;
+
+    const alerts = useMemo(() => {
+        const ready = plots.filter((plot) => (plot.stage || "").toLowerCase().includes("ready")).map((plot) => `${plot.name} ready to harvest`);
+        const dry = plots.filter((plot) => Number(plot.health) < 45).map((plot) => `${plot.name} is dry`);
+        const taskAlerts = tasks.filter((task: any) => task.status === "pending").map((task: any) => task.title || "Pending task");
+        return [...ready, ...dry, ...taskAlerts].slice(0, 4);
+    }, [plots, tasks]);
+
+    const [showHowToPlay, setShowHowToPlay] = useState(true);
+    const onCloseHowToPlay = () => setShowHowToPlay(false);
+
+    const reducedMotion = false;
+    const keyboardNavigation = true;
+
     const laidOut = useMemo(() => generatePlotLayout(plots), [plots]);
     const sceneBackground = useMemo(() => {
         if (typeof window === "undefined") return "#eef2f7";
@@ -717,22 +780,20 @@ export function PlotCanvas({
         ],
         [onSelectBank, onSelectMarket, onSelectBarn, onSelectSilo, onSelectHut]
     );
-    const overlayContent = overlay
-        ? overlay({ plotCount, balance, k3h4Balance, day, debt, alerts, onAddPlot, onBuySeeds, onSchedule, onRefresh })
-        : (
-            <DefaultOverlay
-                plotCount={plotCount}
-                balance={balance}
-                k3h4Balance={k3h4Balance}
-                day={day}
-                debt={debt}
-                alerts={alerts}
-                onAddPlot={onAddPlot}
-                onBuySeeds={onBuySeeds}
-                onSchedule={onSchedule}
-                onRefresh={onRefresh}
-            />
-        );
+    const overlayContent = (
+        <DefaultOverlay
+            plotCount={plotCount}
+            balance={balance}
+            k3h4Balance={k3h4Balance}
+            day={day}
+            debt={debt}
+            alerts={alerts}
+            onAddPlot={onAddPlot}
+            onBuySeeds={onBuySeeds}
+            onSchedule={onSchedule}
+            onRefresh={onRefresh}
+        />
+    );
     const [isPerfLimited, setPerfLimited] = useState(false);
     const selectedPlot = useMemo(() => laidOut.find((plot) => plot.id === highlightedId) || null, [laidOut, highlightedId]);
     const vitals = selectedPlot ? plotVitalsById?.[selectedPlot.id] : undefined;
