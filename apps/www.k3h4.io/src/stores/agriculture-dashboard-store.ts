@@ -4,6 +4,7 @@ const STORAGE_KEY = "k3h4:agriculture-dashboard";
 const STORAGE_VERSION = 1;
 
 export type ActionMode = "plot" | "seeds" | "workers" | null;
+export type ToolId = "select" | "plant" | "water" | "fertilize" | "treat" | "harvest" | "assign";
 
 export type AgricultureDashboardState = {
   highlightedPlot: string | null;
@@ -11,6 +12,10 @@ export type AgricultureDashboardState = {
   rosterOpen: boolean;
   signalsOpen: boolean;
   actionMode: ActionMode;
+  activeTool: ToolId;
+  showHowToPlay: boolean;
+  reducedMotion: boolean;
+  keyboardNavigation: boolean;
   plotName: string;
   plotCrop: string;
   plotAcres: string;
@@ -26,6 +31,10 @@ export type AgricultureDashboardState = {
   setRosterOpen: (value: boolean) => void;
   setSignalsOpen: (value: boolean) => void;
   setActionMode: (mode: ActionMode) => void;
+  setActiveTool: (tool: ToolId) => void;
+  setShowHowToPlay: (value: boolean) => void;
+  setReducedMotion: (value: boolean) => void;
+  setKeyboardNavigation: (value: boolean) => void;
   setPlotName: (value: string) => void;
   setPlotCrop: (value: string) => void;
   setPlotAcres: (value: string) => void;
@@ -38,12 +47,16 @@ export type AgricultureDashboardState = {
   setStatusMessage: (value: string) => void;
 };
 
-const defaultState: Omit<AgricultureDashboardState, "setHighlightedPlot" | "setSearchTerm" | "setRosterOpen" | "setSignalsOpen" | "setActionMode" | "setPlotName" | "setPlotCrop" | "setPlotAcres" | "setPlotCost" | "setSeedCommodity" | "setSeedCost" | "setWorkerTaskTitle" | "setWorkerDueDate" | "setWorkerAssignee" | "setStatusMessage"> = {
+const defaultState: Omit<AgricultureDashboardState, "setHighlightedPlot" | "setSearchTerm" | "setRosterOpen" | "setSignalsOpen" | "setActionMode" | "setActiveTool" | "setShowHowToPlay" | "setReducedMotion" | "setKeyboardNavigation" | "setPlotName" | "setPlotCrop" | "setPlotAcres" | "setPlotCost" | "setSeedCommodity" | "setSeedCost" | "setWorkerTaskTitle" | "setWorkerDueDate" | "setWorkerAssignee" | "setStatusMessage"> = {
   highlightedPlot: null,
   searchTerm: "",
   rosterOpen: false,
   signalsOpen: false,
   actionMode: null,
+  activeTool: "select",
+  showHowToPlay: true,
+  reducedMotion: false,
+  keyboardNavigation: true,
   plotName: "New field",
   plotCrop: "Wheat",
   plotAcres: "5",
@@ -79,6 +92,10 @@ const persist = (state: AgricultureDashboardState) => {
   const snapshot: Partial<AgricultureDashboardState> = {
     searchTerm: state.searchTerm,
     actionMode: state.actionMode,
+    activeTool: state.activeTool,
+    showHowToPlay: state.showHowToPlay,
+    reducedMotion: state.reducedMotion,
+    keyboardNavigation: state.keyboardNavigation,
     plotName: state.plotName,
     plotCrop: state.plotCrop,
     plotAcres: state.plotAcres,
@@ -105,6 +122,22 @@ export const agricultureDashboardStore = createStore<AgricultureDashboardState>(
   setSignalsOpen: (value) => set({ signalsOpen: value }),
   setActionMode: (mode) => {
     set({ actionMode: mode });
+    persist(get());
+  },
+  setActiveTool: (tool) => {
+    set({ activeTool: tool });
+    persist(get());
+  },
+  setShowHowToPlay: (value) => {
+    set({ showHowToPlay: value });
+    persist(get());
+  },
+  setReducedMotion: (value) => {
+    set({ reducedMotion: value });
+    persist(get());
+  },
+  setKeyboardNavigation: (value) => {
+    set({ keyboardNavigation: value });
     persist(get());
   },
   setPlotName: (value) => {
