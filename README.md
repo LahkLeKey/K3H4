@@ -74,6 +74,11 @@ bun run test --coverage
 - Vitest + Testing Library for tests.
 - Radix UI + Tailwind for UI primitives.
 
+## Shared UI Components (web)
+- Location: apps/www.k3h4.io/src/components/ui — base primitives (Button, Badge, Dialog, Table, etc.) plus HUD-specific helpers.
+- HUD primitives: HudCard, HudToolbar, HudChip, HudListPanel/Item, MetricTile, Empty/Spinner, FormActions, FieldRow; prefer these over ad-hoc flex/div stacks.
+- Patterns: use TanStack Query hooks for data, Zustand stores under src/stores for state, and telemetry via src/lib/telemetry.
+
 <!-- coverage-start -->
 ## Latest Coverage
 Updated: 2025-12-29T13:30:00.797Z
