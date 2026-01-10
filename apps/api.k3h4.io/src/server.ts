@@ -131,9 +131,19 @@ const openApiOptions = {
   swagger: {
     info: {
       title: "K3H4 API",
-      description: "API for K3H4 services",
+      description:
+        "API for K3H4 services. To authorize, sign in at https://www.k3h4.dev (or the dev frontend), open devtools > Application > Local Storage, and copy the value of k3h4.accessToken. Use it as 'Bearer <token>' in the Authorize dialog.",
       version: "0.1.0",
     },
+    securityDefinitions: {
+      bearerAuth: {
+        type: "apiKey",
+        name: "Authorization",
+        in: "header",
+        description: "JWT authorization header using the Bearer scheme. Example: 'Bearer <token>'",
+      },
+    },
+    security: [{ bearerAuth: [] }],
     tags: [
       {
         name: "health",
@@ -146,6 +156,9 @@ const openApiOptions = {
 await server.register(fastifySwagger, openApiOptions);
 await server.register(fastifySwaggerUi, {
   routePrefix: "/docs",
+  uiHooks: {
+    onRequest: [server.authenticate],
+  },
 });
 await server.register(fastifyCors, {
   origin: process.env.CORS_ORIGIN?.split(",") ?? ["*"],
