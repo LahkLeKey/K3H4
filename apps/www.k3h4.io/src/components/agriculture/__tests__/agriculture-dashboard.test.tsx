@@ -52,7 +52,7 @@ const resetStore = () => {
 
 beforeAll(async () => {
     if (typeof (global as any).ResizeObserver === "undefined") {
-        const { ResizeObserver } = await import("resize-observer-polyfill");
+        const { default: ResizeObserver } = await import("resize-observer-polyfill");
         (global as any).ResizeObserver = ResizeObserver;
     }
 });
