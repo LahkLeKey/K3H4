@@ -13,6 +13,8 @@ import type { BuildingPanelData } from "./overlay-layer";
 import { useAgricultureDashboard } from "./use-agriculture-dashboard";
 import { agricultureSlotsStore } from "../../stores/agriculture-slots-store";
 
+export type { PlotMesh } from "./plot-types";
+
 export function PlotCanvas() {
     const {
         highlightedPlot,

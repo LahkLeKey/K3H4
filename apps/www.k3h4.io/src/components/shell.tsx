@@ -181,11 +181,7 @@ export function Shell() {
             label: "Agriculture",
             description: "Farm logistics, lots, and yield tracking",
             render: () => (
-                <AgricultureDashboard
-                    apiBase={apiBase}
-                    userEmail={userEmail}
-                    onNavigateFreight={() => handleModuleChange("freight")}
-                />
+                <AgricultureDashboard />
             ),
         },
         {
