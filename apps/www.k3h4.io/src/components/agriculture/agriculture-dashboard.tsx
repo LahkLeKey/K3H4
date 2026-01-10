@@ -15,9 +15,16 @@ import { SelectedPlotControlsCard } from "./selected-plot-controls-card";
 import { SeedInventoryCard, type SeedInventoryItem } from "./seed-inventory-card";
 import { useAgricultureDashboard } from "./use-agriculture-dashboard";
 
-const apiBase = ((globalThis as any)?.__API_URL__ || (import.meta as any)?.API_URL || "http://localhost:3001").replace(/\/$/, "");
+type AgricultureDashboardProps = {
+  apiBase?: string;
+  userEmail?: string | null;
+  onNavigateFreight?: () => void;
+};
 
-export function AgricultureDashboard() {
+const defaultApiBase = ((globalThis as any)?.__API_URL__ || (import.meta as any)?.API_URL || "http://localhost:3001").replace(/\/$/, "");
+
+export function AgricultureDashboard({ apiBase: apiBaseOverride }: AgricultureDashboardProps = {}) {
+  const apiBase = (apiBaseOverride ?? defaultApiBase).replace(/\/$/, "");
   const containerRef = useRef<HTMLDivElement | null>(null);
   const [viewportHeight, setViewportHeight] = useState<number | null>(null);
   const [seedInventory, setSeedInventory] = useState<SeedInventoryItem[]>([]);

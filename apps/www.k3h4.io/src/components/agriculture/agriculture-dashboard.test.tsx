@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import userEvent from "@testing-library/user-event";
-import { screen, within } from "@testing-library/react";
+import { screen } from "@testing-library/react";
 import { renderWithQuery } from "../../test/utils";
 import ResizeObserver from "resize-observer-polyfill";
 
