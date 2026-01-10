@@ -1,4 +1,4 @@
-import { PrismaClient } from "@prisma/client";
+import { Prisma, PrismaClient } from "@prisma/client";
 import { type FastifyInstance } from "fastify";
 import { randomBytes } from "node:crypto";
 import { URLSearchParams } from "node:url";
@@ -190,6 +190,7 @@ export function registerAuthRoutes(server: FastifyInstance, prisma: PrismaClient
           email: primaryEmail,
           displayName: ghUser.name ?? ghUser.login ?? null,
           avatarUrl: ghUser.avatar_url ?? null,
+          k3h4CoinBalance: new Prisma.Decimal("25000"),
         },
         update: {
           email: primaryEmail,

@@ -33,7 +33,7 @@ function LandmarkBlock({ landmark }: LandmarkBlockProps) {
                     <meshBasicMaterial color={landmark.color} transparent opacity={0.5} />
                 </mesh>
             )}
-            <Html position={[0, 1.4, 0]} center className="pointer-events-none select-none">
+            <Html position={[0, 1.4, 0]} center className="pointer-events-none select-none" zIndexRange={[0, 0]}>
                 <div className="rounded-md border border-white/60 bg-white/90 px-2 py-1 text-[11px] font-semibold text-slate-700 shadow">
                     {landmark.label}
                     {landmark.subtitle ? <div className="text-[10px] font-medium text-slate-500">{landmark.subtitle}</div> : null}

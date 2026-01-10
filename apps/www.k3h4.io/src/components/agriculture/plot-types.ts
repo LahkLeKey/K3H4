@@ -11,6 +11,8 @@ export type PlotMesh = {
   position: [number, number, number];
   size: [number, number];
   healthTint: number;
+  locked?: boolean;
+  unlockCost?: number;
 };
 
 export type LandmarkId = "bank" | "market" | "barn" | "silo" | "hut";

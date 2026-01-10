@@ -28,7 +28,7 @@ export function generatePlotLayout(plots: PlotMesh[]) {
     const z = -row * spacing;
     const acres = Number(plot.acres) || 1;
     const base = Math.sqrt(Math.max(1, acres));
-    const size: [number, number] = [Math.max(2, base * 0.9), Math.max(1.6, base * 0.7)];
+    const size: [number, number] = [Math.max(2.8, base * 1.15), Math.max(2.2, base * 1)];
     return {
       ...plot,
       position: [x, 0.01, z] as [number, number, number],

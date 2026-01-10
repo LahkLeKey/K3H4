@@ -1,14 +1,23 @@
 import type { ReactNode } from "react";
 import type { ToolId } from "../../stores/agriculture-dashboard-store";
-import type {
-    FinancialKpis,
-    InventorySummary,
-    LogisticsPlan,
-    PlotMesh,
-    PlotVitals,
-    ToolConfig,
-    WorkerKpi,
-} from "./plot-types";
+import type { FinancialKpis, InventorySummary, LandmarkId, LogisticsPlan, PlotMesh, PlotVitals, ToolConfig, WorkerKpi } from "./plot-types";
+
+export type LedgerItem = {
+    id: string;
+    title: string;
+    detail?: string;
+    tag?: string;
+    tone?: "info" | "success" | "warning" | "danger";
+};
+
+export type BuildingPanelData = {
+    id: LandmarkId;
+    title: string;
+    subtitle?: string;
+    description?: string;
+    actions?: { label: string; hint?: string }[];
+    tone?: "info" | "warning" | "danger" | "success";
+};
 
 type HowToPlayOverlayProps = {
     show: boolean;
@@ -74,17 +83,18 @@ type ToolbeltOverlayProps = {
     onBuySeeds?: () => void;
     onSchedule?: () => void;
     onRefresh?: () => void;
+    onOpenBuilding?: (id: LandmarkId) => void;
 };
 
-export function ToolbeltOverlay({ tools, activeTool, onSelect, workerKpi, inventory, animalAlerts, onAddPlot, onBuySeeds, onSchedule, onRefresh }: ToolbeltOverlayProps) {
+export function ToolbeltOverlay({ tools, activeTool, onSelect, workerKpi, inventory, animalAlerts, onAddPlot, onBuySeeds, onSchedule, onRefresh, onOpenBuilding }: ToolbeltOverlayProps) {
     return (
         <div className="flex w-full justify-center">
-            <div className="flex w-full max-w-6xl flex-col gap-3 rounded-2xl border border-slate-900/50 bg-slate-900/85 px-4 py-3 text-slate-50 shadow-2xl backdrop-blur">
-                <div className="flex flex-wrap items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.22em]">
-                    <span className="rounded-full bg-emerald-500/25 px-3 py-1 text-emerald-50">City Manager</span>
-                    <span className="rounded-full bg-slate-800 px-2 py-1 text-slate-200">Busy {workerKpi?.busyPercent ?? "–"}%</span>
-                    <span className="rounded-full bg-slate-800 px-2 py-1 text-slate-200">Roster {workerKpi?.workersTotal ?? "–"}</span>
-                    <span className="rounded-full bg-rose-500/20 px-2 py-1 text-rose-100">Alerts {animalAlerts ?? 0}</span>
+            <div className="flex w-full max-w-6xl flex-col gap-3 rounded-2xl border border-slate-200 bg-white/90 px-4 py-3 text-slate-800 shadow-2xl backdrop-blur">
+                <div className="flex flex-wrap items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-600">
+                    <span className="rounded-full bg-emerald-50 px-3 py-1 text-emerald-700">City Manager</span>
+                    <span className="rounded-full bg-slate-100 px-2 py-1 text-slate-700">Busy {workerKpi?.busyPercent ?? "–"}%</span>
+                    <span className="rounded-full bg-slate-100 px-2 py-1 text-slate-700">Roster {workerKpi?.workersTotal ?? "–"}</span>
+                    <span className="rounded-full bg-rose-50 px-2 py-1 text-rose-700">Alerts {animalAlerts ?? 0}</span>
                 </div>
 
                 <div className="grid grid-cols-[repeat(auto-fit,minmax(140px,1fr))] gap-2">
@@ -97,15 +107,15 @@ export function ToolbeltOverlay({ tools, activeTool, onSelect, workerKpi, invent
                                 type="button"
                                 onClick={() => !disabled && onSelect?.(tool.id)}
                                 disabled={disabled}
-                                className={`flex items-center justify-between gap-2 rounded-lg border px-3 py-2 text-left text-[12px] font-semibold transition ${isActive ? "border-emerald-400/70 bg-emerald-500/20 shadow-lg shadow-emerald-500/20" : "border-white/10 bg-white/5"} disabled:cursor-not-allowed disabled:border-white/10 disabled:bg-white/5 disabled:text-slate-400`}
+                                className={`flex items-center justify-between gap-2 rounded-lg border px-3 py-2 text-left text-[12px] font-semibold transition ${isActive ? "border-emerald-400 bg-emerald-50 text-emerald-800 shadow-md shadow-emerald-200" : "border-slate-200 bg-white text-slate-700"} disabled:cursor-not-allowed disabled:border-slate-100 disabled:bg-slate-50 disabled:text-slate-400`}
                                 title={tool.disabledReason}
                             >
                                 <span className="flex flex-col">
                                     <span>{tool.label}</span>
-                                    {tool.disabledReason ? <span className="text-[10px] font-normal text-slate-300">{tool.disabledReason}</span> : null}
+                                    {tool.disabledReason ? <span className="text-[10px] font-normal text-slate-500">{tool.disabledReason}</span> : null}
                                 </span>
                                 {tool.hotkey ? (
-                                    <span className="rounded bg-slate-800 px-2 py-1 text-[10px] font-semibold text-slate-100">{tool.hotkey}</span>
+                                    <span className="rounded bg-slate-100 px-2 py-1 text-[10px] font-semibold text-slate-700">{tool.hotkey}</span>
                                 ) : null}
                             </button>
                         );
@@ -113,11 +123,30 @@ export function ToolbeltOverlay({ tools, activeTool, onSelect, workerKpi, invent
                 </div>
 
                 <div className="flex flex-wrap items-center gap-2 text-[11px] font-semibold">
+                    <div className="flex flex-wrap items-center gap-1">
+                        {([
+                            { id: "bank", label: "Bank" },
+                            { id: "market", label: "Market" },
+                            { id: "barn", label: "Barn" },
+                            { id: "silo", label: "Silo" },
+                            { id: "hut", label: "Hut" },
+                        ] as Array<{ id: LandmarkId; label: string }>).map((item) => (
+                            <button
+                                key={item.id}
+                                type="button"
+                                onClick={() => onOpenBuilding?.(item.id)}
+                                className="rounded-md border border-slate-200 bg-white px-3 py-2 text-slate-700 shadow-sm hover:border-emerald-200 hover:bg-emerald-50 hover:text-emerald-800"
+                            >
+                                {item.label}
+                            </button>
+                        ))}
+                    </div>
+
                     <button
                         type="button"
                         onClick={onAddPlot}
                         disabled={!onAddPlot}
-                        className="rounded-md border border-emerald-400/60 bg-emerald-500/20 px-3 py-2 text-emerald-50 shadow-sm shadow-emerald-500/30 disabled:cursor-not-allowed disabled:border-white/10 disabled:bg-white/5 disabled:text-slate-400"
+                        className="rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-emerald-700 shadow-sm disabled:cursor-not-allowed disabled:border-slate-100 disabled:bg-slate-50 disabled:text-slate-400"
                     >
                         Add plot
                     </button>
@@ -125,7 +154,7 @@ export function ToolbeltOverlay({ tools, activeTool, onSelect, workerKpi, invent
                         type="button"
                         onClick={onBuySeeds}
                         disabled={!onBuySeeds}
-                        className="rounded-md border border-amber-400/60 bg-amber-500/20 px-3 py-2 text-amber-50 shadow-sm shadow-amber-500/30 disabled:cursor-not-allowed disabled:border-white/10 disabled:bg-white/5 disabled:text-slate-400"
+                        className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-amber-700 shadow-sm disabled:cursor-not-allowed disabled:border-slate-100 disabled:bg-slate-50 disabled:text-slate-400"
                     >
                         Buy seeds
                     </button>
@@ -133,7 +162,7 @@ export function ToolbeltOverlay({ tools, activeTool, onSelect, workerKpi, invent
                         type="button"
                         onClick={onSchedule}
                         disabled={!onSchedule}
-                        className="rounded-md border border-sky-400/60 bg-sky-500/20 px-3 py-2 text-sky-50 shadow-sm shadow-sky-500/30 disabled:cursor-not-allowed disabled:border-white/10 disabled:bg-white/5 disabled:text-slate-400"
+                        className="rounded-md border border-sky-200 bg-sky-50 px-3 py-2 text-sky-700 shadow-sm disabled:cursor-not-allowed disabled:border-slate-100 disabled:bg-slate-50 disabled:text-slate-400"
                     >
                         Schedule workers
                     </button>
@@ -141,16 +170,16 @@ export function ToolbeltOverlay({ tools, activeTool, onSelect, workerKpi, invent
                         type="button"
                         onClick={onRefresh}
                         disabled={!onRefresh}
-                        className="rounded-md border border-slate-400/60 bg-slate-800/60 px-3 py-2 text-slate-50 shadow-sm shadow-slate-900/40 disabled:cursor-not-allowed disabled:border-white/10 disabled:bg-white/5 disabled:text-slate-400"
+                        className="rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-slate-700 shadow-sm disabled:cursor-not-allowed disabled:border-slate-100 disabled:bg-slate-50 disabled:text-slate-400"
                     >
                         Resync
                     </button>
 
                     <span className="ml-auto flex items-center gap-2">
-                        <span className="rounded-md border border-white/10 bg-white/5 px-2 py-1">Seeds {inventory?.seeds ?? "–"}</span>
-                        <span className="rounded-md border border-white/10 bg-white/5 px-2 py-1">Fertilizer {inventory?.fertilizer ?? "–"}</span>
-                        <span className="rounded-md border border-white/10 bg-white/5 px-2 py-1">Feed {inventory?.feed ?? "–"}</span>
-                        <span className="rounded-md border border-white/10 bg-white/5 px-2 py-1">Harvest {inventory?.harvest ?? "–"}</span>
+                        <span className="rounded-md border border-slate-200 bg-slate-50 px-2 py-1">Seeds {inventory?.seeds ?? "–"}</span>
+                        <span className="rounded-md border border-slate-200 bg-slate-50 px-2 py-1">Fertilizer {inventory?.fertilizer ?? "–"}</span>
+                        <span className="rounded-md border border-slate-200 bg-slate-50 px-2 py-1">Feed {inventory?.feed ?? "–"}</span>
+                        <span className="rounded-md border border-slate-200 bg-slate-50 px-2 py-1">Harvest {inventory?.harvest ?? "–"}</span>
                     </span>
                 </div>
             </div>
@@ -171,6 +200,8 @@ type InspectorPanelProps = {
     onTreat?: (id: string) => void;
     onHarvest?: (id: string) => void;
     onAssignWorker?: (id: string) => void;
+    isPinned?: boolean;
+    onUnpin?: () => void;
 };
 
 export function InspectorPanel({
@@ -186,6 +217,8 @@ export function InspectorPanel({
     onTreat,
     onHarvest,
     onAssignWorker,
+    isPinned,
+    onUnpin,
 }: InspectorPanelProps) {
     const healthValue = plot ? Number(plot.health) || 0 : 0;
     const stageLabel = plot?.stage || "Unplanted";
@@ -197,6 +230,16 @@ export function InspectorPanel({
                     <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">Inspector</div>
                     <div className="text-sm font-semibold text-slate-800">{plot ? plot.name : "Select a plot"}</div>
                     {plot ? <div className="text-xs text-slate-500">{plot.crop}</div> : null}
+                    {plot && isPinned ? (
+                        <button
+                            type="button"
+                            onClick={onUnpin}
+                            className="mt-1 inline-flex items-center gap-1 rounded-full bg-indigo-50 px-2 py-1 text-[10px] font-semibold text-indigo-700 shadow"
+                        >
+                            Pinned
+                            {onUnpin ? <span className="text-indigo-600">· Unpin</span> : null}
+                        </button>
+                    ) : null}
                 </div>
                 <div className="flex flex-col items-end gap-1 text-[10px] font-semibold text-slate-600">
                     <span className="rounded-full bg-indigo-50 px-2 py-1 text-indigo-700">K3H4 rate {conversionRate ?? "1:10"}</span>
@@ -383,6 +426,10 @@ export type OverlayLayerProps = {
     onBuySeeds?: () => void;
     onSchedule?: () => void;
     onRefresh?: () => void;
+    ledgerItems?: LedgerItem[];
+    buildingPanel?: BuildingPanelData | null;
+    onOpenBuilding?: (id: LandmarkId) => void;
+    onCloseBuilding?: () => void;
     selectedPlot: PlotMesh | null;
     vitals?: PlotVitals;
     logisticsPlan?: LogisticsPlan;
@@ -397,7 +444,104 @@ export type OverlayLayerProps = {
     onAssignWorker: (id: string) => void;
     showHowToPlay: boolean;
     onCloseHowToPlay: () => void;
+    pinnedPlotId?: string | null;
+    onUnpinPlot?: () => void;
 };
+
+function HistoryLedger({ items }: { items?: LedgerItem[] }) {
+    if (!items || items.length === 0) {
+        return (
+            <div className="w-80 max-w-full rounded-xl border border-slate-200 bg-white/95 p-3 text-sm text-slate-700 shadow-xl">
+                <div className="flex items-center justify-between text-xs font-semibold uppercase tracking-wide text-slate-500">
+                    <span>Recent activity</span>
+                    <span className="rounded-full bg-slate-100 px-2 py-1 text-[11px] text-slate-600">Empty</span>
+                </div>
+                <p className="mt-2 text-xs text-slate-500">Actions you take will show here for quick recall.</p>
+            </div>
+        );
+    }
+
+    return (
+        <div className="w-80 max-w-full rounded-xl border border-slate-200 bg-white/95 p-3 text-sm text-slate-800 shadow-xl">
+            <div className="flex items-center justify-between text-xs font-semibold uppercase tracking-wide text-slate-500">
+                <span>Recent activity</span>
+                <span className="rounded-full bg-slate-100 px-2 py-1 text-[11px] text-slate-600">{items.length}</span>
+            </div>
+            <div className="mt-2 flex flex-col gap-2">
+                {items.slice(0, 6).map((item) => {
+                    const tone = item.tone || "info";
+                    const pillClass =
+                        tone === "success"
+                            ? "bg-emerald-50 text-emerald-700"
+                            : tone === "warning"
+                                ? "bg-amber-50 text-amber-700"
+                                : tone === "danger"
+                                    ? "bg-rose-50 text-rose-700"
+                                    : "bg-slate-100 text-slate-700";
+                    return (
+                        <div key={item.id} className="flex items-start justify-between gap-2 rounded-lg border border-slate-100 bg-white px-3 py-2 text-[12px] font-semibold text-slate-800">
+                            <div className="flex flex-col gap-0.5">
+                                <span className="leading-tight">{item.title}</span>
+                                {item.detail ? <span className="text-[11px] font-normal text-slate-600">{item.detail}</span> : null}
+                            </div>
+                            {item.tag ? <span className={`rounded-full px-2 py-1 text-[11px] font-semibold ${pillClass}`}>{item.tag}</span> : null}
+                        </div>
+                    );
+                })}
+            </div>
+        </div>
+    );
+}
+
+function BuildingPanel({ panel, onClose }: { panel?: BuildingPanelData | null; onClose?: () => void }) {
+    if (!panel) return null;
+
+    const tone = panel.tone || "info";
+    const badgeClass =
+        tone === "success"
+            ? "bg-emerald-50 text-emerald-700"
+            : tone === "warning"
+                ? "bg-amber-50 text-amber-700"
+                : tone === "danger"
+                    ? "bg-rose-50 text-rose-700"
+                    : "bg-sky-50 text-sky-700";
+
+    return (
+        <div className="w-80 max-w-full rounded-xl border border-slate-200 bg-white/95 p-3 text-sm text-slate-800 shadow-xl">
+            <div className="mb-2 flex items-start justify-between gap-2">
+                <div className="flex flex-col gap-1">
+                    <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">{panel.title}</div>
+                    {panel.subtitle ? <div className="text-[12px] text-slate-600">{panel.subtitle}</div> : null}
+                </div>
+                <div className="flex items-center gap-2">
+                    <span className={`rounded-full px-2 py-1 text-[11px] font-semibold ${badgeClass}`}>{panel.id}</span>
+                    {onClose ? (
+                        <button
+                            type="button"
+                            onClick={onClose}
+                            className="rounded-md border border-slate-200 bg-white px-2 py-1 text-[11px] font-semibold text-slate-600 shadow-sm"
+                        >
+                            Close
+                        </button>
+                    ) : null}
+                </div>
+            </div>
+            {panel.description ? <p className="text-[12px] text-slate-600">{panel.description}</p> : null}
+            <div className="mt-2 flex flex-col gap-2">
+                {(panel.actions || []).map((action) => (
+                    <button
+                        key={action.label}
+                        type="button"
+                        className="flex items-center justify-between rounded-md border border-slate-200 bg-white px-3 py-2 text-left text-[12px] font-semibold text-slate-700 shadow-sm hover:border-emerald-200 hover:bg-emerald-50 hover:text-emerald-800"
+                    >
+                        <span>{action.label}</span>
+                        {action.hint ? <span className="text-[11px] font-normal text-slate-500">{action.hint}</span> : null}
+                    </button>
+                ))}
+            </div>
+        </div>
+    );
+}
 
 export function OverlayLayer({
     overlayContent,
@@ -412,6 +556,10 @@ export function OverlayLayer({
     onBuySeeds,
     onSchedule,
     onRefresh,
+    ledgerItems,
+    buildingPanel,
+    onOpenBuilding,
+    onCloseBuilding,
     selectedPlot,
     vitals,
     logisticsPlan,
@@ -426,16 +574,28 @@ export function OverlayLayer({
     onAssignWorker,
     showHowToPlay,
     onCloseHowToPlay,
+    pinnedPlotId,
+    onUnpinPlot,
 }: OverlayLayerProps) {
     return (
         <div className="pointer-events-none absolute inset-0 flex flex-col">
-            <div className="flex items-start justify-between gap-3 p-4">
-                <div className="pointer-events-auto">{overlayContent}</div>
-                <div className="pointer-events-auto flex flex-col items-end gap-3">
-                    <SystemStatusChips kpis={financialKpis} />
-                    <HowToPlayOverlay show={showHowToPlay} onClose={onCloseHowToPlay} />
+            <div className="flex flex-col gap-3 p-4">
+                <div className="flex items-start justify-between gap-3">
+                    <div className="pointer-events-auto flex flex-col gap-3">
+                        {overlayContent}
+                    </div>
+                    <div className="pointer-events-auto flex flex-col items-end gap-3">
+                        <SystemStatusChips kpis={financialKpis} />
+                        <HowToPlayOverlay show={showHowToPlay} onClose={onCloseHowToPlay} />
+                    </div>
                 </div>
             </div>
+
+            {buildingPanel ? (
+                <div className="pointer-events-auto absolute left-4 top-24 z-20 max-w-sm">
+                    <BuildingPanel panel={buildingPanel} onClose={onCloseBuilding} />
+                </div>
+            ) : null}
 
             <div className="flex flex-1 items-end justify-between gap-3 p-4">
                 <div className="pointer-events-auto flex flex-1 justify-center">
@@ -450,9 +610,11 @@ export function OverlayLayer({
                         onBuySeeds={onBuySeeds}
                         onSchedule={onSchedule}
                         onRefresh={onRefresh}
+                        onOpenBuilding={onOpenBuilding}
                     />
                 </div>
-                <div className="pointer-events-auto shrink-0">
+                <div className="pointer-events-auto shrink-0 flex max-h-[70vh] flex-col gap-3 overflow-auto">
+                    <HistoryLedger items={ledgerItems} />
                     <InspectorPanel
                         plot={selectedPlot}
                         vitals={vitals}
@@ -466,6 +628,8 @@ export function OverlayLayer({
                         onTreat={onTreatPlot}
                         onHarvest={onHarvestPlot}
                         onAssignWorker={onAssignWorker}
+                        isPinned={selectedPlot ? selectedPlot.id === pinnedPlotId : false}
+                        onUnpin={onUnpinPlot}
                     />
                 </div>
             </div>

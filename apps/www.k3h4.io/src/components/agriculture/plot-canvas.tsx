@@ -5,10 +5,11 @@ import { ContactShadows, Grid, Html, MapControls, PerformanceMonitor, Sky } from
 import { agricultureDashboardStore, type ToolId } from "../../stores/agriculture-dashboard-store";
 import { bankStore } from "../../stores/bank-store";
 import { LandmarksLayer } from "./landmarks-layer";
-import { OverlayLayer, DefaultOverlay } from "./overlay-layer";
+import { OverlayLayer, DefaultOverlay, type LedgerItem } from "./overlay-layer";
 import { PlotsLayer } from "./plots-layer";
 import { generatePlotLayout } from "./plot-layout";
-import type { FinancialKpis, Landmark, LogisticsPlan, PlotVitals, ToolConfig, WorkerKpi, InventorySummary } from "./plot-types";
+import type { FinancialKpis, Landmark, LandmarkId, LogisticsPlan, PlotMesh, PlotVitals, ToolConfig, WorkerKpi, InventorySummary } from "./plot-types";
+import type { BuildingPanelData } from "./overlay-layer";
 import { useAgricultureDashboard } from "./use-agriculture-dashboard";
 
 export function PlotCanvas() {
@@ -64,6 +65,8 @@ export function PlotCanvas() {
 
     const { apiBase } = bankStore.useShallow((state) => ({ apiBase: state.apiBase }));
 
+    const [activeBuilding, setActiveBuilding] = useState<LandmarkId | null>(null);
+
     const dashboard = useAgricultureDashboard({
         apiBase,
         highlightedPlot,
@@ -85,8 +88,23 @@ export function PlotCanvas() {
     });
 
     const plots = dashboard.plotMeshes;
-    const highlightedId = highlightedPlot;
-    const onSelect = (id: string | null) => setHighlightedPlot(id);
+    const [unlockedVirtualPlots, setUnlockedVirtualPlots] = useState<PlotMesh[]>([]);
+    const [pinnedPlotId, setPinnedPlotId] = useState<string | null>(null);
+    const highlightedId = pinnedPlotId ?? highlightedPlot;
+    const onSelect = (id: string | null) => {
+        if (pinnedPlotId && id === null) return; // keep pinned selection when hovering out
+        setHighlightedPlot(id);
+    };
+    const onLockPlot = (id: string) => {
+        setPinnedPlotId(id);
+        setHighlightedPlot(id);
+        setStatusMessage(`Pinned ${id} in inspector.`);
+    };
+    const onUnpinPlot = () => {
+        if (pinnedPlotId) setHighlightedPlot(pinnedPlotId);
+        setPinnedPlotId(null);
+        setStatusMessage("Unpinned inspector.");
+    };
     const onAddPlot = dashboard.handleConfirmAddPlot;
     const onBuySeeds = () => void dashboard.handleConfirmBuySeeds();
     const onSchedule = dashboard.handleConfirmScheduleWorkers;
@@ -98,7 +116,36 @@ export function PlotCanvas() {
         dashboard.bank.refreshBalance();
     };
 
-    const plotCount = plots.length;
+    const TOTAL_PLOT_SLOTS = 12;
+    const BASE_UNLOCK_COST = 100;
+    const UNLOCK_STEP = 50;
+
+    const currentSlots = plots.length + unlockedVirtualPlots.length;
+    const remainingLocked = Math.max(0, TOTAL_PLOT_SLOTS - currentSlots);
+    const lockedSlots: PlotMesh[] = useMemo(() => {
+        const calcCost = (slotIndex: number) => {
+            if (currentSlots === 0 && slotIndex === 0) return 0;
+            return BASE_UNLOCK_COST + UNLOCK_STEP * (currentSlots + slotIndex);
+        };
+
+        return Array.from({ length: remainingLocked }).map((_, index) => ({
+            id: `locked-${index}`,
+            name: "Locked",
+            crop: "Locked",
+            stage: "Locked",
+            acres: "1",
+            health: "0",
+            latestCondition: null,
+            position: [0, 0, 0],
+            size: [3, 2],
+            healthTint: 0.4,
+            locked: true,
+            unlockCost: calcCost(index),
+        }));
+    }, [remainingLocked, currentSlots]);
+
+    const displayPlots = useMemo(() => [...plots, ...unlockedVirtualPlots], [plots, unlockedVirtualPlots]);
+    const plotCount = displayPlots.length;
     const balance = dashboard.bank.balance ?? "–";
     const k3h4Balance = balance;
     const day = dashboard.overviewQuery.data?.shipments ?? null;
@@ -132,11 +179,30 @@ export function PlotCanvas() {
         setStatusMessage(`Assign worker to ${id}`);
     };
 
-    const onSelectBank = () => setSignalsOpen(true);
-    const onSelectMarket = () => setSignalsOpen(true);
-    const onSelectBarn = () => setRosterOpen(true);
-    const onSelectSilo = () => setSignalsOpen(true);
-    const onSelectHut = () => setRosterOpen(true);
+    const onOpenBuilding = (id: LandmarkId) => {
+        setActiveBuilding((current) => (current === id ? null : id));
+    };
+
+    const onSelectBank = () => {
+        setSignalsOpen(true);
+        onOpenBuilding("bank");
+    };
+    const onSelectMarket = () => {
+        setSignalsOpen(true);
+        onOpenBuilding("market");
+    };
+    const onSelectBarn = () => {
+        setRosterOpen(true);
+        onOpenBuilding("barn");
+    };
+    const onSelectSilo = () => {
+        setSignalsOpen(true);
+        onOpenBuilding("silo");
+    };
+    const onSelectHut = () => {
+        setRosterOpen(true);
+        onOpenBuilding("hut");
+    };
 
     const tools: ToolConfig[] = useMemo(
         () => [
@@ -154,6 +220,35 @@ export function PlotCanvas() {
     const onSelectTool = (id: ToolId) => {
         setActiveTool(id);
         setStatusMessage(`Selected tool ${id}`);
+    };
+
+    const onUnlockPlot = (id: string, cost?: number) => {
+        const price = cost ?? BASE_UNLOCK_COST;
+        const numericBalance = typeof balance === "number" ? balance : Number(balance);
+        const available = Number.isFinite(numericBalance) ? numericBalance : 0;
+        if (available < price) {
+            setStatusMessage(`Need ${price} to unlock ${id}.`);
+            return;
+        }
+
+        const nextIndex = plots.length + unlockedVirtualPlots.length + 1;
+        const newPlot: PlotMesh = {
+            id: `unlocked-${nextIndex}`,
+            name: `Plot ${nextIndex}`,
+            crop: "New",
+            stage: "Planned",
+            acres: "1",
+            health: "100",
+            latestCondition: null,
+            position: [0, 0, 0],
+            size: [3, 2],
+            healthTint: 0.85,
+        };
+
+        setUnlockedVirtualPlots((prev) => [...prev, newPlot]);
+        setStatusMessage(`Unlocked ${id} for ${price}.`);
+        setActiveBuilding(null);
+        setHighlightedPlot(newPlot.id);
     };
 
     const tasks = dashboard.tasksQuery.data?.tasks ?? [];
@@ -178,9 +273,26 @@ export function PlotCanvas() {
         return [...ready, ...dry, ...taskAlerts].slice(0, 4);
     }, [plots, tasks]);
 
+    const ledgerItems: LedgerItem[] = useMemo(() => {
+        const taskEntries: LedgerItem[] = tasks.slice(0, 6).map((task: any) => ({
+            id: `task-${task.id}`,
+            title: task.title || "Task",
+            detail: task.dueDate ? `Due ${task.dueDate}` : undefined,
+            tag: task.status || "pending",
+            tone: task.status === "completed" ? "success" : task.status === "pending" ? "warning" : "info",
+        }));
+        const alertEntries: LedgerItem[] = alerts.map((alert, idx) => ({
+            id: `alert-${idx}`,
+            title: alert,
+            tag: "alert",
+            tone: "warning",
+        }));
+        return [...taskEntries, ...alertEntries].slice(0, 6);
+    }, [tasks, alerts]);
+
     const onCloseHowToPlay = () => setShowHowToPlay(false);
 
-    const laidOut = useMemo(() => generatePlotLayout(plots), [plots]);
+    const laidOut = useMemo(() => generatePlotLayout([...displayPlots, ...lockedSlots]), [displayPlots, lockedSlots]);
     const sceneBackground = useMemo(() => {
         if (typeof window === "undefined") return "#eef2f7";
         const value = getComputedStyle(document.documentElement).getPropertyValue("--background").trim();
@@ -201,6 +313,72 @@ export function PlotCanvas() {
         ],
         [onSelectBank, onSelectMarket, onSelectBarn, onSelectSilo, onSelectHut],
     );
+
+    const buildingPanels: Record<LandmarkId, BuildingPanelData> = useMemo(
+        () => ({
+            bank: {
+                id: "bank",
+                title: "Bank · K3H4",
+                subtitle: "Convert & Loans",
+                description: "Swap USD↔K3H4 coin, take loans, and view treasury health.",
+                actions: [
+                    { label: "Convert currency", hint: "Preview rate & fee" },
+                    { label: "Request loan", hint: "See daily rate" },
+                    { label: "View ledger", hint: "Recent transfers" },
+                ],
+                tone: "info",
+            },
+            market: {
+                id: "market",
+                title: "Market Board",
+                subtitle: "Sell & Contracts",
+                description: "List harvest, accept contracts, and check OSRM-adjusted delivery costs.",
+                actions: [
+                    { label: "List harvest", hint: "Set lots & pricing" },
+                    { label: "Browse contracts", hint: "Filter by SLA" },
+                    { label: "Price calculator", hint: "Freight-inclusive" },
+                ],
+                tone: "info",
+            },
+            barn: {
+                id: "barn",
+                title: "Barn / Pen",
+                subtitle: "Animals",
+                description: "Manage livestock capacity, feed schedule, and health alerts.",
+                actions: [
+                    { label: "Add animal lot", hint: "Species & count" },
+                    { label: "Set feed plan", hint: "Auto from inventory" },
+                    { label: "Review health alerts", hint: "Pests, illness" },
+                ],
+                tone: "warning",
+            },
+            silo: {
+                id: "silo",
+                title: "Silo",
+                subtitle: "Storage",
+                description: "Track storage fill, spoilage risk, and schedule outbound loads.",
+                actions: [
+                    { label: "Add storage lot", hint: "Crop & volume" },
+                    { label: "Schedule outbound", hint: "Carrier & ETA" },
+                    { label: "Check spoilage", hint: "Moisture/temperature" },
+                ],
+                tone: "info",
+            },
+            hut: {
+                id: "hut",
+                title: "Worker Hut",
+                subtitle: "Hire & Assign",
+                description: "Manage roster, assign tasks, and view utilization.",
+                actions: [
+                    { label: "Open roster", hint: "Invite/hire" },
+                    { label: "Assign tasks", hint: "Queue & ETA" },
+                    { label: "Utilization", hint: "Busy % by role" },
+                ],
+                tone: "success",
+            },
+        }),
+        [],
+    );
     const overlayContent = (
         <DefaultOverlay
             plotCount={plotCount}
@@ -212,6 +390,7 @@ export function PlotCanvas() {
             onRefresh={onRefresh}
         />
     );
+    const buildingPanel = activeBuilding ? buildingPanels[activeBuilding] : null;
     const [isPerfLimited, setPerfLimited] = useState(false);
     const selectedPlot = useMemo(() => laidOut.find((plot) => plot.id === highlightedId) || null, [laidOut, highlightedId]);
     const vitals = selectedPlot ? plotVitalsById?.[selectedPlot.id] : undefined;
@@ -298,7 +477,14 @@ export function PlotCanvas() {
                             <planeGeometry args={[48, 48]} />
                             <meshStandardMaterial color={`${gridColor}22`} />
                         </mesh>
-                        <PlotsLayer laidOut={laidOut} highlightedId={highlightedId} onSelect={onSelect} />
+                        <PlotsLayer
+                            laidOut={laidOut}
+                            highlightedId={highlightedId}
+                            pinnedId={pinnedPlotId}
+                            onSelect={onSelect}
+                            onUnlockPlot={onUnlockPlot}
+                            onLockPlot={onLockPlot}
+                        />
                         <LandmarksLayer landmarks={landmarks} />
                         <MapControls
                             enableDamping={!reducedMotion}
@@ -322,6 +508,10 @@ export function PlotCanvas() {
                 workerKpi={workerKpi}
                 inventory={inventory}
                 animalAlerts={animalAlerts}
+                ledgerItems={ledgerItems}
+                buildingPanel={buildingPanel}
+                onOpenBuilding={onOpenBuilding}
+                onCloseBuilding={() => setActiveBuilding(null)}
                 onAddPlot={onAddPlot}
                 onBuySeeds={onBuySeeds}
                 onSchedule={onSchedule}
@@ -340,6 +530,8 @@ export function PlotCanvas() {
                 onAssignWorker={onAssignWorker}
                 showHowToPlay={!!showHowToPlay}
                 onCloseHowToPlay={onCloseHowToPlay}
+                pinnedPlotId={pinnedPlotId}
+                onUnpinPlot={onUnpinPlot}
             />
         </div>
     );
