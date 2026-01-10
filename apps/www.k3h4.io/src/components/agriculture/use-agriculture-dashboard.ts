@@ -139,12 +139,12 @@ export function useAgricultureDashboard({
         }
     };
 
-    const handleConfirmBuySeeds = async () => {
+    const handleConfirmBuySeeds = async (): Promise<boolean> => {
         const costValue = Number(seedCost) || 0;
         const label = seedOptions.find((item) => item.code === seedCommodity)?.label || "Seed";
         if (balanceValue < costValue) {
             setStatusMessage("Insufficient K3H4 coin for seeds.");
-            return;
+            return false;
         }
         try {
             setStatusMessage("");
@@ -153,9 +153,11 @@ export function useAgricultureDashboard({
             setActionMode(null);
             setSignalsOpen(true);
             void trackTelemetry("agriculture.dashboard.buy_seeds.success", { costValue, seedCommodity });
+            return true;
         } catch (error: any) {
             setStatusMessage(error?.message || "Unable to purchase seeds.");
             void trackTelemetry("agriculture.dashboard.buy_seeds.error", { message: error?.message });
+            return false;
         }
     };
 

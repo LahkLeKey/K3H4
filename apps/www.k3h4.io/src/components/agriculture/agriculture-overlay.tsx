@@ -9,19 +9,27 @@ export type AgricultureOverlayProps = {
     balance: number | string | null;
     actionOverlay: ReactNode;
     footerOverlay: ReactNode;
+    bankOverlay?: ReactNode;
     onAddPlot: () => void;
     onBuySeeds: () => void;
     onSchedule: () => void;
     onRefresh: () => void;
+    onToggleBank?: () => void;
+    bankOpen?: boolean;
 };
 
-export function AgricultureOverlay({ plotCount, balance, actionOverlay, footerOverlay, onAddPlot, onBuySeeds, onSchedule, onRefresh }: AgricultureOverlayProps) {
+export function AgricultureOverlay({ plotCount, balance, actionOverlay, footerOverlay, bankOverlay, onAddPlot, onBuySeeds, onSchedule, onRefresh, onToggleBank, bankOpen }: AgricultureOverlayProps) {
     return (
         <div className="pointer-events-none absolute inset-0">
             <div className="pointer-events-auto absolute left-4 top-4 flex flex-col gap-3">
                 <HudToolbar className="backdrop-blur">
                     <HudChip>Plots {plotCount ?? "—"}</HudChip>
                     <HudChip tone="outline">Balance {balance ?? "—"}</HudChip>
+                    {onToggleBank ? (
+                        <Button size="sm" variant="secondary" onClick={onToggleBank}>
+                            {bankOpen ? "Hide bank" : "Bank"}
+                        </Button>
+                    ) : null}
                 </HudToolbar>
             </div>
 
@@ -42,6 +50,7 @@ export function AgricultureOverlay({ plotCount, balance, actionOverlay, footerOv
 
             <div className="pointer-events-auto absolute left-4 bottom-4 flex max-w-[480px] flex-col gap-3 rounded-2xl bg-background/80 p-3 shadow-xl backdrop-blur">
                 {footerOverlay}
+                {bankOverlay}
             </div>
         </div>
     );
