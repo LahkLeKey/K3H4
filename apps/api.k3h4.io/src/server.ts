@@ -128,19 +128,22 @@ const prisma = new PrismaClient({
 
 // Basic OpenAPI definition for the service
 const openApiOptions = {
-  swagger: {
+  openapi: {
+    openapi: "3.0.0",
     info: {
       title: "K3H4 API",
       description:
-        "API for K3H4 services. To authorize, sign in at https://www.k3h4.dev (or the dev frontend), open devtools > Application > Local Storage, and copy the value of k3h4.accessToken. Use it as 'Bearer <token>' in the Authorize dialog.",
+        "API for K3H4 services. To authorize, sign in at https://www.k3h4.dev (or the dev frontend), open devtools > Application > Local Storage, and copy the value of k3h4.accessToken. Paste the token in Authorize; the UI will send it as a Bearer token automatically.",
       version: "0.1.0",
     },
-    securityDefinitions: {
-      bearerAuth: {
-        type: "apiKey",
-        name: "Authorization",
-        in: "header",
-        description: "JWT authorization header using the Bearer scheme. Example: 'Bearer <token>'",
+    components: {
+      securitySchemes: {
+        bearerAuth: {
+          type: "http",
+          scheme: "bearer",
+          bearerFormat: "JWT",
+          description: "Paste your k3h4.accessToken; the UI prefixes Bearer for you.",
+        },
       },
     },
     security: [{ bearerAuth: [] }],
@@ -158,7 +161,14 @@ await server.register(fastifySwaggerUi, {
   routePrefix: "/docs",
   uiHooks: {
     onRequest: async (request, reply) => {
-      await server.authenticate(request, reply);
+      const auth = request.headers.authorization;
+      if (!auth) return; // allow read-only docs without a token
+      try {
+        await request.jwtVerify();
+      } catch (err) {
+        request.log.debug({ err }, "swagger ui auth failed");
+        return reply.status(401).send({ error: "Unauthorized" });
+      }
     },
   },
 });
