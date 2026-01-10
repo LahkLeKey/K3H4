@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi, beforeAll } from "vitest";
-import { render, screen, fireEvent, within } from "@testing-library/react";
+import { render, screen, within, waitFor } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import React from "react";
 
 import { agricultureDashboardStore } from "../../../stores/agriculture-dashboard-store";
@@ -71,29 +72,30 @@ describe("AgricultureDashboard inventory and planting", () => {
 
         render(<AgricultureDashboard />);
 
-        fireEvent.click(screen.getByText(/Confirm seeds purchase/i));
+        await userEvent.click(screen.getByText(/Confirm seeds purchase/i));
 
-        const select = screen.getByRole("combobox");
-        expect((select as HTMLSelectElement).value).toBe("corn");
+        const select = await screen.findByRole("combobox");
+        await waitFor(() => expect((select as HTMLSelectElement).value).toBe("corn"));
         const option = within(select).getByText(/Corn · 6 in storage/i);
         expect(option).toBeInTheDocument();
     });
 
-    it("applies a seed to the active plot and decrements inventory", () => {
+    it("applies a seed to the active plot and decrements inventory", async () => {
         const state = agricultureDashboardStore.getState();
         state.setActionMode("seeds");
         state.setSeedCommodity("corn");
 
         render(<AgricultureDashboard />);
 
-        fireEvent.click(screen.getByText(/Confirm seeds purchase/i));
+        await userEvent.click(screen.getByText(/Confirm seeds purchase/i));
 
         const applyButton = screen.getByRole("button", { name: /Apply to plot/i });
-        fireEvent.click(applyButton);
+        await userEvent.click(applyButton);
 
         const select = screen.getByRole("combobox");
         const option = within(select).getByText(/Corn · 5 in storage/i);
         expect(option).toBeInTheDocument();
-        expect(screen.getByText(/Corn/)).toBeInTheDocument();
+        expect(select).toHaveValue("corn");
+        expect(screen.getByText(/Planted Corn on Plot 1./i)).toBeInTheDocument();
     });
 });
