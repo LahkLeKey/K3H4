@@ -1,8 +1,7 @@
-import { Suspense, useMemo } from "react";
+import { Suspense, useMemo, type ReactNode } from "react";
 import { Canvas } from "@react-three/fiber";
 import { Grid, Html, OrbitControls } from "@react-three/drei";
 
-import { HudChip } from "../ui/hud-chip";
 import { normalizeHealth } from "./utils";
 
 export type PlotMesh = {
@@ -60,27 +59,78 @@ function PlotTile({ plot, highlighted, onSelect }: { plot: PlotMesh; highlighted
                 <meshStandardMaterial color={cropColor(plot.crop)} transparent opacity={highlighted ? 0.95 : plot.healthTint * 0.85} />
             </mesh>
             <Html position={[0, 0.08, 0]} center className="pointer-events-none select-none">
-                <HudChip tone="outline" className="bg-background/80 text-foreground shadow">
+                <div className="rounded-full border border-white/60 bg-white/80 px-3 py-1 text-[11px] font-semibold text-slate-700 shadow">
                     {plot.name} · {plot.crop}
-                </HudChip>
+                </div>
             </Html>
         </group>
     );
 }
-
-export function PlotCanvas({ plots, highlightedId, onSelect }: { plots: PlotMesh[]; highlightedId: string | null; onSelect: (id: string | null) => void }) {
+export function PlotCanvas({
+    plots,
+    highlightedId,
+    onSelect,
+    onAddPlot,
+    onBuySeeds,
+    onSchedule,
+    onRefresh,
+    plotCount,
+    balance,
+    overlay,
+}: {
+    plots: PlotMesh[];
+    highlightedId: string | null;
+    onSelect: (id: string | null) => void;
+    onAddPlot?: () => void;
+    onBuySeeds?: () => void;
+    onSchedule?: () => void;
+    onRefresh?: () => void;
+    plotCount?: number;
+    balance?: number | string | null;
+    overlay?: (context: {
+        plotCount?: number;
+        balance?: number | string | null;
+        onAddPlot?: () => void;
+        onBuySeeds?: () => void;
+        onSchedule?: () => void;
+        onRefresh?: () => void;
+    }) => ReactNode;
+}) {
     const laidOut = useMemo(() => generatePlotLayout(plots), [plots]);
+    const sceneBackground = useMemo(() => {
+        if (typeof window === "undefined") return "#eef2f7";
+        const value = getComputedStyle(document.documentElement).getPropertyValue("--background").trim();
+        return value || "#eef2f7";
+    }, []);
+    const gridColor = useMemo(() => {
+        if (typeof window === "undefined") return "#d9e2ec";
+        const value = getComputedStyle(document.documentElement).getPropertyValue("--muted").trim();
+        return value || "#d9e2ec";
+    }, []);
+
     return (
-        <Canvas shadows camera={{ position: [12, 10, 12], fov: 46 }}>
-            <color attach="background" args={["#05060a"]} />
-            <hemisphereLight intensity={0.6} color="#dbeafe" groundColor="#0b1224" />
-            <directionalLight position={[8, 12, 8]} intensity={1.05} />
-            <Suspense fallback={<Html center className="text-sm text-muted-foreground">Preparing field…</Html>}>
-                <Grid args={[36, 36]} sectionSize={1} infiniteFade cellColor="#0b1224" sectionColor="#111827" position={[0, 0, 0]} />
+        <Canvas shadows camera={{ position: [12, 10, 12], fov: 46 }} style={{ background: sceneBackground }}>
+            <color attach="background" args={[sceneBackground]} />
+            <ambientLight intensity={0.35} />
+            <hemisphereLight intensity={0.6} color="#e2e8f0" groundColor={gridColor} />
+            <directionalLight position={[8, 12, 8]} intensity={1} />
+            <Suspense fallback={<Html center className="text-sm text-slate-500">Preparing field…</Html>}>
+                <Grid
+                    args={[36, 36]}
+                    sectionSize={1}
+                    infiniteFade
+                    cellColor={`${gridColor}99`}
+                    sectionColor={`${gridColor}cc`}
+                    position={[0, 0, 0]}
+                />
                 {laidOut.map((plot) => (
                     <PlotTile key={plot.id} plot={plot} highlighted={plot.id === highlightedId} onSelect={onSelect} />
                 ))}
                 <OrbitControls enablePan minDistance={5} maxDistance={34} target={[0, 0, 0]} />
+
+                <Html fullscreen className="pointer-events-none">
+                    {overlay?.({ plotCount, balance, onAddPlot, onBuySeeds, onSchedule, onRefresh })}
+                </Html>
             </Suspense>
         </Canvas>
     );
