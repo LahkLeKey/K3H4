@@ -11,7 +11,7 @@ model User {
   email          String          @unique
   provider       String
   providerId     String
-  k3h4CoinBalance Decimal         @default("0") @db.Decimal(18, 2) // sandbox-only play balance
+  k3h4CoinBalance Decimal         @default("25000") @db.Decimal(18, 2) // sandbox-only play balance
   displayName    String?
   avatarUrl      String?
   createdAt      DateTime        @default(now())
@@ -33,6 +33,7 @@ model User {
   agriculturePlotConditions AgriculturePlotCondition[]
   agricultureInventories AgricultureInventory[]
   agricultureInventoryMovements AgricultureInventoryMovement[]
+  agricultureSlots AgricultureSlot[]
   culinaryMenuItems CulinaryMenuItem[]
   culinaryPrepTasks CulinaryPrepTask[]
   culinarySupplierNeeds CulinarySupplierNeed[]
@@ -359,9 +360,24 @@ model AgriculturePlot {
   cropPlans AgricultureCropPlan[]
   conditions AgriculturePlotCondition[]
   tasks AgricultureTask[]
+  slots AgricultureSlot[]
 
   @@index([userId, crop])
   @@index([userId, fieldCode])
+}
+
+model AgricultureSlot {
+  id         String   @id @default(cuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  slotIndex  Int
+  unlockedAt DateTime @default(now())
+  costPaid   Decimal  @db.Decimal(18, 2) @default("0")
+  plotId     String?
+  plot       AgriculturePlot? @relation(fields: [plotId], references: [id], onDelete: SetNull)
+
+  @@unique([userId, slotIndex])
+  @@index([userId])
 }
 
 model AgricultureTask {

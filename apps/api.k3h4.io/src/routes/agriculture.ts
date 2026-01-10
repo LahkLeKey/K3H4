@@ -7,6 +7,10 @@ const decimalToString = (value: Prisma.Decimal | null | undefined) => {
   return "0.00";
 };
 
+const MAX_PLOT_SLOTS = 12;
+const BASE_SLOT_COST = 100;
+const SLOT_COST_STEP = 50;
+
 const toDecimal = (value: unknown | undefined) => {
   if (value instanceof Prisma.Decimal) return value;
   if (typeof value === "number") return new Prisma.Decimal(value.toFixed(2));
@@ -16,6 +20,11 @@ const toDecimal = (value: unknown | undefined) => {
     return new Prisma.Decimal(parsed.toFixed(2));
   }
   return null;
+};
+
+const computeSlotCost = (slotIndex: number) => {
+  if (slotIndex <= 0) return new Prisma.Decimal(0);
+  return new Prisma.Decimal(BASE_SLOT_COST + SLOT_COST_STEP * slotIndex);
 };
 
 const serializeTask = (task: any) => ({
@@ -78,6 +87,7 @@ const serializePlot = (plot: any) => {
           endDate: plan.endDate ? plan.endDate.toISOString() : null,
         }))
       : [],
+    slots: plot.slots ? plot.slots.map(serializeSlot) : [],
   };
 };
 
@@ -118,23 +128,145 @@ const serializeResourceCategory = (category: any) => ({
   resources: category.resources ? category.resources.map(serializeResource) : [],
 });
 
+const serializeSlot = (slot: any) => ({
+  id: slot.id,
+  slotIndex: slot.slotIndex,
+  costPaid: slot.costPaid instanceof Prisma.Decimal ? slot.costPaid.toFixed(2) : "0.00",
+  unlockedAt: slot.unlockedAt.toISOString(),
+  plotId: slot.plotId ?? null,
+  plot: slot.plot
+    ? {
+        id: slot.plot.id,
+        name: slot.plot.name,
+        crop: slot.plot.crop,
+        stage: slot.plot.stage,
+      }
+    : null,
+});
+
 export function registerAgricultureRoutes(server: FastifyInstance, prisma: PrismaClient, recordTelemetry: RecordTelemetryFn) {
   server.get(
     "/agriculture/overview",
     { preHandler: [server.authenticate] },
     async (request) => {
       const userId = (request.user as { sub: string }).sub;
-      const [plots, tasks, shipments] = await Promise.all([
+      const [plots, tasks, shipments, slots, inventorySummary] = await Promise.all([
         prisma.agriculturePlot.findMany({ where: { userId } }),
         prisma.agricultureTask.findMany({ where: { userId } }),
         prisma.agricultureShipment.findMany({ where: { userId } }),
+        prisma.agricultureSlot.count({ where: { userId } }),
+        prisma.agricultureInventory.groupBy({
+          by: ["sku"],
+          where: { userId },
+          _sum: { totalQuantity: true },
+        }),
       ]);
+      const inventory = inventorySummary.reduce((acc, row) => {
+        acc[row.sku.toLowerCase()] = row._sum.totalQuantity instanceof Prisma.Decimal ? row._sum.totalQuantity.toFixed(2) : "0.00";
+        return acc;
+      }, {} as Record<string, string>);
       await recordTelemetry(request, { eventType: "agriculture.overview.fetch", source: "api", payload: {} });
       return {
         plots: plots.length,
         tasks: tasks.length,
         shipments: shipments.length,
+        unlockedSlots: slots,
+        seeds: inventory.seeds ?? "0.00",
+        fertilizer: inventory.fertilizer ?? "0.00",
+        feed: inventory.feed ?? "0.00",
+        harvest: inventory.harvest ?? "0.00",
+        debt: "0.00",
+        pnl: "0.00",
+        burnRate: "0.00",
+        receivables: "0.00",
       };
+    },
+  );
+
+  server.get(
+    "/agriculture/slots",
+    { preHandler: [server.authenticate] },
+    async (request) => {
+      const userId = (request.user as { sub: string }).sub;
+      const slots = await prisma.agricultureSlot.findMany({
+        where: { userId },
+        orderBy: { slotIndex: "asc" },
+        include: { plot: { select: { id: true, name: true, crop: true, stage: true } } },
+      });
+      await recordTelemetry(request, {
+        eventType: "agriculture.slots.list",
+        source: "api",
+        payload: { count: slots.length },
+      });
+      return { slots: slots.map(serializeSlot) };
+    },
+  );
+
+  server.post(
+    "/agriculture/slots/unlock",
+    { preHandler: [server.authenticate] },
+    async (request, reply) => {
+      const userId = (request.user as { sub: string }).sub;
+      const body = request.body as { costPaid?: number | string } | undefined;
+
+      const unlockedCount = await prisma.agricultureSlot.count({ where: { userId } });
+      if (unlockedCount >= MAX_PLOT_SLOTS) return reply.status(400).send({ error: "Maximum slots reached" });
+
+      const slotIndex = unlockedCount;
+      const costPaid = toDecimal(body?.costPaid) ?? computeSlotCost(slotIndex);
+
+      const slot = await prisma.agricultureSlot.create({
+        data: {
+          userId,
+          slotIndex,
+          costPaid,
+        },
+        include: { plot: { select: { id: true, name: true, crop: true, stage: true } } },
+      });
+
+      await recordTelemetry(request, {
+        eventType: "agriculture.slot.unlock",
+        source: "api",
+        payload: { slotIndex, costPaid: costPaid instanceof Prisma.Decimal ? costPaid.toString() : `${costPaid}` },
+      });
+
+      return serializeSlot(slot);
+    },
+  );
+
+  server.patch(
+    "/agriculture/slots/:id",
+    { preHandler: [server.authenticate] },
+    async (request, reply) => {
+      const userId = (request.user as { sub: string }).sub;
+      const slotId = (request.params as { id: string }).id;
+      const body = request.body as { plotId?: string | null } | undefined;
+
+      const slot = await prisma.agricultureSlot.findFirst({
+        where: { id: slotId, userId },
+        include: { plot: { select: { id: true, name: true, crop: true, stage: true } } },
+      });
+      if (!slot) return reply.status(404).send({ error: "Slot not found" });
+
+      const nextPlotId = body?.plotId === undefined ? slot.plotId : body.plotId ?? null;
+      if (nextPlotId) {
+        const plot = await prisma.agriculturePlot.findFirst({ where: { id: nextPlotId, userId } });
+        if (!plot) return reply.status(404).send({ error: "Plot not found for slot" });
+      }
+
+      const updated = await prisma.agricultureSlot.update({
+        where: { id: slotId },
+        data: { plotId: nextPlotId },
+        include: { plot: { select: { id: true, name: true, crop: true, stage: true } } },
+      });
+
+      await recordTelemetry(request, {
+        eventType: "agriculture.slot.update",
+        source: "api",
+        payload: { slotId, plotId: nextPlotId },
+      });
+
+      return serializeSlot(updated);
     },
   );
 
@@ -163,6 +295,7 @@ export function registerAgricultureRoutes(server: FastifyInstance, prisma: Prism
             orderBy: { recordedAt: "desc" },
             take: 1,
           },
+          slots: true,
         },
       });
       await recordTelemetry(request, { eventType: "agriculture.plots.list", source: "api", payload: { count: plots.length } });
@@ -178,18 +311,27 @@ export function registerAgricultureRoutes(server: FastifyInstance, prisma: Prism
       const body = request.body as { name?: string; crop?: string; acres?: number | string; stage?: string; fieldCode?: string; soilType?: string; irrigationZone?: string; notes?: string } | undefined;
       if (!body?.name || !body?.crop) return reply.status(400).send({ error: "name and crop are required" });
       const acres = toDecimal(body.acres ?? 0) ?? new Prisma.Decimal(0);
-      const plot = await prisma.agriculturePlot.create({
-        data: {
-          userId,
-          name: body.name.trim(),
-          crop: body.crop.trim(),
-          stage: body.stage?.trim() || "planned",
-          acres,
-          fieldCode: body.fieldCode?.trim() || null,
-          soilType: body.soilType?.trim() || null,
-          irrigationZone: body.irrigationZone?.trim() || null,
-          notes: body.notes?.trim() || null,
-        },
+      const plot = await prisma.$transaction(async (tx) => {
+        const createdPlot = await tx.agriculturePlot.create({
+          data: {
+            userId,
+            name: body.name.trim(),
+            crop: body.crop.trim(),
+            stage: body.stage?.trim() || "planned",
+            acres,
+            fieldCode: body.fieldCode?.trim() || null,
+            soilType: body.soilType?.trim() || null,
+            irrigationZone: body.irrigationZone?.trim() || null,
+            notes: body.notes?.trim() || null,
+          },
+        });
+
+        const openSlot = await tx.agricultureSlot.findFirst({ where: { userId, plotId: null }, orderBy: { slotIndex: "asc" } });
+        if (openSlot) {
+          await tx.agricultureSlot.update({ where: { id: openSlot.id }, data: { plotId: createdPlot.id } });
+        }
+
+        return createdPlot;
       });
       await recordTelemetry(request, { eventType: "agriculture.plot.create", source: "api", payload: { plotId: plot.id } });
       return { id: plot.id };
@@ -584,6 +726,11 @@ export function registerAgricultureRoutes(server: FastifyInstance, prisma: Prism
           unit: item.unit,
         })),
         trackedShipments: shipmentCount,
+        pnl: "0.00",
+        burnRate: "0.00",
+        receivables: "0.00",
+        animalAlerts: 0,
+        debt: "0.00",
       };
     },
   );

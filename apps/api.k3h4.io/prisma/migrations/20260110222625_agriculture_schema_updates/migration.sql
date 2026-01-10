@@ -1,0 +1,2 @@
+-- AlterTable
+ALTER TABLE "User" ALTER COLUMN "k3h4CoinBalance" SET DEFAULT 25000;

@@ -15,6 +15,15 @@ export type AgricultureOverview = {
   plots: number;
   tasks: number;
   shipments: number;
+  unlockedSlots: number;
+  seeds?: string;
+  fertilizer?: string;
+  feed?: string;
+  harvest?: string;
+  debt?: string;
+  pnl?: string;
+  burnRate?: string;
+  receivables?: string;
 };
 
 export type AgriculturePlotSummary = {
@@ -89,6 +98,11 @@ export type AgricultureAnalyticsSnapshot = {
   taskStatusCounts: Record<string, number>;
   inventoryHighlights: Array<{ sku: string; totalQuantity: string; unit: string }>;
   trackedShipments: number;
+  pnl?: string;
+  burnRate?: string;
+  receivables?: string;
+  animalAlerts?: number;
+  debt?: string;
 };
 
 export type AgricultureResource = {
@@ -106,6 +120,15 @@ export type AgricultureResourceCategory = {
   title: string;
   description: string | null;
   resources: AgricultureResource[];
+};
+
+export type AgricultureSlot = {
+  id: string;
+  slotIndex: number;
+  costPaid: string;
+  unlockedAt: string;
+  plotId: string | null;
+  plot: { id: string; name: string; crop: string; stage: string } | null;
 };
 
 export const getAuthHeaders = (): AuthHeaders => {
@@ -137,7 +160,7 @@ const invalidateAgricultureQueries = async (
   apiBase: string,
   token: string,
 ) => {
-  const scopes = ["overview", "plots", "plans", "tasks", "inventory", "analytics", "resources"];
+  const scopes = ["overview", "plots", "plans", "tasks", "inventory", "analytics", "resources", "slots"];
   await Promise.all(
     scopes.map((scope) => client.invalidateQueries({ queryKey: ["agriculture", scope, apiBase, token] })),
   );
@@ -162,6 +185,26 @@ export function useAgricultureOverviewQuery(apiBase: string) {
         tasks: data.tasks,
         shipments: data.shipments,
       });
+      return data;
+    },
+  });
+}
+
+export function useAgricultureSlotsQuery(apiBase: string) {
+  const auth = getAuthHeaders();
+  const enabled = !!auth?.token;
+
+  return useQuery({
+    queryKey: ["agriculture", "slots", apiBase, auth?.token ?? "anon"],
+    enabled,
+    queryFn: async () => {
+      if (!auth) throw new Error("Sign in to view slots.");
+      const data = await fetchJson<{ slots: AgricultureSlot[] }>(
+        `${apiBase}/agriculture/slots`,
+        { headers: auth.headers },
+        "agriculture.slots.error",
+      );
+      void trackTelemetry("agriculture.slots.success", { count: data.slots.length });
       return data;
     },
   });
@@ -293,6 +336,8 @@ export function useAgricultureResourcesQuery(apiBase: string) {
 type CreatePlotInput = { name: string; crop: string; stage?: string; acres: number; health?: string };
 type CreateTaskInput = { title: string; assignee?: string; dueDate?: string; status?: string };
 type CreateShipmentInput = { lot: string; destination: string; mode: string; eta?: string; freightLoadId?: string };
+type UnlockSlotInput = { costPaid?: number | string };
+type UpdateSlotInput = { slotId: string; plotId?: string | null };
 
 export function useCreateAgriculturePlot(apiBase: string) {
   const auth = getAuthHeaders();
@@ -313,6 +358,60 @@ export function useCreateAgriculturePlot(apiBase: string) {
         "agriculture.plot.error",
       );
       void trackTelemetry("agriculture.plot.success", { crop: payload.crop });
+      return data;
+    },
+    onSuccess: async () => {
+      await invalidateAgricultureQueries(client, apiBase, queryToken);
+    },
+  });
+}
+
+export function useUnlockAgricultureSlot(apiBase: string) {
+  const auth = getAuthHeaders();
+  const client = useQueryClient();
+  const queryToken = auth?.token ?? "anon";
+
+  return useMutation({
+    mutationKey: ["agriculture", "slot", "unlock", apiBase, queryToken],
+    mutationFn: async (payload: UnlockSlotInput) => {
+      if (!auth) throw new Error("Sign in to unlock slots.");
+      const data = await fetchJson<AgricultureSlot>(
+        `${apiBase}/agriculture/slots/unlock`,
+        {
+          method: "POST",
+          headers: auth.headers,
+          body: JSON.stringify(payload ?? {}),
+        },
+        "agriculture.slot.unlock.error",
+      );
+      void trackTelemetry("agriculture.slot.unlock.success", { slotIndex: data.slotIndex });
+      return data;
+    },
+    onSuccess: async () => {
+      await invalidateAgricultureQueries(client, apiBase, queryToken);
+    },
+  });
+}
+
+export function useUpdateAgricultureSlot(apiBase: string) {
+  const auth = getAuthHeaders();
+  const client = useQueryClient();
+  const queryToken = auth?.token ?? "anon";
+
+  return useMutation({
+    mutationKey: ["agriculture", "slot", "update", apiBase, queryToken],
+    mutationFn: async (payload: UpdateSlotInput) => {
+      if (!auth) throw new Error("Sign in to update slots.");
+      const data = await fetchJson<AgricultureSlot>(
+        `${apiBase}/agriculture/slots/${payload.slotId}`,
+        {
+          method: "PATCH",
+          headers: auth.headers,
+          body: JSON.stringify({ plotId: payload.plotId ?? null }),
+        },
+        "agriculture.slot.update.error",
+      );
+      void trackTelemetry("agriculture.slot.update.success", { slotId: payload.slotId, plotId: data.plotId });
       return data;
     },
     onSuccess: async () => {

@@ -11,6 +11,7 @@ import { generatePlotLayout } from "./plot-layout";
 import type { FinancialKpis, Landmark, LandmarkId, LogisticsPlan, PlotMesh, PlotVitals, ToolConfig, WorkerKpi, InventorySummary } from "./plot-types";
 import type { BuildingPanelData } from "./overlay-layer";
 import { useAgricultureDashboard } from "./use-agriculture-dashboard";
+import { agricultureSlotsStore } from "../../stores/agriculture-slots-store";
 
 export function PlotCanvas() {
     const {
@@ -88,7 +89,27 @@ export function PlotCanvas() {
     });
 
     const plots = dashboard.plotMeshes;
-    const [unlockedVirtualPlots, setUnlockedVirtualPlots] = useState<PlotMesh[]>([]);
+    const { slots, unlockedSlotCount, upsertSlot, setUnlockedSlotCount } = agricultureSlotsStore.useShallow((state) => ({
+        slots: state.slots,
+        unlockedSlotCount: state.unlockedSlotCount,
+        upsertSlot: state.upsertSlot,
+        setUnlockedSlotCount: state.setUnlockedSlotCount,
+    }));
+    const unlockedVirtualPlots = useMemo<PlotMesh[]>(() => {
+        const openSlots = slots.filter((slot) => !slot.plotId);
+        return openSlots.map((slot) => ({
+            id: `slot-${slot.slotIndex + 1}`,
+            name: `Open Slot ${slot.slotIndex + 1}`,
+            crop: "Available",
+            stage: "Unlocked",
+            acres: "1",
+            health: "100",
+            latestCondition: null,
+            position: [0, 0, 0],
+            size: [3, 2],
+            healthTint: 0.7,
+        }));
+    }, [slots]);
     const [pinnedPlotId, setPinnedPlotId] = useState<string | null>(null);
     const highlightedId = pinnedPlotId ?? highlightedPlot;
     const onSelect = (id: string | null) => {
@@ -110,6 +131,7 @@ export function PlotCanvas() {
     const onSchedule = dashboard.handleConfirmScheduleWorkers;
     const onRefresh = () => {
         void dashboard.plotsQuery.refetch();
+        void dashboard.slotsQuery.refetch();
         void dashboard.overviewQuery.refetch();
         void dashboard.analyticsQuery.refetch();
         void dashboard.tasksQuery.refetch();
@@ -120,12 +142,13 @@ export function PlotCanvas() {
     const BASE_UNLOCK_COST = 100;
     const UNLOCK_STEP = 50;
 
-    const currentSlots = plots.length + unlockedVirtualPlots.length;
+    const currentSlots = Math.max(unlockedSlotCount, plots.length);
     const remainingLocked = Math.max(0, TOTAL_PLOT_SLOTS - currentSlots);
     const lockedSlots: PlotMesh[] = useMemo(() => {
-        const calcCost = (slotIndex: number) => {
-            if (currentSlots === 0 && slotIndex === 0) return 0;
-            return BASE_UNLOCK_COST + UNLOCK_STEP * (currentSlots + slotIndex);
+        const calcCost = (slotOffset: number) => {
+            const slotIndex = unlockedSlotCount + slotOffset;
+            if (slotIndex === 0) return 0;
+            return BASE_UNLOCK_COST + UNLOCK_STEP * slotIndex;
         };
 
         return Array.from({ length: remainingLocked }).map((_, index) => ({
@@ -142,7 +165,7 @@ export function PlotCanvas() {
             locked: true,
             unlockCost: calcCost(index),
         }));
-    }, [remainingLocked, currentSlots]);
+    }, [remainingLocked, unlockedSlotCount]);
 
     const displayPlots = useMemo(() => [...plots, ...unlockedVirtualPlots], [plots, unlockedVirtualPlots]);
     const plotCount = displayPlots.length;
@@ -150,7 +173,7 @@ export function PlotCanvas() {
     const k3h4Balance = balance;
     const day = dashboard.overviewQuery.data?.shipments ?? null;
     const debt = (dashboard.analyticsQuery.data as any)?.debt ?? null;
-    const conversionRate = "1:10";
+    const conversionRate = "1:1337";
     const conversionFeePct = "2%";
     const loanRatePct = "5%";
 
@@ -222,33 +245,36 @@ export function PlotCanvas() {
         setStatusMessage(`Selected tool ${id}`);
     };
 
-    const onUnlockPlot = (id: string, cost?: number) => {
-        const price = cost ?? BASE_UNLOCK_COST;
-        const numericBalance = typeof balance === "number" ? balance : Number(balance);
-        const available = Number.isFinite(numericBalance) ? numericBalance : 0;
+    const onUnlockPlot = async (id: string, cost?: number) => {
+        const slotIndex = unlockedSlotCount;
+        const price = cost ?? (slotIndex === 0 ? 0 : BASE_UNLOCK_COST + UNLOCK_STEP * slotIndex);
+        const available = Number.isFinite(dashboard.balanceValue) ? dashboard.balanceValue : 0;
         if (available < price) {
             setStatusMessage(`Need ${price} to unlock ${id}.`);
             return;
         }
 
-        const nextIndex = plots.length + unlockedVirtualPlots.length + 1;
-        const newPlot: PlotMesh = {
-            id: `unlocked-${nextIndex}`,
-            name: `Plot ${nextIndex}`,
-            crop: "New",
-            stage: "Planned",
-            acres: "1",
-            health: "100",
-            latestCondition: null,
-            position: [0, 0, 0],
-            size: [3, 2],
-            healthTint: 0.85,
-        };
+        try {
+            setStatusMessage("");
+            const slot = await dashboard.unlockSlotMutation.mutateAsync({ costPaid: price });
+            upsertSlot(slot);
+            setUnlockedSlotCount(Math.max(slot.slotIndex + 1, unlockedSlotCount + 1));
+            try {
+                await dashboard.bankUpdateMutation.mutateAsync({ delta: -price, reason: `Unlock plot slot ${slot.slotIndex + 1}` });
+            } catch (debitError: any) {
+                setStatusMessage("Slot unlocked but debit failed; refresh balance.");
+                return;
+            }
 
-        setUnlockedVirtualPlots((prev) => [...prev, newPlot]);
-        setStatusMessage(`Unlocked ${id} for ${price}.`);
-        setActiveBuilding(null);
-        setHighlightedPlot(newPlot.id);
+            setActiveBuilding(null);
+            setHighlightedPlot(`slot-${slot.slotIndex + 1}`);
+            setStatusMessage(`Unlocked ${id} for ${price}.`);
+            void dashboard.slotsQuery.refetch();
+            void dashboard.overviewQuery.refetch();
+            void dashboard.plotsQuery.refetch();
+        } catch (error: any) {
+            setStatusMessage(error?.message || "Unable to unlock slot.");
+        }
     };
 
     const tasks = dashboard.tasksQuery.data?.tasks ?? [];

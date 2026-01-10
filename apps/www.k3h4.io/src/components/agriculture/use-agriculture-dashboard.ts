@@ -4,9 +4,11 @@ import {
     useAgricultureAnalyticsQuery,
     useAgricultureOverviewQuery,
     useAgriculturePlotsQuery,
+    useAgricultureSlotsQuery,
     useAgricultureTasksQuery,
     useCreateAgriculturePlot,
     useCreateAgricultureTask,
+    useUnlockAgricultureSlot,
 } from "../../hooks/use-agriculture-queries";
 import { useBankUpdateMutation } from "../../hooks/use-bank-queries";
 import { useK3h4Bank } from "../../hooks/use-k3h4-bank";
@@ -19,6 +21,7 @@ import { trackTelemetry } from "../../lib/telemetry";
 import { formatCommodityLabel, normalizeHealth } from "./utils";
 import { type PlotMesh } from "./plot-canvas";
 import { type ActionMode } from "../../stores/agriculture-dashboard-store";
+import { agricultureSlotsStore } from "../../stores/agriculture-slots-store";
 
 export type DashboardHookParams = {
     apiBase: string;
@@ -62,17 +65,33 @@ export function useAgricultureDashboard({
     const overviewQuery = useAgricultureOverviewQuery(apiBase);
     const analyticsQuery = useAgricultureAnalyticsQuery(apiBase);
     const plotsQuery = useAgriculturePlotsQuery(apiBase);
+    const slotsQuery = useAgricultureSlotsQuery(apiBase);
     const tasksQuery = useAgricultureTasksQuery(apiBase);
     const createPlotMutation = useCreateAgriculturePlot(apiBase);
     const createTaskMutation = useCreateAgricultureTask(apiBase);
+    const unlockSlotMutation = useUnlockAgricultureSlot(apiBase);
     const bankUpdateMutation = useBankUpdateMutation(apiBase);
     const bank = useK3h4Bank(apiBase);
+    const { setSlots, setUnlockedSlotCount } = agricultureSlotsStore.useShallow((state) => ({
+        setSlots: state.setSlots,
+        setUnlockedSlotCount: state.setUnlockedSlotCount,
+    }));
 
     const usdaEsrCommoditiesQuery = useUsdaEsrCommoditiesQuery(apiBase);
     const usdaEsrReleaseQuery = useUsdaEsrReleaseQuery(apiBase);
     const usdaPsdCommoditiesQuery = useUsdaPsdCommoditiesQuery(apiBase);
 
     const plots = plotsQuery.data?.plots ?? [];
+    useEffect(() => {
+        if (slotsQuery.data?.slots) {
+            setSlots(slotsQuery.data.slots);
+        }
+    }, [slotsQuery.data, setSlots]);
+
+    useEffect(() => {
+        const count = slotsQuery.data?.slots?.length ?? overviewQuery.data?.unlockedSlots ?? 0;
+        setUnlockedSlotCount(count);
+    }, [slotsQuery.data, overviewQuery.data?.unlockedSlots, setUnlockedSlotCount]);
     const filteredPlots = useMemo(() => {
         if (!searchTerm.trim()) return plots;
         const needle = searchTerm.toLowerCase();
@@ -191,6 +210,7 @@ export function useAgricultureDashboard({
         overviewQuery,
         analyticsQuery,
         plotsQuery,
+        slotsQuery,
         tasksQuery,
         usdaEsrCommoditiesQuery,
         usdaEsrReleaseQuery,
@@ -199,6 +219,7 @@ export function useAgricultureDashboard({
         bankUpdateMutation,
         createPlotMutation,
         createTaskMutation,
+        unlockSlotMutation,
         filteredPlots,
         activePlot,
         plotMeshes,
