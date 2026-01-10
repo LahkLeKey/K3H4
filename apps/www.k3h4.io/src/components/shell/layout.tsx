@@ -19,7 +19,13 @@ export type ShellMainProps = {
 
 export function ShellMain({ children, className, widthClassName }: ShellMainProps) {
     return (
-        <main className={cn("mx-auto flex w-full flex-col gap-8 px-4 pb-16 pt-8", widthClassName ?? "max-w-6xl", className)}>
+        <main
+            className={cn(
+                "mx-auto flex w-full flex-col gap-8 px-6 pb-16 pt-8",
+                widthClassName ?? "max-w-none",
+                className,
+            )}
+        >
             {children}
         </main>
     );

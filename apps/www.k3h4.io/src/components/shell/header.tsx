@@ -81,7 +81,7 @@ export function ShellHeader({
                 {swaggerUrl ? (
                     <Button asChild variant="outline" className="ml-1">
                         <a href={swaggerUrl} target="_blank" rel="noreferrer">
-                            Swagger
+                            API Docs
                         </a>
                     </Button>
                 ) : null}
