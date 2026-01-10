@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import type { ToolId } from "../../stores/agriculture-dashboard-store";
 import type {
     FinancialKpis,
@@ -14,83 +15,41 @@ type HowToPlayOverlayProps = {
     onClose?: () => void;
 };
 
-export function DefaultOverlay({
-    plotCount,
-    balance,
-    k3h4Balance,
-    day,
-    debt,
-    alerts,
-    onAddPlot,
-    onBuySeeds,
-    onSchedule,
-    onRefresh,
-}: {
+export function DefaultOverlay({ plotCount, balance, k3h4Balance, day, debt, alerts, onRefresh }: {
     plotCount?: number;
     balance?: number | string | null;
     k3h4Balance?: number | string | null;
     day?: number | string | null;
     debt?: number | string | null;
     alerts?: string[];
-    onAddPlot?: () => void;
-    onBuySeeds?: () => void;
-    onSchedule?: () => void;
     onRefresh?: () => void;
 }) {
     return (
-        <div className="pointer-events-none flex h-full w-full flex-col justify-between p-4 text-slate-800">
-            <div className="pointer-events-auto inline-flex items-center gap-3 rounded-full bg-white/85 px-4 py-2 text-xs font-semibold shadow">
-                <span className="rounded-full bg-slate-100 px-2 py-1 text-slate-700">Day: {day ?? "–"}</span>
-                <span className="rounded-full bg-emerald-100 px-2 py-1 text-emerald-700">Plots: {plotCount ?? "–"}</span>
-                <span className="rounded-full bg-sky-100 px-2 py-1 text-sky-700">USD: {balance ?? "–"}</span>
-                <span className="rounded-full bg-indigo-100 px-2 py-1 text-indigo-700">K3H4: {k3h4Balance ?? "–"}</span>
-                <span className="rounded-full bg-rose-50 px-2 py-1 text-rose-700">Debt: {debt ?? "–"}</span>
-                <button
-                    type="button"
-                    onClick={onRefresh}
-                    disabled={!onRefresh}
-                    className="rounded-full bg-slate-800 px-3 py-1 text-white shadow disabled:cursor-not-allowed disabled:bg-slate-400"
-                >
-                    Refresh
-                </button>
+        <div className="pointer-events-auto flex max-w-md flex-col gap-3 rounded-2xl border border-slate-200/80 bg-white/90 p-3 text-sm font-semibold text-slate-800 shadow-xl backdrop-blur">
+            <div className="flex flex-wrap items-center gap-2 text-[11px]">
+                <span className="rounded-full bg-slate-100 px-2 py-1 text-slate-700">Day {day ?? "–"}</span>
+                <span className="rounded-full bg-emerald-100 px-2 py-1 text-emerald-700">Plots {plotCount ?? "–"}</span>
+                <span className="rounded-full bg-sky-100 px-2 py-1 text-sky-700">USD {balance ?? "–"}</span>
+                <span className="rounded-full bg-indigo-100 px-2 py-1 text-indigo-700">K3H4 {k3h4Balance ?? "–"}</span>
+                <span className="rounded-full bg-rose-50 px-2 py-1 text-rose-700">Debt {debt ?? "–"}</span>
+                {onRefresh ? (
+                    <button
+                        type="button"
+                        onClick={onRefresh}
+                        className="ml-auto rounded-full bg-slate-900 px-3 py-1 text-white shadow"
+                    >
+                        Sync
+                    </button>
+                ) : null}
             </div>
 
-            <div className="pointer-events-auto ml-auto flex flex-col gap-2 rounded-lg bg-white/90 p-3 text-sm shadow-lg">
-                <div className="font-semibold text-slate-700">Quick actions</div>
-                <div className="flex flex-wrap gap-2">
-                    <button
-                        type="button"
-                        onClick={onAddPlot}
-                        disabled={!onAddPlot}
-                        className="rounded-md bg-emerald-600 px-3 py-2 text-white shadow disabled:cursor-not-allowed disabled:bg-slate-300"
-                    >
-                        Add plot
-                    </button>
-                    <button
-                        type="button"
-                        onClick={onBuySeeds}
-                        disabled={!onBuySeeds}
-                        className="rounded-md bg-amber-500 px-3 py-2 text-white shadow disabled:cursor-not-allowed disabled:bg-slate-300"
-                    >
-                        Buy seeds
-                    </button>
-                    <button
-                        type="button"
-                        onClick={onSchedule}
-                        disabled={!onSchedule}
-                        className="rounded-md bg-sky-600 px-3 py-2 text-white shadow disabled:cursor-not-allowed disabled:bg-slate-300"
-                    >
-                        Schedule tasks
-                    </button>
-                </div>
-            </div>
-
-            {alerts && alerts.length > 0 && (
-                <div className="pointer-events-auto mt-3 flex max-w-sm flex-col gap-2">
-                    {alerts.slice(0, 3).map((alert) => (
+            {alerts && alerts.length > 0 ? (
+                <div className="flex flex-col gap-2">
+                    <div className="text-[11px] uppercase tracking-[0.18em] text-amber-700">Alerts</div>
+                    {alerts.slice(0, 4).map((alert) => (
                         <div
                             key={alert}
-                            className="flex items-center gap-2 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-[11px] font-semibold text-amber-800 shadow"
+                            className="flex items-center gap-2 rounded-lg border border-amber-100 bg-amber-50 px-3 py-2 text-[11px] font-semibold text-amber-800 shadow"
                         >
                             <span className="h-2 w-2 rounded-full bg-amber-500" aria-hidden />
                             <span className="truncate" title={alert}>
@@ -99,7 +58,7 @@ export function DefaultOverlay({
                         </div>
                     ))}
                 </div>
-            )}
+            ) : null}
         </div>
     );
 }
@@ -111,60 +70,89 @@ type ToolbeltOverlayProps = {
     workerKpi?: WorkerKpi;
     inventory?: InventorySummary;
     animalAlerts?: number;
+    onAddPlot?: () => void;
+    onBuySeeds?: () => void;
+    onSchedule?: () => void;
+    onRefresh?: () => void;
 };
 
-export function ToolbeltOverlay({ tools, activeTool, onSelect, workerKpi, inventory, animalAlerts }: ToolbeltOverlayProps) {
+export function ToolbeltOverlay({ tools, activeTool, onSelect, workerKpi, inventory, animalAlerts, onAddPlot, onBuySeeds, onSchedule, onRefresh }: ToolbeltOverlayProps) {
     return (
-        <div className="flex flex-col gap-3 rounded-xl border border-slate-200 bg-white/90 p-3 text-sm font-semibold text-slate-800 shadow-xl">
-            <div className="flex items-center justify-between text-[12px] font-semibold text-slate-600">
-                <span>Tools</span>
-                <span className="rounded-full bg-slate-100 px-2 py-1 text-[11px] text-slate-700">Workers busy {workerKpi?.busyPercent ?? "–"}%</span>
-            </div>
-            <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-                {(tools || []).map((tool) => {
-                    const disabled = !!tool.disabledReason || !onSelect;
-                    const isActive = activeTool === tool.id;
-                    return (
-                        <button
-                            key={tool.id}
-                            type="button"
-                            onClick={() => !disabled && onSelect?.(tool.id)}
-                            disabled={disabled}
-                            className={`flex flex-col items-start gap-1 rounded-md border px-3 py-2 text-left text-[12px] shadow ${isActive ? "border-emerald-500 bg-emerald-50 text-emerald-700" : "border-slate-200 bg-white text-slate-700"}
-                disabled:cursor-not-allowed disabled:border-slate-200 disabled:bg-slate-50 disabled:text-slate-400`}
-                            title={tool.disabledReason}
-                        >
-                            <div className="flex w-full items-center justify-between">
-                                <span>{tool.label}</span>
-                                {tool.hotkey ? <span className="rounded bg-slate-100 px-1 text-[10px] text-slate-600">{tool.hotkey}</span> : null}
-                            </div>
-                            {tool.disabledReason ? <div className="text-[10px] text-slate-500">{tool.disabledReason}</div> : null}
-                        </button>
-                    );
-                })}
-            </div>
+        <div className="flex w-full justify-center">
+            <div className="flex w-full max-w-6xl flex-col gap-3 rounded-2xl border border-slate-900/50 bg-slate-900/85 px-4 py-3 text-slate-50 shadow-2xl backdrop-blur">
+                <div className="flex flex-wrap items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.22em]">
+                    <span className="rounded-full bg-emerald-500/25 px-3 py-1 text-emerald-50">City Manager</span>
+                    <span className="rounded-full bg-slate-800 px-2 py-1 text-slate-200">Busy {workerKpi?.busyPercent ?? "–"}%</span>
+                    <span className="rounded-full bg-slate-800 px-2 py-1 text-slate-200">Roster {workerKpi?.workersTotal ?? "–"}</span>
+                    <span className="rounded-full bg-rose-500/20 px-2 py-1 text-rose-100">Alerts {animalAlerts ?? 0}</span>
+                </div>
 
-            <div className="grid grid-cols-2 gap-2 text-[11px] font-semibold text-slate-700">
-                <div className="rounded-md bg-slate-50 p-2">
-                    <div className="text-[10px] text-slate-500">Seeds</div>
-                    <div>{inventory?.seeds ?? "–"}</div>
+                <div className="grid grid-cols-[repeat(auto-fit,minmax(140px,1fr))] gap-2">
+                    {(tools || []).map((tool) => {
+                        const disabled = !!tool.disabledReason || !onSelect;
+                        const isActive = activeTool === tool.id;
+                        return (
+                            <button
+                                key={tool.id}
+                                type="button"
+                                onClick={() => !disabled && onSelect?.(tool.id)}
+                                disabled={disabled}
+                                className={`flex items-center justify-between gap-2 rounded-lg border px-3 py-2 text-left text-[12px] font-semibold transition ${isActive ? "border-emerald-400/70 bg-emerald-500/20 shadow-lg shadow-emerald-500/20" : "border-white/10 bg-white/5"} disabled:cursor-not-allowed disabled:border-white/10 disabled:bg-white/5 disabled:text-slate-400`}
+                                title={tool.disabledReason}
+                            >
+                                <span className="flex flex-col">
+                                    <span>{tool.label}</span>
+                                    {tool.disabledReason ? <span className="text-[10px] font-normal text-slate-300">{tool.disabledReason}</span> : null}
+                                </span>
+                                {tool.hotkey ? (
+                                    <span className="rounded bg-slate-800 px-2 py-1 text-[10px] font-semibold text-slate-100">{tool.hotkey}</span>
+                                ) : null}
+                            </button>
+                        );
+                    })}
                 </div>
-                <div className="rounded-md bg-slate-50 p-2">
-                    <div className="text-[10px] text-slate-500">Fertilizer</div>
-                    <div>{inventory?.fertilizer ?? "–"}</div>
+
+                <div className="flex flex-wrap items-center gap-2 text-[11px] font-semibold">
+                    <button
+                        type="button"
+                        onClick={onAddPlot}
+                        disabled={!onAddPlot}
+                        className="rounded-md border border-emerald-400/60 bg-emerald-500/20 px-3 py-2 text-emerald-50 shadow-sm shadow-emerald-500/30 disabled:cursor-not-allowed disabled:border-white/10 disabled:bg-white/5 disabled:text-slate-400"
+                    >
+                        Add plot
+                    </button>
+                    <button
+                        type="button"
+                        onClick={onBuySeeds}
+                        disabled={!onBuySeeds}
+                        className="rounded-md border border-amber-400/60 bg-amber-500/20 px-3 py-2 text-amber-50 shadow-sm shadow-amber-500/30 disabled:cursor-not-allowed disabled:border-white/10 disabled:bg-white/5 disabled:text-slate-400"
+                    >
+                        Buy seeds
+                    </button>
+                    <button
+                        type="button"
+                        onClick={onSchedule}
+                        disabled={!onSchedule}
+                        className="rounded-md border border-sky-400/60 bg-sky-500/20 px-3 py-2 text-sky-50 shadow-sm shadow-sky-500/30 disabled:cursor-not-allowed disabled:border-white/10 disabled:bg-white/5 disabled:text-slate-400"
+                    >
+                        Schedule workers
+                    </button>
+                    <button
+                        type="button"
+                        onClick={onRefresh}
+                        disabled={!onRefresh}
+                        className="rounded-md border border-slate-400/60 bg-slate-800/60 px-3 py-2 text-slate-50 shadow-sm shadow-slate-900/40 disabled:cursor-not-allowed disabled:border-white/10 disabled:bg-white/5 disabled:text-slate-400"
+                    >
+                        Resync
+                    </button>
+
+                    <span className="ml-auto flex items-center gap-2">
+                        <span className="rounded-md border border-white/10 bg-white/5 px-2 py-1">Seeds {inventory?.seeds ?? "–"}</span>
+                        <span className="rounded-md border border-white/10 bg-white/5 px-2 py-1">Fertilizer {inventory?.fertilizer ?? "–"}</span>
+                        <span className="rounded-md border border-white/10 bg-white/5 px-2 py-1">Feed {inventory?.feed ?? "–"}</span>
+                        <span className="rounded-md border border-white/10 bg-white/5 px-2 py-1">Harvest {inventory?.harvest ?? "–"}</span>
+                    </span>
                 </div>
-                <div className="rounded-md bg-slate-50 p-2">
-                    <div className="text-[10px] text-slate-500">Feed</div>
-                    <div>{inventory?.feed ?? "–"}</div>
-                </div>
-                <div className="rounded-md bg-slate-50 p-2">
-                    <div className="text-[10px] text-slate-500">Harvest</div>
-                    <div>{inventory?.harvest ?? "–"}</div>
-                </div>
-            </div>
-            <div className="flex items-center justify-between text-[11px] font-semibold text-rose-700">
-                <span>Animal alerts</span>
-                <span className="rounded-full bg-rose-50 px-2 py-1">{animalAlerts ?? 0}</span>
             </div>
         </div>
     );
@@ -383,7 +371,7 @@ export function SystemStatusChips({ kpis }: SystemStatusChipsProps) {
 }
 
 export type OverlayLayerProps = {
-    overlayContent: JSX.Element;
+    overlayContent: ReactNode;
     financialKpis: FinancialKpis;
     tools: ToolConfig[];
     activeTool: ToolId | undefined;
@@ -391,6 +379,10 @@ export type OverlayLayerProps = {
     workerKpi: WorkerKpi;
     inventory: InventorySummary;
     animalAlerts: number;
+    onAddPlot?: () => void;
+    onBuySeeds?: () => void;
+    onSchedule?: () => void;
+    onRefresh?: () => void;
     selectedPlot: PlotMesh | null;
     vitals?: PlotVitals;
     logisticsPlan?: LogisticsPlan;
@@ -416,6 +408,10 @@ export function OverlayLayer({
     workerKpi,
     inventory,
     animalAlerts,
+    onAddPlot,
+    onBuySeeds,
+    onSchedule,
+    onRefresh,
     selectedPlot,
     vitals,
     logisticsPlan,
@@ -432,42 +428,45 @@ export function OverlayLayer({
     onCloseHowToPlay,
 }: OverlayLayerProps) {
     return (
-        <div className="pointer-events-none absolute inset-0">
-            <div className="relative flex h-full w-full">
-                <div className="pointer-events-none absolute inset-0">{overlayContent}</div>
-                <div className="pointer-events-none absolute inset-0 flex items-start justify-end p-4">
+        <div className="pointer-events-none absolute inset-0 flex flex-col">
+            <div className="flex items-start justify-between gap-3 p-4">
+                <div className="pointer-events-auto">{overlayContent}</div>
+                <div className="pointer-events-auto flex flex-col items-end gap-3">
                     <SystemStatusChips kpis={financialKpis} />
-                </div>
-                <div className="pointer-events-none absolute inset-0 flex items-end justify-between p-4">
-                    <div className="pointer-events-auto">
-                        <ToolbeltOverlay
-                            tools={tools}
-                            activeTool={activeTool}
-                            onSelect={onSelectTool}
-                            workerKpi={workerKpi}
-                            inventory={inventory}
-                            animalAlerts={animalAlerts}
-                        />
-                    </div>
-                    <div className="pointer-events-auto">
-                        <InspectorPanel
-                            plot={selectedPlot}
-                            vitals={vitals}
-                            logisticsPlan={logisticsPlan}
-                            conversionRate={conversionRate}
-                            conversionFeePct={conversionFeePct}
-                            loanRatePct={loanRatePct}
-                            onPlant={onPlantPlot}
-                            onWater={onWaterPlot}
-                            onFertilize={onFertilizePlot}
-                            onTreat={onTreatPlot}
-                            onHarvest={onHarvestPlot}
-                            onAssignWorker={onAssignWorker}
-                        />
-                    </div>
-                </div>
-                <div className="pointer-events-none absolute inset-0 p-4">
                     <HowToPlayOverlay show={showHowToPlay} onClose={onCloseHowToPlay} />
+                </div>
+            </div>
+
+            <div className="flex flex-1 items-end justify-between gap-3 p-4">
+                <div className="pointer-events-auto flex flex-1 justify-center">
+                    <ToolbeltOverlay
+                        tools={tools}
+                        activeTool={activeTool}
+                        onSelect={onSelectTool}
+                        workerKpi={workerKpi}
+                        inventory={inventory}
+                        animalAlerts={animalAlerts}
+                        onAddPlot={onAddPlot}
+                        onBuySeeds={onBuySeeds}
+                        onSchedule={onSchedule}
+                        onRefresh={onRefresh}
+                    />
+                </div>
+                <div className="pointer-events-auto shrink-0">
+                    <InspectorPanel
+                        plot={selectedPlot}
+                        vitals={vitals}
+                        logisticsPlan={logisticsPlan}
+                        conversionRate={conversionRate}
+                        conversionFeePct={conversionFeePct}
+                        loanRatePct={loanRatePct}
+                        onPlant={onPlantPlot}
+                        onWater={onWaterPlot}
+                        onFertilize={onFertilizePlot}
+                        onTreat={onTreatPlot}
+                        onHarvest={onHarvestPlot}
+                        onAssignWorker={onAssignWorker}
+                    />
                 </div>
             </div>
         </div>

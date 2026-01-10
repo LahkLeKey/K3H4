@@ -8,16 +8,7 @@ import { LandmarksLayer } from "./landmarks-layer";
 import { OverlayLayer, DefaultOverlay } from "./overlay-layer";
 import { PlotsLayer } from "./plots-layer";
 import { generatePlotLayout } from "./plot-layout";
-import type {
-    FinancialKpis,
-    Landmark,
-    LogisticsPlan,
-    PlotMesh,
-    PlotVitals,
-    ToolConfig,
-    WorkerKpi,
-    InventorySummary,
-} from "./plot-types";
+import type { FinancialKpis, Landmark, LogisticsPlan, PlotVitals, ToolConfig, WorkerKpi, InventorySummary } from "./plot-types";
 import { useAgricultureDashboard } from "./use-agriculture-dashboard";
 
 export function PlotCanvas() {
@@ -110,7 +101,7 @@ export function PlotCanvas() {
     const plotCount = plots.length;
     const balance = dashboard.bank.balance ?? "–";
     const k3h4Balance = balance;
-    const day = dashboard.overviewQuery.data?.day ?? dashboard.overviewQuery.data?.daysElapsed ?? null;
+    const day = dashboard.overviewQuery.data?.shipments ?? null;
     const debt = (dashboard.analyticsQuery.data as any)?.debt ?? null;
     const conversionRate = "1:10";
     const conversionFeePct = "2%";
@@ -218,9 +209,6 @@ export function PlotCanvas() {
             day={day}
             debt={debt}
             alerts={alerts}
-            onAddPlot={onAddPlot}
-            onBuySeeds={onBuySeeds}
-            onSchedule={onSchedule}
             onRefresh={onRefresh}
         />
     );
@@ -334,6 +322,10 @@ export function PlotCanvas() {
                 workerKpi={workerKpi}
                 inventory={inventory}
                 animalAlerts={animalAlerts}
+                onAddPlot={onAddPlot}
+                onBuySeeds={onBuySeeds}
+                onSchedule={onSchedule}
+                onRefresh={onRefresh}
                 selectedPlot={selectedPlot}
                 vitals={vitals}
                 logisticsPlan={logisticsPlan}

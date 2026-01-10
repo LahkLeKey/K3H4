@@ -10,7 +10,7 @@ export function AgricultureDashboard() {
   useLayoutEffect(() => {
     const recompute = () => {
       const top = containerRef.current?.getBoundingClientRect().top ?? 0;
-      const padding = 16; // leave breathing room to avoid scrollbars
+      const padding = 16;
       setViewportHeight(Math.max(360, window.innerHeight - top - padding));
     };
     recompute();
