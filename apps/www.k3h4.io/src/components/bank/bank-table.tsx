@@ -17,6 +17,8 @@ import {
     TableRow,
 } from "../ui/table";
 import { useLocalStore } from "../../lib/store";
+import { useWoodMaterial } from "./use-wood-material";
+import { useCoinMaterials } from "./use-coin-material";
 
 type CoinStack = {
     id: string;
@@ -30,82 +32,6 @@ type CoinStack = {
     balanceAfter: number;
     createdAt?: string;
 };
-
-function mixColor(hex: string, amount: number) {
-    const clamped = Math.min(1, Math.max(0, amount));
-    const num = Number.parseInt(hex.replace("#", ""), 16);
-    const r = (num >> 16) & 0xff;
-    const g = (num >> 8) & 0xff;
-    const b = num & 0xff;
-    const mix = (channel: number) => Math.round(channel + (255 - channel) * clamped);
-    return `#${[mix(r), mix(g), mix(b)].map((v) => v.toString(16).padStart(2, "0")).join("")}`;
-}
-
-const woodShader = {
-    uniforms: {
-        uTime: { value: 0.0 },
-        uScale: { value: 4.0 },
-        uRingScale: { value: 20.0 },
-        uLightColor: { value: new THREE.Color(0xdeb887) },
-        uDarkColor: { value: new THREE.Color(0x8b5a2b) },
-    },
-    vertexShader: `
-        varying vec3 vPos;
-        void main() {
-            vPos = position;
-            gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-        }
-    `,
-    fragmentShader: `
-        varying vec3 vPos;
-        uniform float uTime;
-        uniform float uScale;
-        uniform float uRingScale;
-        uniform vec3 uLightColor;
-        uniform vec3 uDarkColor;
-
-        float hash(vec3 p) {
-            p = fract(p * 0.3183099 + vec3(0.1, 0.2, 0.3));
-            p *= 17.0;
-            return fract(p.x * p.y * p.z * (p.x + p.y + p.z));
-        }
-
-        float noise(vec3 p) {
-            vec3 i = floor(p);
-            vec3 f = fract(p);
-            f = f*f*(3.0 - 2.0*f);
-            return mix(mix(mix(hash(i + vec3(0,0,0)), hash(i + vec3(1,0,0)), f.x),
-                           mix(hash(i + vec3(0,1,0)), hash(i + vec3(1,1,0)), f.x), f.y),
-                       mix(mix(hash(i + vec3(0,0,1)), hash(i + vec3(1,0,1)), f.x),
-                           mix(hash(i + vec3(0,1,1)), hash(i + vec3(1,1,1)), f.x), f.y), f.z);
-        }
-
-        void main() {
-            vec3 p = vPos * uScale;
-            float n = noise(p + uTime * 0.15);
-            float rings = sin(uRingScale * length(vPos.xz) + n * 3.0);
-            float grain = smoothstep(-0.2, 0.2, rings);
-            vec3 color = mix(uDarkColor, uLightColor, grain);
-            gl_FragColor = vec4(color, 1.0);
-        }
-    `,
-} as const;
-
-function createWoodMaterial(options?: { light?: string | number; dark?: string | number; scale?: number; ringScale?: number }) {
-    const uniforms = {
-        uTime: { value: 0 },
-        uScale: { value: options?.scale ?? 3.8 },
-        uRingScale: { value: options?.ringScale ?? 18 },
-        uLightColor: { value: new THREE.Color(options?.light ?? 0xe3c9a5) },
-        uDarkColor: { value: new THREE.Color(options?.dark ?? 0xb0763b) },
-    } satisfies typeof woodShader.uniforms;
-
-    return new THREE.ShaderMaterial({
-        uniforms,
-        vertexShader: woodShader.vertexShader,
-        fragmentShader: woodShader.fragmentShader,
-    });
-}
 
 function applyPanelShader(material: THREE.MeshStandardMaterial, density = 18) {
     material.onBeforeCompile = (shader) => {
@@ -568,27 +494,22 @@ type CoinStacksLayerProps = {
 
 type DroppingCoinProps = {
     index: number;
-    direction: "credit" | "debit" | "";
     perfLimited: boolean;
-    shadeIndex: number;
-    coinCount: number;
     burstKey: number;
     active: boolean;
     baseY: number;
+    geometry: THREE.CylinderGeometry;
+    materials: THREE.Material[];
 };
 
-function DroppingCoin({ index, direction, perfLimited, shadeIndex, coinCount, burstKey, active, baseY }: DroppingCoinProps) {
+function DroppingCoin({ index, perfLimited, burstKey, active, baseY, geometry, materials }: DroppingCoinProps) {
     const meshRef = useRef<THREE.Mesh>(null);
     const delay = useMemo(() => Math.random() * 0.6, []);
+    const rotationOffset = useMemo(() => Math.random() * Math.PI * 2, []);
     const startY = baseY + 2 + index * 0.05;
     const targetY = baseY + index * COIN_HEIGHT + COIN_HEIGHT / 2 + 0.05;
     const dropDuration = 1.2;
     const burstState = useRef({ key: -1, t0: 0 });
-
-    const baseColor = direction === "credit" ? "#16a34a" : "#f97316";
-    const shadeAmount = coinCount > 1 ? shadeIndex / (coinCount * 1.35) : 0.05;
-    const faceColor = mixColor(baseColor, shadeAmount);
-    const rimColor = mixColor(baseColor, Math.min(1, shadeAmount + 0.2));
 
     useFrame((state) => {
         const elapsed = Math.max(0, state.clock.getElapsedTime() - delay);
@@ -602,59 +523,29 @@ function DroppingCoin({ index, direction, perfLimited, shadeIndex, coinCount, bu
 
         const burstElapsed = state.clock.getElapsedTime() - burstState.current.t0;
         const burstPhase = Math.max(0, Math.min(1, burstElapsed / 0.9));
-        const burstLift = active ? Math.sin(burstPhase * Math.PI) * (0.5 + 0.1 * shadeIndex) * (1 - burstPhase) : 0;
+        const burstLift = active ? Math.sin(burstPhase * Math.PI) * (0.5 + 0.06 * index) * (1 - burstPhase) : 0;
 
         const y = startY * (1 - ease) + targetY * ease + wobble + burstLift;
         if (meshRef.current) {
             meshRef.current.position.y = y;
-            meshRef.current.rotation.y = ease * Math.PI * 0.35 + burstLift * 0.6;
+
+            const idleSpin = state.clock.getElapsedTime() * 0.12;
+            const burstSpin = active ? burstPhase * Math.PI * 0.9 : 0;
+            meshRef.current.rotation.y = rotationOffset + idleSpin + ease * Math.PI * 0.35 + burstLift * 0.6 + burstSpin;
         }
     });
 
     return (
-        <mesh ref={meshRef} position={[0, startY, 0]} castShadow={!perfLimited} receiveShadow>
-            <cylinderGeometry args={[0.35, 0.35, COIN_HEIGHT, 64, 1, false]} />
-            <meshPhysicalMaterial
-                attachArray="material"
-                color={faceColor}
-                metalness={0.92}
-                roughness={0.18}
-                clearcoat={0.5}
-                clearcoatRoughness={0.12}
-                sheen={0.35}
-                sheenRoughness={0.6}
-                sheenColor={direction === "credit" ? "#bbf7d0" : "#fed7aa"}
-                emissive={direction === "credit" ? "#166534" : "#7c2d12"}
-                emissiveIntensity={0.18}
-            />
-            <meshPhysicalMaterial
-                attachArray="material"
-                color={rimColor}
-                metalness={0.96}
-                roughness={0.12}
-                clearcoat={0.6}
-                clearcoatRoughness={0.08}
-                sheen={0.28}
-                sheenRoughness={0.4}
-                sheenColor={rimColor}
-                emissive={rimColor}
-                emissiveIntensity={0.16}
-            />
-            <meshPhysicalMaterial
-                attachArray="material"
-                color={mixColor(baseColor, 0.08)}
-                metalness={0.9}
-                roughness={0.22}
-                clearcoat={0.4}
-                clearcoatRoughness={0.18}
-                emissive={direction === "credit" ? "#14532d" : "#7c2d12"}
-                emissiveIntensity={0.14}
-            />
-        </mesh>
+        <mesh ref={meshRef} position={[0, startY, 0]} castShadow={!perfLimited} receiveShadow geometry={geometry} material={materials} />
     );
 }
 
 function CoinStacksLayer({ stacks, highlightedId, onHover, onClickStack, perfLimited, burstStackId, burstToken }: CoinStacksLayerProps) {
+    const coinMaterials = useCoinMaterials();
+    const coinGeometry = useMemo(() => new THREE.CylinderGeometry(0.35, 0.35, COIN_HEIGHT, 48, 1, false), []);
+
+    useEffect(() => () => coinGeometry.dispose(), [coinGeometry]);
+
     return (
         <group>
             {stacks.map((stack) => {
@@ -694,13 +585,12 @@ function CoinStacksLayer({ stacks, highlightedId, onHover, onClickStack, perfLim
                             <DroppingCoin
                                 key={`${stack.id}-coin-${coinIndex}`}
                                 index={coinIndex}
-                                direction={stack.direction}
                                 perfLimited={perfLimited}
-                                shadeIndex={coinIndex}
-                                coinCount={stack.coins}
                                 burstKey={stack.id === burstStackId ? burstToken : 0}
                                 active={stack.id === burstStackId}
                                 baseY={stack.baseY}
+                                geometry={coinGeometry}
+                                materials={coinMaterials.materials}
                             />
                         ))}
                         {highlightedId === stack.id ? (
@@ -743,14 +633,8 @@ function VaultShell() {
 }
 
 function TablesLayer() {
-    const topMaterial = useMemo(() => createWoodMaterial({ light: 0xe8cfa9, dark: 0xb57a42, scale: 3.4, ringScale: 16 }), []);
-    const legMaterial = useMemo(() => createWoodMaterial({ light: 0xd6b183, dark: 0x9c6a34, scale: 5.2, ringScale: 22 }), []);
-
-    useFrame((state) => {
-        const time = state.clock.getElapsedTime();
-        if (topMaterial?.uniforms?.uTime) topMaterial.uniforms.uTime.value = time;
-        if (legMaterial?.uniforms?.uTime) legMaterial.uniforms.uTime.value = time;
-    });
+    const topMaterial = useWoodMaterial({ preset: "tableTop" });
+    const legMaterial = useWoodMaterial({ preset: "tableLeg" });
 
     return (
         <group>
