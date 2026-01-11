@@ -45,6 +45,23 @@ const server = Fastify({
   logger: true,
 });
 
+const swaggerTagMap: Record<string, { name: string; description: string }> = {
+  health: { name: "Health", description: "Health and diagnostics" },
+  auth: { name: "Auth", description: "Authentication and session" },
+  profile: { name: "Profile", description: "User profiles" },
+  bank: { name: "Bank", description: "Banking and balances" },
+  persona: { name: "Persona", description: "Persona management" },
+  assignment: { name: "Assignment", description: "Assignments and tasks" },
+  freight: { name: "Freight", description: "Freight and routing" },
+  warehouse: { name: "Warehouse", description: "Inventory and storage" },
+  pos: { name: "POS", description: "Point of sale" },
+  agriculture: { name: "Agriculture", description: "Agriculture simulator" },
+  culinary: { name: "Culinary", description: "Culinary simulator" },
+  arcade: { name: "Arcade", description: "Arcade simulator" },
+  usda: { name: "USDA", description: "USDA data" },
+  telemetry: { name: "Telemetry", description: "Telemetry intake" },
+};
+
 const getSessionId = (request: FastifyRequest) => {
   const headerSession = request.headers["x-session-id"];
   if (typeof headerSession === "string" && headerSession.trim().length > 0) return headerSession.trim();
@@ -117,6 +134,17 @@ server.addHook("onError", async (request, reply, error) => {
   );
 });
 
+server.addHook("onRoute", (routeOptions) => {
+  const existing = routeOptions.schema?.tags;
+  if (existing && Array.isArray(existing) && existing.length > 0) return;
+
+  const firstSegment = routeOptions.url?.split("/").filter(Boolean)[0];
+  const mapped = firstSegment && swaggerTagMap[firstSegment];
+  const fallback = firstSegment ?? "general";
+  const tagName = mapped?.name ?? fallback;
+  routeOptions.schema = { ...(routeOptions.schema ?? {}), tags: [tagName] };
+});
+
 const databaseUrl = process.env.DATABASE_URL;
 if (!databaseUrl) {
   throw new Error("DATABASE_URL is required for Prisma");
@@ -147,12 +175,7 @@ const openApiOptions = {
       },
     },
     security: [{ bearerAuth: [] }],
-    tags: [
-      {
-        name: "health",
-        description: "Health and diagnostics",
-      },
-    ],
+    tags: Object.values(swaggerTagMap),
   },
 };
 
