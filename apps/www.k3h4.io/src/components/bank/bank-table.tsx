@@ -1,7 +1,6 @@
-import { Suspense, useEffect, useMemo, useState, useRef } from "react";
-import { Canvas, useFrame } from "@react-three/fiber";
-import * as THREE from "three";
-import { ContactShadows, Grid, Html, MapControls, PerformanceMonitor, Sparkles } from "@react-three/drei";
+import { Suspense, useEffect, useMemo, useState } from "react";
+import { Canvas } from "@react-three/fiber";
+import { Grid, Html, MapControls, PerformanceMonitor, Sparkles } from "@react-three/drei";
 
 import { useK3h4Bank } from "../../hooks/use-k3h4-bank";
 import { Badge } from "../ui/badge";
@@ -16,38 +15,13 @@ import {
     TableHeader,
     TableRow,
 } from "../ui/table";
-import { useLocalStore } from "../../lib/store";
-import { useWoodMaterial } from "./use-wood-material";
-import { useCoinMaterials } from "./use-coin-material";
-
-type CoinStack = {
-    id: string;
-    coins: number;
-    height: number;
-    position: [number, number, number];
-    baseY: number;
-    direction: "credit" | "debit" | "";
-    note?: string | null;
-    amount: number;
-    balanceAfter: number;
-    createdAt?: string;
-};
-
-function applyPanelShader(material: THREE.MeshStandardMaterial, density = 18) {
-    material.onBeforeCompile = (shader) => {
-        shader.fragmentShader = shader.fragmentShader.replace(
-            "#include <fog_fragment>",
-            `float panelGridX = sin(vUv.x * ${density.toFixed(1)} * 3.14159);
-             float panelGridY = sin(vUv.y * ${density.toFixed(1)} * 3.14159);
-             float panelLines = smoothstep(-0.02, 0.02, panelGridX * panelGridY);
-             vec3 panelTint = vec3(0.06) * panelLines;
-             gl_FragColor.rgb = max(vec3(0.0), gl_FragColor.rgb - panelTint);
-             #include <fog_fragment>`
-        );
-    };
-    material.needsUpdate = true;
-    return material;
-}
+import { useBankStore } from "./bank-store";
+import { CoinStacksLayer } from "./coin-stacks-layer";
+import { LedgerStand } from "./ledger-stand";
+import { TablesLayer } from "./tables-layer";
+import { VaultShell } from "./vault-shell";
+import { COIN_HEIGHT, VAULT_TABLES } from "./bank-constants";
+import type { CoinStack } from "./bank-types";
 
 export type BankTableProps = {
     apiBase: string;
@@ -55,21 +29,47 @@ export type BankTableProps = {
 };
 
 export function BankTable({ apiBase, userEmail }: BankTableProps) {
-    const uiStore = useLocalStore(() => ({
-        page: 0,
-        pageSize: 10,
-        fromDate: "",
-        toDate: "",
-        direction: "" as "" | "credit" | "debit",
+    const {
+        page,
+        pageSize,
+        fromDate,
+        toDate,
+        direction,
+        ledgerPage,
+        setPage,
+        setPageValue,
+        setPageSize,
+        setFromDate,
+        setToDate,
+        setDirection,
+        setLedgerPage,
+        setCoinStacks,
+        setLedgerData,
+        perfLimited,
+        setPerfLimited,
+        hoveredId,
+        setHovered,
+    } = useBankStore((state) => ({
+        page: state.page,
+        pageSize: state.pageSize,
+        fromDate: state.fromDate,
+        toDate: state.toDate,
+        direction: state.direction,
+        ledgerPage: state.ledgerPage,
+        setPage: state.setPage,
+        setPageValue: state.setPageValue,
+        setPageSize: state.setPageSize,
+        setFromDate: state.setFromDate,
+        setToDate: state.setToDate,
+        setDirection: state.setDirection,
+        setLedgerPage: state.setLedgerPage,
+        setCoinStacks: state.setCoinStacks,
+        setLedgerData: state.setLedgerData,
+        perfLimited: state.perfLimited,
+        setPerfLimited: state.setPerfLimited,
+        hoveredId: state.hoveredId,
+        setHovered: state.setHovered,
     }));
-
-    const { page, pageSize, fromDate, toDate, direction } = uiStore.useShallow((state) => state);
-    const setPage = (updater: (prev: number) => number) => uiStore.setState((prev) => ({ page: updater(prev.page) }));
-    const setPageValue = (value: number) => uiStore.setState({ page: value });
-    const setPageSize = (value: number) => uiStore.setState({ pageSize: value });
-    const setFromDate = (value: string) => uiStore.setState({ fromDate: value });
-    const setToDate = (value: string) => uiStore.setState({ toDate: value });
-    const setDirection = (value: "" | "credit" | "debit") => uiStore.setState({ direction: value });
 
     const {
         balance,
@@ -130,7 +130,7 @@ export function BankTable({ apiBase, userEmail }: BankTableProps) {
 
     const coinStacks = useMemo<CoinStack[]>(() => {
         const maxValue = maxAbsAmount || 1;
-        const coinHeight = 0.08;
+        const coinHeight = COIN_HEIGHT;
 
         return transactions.slice(0, 24).map((txn, index) => {
             const amount = Math.abs(Number.parseFloat(String(txn.amount ?? 0))) || 0.01;
@@ -162,12 +162,8 @@ export function BankTable({ apiBase, userEmail }: BankTableProps) {
         });
     }, [transactions, maxAbsAmount]);
 
-    const [hoveredId, setHoveredId] = useState<string | null>(null);
     const hoveredStack = useMemo(() => coinStacks.find((stack) => stack.id === hoveredId) ?? null, [coinStacks, hoveredId]);
-    const [isPerfLimited, setPerfLimited] = useState(false);
     const [supportsWebgl, setSupportsWebgl] = useState(false);
-    const [burstStackId, setBurstStackId] = useState<string | null>(null);
-    const [burstToken, setBurstToken] = useState(0);
 
     useEffect(() => {
         if (typeof document === "undefined") return;
@@ -175,11 +171,6 @@ export function BankTable({ apiBase, userEmail }: BankTableProps) {
         const supported = !!canvas.getContext("webgl") || !!canvas.getContext("webgl2");
         setSupportsWebgl(supported);
     }, []);
-
-    const handleBurst = (id: string) => {
-        setBurstStackId(id);
-        setBurstToken((token) => token + 1);
-    };
 
     const creditTotal = useMemo(() => {
         return transactions
@@ -209,15 +200,22 @@ export function BankTable({ apiBase, userEmail }: BankTableProps) {
         }
         return pages.length > 0 ? pages : [[]];
     }, [transactions]);
-    const [ledgerPage, setLedgerPage] = useState(0);
     const currentLedger = ledgerPages[Math.min(ledgerPage, ledgerPages.length - 1)] ?? [];
     const ledgerTitle = ledgerPages.length > 1 ? `Ledger page ${ledgerPage + 1} / ${ledgerPages.length}` : "Ledger";
 
     useEffect(() => {
         if (ledgerPage >= ledgerPages.length) {
-            setLedgerPage(0);
+            setLedgerPage(() => 0);
         }
     }, [ledgerPage, ledgerPages.length]);
+
+    useEffect(() => {
+        setCoinStacks(coinStacks);
+    }, [coinStacks, setCoinStacks]);
+
+    useEffect(() => {
+        setLedgerData({ title: ledgerTitle, entries: currentLedger, totalPages: ledgerPages.length });
+    }, [currentLedger, ledgerPages.length, ledgerTitle, setLedgerData]);
 
     return (
         <div className="space-y-4">
@@ -231,10 +229,10 @@ export function BankTable({ apiBase, userEmail }: BankTableProps) {
                             <hemisphereLight intensity={0.65} color="#cbd5e1" groundColor="#f8fafc" />
                             <directionalLight
                                 position={[6, 10, 6]}
-                                intensity={isPerfLimited ? 0.6 : 1}
-                                castShadow={!isPerfLimited}
-                                shadow-mapSize-width={isPerfLimited ? 512 : 1024}
-                                shadow-mapSize-height={isPerfLimited ? 512 : 1024}
+                                intensity={perfLimited ? 0.6 : 1}
+                                castShadow={!perfLimited}
+                                shadow-mapSize-width={perfLimited ? 512 : 1024}
+                                shadow-mapSize-height={perfLimited ? 512 : 1024}
                             />
                             <Suspense fallback={<Html center className="text-sm text-slate-400">Preparing vault...</Html>}>
                                 <PerformanceMonitor onDecline={() => setPerfLimited(true)} onIncline={() => setPerfLimited(false)}>
@@ -245,25 +243,10 @@ export function BankTable({ apiBase, userEmail }: BankTableProps) {
                                     </mesh>
                                     <VaultShell />
                                     <TablesLayer />
-                                    <CoinStacksLayer
-                                        stacks={coinStacks}
-                                        highlightedId={hoveredId}
-                                        onHover={setHoveredId}
-                                        onClickStack={handleBurst}
-                                        perfLimited={isPerfLimited}
-                                        burstStackId={burstStackId}
-                                        burstToken={burstToken}
-                                    />
-                                    <LedgerStand
-                                        title={ledgerTitle}
-                                        entries={currentLedger}
-                                        onPrev={() => setLedgerPage((p) => Math.max(0, p - 1))}
-                                        onNext={() => setLedgerPage((p) => Math.min(ledgerPages.length - 1, p + 1))}
-                                        page={ledgerPage}
-                                        totalPages={ledgerPages.length}
-                                    />
+                                    <CoinStacksLayer />
+                                    <LedgerStand />
                                     <Sparkles
-                                        count={isPerfLimited ? 20 : 60}
+                                        count={perfLimited ? 20 : 60}
                                         speed={0.25}
                                         opacity={0.15}
                                         color={"#16a34a"}
@@ -280,7 +263,6 @@ export function BankTable({ apiBase, userEmail }: BankTableProps) {
                                         minPolarAngle={Math.PI / 3.2}
                                         target={[0, 0.5, 0]}
                                     />
-                                    {!isPerfLimited && <ContactShadows position={[0, -0.02, 0]} opacity={0.32} width={24} height={24} blur={2.4} far={12} />}
                                 </PerformanceMonitor>
                             </Suspense>
                         </Canvas>
@@ -427,7 +409,7 @@ export function BankTable({ apiBase, userEmail }: BankTableProps) {
                                 const balanceDisplay = Number.isFinite(balanceValue) ? balanceValue.toFixed(2) : "0.00";
 
                                 return (
-                                    <TableRow key={txn.id} onMouseEnter={() => setHoveredId(txn.id)} onMouseLeave={() => setHoveredId(null)}>
+                                    <TableRow key={txn.id} onMouseEnter={() => setHovered(txn.id)} onMouseLeave={() => setHovered(null)}>
                                         <TableCell className="text-xs text-muted-foreground">
                                             {txn.createdAt ? new Date(txn.createdAt).toLocaleString() : ""}
                                         </TableCell>
@@ -473,253 +455,3 @@ export function BankTable({ apiBase, userEmail }: BankTableProps) {
     );
 }
 
-const COIN_HEIGHT = 0.08;
-const TABLE_HEIGHT = 1.1;
-const TABLE_THICKNESS = 0.12;
-const VAULT_TABLES = [
-    { x: -4, z: -2, w: 4, d: 3, baseY: TABLE_HEIGHT },
-    { x: 4, z: -2, w: 4, d: 3, baseY: TABLE_HEIGHT },
-    { x: 0, z: 2.5, w: 9, d: 2.4, baseY: TABLE_HEIGHT },
-];
-
-type CoinStacksLayerProps = {
-    stacks: CoinStack[];
-    highlightedId: string | null;
-    onHover: (id: string | null) => void;
-    perfLimited: boolean;
-    onClickStack: (id: string) => void;
-    burstStackId: string | null;
-    burstToken: number;
-};
-
-type DroppingCoinProps = {
-    index: number;
-    perfLimited: boolean;
-    burstKey: number;
-    active: boolean;
-    baseY: number;
-    geometry: THREE.CylinderGeometry;
-    materials: THREE.Material[];
-};
-
-function DroppingCoin({ index, perfLimited, burstKey, active, baseY, geometry, materials }: DroppingCoinProps) {
-    const meshRef = useRef<THREE.Mesh>(null);
-    const delay = useMemo(() => Math.random() * 0.6, []);
-    const rotationOffset = useMemo(() => Math.random() * Math.PI * 2, []);
-    const startY = baseY + 2 + index * 0.05;
-    const targetY = baseY + index * COIN_HEIGHT + COIN_HEIGHT / 2 + 0.05;
-    const dropDuration = 1.2;
-    const burstState = useRef({ key: -1, t0: 0 });
-
-    useFrame((state) => {
-        const elapsed = Math.max(0, state.clock.getElapsedTime() - delay);
-        const progress = Math.min(1, elapsed / dropDuration);
-        const ease = 1 - Math.pow(1 - progress, 3);
-        const wobble = (1 - progress) * 0.02 * Math.sin(elapsed * 6);
-
-        if (burstKey !== burstState.current.key && active) {
-            burstState.current = { key: burstKey, t0: state.clock.getElapsedTime() };
-        }
-
-        const burstElapsed = state.clock.getElapsedTime() - burstState.current.t0;
-        const burstPhase = Math.max(0, Math.min(1, burstElapsed / 0.9));
-        const burstLift = active ? Math.sin(burstPhase * Math.PI) * (0.5 + 0.06 * index) * (1 - burstPhase) : 0;
-
-        const y = startY * (1 - ease) + targetY * ease + wobble + burstLift;
-        if (meshRef.current) {
-            meshRef.current.position.y = y;
-
-            const idleSpin = state.clock.getElapsedTime() * 0.12;
-            const burstSpin = active ? burstPhase * Math.PI * 0.9 : 0;
-            meshRef.current.rotation.y = rotationOffset + idleSpin + ease * Math.PI * 0.35 + burstLift * 0.6 + burstSpin;
-        }
-    });
-
-    return (
-        <mesh ref={meshRef} position={[0, startY, 0]} castShadow={!perfLimited} receiveShadow geometry={geometry} material={materials} />
-    );
-}
-
-function CoinStacksLayer({ stacks, highlightedId, onHover, onClickStack, perfLimited, burstStackId, burstToken }: CoinStacksLayerProps) {
-    const coinMaterials = useCoinMaterials();
-    const coinGeometry = useMemo(() => new THREE.CylinderGeometry(0.35, 0.35, COIN_HEIGHT, 48, 1, false), []);
-
-    useEffect(() => () => coinGeometry.dispose(), [coinGeometry]);
-
-    return (
-        <group>
-            {stacks.map((stack) => {
-                const ringColor = stack.direction === "credit" ? "#16a34a" : stack.direction === "debit" ? "#f97316" : "#94a3b8";
-                return (
-                    <group
-                        key={stack.id}
-                        position={[stack.position[0], 0, stack.position[2]]}
-                        onPointerOver={(event) => {
-                            event.stopPropagation();
-                            onHover(stack.id);
-                        }}
-                        onPointerOut={(event) => {
-                            event.stopPropagation();
-                            onHover(null);
-                        }}
-                        onClick={(event) => {
-                            event.stopPropagation();
-                            onClickStack(stack.id);
-                        }}
-                    >
-                        <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, stack.baseY + 0.001, 0]} receiveShadow>
-                            <circleGeometry args={[0.62, 48]} />
-                            <meshStandardMaterial color={`${ringColor}55`} transparent roughness={0.6} metalness={0.2} />
-                        </mesh>
-                        <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, stack.baseY + 0.002, 0]} receiveShadow castShadow={!perfLimited}>
-                            <torusGeometry args={[0.62, 0.02, 24, 64]} />
-                            <meshStandardMaterial
-                                color={ringColor}
-                                emissive={ringColor}
-                                emissiveIntensity={highlightedId === stack.id ? 0.8 : 0.25}
-                                metalness={0.6}
-                                roughness={0.2}
-                            />
-                        </mesh>
-                        {Array.from({ length: stack.coins }).map((_, coinIndex) => (
-                            <DroppingCoin
-                                key={`${stack.id}-coin-${coinIndex}`}
-                                index={coinIndex}
-                                perfLimited={perfLimited}
-                                burstKey={stack.id === burstStackId ? burstToken : 0}
-                                active={stack.id === burstStackId}
-                                baseY={stack.baseY}
-                                geometry={coinGeometry}
-                                materials={coinMaterials.materials}
-                            />
-                        ))}
-                        {highlightedId === stack.id ? (
-                            <Html center style={{ pointerEvents: "none" }}>
-                                <div className="rounded-md border border-slate-200 bg-white/95 px-3 py-2 text-xs text-slate-900 shadow-xl backdrop-blur">
-                                    <p className="font-semibold">{stack.direction === "credit" ? "+" : "-"}{stack.amount.toFixed(2)}</p>
-                                    <p className="text-[11px] text-slate-600">{stack.note || "No note"}</p>
-                                    <p className="text-[11px] text-slate-500">Bal {stack.balanceAfter.toFixed(2)}</p>
-                                </div>
-                            </Html>
-                        ) : null}
-                    </group>
-                );
-            })}
-        </group>
-    );
-}
-
-function VaultShell() {
-    return (
-        <group>
-            <mesh position={[0, 2.5, -10]} receiveShadow>
-                <boxGeometry args={[24, 6, 0.4]} />
-                <meshStandardMaterial color="#e5e7eb" metalness={0.32} roughness={0.42} envMapIntensity={0.35} onUpdate={(m) => applyPanelShader(m as THREE.MeshStandardMaterial, 22)} />
-            </mesh>
-            <mesh position={[-12, 2.5, 0]} rotation={[0, Math.PI / 2, 0]} receiveShadow>
-                <boxGeometry args={[20, 6, 0.4]} />
-                <meshStandardMaterial color="#e2e8f0" metalness={0.3} roughness={0.46} envMapIntensity={0.32} onUpdate={(m) => applyPanelShader(m as THREE.MeshStandardMaterial, 20)} />
-            </mesh>
-            <mesh position={[12, 2.5, 0]} rotation={[0, Math.PI / 2, 0]} receiveShadow>
-                <boxGeometry args={[20, 6, 0.4]} />
-                <meshStandardMaterial color="#e2e8f0" metalness={0.3} roughness={0.46} envMapIntensity={0.32} onUpdate={(m) => applyPanelShader(m as THREE.MeshStandardMaterial, 20)} />
-            </mesh>
-            <mesh position={[0, 5.5, 0]} rotation={[Math.PI / 2, 0, 0]} receiveShadow>
-                <planeGeometry args={[24, 20]} />
-                <meshStandardMaterial color="#f8fafc" metalness={0.08} roughness={0.74} envMapIntensity={0.28} onUpdate={(m) => applyPanelShader(m as THREE.MeshStandardMaterial, 26)} />
-            </mesh>
-        </group>
-    );
-}
-
-function TablesLayer() {
-    const topMaterial = useWoodMaterial({ preset: "tableTop" });
-    const legMaterial = useWoodMaterial({ preset: "tableLeg" });
-
-    return (
-        <group>
-            {VAULT_TABLES.map((table, idx) => {
-                const legOffsetX = table.w / 2 - 0.2;
-                const legOffsetZ = table.d / 2 - 0.2;
-                return (
-                    <group key={`table-${idx}`} position={[table.x, 0, table.z]}>
-                        <mesh position={[0, table.baseY - TABLE_THICKNESS / 2, 0]} castShadow receiveShadow material={topMaterial}>
-                            <boxGeometry args={[table.w, TABLE_THICKNESS, table.d]} />
-                        </mesh>
-                        {[[-1, -1], [1, -1], [-1, 1], [1, 1]].map((pair, legIdx) => (
-                            <mesh
-                                key={`table-${idx}-leg-${legIdx}`}
-                                position={[pair[0] * legOffsetX, (TABLE_HEIGHT - 0.6) / 2, pair[1] * legOffsetZ]}
-                                castShadow
-                                receiveShadow
-                                material={legMaterial}
-                            >
-                                <cylinderGeometry args={[0.07, 0.07, TABLE_HEIGHT - 0.6, 18]} />
-                            </mesh>
-                        ))}
-                    </group>
-                );
-            })}
-        </group>
-    );
-}
-
-type LedgerStandProps = {
-    title: string;
-    entries: { id: string; note?: string | null; amount?: string | number; balanceAfter?: string | number; createdAt?: string }[];
-    onPrev: () => void;
-    onNext: () => void;
-    page: number;
-    totalPages: number;
-};
-
-function LedgerStand({ title, entries, onPrev, onNext, page, totalPages }: LedgerStandProps) {
-    const formattedEntries = entries.map((entry) => {
-        const amount = Number.parseFloat(String(entry.amount ?? 0)) || 0;
-        const directionSign = amount >= 0 ? "+" : "";
-        const balance = Number.parseFloat(String(entry.balanceAfter ?? 0)) || 0;
-        return {
-            id: entry.id,
-            note: entry.note || "(no note)",
-            amount: `${directionSign}${amount.toFixed(2)}`,
-            balance: balance.toFixed(2),
-            created: entry.createdAt ? new Date(entry.createdAt).toLocaleDateString() : "",
-        };
-    });
-
-    return (
-        <group position={[0, TABLE_HEIGHT + 0.6, -5.2]}>
-            <mesh position={[0, -0.3, 0]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
-                <planeGeometry args={[3.8, 2.6]} />
-                <meshStandardMaterial color="#e2e8f0" metalness={0.08} roughness={0.65} />
-            </mesh>
-            <Html position={[0, 0, 0]} transform style={{ pointerEvents: "auto" }}>
-                <div className="w-64 rounded-lg border border-slate-200 bg-white/95 p-3 shadow-xl">
-                    <div className="mb-2 flex items-center justify-between text-xs text-slate-500">
-                        <span>{title}</span>
-                        <span>Game view: vault</span>
-                    </div>
-                    <div className="space-y-1 text-xs text-slate-700">
-                        {formattedEntries.length === 0 ? <p className="text-slate-400">No entries</p> : null}
-                        {formattedEntries.map((row) => (
-                            <div key={row.id} className="flex items-center justify-between rounded-md bg-slate-50 px-2 py-1">
-                                <span className="truncate font-semibold">{row.amount}</span>
-                                <span className="truncate text-slate-500">{row.note}</span>
-                                <span className="text-[10px] text-slate-400">{row.created}</span>
-                            </div>
-                        ))}
-                    </div>
-                    <div className="mt-2 flex items-center justify-between text-xs text-slate-600">
-                        <button className="rounded border border-slate-200 px-2 py-1 hover:bg-slate-100" onClick={onPrev} disabled={page === 0}>
-                            Prev
-                        </button>
-                        <span>Page {page + 1} / {Math.max(1, totalPages)}</span>
-                        <button className="rounded border border-slate-200 px-2 py-1 hover:bg-slate-100" onClick={onNext} disabled={page + 1 >= totalPages}>
-                            Next
-                        </button>
-                    </div>
-                </div>
-            </Html>
-        </group>
-    );
-}
