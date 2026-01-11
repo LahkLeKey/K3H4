@@ -1,4 +1,3 @@
-import { useMemo } from "react";
 import { TABLE_HEIGHT, TABLE_THICKNESS, VAULT_TABLES } from "./bank-constants";
 import { useWoodMaterial } from "./use-wood-material";
 
