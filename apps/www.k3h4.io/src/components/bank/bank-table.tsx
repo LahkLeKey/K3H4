@@ -223,7 +223,7 @@ export function BankTable({ apiBase, userEmail }: BankTableProps) {
         <div className="space-y-4">
             <Card className="overflow-hidden border bg-white text-slate-900 shadow-lg">
                 <div className="relative h-[440px] w-full">
-                    <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(34,197,94,0.18),transparent_35%),radial-gradient(circle_at_80%_10%,rgba(14,165,233,0.16),transparent_35%),radial-gradient(circle_at_50%_80%,rgba(234,179,8,0.16),transparent_35%)]" />
+                    <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(34,197,94,0.08),transparent_35%),radial-gradient(circle_at_80%_10%,rgba(14,165,233,0.06),transparent_35%),radial-gradient(circle_at_50%_80%,rgba(234,179,8,0.06),transparent_35%)]" />
                     {supportsWebgl ? (
                         <Canvas shadows camera={{ position: [8, 8, 10], fov: 48 }} className="h-full w-full">
                             <color attach="background" args={["#eef2f7"]} />
@@ -289,7 +289,7 @@ export function BankTable({ apiBase, userEmail }: BankTableProps) {
                             3D preview unavailable in this environment.
                         </div>
                     )}
-                    <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-white via-white/70 to-transparent" />
+                    <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-white/30 via-white/10 to-transparent" />
                     <div className="absolute inset-x-4 top-4 flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
                         <div className="space-y-1">
                             <p className="text-xs uppercase tracking-wide text-slate-500">Industry module · Bank</p>

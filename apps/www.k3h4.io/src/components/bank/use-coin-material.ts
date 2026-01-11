@@ -9,6 +9,10 @@ export type CoinMaterialOptions = {
     sideTextureSize?: number;
 };
 
+function toCss(color: THREE.ColorRepresentation) {
+    return new THREE.Color(color).getStyle();
+}
+
 function makeFaceTexture({
     size,
     base,
@@ -16,9 +20,9 @@ function makeFaceTexture({
     pip,
 }: {
     size: number;
-    base: string;
-    band: string;
-    pip: string;
+    base: THREE.ColorRepresentation;
+    band: THREE.ColorRepresentation;
+    pip: THREE.ColorRepresentation;
 }) {
     if (typeof document === "undefined") return null;
     const canvas = document.createElement("canvas");
@@ -26,7 +30,7 @@ function makeFaceTexture({
     const ctx = canvas.getContext("2d");
     if (!ctx) return null;
 
-    ctx.fillStyle = base;
+    ctx.fillStyle = toCss(base);
     ctx.fillRect(0, 0, size, size);
 
     ctx.save();
@@ -36,17 +40,17 @@ function makeFaceTexture({
     ctx.arc(0, 0, size * 0.48, 0, Math.PI * 2);
     ctx.clip();
 
-    ctx.fillStyle = band;
+    ctx.fillStyle = toCss(band);
     ctx.beginPath();
     ctx.arc(0, 0, size * 0.48, 0, Math.PI * 2);
     ctx.fill();
 
-    ctx.fillStyle = base;
+    ctx.fillStyle = toCss(base);
     ctx.beginPath();
     ctx.arc(0, 0, size * 0.35, 0, Math.PI * 2);
     ctx.fill();
 
-    ctx.fillStyle = pip;
+    ctx.fillStyle = toCss(pip);
     const pipR = size * 0.025;
     const ringR = size * 0.42;
     const count = 10;
@@ -67,7 +71,7 @@ function makeFaceTexture({
     return tex;
 }
 
-function makeSideTexture({ size, base, band }: { size: number; base: string; band: string }) {
+function makeSideTexture({ size, base, band }: { size: number; base: THREE.ColorRepresentation; band: THREE.ColorRepresentation }) {
     if (typeof document === "undefined") return null;
     const canvas = document.createElement("canvas");
     canvas.width = size;
@@ -75,11 +79,11 @@ function makeSideTexture({ size, base, band }: { size: number; base: string; ban
     const ctx = canvas.getContext("2d");
     if (!ctx) return null;
 
-    ctx.fillStyle = base;
+    ctx.fillStyle = toCss(base);
     ctx.fillRect(0, 0, size, size);
 
     const stripeW = size * 0.12;
-    ctx.fillStyle = band;
+    ctx.fillStyle = toCss(band);
     for (let x = 0; x < size; x += stripeW * 2) {
         ctx.fillRect(x, 0, stripeW, size);
     }
