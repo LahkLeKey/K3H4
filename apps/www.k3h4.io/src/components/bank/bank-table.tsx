@@ -41,6 +41,88 @@ function mixColor(hex: string, amount: number) {
     return `#${[mix(r), mix(g), mix(b)].map((v) => v.toString(16).padStart(2, "0")).join("")}`;
 }
 
+const woodShader = {
+    uniforms: {
+        uTime: { value: 0.0 },
+        uScale: { value: 4.0 },
+        uRingScale: { value: 20.0 },
+        uLightColor: { value: new THREE.Color(0xdeb887) },
+        uDarkColor: { value: new THREE.Color(0x8b5a2b) },
+    },
+    vertexShader: `
+        varying vec3 vPos;
+        void main() {
+            vPos = position;
+            gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+        }
+    `,
+    fragmentShader: `
+        varying vec3 vPos;
+        uniform float uTime;
+        uniform float uScale;
+        uniform float uRingScale;
+        uniform vec3 uLightColor;
+        uniform vec3 uDarkColor;
+
+        float hash(vec3 p) {
+            p = fract(p * 0.3183099 + vec3(0.1, 0.2, 0.3));
+            p *= 17.0;
+            return fract(p.x * p.y * p.z * (p.x + p.y + p.z));
+        }
+
+        float noise(vec3 p) {
+            vec3 i = floor(p);
+            vec3 f = fract(p);
+            f = f*f*(3.0 - 2.0*f);
+            return mix(mix(mix(hash(i + vec3(0,0,0)), hash(i + vec3(1,0,0)), f.x),
+                           mix(hash(i + vec3(0,1,0)), hash(i + vec3(1,1,0)), f.x), f.y),
+                       mix(mix(hash(i + vec3(0,0,1)), hash(i + vec3(1,0,1)), f.x),
+                           mix(hash(i + vec3(0,1,1)), hash(i + vec3(1,1,1)), f.x), f.y), f.z);
+        }
+
+        void main() {
+            vec3 p = vPos * uScale;
+            float n = noise(p + uTime * 0.15);
+            float rings = sin(uRingScale * length(vPos.xz) + n * 3.0);
+            float grain = smoothstep(-0.2, 0.2, rings);
+            vec3 color = mix(uDarkColor, uLightColor, grain);
+            gl_FragColor = vec4(color, 1.0);
+        }
+    `,
+} as const;
+
+function createWoodMaterial(options?: { light?: string | number; dark?: string | number; scale?: number; ringScale?: number }) {
+    const uniforms = {
+        uTime: { value: 0 },
+        uScale: { value: options?.scale ?? 3.8 },
+        uRingScale: { value: options?.ringScale ?? 18 },
+        uLightColor: { value: new THREE.Color(options?.light ?? 0xe3c9a5) },
+        uDarkColor: { value: new THREE.Color(options?.dark ?? 0xb0763b) },
+    } satisfies typeof woodShader.uniforms;
+
+    return new THREE.ShaderMaterial({
+        uniforms,
+        vertexShader: woodShader.vertexShader,
+        fragmentShader: woodShader.fragmentShader,
+    });
+}
+
+function applyPanelShader(material: THREE.MeshStandardMaterial, density = 18) {
+    material.onBeforeCompile = (shader) => {
+        shader.fragmentShader = shader.fragmentShader.replace(
+            "#include <fog_fragment>",
+            `float panelGridX = sin(vUv.x * ${density.toFixed(1)} * 3.14159);
+             float panelGridY = sin(vUv.y * ${density.toFixed(1)} * 3.14159);
+             float panelLines = smoothstep(-0.02, 0.02, panelGridX * panelGridY);
+             vec3 panelTint = vec3(0.06) * panelLines;
+             gl_FragColor.rgb = max(vec3(0.0), gl_FragColor.rgb - panelTint);
+             #include <fog_fragment>`
+        );
+    };
+    material.needsUpdate = true;
+    return material;
+}
+
 export type BankTableProps = {
     apiBase: string;
     userEmail: string | null;
@@ -532,29 +614,41 @@ function DroppingCoin({ index, direction, perfLimited, shadeIndex, coinCount, bu
     return (
         <mesh ref={meshRef} position={[0, startY, 0]} castShadow={!perfLimited} receiveShadow>
             <cylinderGeometry args={[0.35, 0.35, COIN_HEIGHT, 64, 1, false]} />
-            <meshStandardMaterial
+            <meshPhysicalMaterial
                 attachArray="material"
                 color={faceColor}
-                metalness={0.9}
-                roughness={0.22}
+                metalness={0.92}
+                roughness={0.18}
+                clearcoat={0.5}
+                clearcoatRoughness={0.12}
+                sheen={0.35}
+                sheenRoughness={0.6}
+                sheenColor={direction === "credit" ? "#bbf7d0" : "#fed7aa"}
                 emissive={direction === "credit" ? "#166534" : "#7c2d12"}
-                emissiveIntensity={0.22}
-            />
-            <meshStandardMaterial
-                attachArray="material"
-                color={rimColor}
-                metalness={0.94}
-                roughness={0.16}
-                emissive={rimColor}
                 emissiveIntensity={0.18}
             />
-            <meshStandardMaterial
+            <meshPhysicalMaterial
+                attachArray="material"
+                color={rimColor}
+                metalness={0.96}
+                roughness={0.12}
+                clearcoat={0.6}
+                clearcoatRoughness={0.08}
+                sheen={0.28}
+                sheenRoughness={0.4}
+                sheenColor={rimColor}
+                emissive={rimColor}
+                emissiveIntensity={0.16}
+            />
+            <meshPhysicalMaterial
                 attachArray="material"
                 color={mixColor(baseColor, 0.08)}
-                metalness={0.88}
-                roughness={0.24}
+                metalness={0.9}
+                roughness={0.22}
+                clearcoat={0.4}
+                clearcoatRoughness={0.18}
                 emissive={direction === "credit" ? "#14532d" : "#7c2d12"}
-                emissiveIntensity={0.16}
+                emissiveIntensity={0.14}
             />
         </mesh>
     );
@@ -630,25 +724,34 @@ function VaultShell() {
         <group>
             <mesh position={[0, 2.5, -10]} receiveShadow>
                 <boxGeometry args={[24, 6, 0.4]} />
-                <meshStandardMaterial color="#e5e7eb" metalness={0.25} roughness={0.55} />
+                <meshStandardMaterial color="#e5e7eb" metalness={0.32} roughness={0.42} envMapIntensity={0.35} onUpdate={(m) => applyPanelShader(m as THREE.MeshStandardMaterial, 22)} />
             </mesh>
             <mesh position={[-12, 2.5, 0]} rotation={[0, Math.PI / 2, 0]} receiveShadow>
                 <boxGeometry args={[20, 6, 0.4]} />
-                <meshStandardMaterial color="#e2e8f0" metalness={0.22} roughness={0.58} />
+                <meshStandardMaterial color="#e2e8f0" metalness={0.3} roughness={0.46} envMapIntensity={0.32} onUpdate={(m) => applyPanelShader(m as THREE.MeshStandardMaterial, 20)} />
             </mesh>
             <mesh position={[12, 2.5, 0]} rotation={[0, Math.PI / 2, 0]} receiveShadow>
                 <boxGeometry args={[20, 6, 0.4]} />
-                <meshStandardMaterial color="#e2e8f0" metalness={0.22} roughness={0.58} />
+                <meshStandardMaterial color="#e2e8f0" metalness={0.3} roughness={0.46} envMapIntensity={0.32} onUpdate={(m) => applyPanelShader(m as THREE.MeshStandardMaterial, 20)} />
             </mesh>
             <mesh position={[0, 5.5, 0]} rotation={[Math.PI / 2, 0, 0]} receiveShadow>
                 <planeGeometry args={[24, 20]} />
-                <meshStandardMaterial color="#f8fafc" metalness={0.1} roughness={0.78} />
+                <meshStandardMaterial color="#f8fafc" metalness={0.08} roughness={0.74} envMapIntensity={0.28} onUpdate={(m) => applyPanelShader(m as THREE.MeshStandardMaterial, 26)} />
             </mesh>
         </group>
     );
 }
 
 function TablesLayer() {
+    const topMaterial = useMemo(() => createWoodMaterial({ light: 0xe8cfa9, dark: 0xb57a42, scale: 3.4, ringScale: 16 }), []);
+    const legMaterial = useMemo(() => createWoodMaterial({ light: 0xd6b183, dark: 0x9c6a34, scale: 5.2, ringScale: 22 }), []);
+
+    useFrame((state) => {
+        const time = state.clock.getElapsedTime();
+        if (topMaterial?.uniforms?.uTime) topMaterial.uniforms.uTime.value = time;
+        if (legMaterial?.uniforms?.uTime) legMaterial.uniforms.uTime.value = time;
+    });
+
     return (
         <group>
             {VAULT_TABLES.map((table, idx) => {
@@ -656,9 +759,8 @@ function TablesLayer() {
                 const legOffsetZ = table.d / 2 - 0.2;
                 return (
                     <group key={`table-${idx}`} position={[table.x, 0, table.z]}>
-                        <mesh position={[0, table.baseY - TABLE_THICKNESS / 2, 0]} castShadow receiveShadow>
+                        <mesh position={[0, table.baseY - TABLE_THICKNESS / 2, 0]} castShadow receiveShadow material={topMaterial}>
                             <boxGeometry args={[table.w, TABLE_THICKNESS, table.d]} />
-                            <meshStandardMaterial color="#f1f5f9" metalness={0.12} roughness={0.35} />
                         </mesh>
                         {[[-1, -1], [1, -1], [-1, 1], [1, 1]].map((pair, legIdx) => (
                             <mesh
@@ -666,9 +768,9 @@ function TablesLayer() {
                                 position={[pair[0] * legOffsetX, (TABLE_HEIGHT - 0.6) / 2, pair[1] * legOffsetZ]}
                                 castShadow
                                 receiveShadow
+                                material={legMaterial}
                             >
-                                <cylinderGeometry args={[0.07, 0.07, TABLE_HEIGHT - 0.6, 12]} />
-                                <meshStandardMaterial color="#cbd5e1" metalness={0.14} roughness={0.5} />
+                                <cylinderGeometry args={[0.07, 0.07, TABLE_HEIGHT - 0.6, 18]} />
                             </mesh>
                         ))}
                     </group>
