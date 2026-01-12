@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo } from "react";
 import { Plus, RefreshCcw, Send, Sparkles } from "lucide-react";
 
 import { useK3h4Bank } from "../../hooks/use-k3h4-bank";

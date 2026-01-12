@@ -58,7 +58,6 @@ try {
 }
 
 // Normalize provider callbacks (GitHub, LinkedIn) to HashRouter routes when the provider sends users back to /auth/github or /auth/linkedin/callback
-import * as React from 'react'
 import { StrictMode } from 'react'
 import { QueryClientProvider } from '@tanstack/react-query'
 import { createRoot } from 'react-dom/client'
