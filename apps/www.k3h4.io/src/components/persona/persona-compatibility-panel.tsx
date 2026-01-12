@@ -1,18 +1,16 @@
-import { useEffect, useMemo } from "react";
+import { Fragment, useEffect, useMemo, useState } from "react";
 import { Canvas } from "@react-three/fiber";
 import { Html, Line, OrbitControls } from "@react-three/drei";
 import { RefreshCcw, Sparkles } from "lucide-react";
+import { ResponsiveContainer, BarChart, Bar, CartesianGrid, XAxis, YAxis, Tooltip, AreaChart, Area } from "recharts";
 
-import {
-    usePersonaListQuery,
-    usePersonaCompatibilityQuery,
-    useRecomputePersonaCompatibilityMutation,
-    type Persona,
-    type PersonaCompatibility,
-} from "../../hooks/use-persona-queries";
+import { type Persona, type PersonaCompatibility } from "../../hooks/use-persona-queries";
+import { personaCompatStore } from "../../stores/persona-compat-store";
 import { Badge } from "../ui/badge";
 import { Button } from "../ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../ui/card";
+import { Input } from "../ui/input";
+import { cn } from "../../lib/utils";
 
 const scoreColor = (score: number) => {
     if (score >= 0.66) return "#16a34a";
@@ -111,19 +109,191 @@ function CompatibilityList({ edges }: { edges: PersonaCompatibility[] }) {
     );
 }
 
-export function PersonaCompatibilityPanel({ apiBase, userEmail }: { apiBase: string; userEmail: string | null }) {
-    const personasQuery = usePersonaListQuery(apiBase);
-    const compatQuery = usePersonaCompatibilityQuery(apiBase);
-    const { mutate: recomputeGraph, isPending: recomputePending } = useRecomputePersonaCompatibilityMutation(apiBase);
+function ConfusionMatrix({
+    counts,
+    metrics,
+}: {
+    counts: { tp: number; fp: number; tn: number; fn: number };
+    metrics: { accuracy: number; precision: number; recall: number; f1: number };
+}) {
+    const rows = [
+        { label: "Predicted positive", values: [counts.tp, counts.fp] },
+        { label: "Predicted negative", values: [counts.fn, counts.tn] },
+    ];
+    const maxCell = Math.max(counts.tp, counts.fp, counts.tn, counts.fn, 1);
+    const intensity = (value: number) => {
+        const ratio = value / maxCell;
+        const base = Math.max(0.08, Math.min(1, ratio));
+        return `rgba(34,197,94,${base})`;
+    };
+    return (
+        <div className="space-y-3">
+            <div className="overflow-hidden rounded-lg border">
+                <div className="grid grid-cols-[auto,1fr,1fr] text-sm">
+                    <div className="bg-muted px-3 py-2 font-semibold" />
+                    <div className="bg-muted px-3 py-2 font-semibold text-center">Actual positive</div>
+                    <div className="bg-muted px-3 py-2 font-semibold text-center">Actual negative</div>
+                    {rows.map((row) => (
+                        <Fragment key={row.label}>
+                            <div className="border-t px-3 py-2 font-semibold">{row.label}</div>
+                            <div className="border-t px-3 py-2 text-center" style={{ backgroundColor: intensity(row.values[0]) }}>{row.values[0]}</div>
+                            <div className="border-t px-3 py-2 text-center" style={{ backgroundColor: intensity(row.values[1]) }}>{row.values[1]}</div>
+                        </Fragment>
+                    ))}
+                </div>
+            </div>
+            <div className="grid grid-cols-2 gap-2 text-xs sm:grid-cols-4">
+                <Badge variant="secondary">Accuracy {metrics.accuracy.toFixed(2)}</Badge>
+                <Badge variant="secondary">Precision {metrics.precision.toFixed(2)}</Badge>
+                <Badge variant="secondary">Recall {metrics.recall.toFixed(2)}</Badge>
+                <Badge variant="secondary">F1 {metrics.f1.toFixed(2)}</Badge>
+            </div>
+        </div>
+    );
+}
 
-    const personas = personasQuery.data ?? [];
-    const compatibilities = compatQuery.data ?? [];
+function MetricsBars({ metrics }: { metrics: { accuracy: number; precision: number; recall: number; f1: number } }) {
+    const data = [
+        { name: "Accuracy", value: metrics.accuracy },
+        { name: "Precision", value: metrics.precision },
+        { name: "Recall", value: metrics.recall },
+        { name: "F1", value: metrics.f1 },
+    ];
+    return (
+        <div className="h-44">
+            <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={data} margin={{ top: 8, right: 12, bottom: 8, left: 12 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(148,163,184,0.35)" />
+                    <XAxis dataKey="name" tick={{ fontSize: 11 }} axisLine={false} tickLine={false} />
+                    <YAxis domain={[0, 1]} tick={{ fontSize: 11 }} axisLine={false} tickLine={false} />
+                    <Tooltip formatter={(value: number) => `${(value * 100).toFixed(1)}%`} />
+                    <Bar dataKey="value" radius={[6, 6, 0, 0]} fill="#0ea5e9" />
+                </BarChart>
+            </ResponsiveContainer>
+        </div>
+    );
+}
+
+function ProbabilitySparkline({ probabilities }: { probabilities: number[] }) {
+    if (probabilities.length === 0) {
+        return <p className="text-xs text-muted-foreground">No probabilities yet.</p>;
+    }
+    const clamped = probabilities.map((value, idx) => ({ idx, value: Math.min(Math.max(value, 0), 1) }));
+    return (
+        <div className="h-32">
+            <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={clamped} margin={{ top: 4, right: 8, bottom: 4, left: 0 }}>
+                    <YAxis hide domain={[0, 1]} />
+                    <XAxis hide dataKey="idx" />
+                    <Tooltip formatter={(value: number) => `${(value * 100).toFixed(1)}%`} />
+                    <Area type="monotone" dataKey="value" stroke="#6366f1" fill="#6366f1" fillOpacity={0.25} strokeWidth={2} />
+                </AreaChart>
+            </ResponsiveContainer>
+        </div>
+    );
+}
+
+function ProbabilityHeatmap({
+    details,
+}: {
+    details: Array<{ id: string; probability: number; sourceId: string; targetId: string }>;
+}) {
+    if (!details.length) return <p className="text-xs text-muted-foreground">No pairs evaluated yet.</p>;
+
+    const items = details.slice(0, 36).map((d) => ({
+        ...d,
+        value: Math.min(Math.max(d.probability, 0), 1),
+    }));
+
+    return (
+        <div className="space-y-2">
+            <div className="text-xs font-semibold text-muted-foreground">Pair probability heatmap (top 36)</div>
+            <div className="grid grid-cols-6 gap-1">
+                {items.map((item) => (
+                    <div
+                        key={item.id}
+                        className={cn(
+                            "flex h-14 flex-col justify-between rounded-md border p-1 text-[10px] leading-tight",
+                        )}
+                        style={{
+                            background: `linear-gradient(180deg, rgba(14,165,233,${0.6 * item.value}) 0%, rgba(14,165,233,${0.12}) 100%)`,
+                        }}
+                        title={`${item.sourceId} -> ${item.targetId}: ${(item.value * 100).toFixed(1)}%`}
+                    >
+                        <span className="font-semibold">{(item.value * 100).toFixed(0)}%</span>
+                        <span className="text-[9px] text-muted-foreground">{item.sourceId.slice(0, 3)}→{item.targetId.slice(0, 3)}</span>
+                    </div>
+                ))}
+            </div>
+        </div>
+    );
+}
+
+export function PersonaCompatibilityPanel({ apiBase, userEmail }: { apiBase: string; userEmail: string | null }) {
+    const {
+        personas,
+        compatibilities,
+        confusion,
+        loadingPersonas,
+        loadingCompatibility,
+        loadingConfusion,
+        errors,
+        autoRecomputeLocked,
+        compatibilityAttempted,
+        lastCompatibilityLoad,
+        loadPersonas,
+        loadCompatibility,
+        recomputeCompatibility,
+        runConfusion,
+        markAutoRecompute,
+        clearError,
+        clearAttempted,
+    } = personaCompatStore.useShallow((state) => ({
+        personas: state.personas,
+        compatibilities: state.compatibilities,
+        confusion: state.confusion,
+        loadingPersonas: state.loadingPersonas,
+        loadingCompatibility: state.loadingCompatibility,
+        loadingConfusion: state.loadingConfusion,
+        errors: state.errors,
+        autoRecomputeLocked: state.autoRecomputeLocked,
+        compatibilityAttempted: state.compatibilityAttempted,
+        lastCompatibilityLoad: state.lastCompatibilityLoad,
+        loadPersonas: state.loadPersonas,
+        loadCompatibility: state.loadCompatibility,
+        recomputeCompatibility: state.recomputeCompatibility,
+        runConfusion: state.runConfusion,
+        markAutoRecompute: state.markAutoRecompute,
+        clearError: state.clearError,
+        clearAttempted: state.clearAttempted,
+    }));
+    const [threshold, setThreshold] = useState(0.5);
 
     useEffect(() => {
-        if (!compatQuery.isLoading && compatibilities.length === 0 && personas.length > 1 && !recomputePending) {
-            recomputeGraph();
+        if (!personas.length && !loadingPersonas && !errors.personas) {
+            void loadPersonas(apiBase);
         }
-    }, [compatQuery.isLoading, compatibilities.length, personas.length, recomputePending, recomputeGraph]);
+    }, [apiBase, personas.length, loadingPersonas, errors.personas, loadPersonas]);
+
+    useEffect(() => {
+        if (loadingCompatibility || errors.compatibility) return;
+        if (!personas.length) return;
+        if (compatibilities.length > 0) return;
+        if (compatibilityAttempted) return;
+        // Avoid spamming when the API returns an empty list; retry is manual via button.
+        if (lastCompatibilityLoad && Date.now() - lastCompatibilityLoad < 10_000) return;
+        void loadCompatibility(apiBase);
+    }, [apiBase, personas.length, compatibilities.length, loadingCompatibility, errors.compatibility, compatibilityAttempted, lastCompatibilityLoad, loadCompatibility]);
+
+    useEffect(() => {
+        if (autoRecomputeLocked) return;
+        if (loadingCompatibility || errors.compatibility) return;
+        if (compatibilityAttempted) return;
+        if (personas.length > 1 && compatibilities.length === 0) {
+            markAutoRecompute();
+            void recomputeCompatibility(apiBase);
+        }
+    }, [apiBase, personas.length, compatibilities.length, loadingCompatibility, errors.compatibility, compatibilityAttempted, autoRecomputeLocked, markAutoRecompute, recomputeCompatibility]);
 
     const nodes = useMemo<GraphNode[]>(() => buildNodePositions(personas), [personas]);
     const edges = useMemo<GraphEdge[]>(
@@ -137,6 +307,17 @@ export function PersonaCompatibilityPanel({ apiBase, userEmail }: { apiBase: str
         [compatibilities],
     );
 
+    const labeledPairs = useMemo(() => compatibilities.map((compat) => ({
+        sourceId: compat.sourceId,
+        targetId: compat.targetId,
+        label: (compat.overlappingTokens?.length ?? 0) > 0,
+    })), [compatibilities]);
+
+    const confusionCounts = confusion?.counts ?? { tp: 0, fp: 0, tn: 0, fn: 0 };
+    const confusionMetrics = confusion?.metrics ?? { accuracy: 0, precision: 0, recall: 0, f1: 0 };
+    const details = useMemo(() => confusion?.details ?? [], [confusion]);
+    const probabilities = useMemo(() => details.map((d) => d.probability), [details]);
+
     return (
         <Card className="border bg-background/80">
             <CardHeader className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
@@ -149,16 +330,36 @@ export function PersonaCompatibilityPanel({ apiBase, userEmail }: { apiBase: str
                     <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => recomputeGraph()}
-                        disabled={recomputePending}
+                        onClick={() => recomputeCompatibility(apiBase)}
+                        disabled={loadingCompatibility}
                     >
-                        <RefreshCcw className="mr-2 h-4 w-4" /> Recompute
+                        <RefreshCcw className="mr-2 h-4 w-4" /> {loadingCompatibility ? "Working..." : "Recompute"}
                     </Button>
                 </div>
             </CardHeader>
             <CardContent className="grid gap-4 lg:grid-cols-[1.3fr_0.7fr]">
+                {(errors.personas || errors.compatibility) ? (
+                    <div className="lg:col-span-2 space-y-1 text-sm text-destructive">
+                        {errors.personas ? (
+                            <div className="flex flex-wrap items-center gap-2">
+                                <p>Personas: {errors.personas}</p>
+                                <Button size="sm" variant="outline" onClick={() => { clearError("personas"); void loadPersonas(apiBase); }}>
+                                    Retry personas
+                                </Button>
+                            </div>
+                        ) : null}
+                        {errors.compatibility ? (
+                            <div className="flex flex-wrap items-center gap-2">
+                                <p>Compatibility: {errors.compatibility}</p>
+                                <Button size="sm" variant="outline" onClick={() => { clearError("compatibility"); clearAttempted(); void loadCompatibility(apiBase); }}>
+                                    Retry compatibility
+                                </Button>
+                            </div>
+                        ) : null}
+                    </div>
+                ) : null}
                 <div className="relative h-[420px] overflow-hidden rounded-2xl border bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950">
-                    {compatQuery.isLoading ? (
+                    {loadingPersonas || loadingCompatibility ? (
                         <div className="absolute inset-0 flex items-center justify-center text-sm text-muted-foreground">
                             <Sparkles className="mr-2 h-4 w-4" /> Preparing graph...
                         </div>
@@ -179,6 +380,45 @@ export function PersonaCompatibilityPanel({ apiBase, userEmail }: { apiBase: str
                         <Badge variant="outline">{compatibilities.length} pairs</Badge>
                     </div>
                     <CompatibilityList edges={compatibilities} />
+
+                    <div className="rounded-lg border p-3 space-y-3">
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <div className="text-sm font-semibold">Confusion matrix</div>
+                                <p className="text-xs text-muted-foreground">Uses ONNX probabilities when available.</p>
+                            </div>
+                            <Badge variant="secondary">Threshold {threshold.toFixed(2)}</Badge>
+                        </div>
+                        <div className="grid gap-2 sm:grid-cols-[1fr,auto] sm:items-center">
+                            <div className="space-y-1">
+                                <label className="text-xs font-semibold text-muted-foreground" htmlFor="conf-threshold">Decision threshold</label>
+                                <Input
+                                    id="conf-threshold"
+                                    type="number"
+                                    min={0}
+                                    max={1}
+                                    step={0.01}
+                                    value={threshold}
+                                    onChange={(e) => setThreshold(Math.min(Math.max(Number(e.target.value) || 0, 0), 1))}
+                                />
+                            </div>
+                            <Button
+                                size="sm"
+                                onClick={() => runConfusion(apiBase, { pairs: labeledPairs, threshold })}
+                                disabled={loadingConfusion || labeledPairs.length === 0}
+                            >
+                                {loadingConfusion ? "Evaluating..." : "Run"}
+                            </Button>
+                        </div>
+                        <ConfusionMatrix counts={confusionCounts} metrics={confusionMetrics} />
+                        <ProbabilityHeatmap details={details} />
+                        <ProbabilitySparkline probabilities={probabilities} />
+                        <MetricsBars metrics={confusionMetrics} />
+                        <p className="text-xs text-muted-foreground">
+                            Evaluated {confusion?.evaluated ?? 0} pairs; {confusion?.missing ?? 0} missing.
+                        </p>
+                        {errors.confusion ? <p className="text-xs text-destructive">Confusion run failed: {errors.confusion}</p> : null}
+                    </div>
                 </div>
             </CardContent>
         </Card>

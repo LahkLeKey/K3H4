@@ -38,17 +38,35 @@ export type PersonaCompatibility = {
   target: Persona;
 };
 
+export type PersonaConfusionMatrix = {
+  threshold: number;
+  counts: { tp: number; fp: number; tn: number; fn: number };
+  metrics: { accuracy: number; precision: number; recall: number; f1: number };
+  evaluated: number;
+  missing: number;
+  details: Array<{
+    id: string;
+    probability: number;
+    predicted: boolean;
+    label: boolean;
+    usedOnnx: boolean;
+    sourceId: string;
+    targetId: string;
+    jaccardScore: number;
+  }>;
+};
+
 const personaKeys = {
   list: (apiBase: string, token: string) => ["personas", apiBase, token || "anon"],
   compatibility: (apiBase: string, token: string, personaId?: string) => ["personas", "compatibility", apiBase, token || "anon", personaId ?? "all"],
 };
 
-function getToken() {
+export function getToken() {
   if (typeof window === "undefined") return "";
   return localStorage.getItem(ACCESS_TOKEN_KEY) || "";
 }
 
-function getAuthHeaders() {
+export function getAuthHeaders() {
   const token = getToken();
   if (!token) return null;
   return {
@@ -60,7 +78,7 @@ function getAuthHeaders() {
   };
 }
 
-async function fetchJson<T>(url: string, options: RequestInit, onErrorMetric: string): Promise<T> {
+export async function fetchJson<T>(url: string, options: RequestInit, onErrorMetric: string): Promise<T> {
   const res = await fetch(url, options);
   const data = await res.json();
   if (!res.ok) {
@@ -71,6 +89,51 @@ async function fetchJson<T>(url: string, options: RequestInit, onErrorMetric: st
   return data as T;
 }
 
+export const personaApi = {
+  async list(apiBase: string): Promise<Persona[]> {
+    const auth = getAuthHeaders();
+    if (!auth) throw new Error("Sign in to access personas.");
+    const data = await fetchJson<{ personas: Persona[] }>(`${apiBase}/personas`, { headers: auth.headers }, "persona.list.error");
+    void trackTelemetry("persona.list.success", { count: Array.isArray(data.personas) ? data.personas.length : 0 });
+    return data.personas;
+  },
+
+  async compatibility(apiBase: string, personaId?: string): Promise<PersonaCompatibility[]> {
+    const auth = getAuthHeaders();
+    if (!auth) throw new Error("Sign in to access compatibility.");
+    const url = personaId
+      ? `${apiBase}/personas/compatibility?personaId=${encodeURIComponent(personaId)}`
+      : `${apiBase}/personas/compatibility`;
+    const data = await fetchJson<{ compatibilities: PersonaCompatibility[] }>(url, { headers: auth.headers }, "persona.compatibility.error");
+    void trackTelemetry("persona.compatibility.success", { count: data.compatibilities.length });
+    return data.compatibilities;
+  },
+
+  async recomputeCompatibility(apiBase: string): Promise<PersonaCompatibility[]> {
+    const auth = getAuthHeaders();
+    if (!auth) throw new Error("Sign in to recompute compatibility.");
+    const data = await fetchJson<{ compatibilities: PersonaCompatibility[] }>(
+      `${apiBase}/personas/compatibility/recompute`,
+      { method: "POST", headers: auth.headers, body: "{}" },
+      "persona.compatibility.recompute.error",
+    );
+    void trackTelemetry("persona.compatibility.recompute.success", { count: data.compatibilities.length });
+    return data.compatibilities;
+  },
+
+  async confusion(apiBase: string, payload: { pairs: { sourceId: string; targetId: string; label: boolean }[]; threshold?: number }): Promise<PersonaConfusionMatrix> {
+    const auth = getAuthHeaders();
+    if (!auth) throw new Error("Sign in to evaluate compatibility.");
+    const data = await fetchJson<PersonaConfusionMatrix>(
+      `${apiBase}/personas/compatibility/confusion`,
+      { method: "POST", headers: auth.headers, body: JSON.stringify(payload) },
+      "persona.compatibility.confusion.error",
+    );
+    void trackTelemetry("persona.compatibility.confusion.success", { evaluated: data.evaluated, threshold: data.threshold });
+    return data;
+  },
+};
+
 export function usePersonaListQuery(apiBase: string) {
   const auth = getAuthHeaders();
   const enabled = !!auth?.token;
@@ -78,12 +141,7 @@ export function usePersonaListQuery(apiBase: string) {
   return useQuery({
     queryKey: personaKeys.list(apiBase, auth?.token || ""),
     enabled,
-    queryFn: async () => {
-      if (!auth) throw new Error("Sign in to access personas.");
-      const data = await fetchJson<{ personas: Persona[] }>(`${apiBase}/personas`, { headers: auth.headers }, "persona.list.error");
-      void trackTelemetry("persona.list.success", { count: Array.isArray(data.personas) ? data.personas.length : 0 });
-      return data.personas;
-    },
+    queryFn: () => personaApi.list(apiBase),
   });
 }
 
@@ -137,13 +195,7 @@ export function usePersonaCompatibilityQuery(apiBase: string, personaId?: string
   return useQuery({
     queryKey: personaKeys.compatibility(apiBase, auth?.token || "", personaId),
     enabled,
-    queryFn: async () => {
-      if (!auth) throw new Error("Sign in to access compatibility.");
-      const url = personaId ? `${apiBase}/personas/compatibility?personaId=${encodeURIComponent(personaId)}` : `${apiBase}/personas/compatibility`;
-      const data = await fetchJson<{ compatibilities: PersonaCompatibility[] }>(url, { headers: auth.headers }, "persona.compatibility.error");
-      void trackTelemetry("persona.compatibility.success", { count: data.compatibilities.length });
-      return data.compatibilities;
-    },
+    queryFn: () => personaApi.compatibility(apiBase, personaId),
   });
 }
 
@@ -152,14 +204,7 @@ export function useRecomputePersonaCompatibilityMutation(apiBase: string) {
   return useMutation({
     mutationKey: ["personas", "compatibility", "recompute", apiBase, auth?.token || ""],
     mutationFn: async () => {
-      if (!auth) throw new Error("Sign in to recompute compatibility.");
-      const data = await fetchJson<{ compatibilities: PersonaCompatibility[] }>(
-        `${apiBase}/personas/compatibility/recompute`,
-        { method: "POST", headers: auth.headers },
-        "persona.compatibility.recompute.error",
-      );
-      void trackTelemetry("persona.compatibility.recompute.success", { count: data.compatibilities.length });
-      return data.compatibilities;
+      return personaApi.recomputeCompatibility(apiBase);
     },
     onSuccess: () => {
       const token = getToken();
@@ -187,6 +232,16 @@ export function useUpsertPersonaAttributesMutation(apiBase: string) {
       const token = getToken();
       void queryClient.invalidateQueries({ queryKey: ["personas", apiBase, token] });
       void queryClient.invalidateQueries({ queryKey: personaKeys.compatibility(apiBase, token) });
+    },
+  });
+}
+
+export function usePersonaConfusionMatrixMutation(apiBase: string) {
+  const auth = getAuthHeaders();
+  return useMutation({
+    mutationKey: ["personas", "compatibility", "confusion", apiBase, auth?.token || ""],
+    mutationFn: async (payload: { pairs: { sourceId: string; targetId: string; label: boolean }[]; threshold?: number }) => {
+      return personaApi.confusion(apiBase, payload);
     },
   });
 }

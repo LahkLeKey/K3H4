@@ -186,4 +186,39 @@ describe("persona routes", () => {
     expect(body.compatibilities[0].jaccardScore).toBeCloseTo(0.25);
     expect(recordTelemetry).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({ eventType: "persona.compatibility.recompute" }));
   });
+
+  it("returns confusion matrix", async () => {
+    const compat = {
+      id: "c2",
+      userId,
+      sourceId: "p1",
+      targetId: "p2",
+      jaccardScore: 0.6,
+      intersectionCount: 3,
+      unionCount: 5,
+      overlappingTokens: ["a", "b"],
+      computedAt: new Date(),
+      rationale: null,
+      status: "active",
+      source: { id: "p1", alias: "One", account: "one@test.com", handle: null, note: null, tags: [], createdAt: new Date(), updatedAt: new Date(), attributes: [] },
+      target: { id: "p2", alias: "Two", account: "two@test.com", handle: null, note: null, tags: [], createdAt: new Date(), updatedAt: new Date(), attributes: [] },
+    };
+
+    const prisma = {
+      personaCompatibility: {
+        findMany: vi.fn().mockResolvedValue([compat]),
+      },
+    };
+
+    const server = buildServer(prisma);
+    const res = await server.inject({
+      method: "POST",
+      url: "/personas/compatibility/confusion",
+      payload: { pairs: [{ sourceId: "p1", targetId: "p2", label: true }], threshold: 0.4 },
+    });
+    expect(res.statusCode).toBe(200);
+    const body = res.json();
+    expect(body.counts.tp).toBe(1);
+    expect(body.metrics.recall).toBeCloseTo(1);
+  });
 });

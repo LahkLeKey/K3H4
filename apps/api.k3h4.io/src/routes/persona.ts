@@ -2,6 +2,7 @@ import { faker } from "@faker-js/faker";
 import { type Prisma, type PrismaClient } from "@prisma/client";
 import { type FastifyInstance } from "fastify";
 import { type RecordTelemetryFn } from "./types";
+import { runOnnxCompatibility, type CompatFeatureVector } from "../lib/compat-onnx";
 
 type PersonaWithAttributes = Prisma.PersonaGetPayload<{ include: { attributes: true } }>;
 
@@ -117,6 +118,110 @@ const serializeCompatibility = (compat: CompatibilityWithNodes) => ({
   source: serializePersona(compat.source),
   target: serializePersona(compat.target),
 });
+
+const pairKey = (a: string, b: string) => (a < b ? `${a}|${b}` : `${b}|${a}`);
+
+const computeConfusionFromPairs = async (
+  pairs: ConfusionExampleInput[],
+  userId: string,
+  prisma: PrismaClient,
+  threshold: number,
+  modelPath?: string,
+) => {
+  const normalizedPairs = pairs
+    .map((pair) => ({
+      sourceId: pair.sourceId?.trim(),
+      targetId: pair.targetId?.trim(),
+      label: pair.label,
+    }))
+    .filter((pair) => !!pair.sourceId && !!pair.targetId && typeof pair.label === "boolean") as { sourceId: string; targetId: string; label: boolean }[];
+
+  if (normalizedPairs.length === 0) return { counts: emptyConfusion, details: [], missing: pairs.length };
+
+  const searchPairs = normalizedPairs.map((pair) => ({ sourceId: pair.sourceId, targetId: pair.targetId }));
+
+  const compatibilities = await prisma.personaCompatibility.findMany({
+    where: {
+      userId,
+      OR: searchPairs.flatMap((pair) => ([
+        { sourceId: pair.sourceId, targetId: pair.targetId },
+        { sourceId: pair.targetId, targetId: pair.sourceId },
+      ])),
+    },
+    include: {
+      source: { include: { attributes: true } },
+      target: { include: { attributes: true } },
+    },
+  });
+
+  const compatMap = new Map<string, CompatibilityWithNodes>();
+  compatibilities.forEach((compat) => compatMap.set(pairKey(compat.sourceId, compat.targetId), compat));
+
+  const counts: ConfusionCounts = { ...emptyConfusion };
+  const details: Array<{
+    id: string;
+    probability: number;
+    predicted: boolean;
+    label: boolean;
+    usedOnnx: boolean;
+    sourceId: string;
+    targetId: string;
+    jaccardScore: number;
+  }> = [];
+
+  for (const pair of normalizedPairs) {
+    const key = pairKey(pair.sourceId, pair.targetId);
+    const compat = compatMap.get(key);
+    if (!compat) continue;
+
+    const features: CompatFeatureVector = {
+      jaccardScore: compat.jaccardScore,
+      intersectionCount: compat.intersectionCount,
+      unionCount: compat.unionCount,
+    };
+    const { probability, usedOnnx } = await runOnnxCompatibility(features, modelPath);
+    const predicted = probability >= threshold;
+
+    if (pair.label && predicted) counts.tp += 1;
+    else if (!pair.label && predicted) counts.fp += 1;
+    else if (!pair.label && !predicted) counts.tn += 1;
+    else counts.fn += 1;
+
+    details.push({
+      id: key,
+      probability,
+      predicted,
+      label: pair.label,
+      usedOnnx,
+      sourceId: compat.sourceId,
+      targetId: compat.targetId,
+      jaccardScore: compat.jaccardScore,
+    });
+  }
+
+  return { counts, details, missing: normalizedPairs.length - details.length };
+};
+
+type ConfusionExampleInput = {
+  sourceId?: string;
+  targetId?: string;
+  label?: boolean;
+};
+
+type ConfusionCounts = {
+  tp: number;
+  fp: number;
+  tn: number;
+  fn: number;
+};
+
+const emptyConfusion: ConfusionCounts = { tp: 0, fp: 0, tn: 0, fn: 0 };
+
+const clampThreshold = (value: unknown) => {
+  const num = Number(value);
+  if (!Number.isFinite(num)) return 0.5;
+  return Math.min(Math.max(num, 0), 1);
+};
 
 export function registerPersonaRoutes(server: FastifyInstance, prisma: PrismaClient, recordTelemetry: RecordTelemetryFn) {
   server.get(
@@ -348,6 +453,50 @@ export function registerPersonaRoutes(server: FastifyInstance, prisma: PrismaCli
       });
 
       return { compatibilities: compatibilities.map(serializeCompatibility) };
+    },
+  );
+
+  server.post(
+    "/personas/compatibility/confusion",
+    { preHandler: [server.authenticate] },
+    async (request, reply) => {
+      const userId = (request.user as { sub: string }).sub;
+      const body = request.body as { pairs?: ConfusionExampleInput[]; threshold?: number; modelPath?: string } | undefined;
+
+      if (!Array.isArray(body?.pairs) || body.pairs.length === 0) {
+        return reply.status(400).send({ error: "pairs array is required" });
+      }
+      if (body.pairs.length > 200) {
+        return reply.status(400).send({ error: "limit pairs to 200 per request" });
+      }
+
+      const threshold = clampThreshold(body?.threshold ?? 0.5);
+      const { counts, details, missing } = await computeConfusionFromPairs(body.pairs, userId, prisma, threshold, body?.modelPath);
+      const total = counts.tp + counts.fp + counts.tn + counts.fn;
+      const precision = counts.tp + counts.fp === 0 ? 0 : counts.tp / (counts.tp + counts.fp);
+      const recall = counts.tp + counts.fn === 0 ? 0 : counts.tp / (counts.tp + counts.fn);
+      const accuracy = total === 0 ? 0 : (counts.tp + counts.tn) / total;
+      const f1 = precision + recall === 0 ? 0 : (2 * precision * recall) / (precision + recall);
+
+      await recordTelemetry(request, {
+        eventType: "persona.compatibility.confusion",
+        source: "api",
+        payload: { evaluated: details.length, missing, threshold },
+      });
+
+      return {
+        threshold,
+        counts,
+        metrics: {
+          accuracy: Number(accuracy.toFixed(4)),
+          precision: Number(precision.toFixed(4)),
+          recall: Number(recall.toFixed(4)),
+          f1: Number(f1.toFixed(4)),
+        },
+        evaluated: details.length,
+        missing,
+        details,
+      };
     },
   );
 }
