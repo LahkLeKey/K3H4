@@ -18,6 +18,7 @@ import { GraphicsEngineModule } from "./graphics-engine/graphics-engine";
 import { ArcadeHub } from "./arcade/arcade-hub";
 import { ShellView } from "./shell/view";
 import { ShellBrand } from "./shell/brand";
+import { IndustryDashboard } from "./industry-dashboard";
 import { useAuthProfile } from "../hooks/use-auth-profile";
 import { MODULE_STORAGE_KEY } from "../lib/constants";
 import { trackTelemetry, setTelemetryApiBase } from "../lib/telemetry";
@@ -136,36 +137,54 @@ export function Shell() {
             key: "bank",
             label: "Bank",
             description: "K3H4-Coin Bank",
-            render: () => <BankTable apiBase={apiBase} userEmail={userEmail} />,
+            render: () => (
+                <IndustryDashboard>
+                    <BankTable apiBase={apiBase} userEmail={userEmail} />
+                </IndustryDashboard>
+            ),
         },
         {
             key: "persona",
             label: "Persona",
             description: "Mock personas for testing",
-            render: () => <PersonaTable apiBase={apiBase} userEmail={userEmail} />,
+            render: () => (
+                <IndustryDashboard>
+                    <PersonaTable apiBase={apiBase} userEmail={userEmail} />
+                </IndustryDashboard>
+            ),
         },
         {
             key: "agency",
             label: "Staffing",
             description: "Assignments, timecards, and payouts",
-            render: () => <AssignmentAgency apiBase={apiBase} userEmail={userEmail} />,
+            render: () => (
+                <IndustryDashboard>
+                    <AssignmentAgency apiBase={apiBase} userEmail={userEmail} />
+                </IndustryDashboard>
+            ),
         },
         {
             key: "freight",
             label: "Freight",
             description: "Routing, pricing, freight orders",
-            render: () => <FreightManager apiBase={apiBase} userEmail={userEmail} />,
+            render: () => (
+                <IndustryDashboard>
+                    <FreightManager apiBase={apiBase} userEmail={userEmail} />
+                </IndustryDashboard>
+            ),
         },
         {
             key: "warehouse",
             label: "Warehouse",
             description: "Inventory + freight handoff",
             render: () => (
-                <WarehouseDashboard
-                    apiBase={apiBase}
-                    userEmail={userEmail}
-                    onNavigateFreight={() => handleModuleChange("freight")}
-                />
+                <IndustryDashboard>
+                    <WarehouseDashboard
+                        apiBase={apiBase}
+                        userEmail={userEmail}
+                        onNavigateFreight={() => handleModuleChange("freight")}
+                    />
+                </IndustryDashboard>
             ),
         },
         {
@@ -173,7 +192,9 @@ export function Shell() {
             label: "Point of Sale",
             description: "Omni-channel checkout + receipts",
             render: () => (
-                <PosDashboard apiBase={apiBase} userEmail={userEmail} />
+                <IndustryDashboard>
+                    <PosDashboard apiBase={apiBase} userEmail={userEmail} />
+                </IndustryDashboard>
             ),
         },
         {
@@ -181,7 +202,9 @@ export function Shell() {
             label: "Agriculture",
             description: "Farm logistics, lots, and yield tracking",
             render: () => (
-                <AgricultureDashboard />
+                <IndustryDashboard>
+                    <AgricultureDashboard />
+                </IndustryDashboard>
             ),
         },
         {
@@ -189,29 +212,37 @@ export function Shell() {
             label: "Graphics Engine",
             description: "R3F scenes for spatial planning and immersive flows",
             render: () => (
-                <GraphicsEngineModule
-                    userEmail={userEmail}
-                    onNavigate={handleModuleChange}
-                />
+                <IndustryDashboard>
+                    <GraphicsEngineModule
+                        userEmail={userEmail}
+                        onNavigate={handleModuleChange}
+                    />
+                </IndustryDashboard>
             ),
         },
         {
             key: "arcade",
             label: "Arcade",
             description: "Retro arcade ops: cards, top-ups, prizes, and games",
-            render: () => <ArcadeHub apiBase={apiBase} userEmail={userEmail} />,
+            render: () => (
+                <IndustryDashboard>
+                    <ArcadeHub apiBase={apiBase} userEmail={userEmail} />
+                </IndustryDashboard>
+            ),
         },
         {
             key: "culinary",
             label: "Culinary",
             description: "Menus, prep, and supply chain",
             render: () => (
-                <CulinaryOps
-                    apiBase={apiBase}
-                    userEmail={userEmail}
-                    onNavigatePos={() => handleModuleChange("pos")}
-                    onNavigateWarehouse={() => handleModuleChange("warehouse")}
-                />
+                <IndustryDashboard>
+                    <CulinaryOps
+                        apiBase={apiBase}
+                        userEmail={userEmail}
+                        onNavigatePos={() => handleModuleChange("pos")}
+                        onNavigateWarehouse={() => handleModuleChange("warehouse")}
+                    />
+                </IndustryDashboard>
             ),
         },
     ], [apiBase, userEmail, handleModuleChange]);
