@@ -466,8 +466,8 @@ export function registerPersonaRoutes(server: FastifyInstance, prisma: PrismaCli
       if (!Array.isArray(body?.pairs) || body.pairs.length === 0) {
         return reply.status(400).send({ error: "pairs array is required" });
       }
-      if (body.pairs.length > 200) {
-        return reply.status(400).send({ error: "limit pairs to 200 per request" });
+      if (body.pairs.length > 2000) {
+        return reply.status(400).send({ error: "limit pairs to 2000 per request" });
       }
 
       const threshold = clampThreshold(body?.threshold ?? 0.5);
