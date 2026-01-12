@@ -1,7 +1,8 @@
-import { useMemo } from "react";
-import { Canvas } from "@react-three/fiber";
+import { useMemo, useRef } from "react";
+import { Canvas, useFrame } from "@react-three/fiber";
 import { Html, Line, OrbitControls } from "@react-three/drei";
 import { AdditiveBlending, Color, DodecahedronGeometry, WireframeGeometry } from "three";
+import type * as THREE from "three";
 
 const scoreColor = (score: number) => {
     if (score >= 0.66) return "#16a34a";
@@ -102,6 +103,143 @@ const pseudoRandom = (seed: number) => {
     const s = Math.sin(seed * 12.9898) * 43758.5453;
     return s - Math.floor(s);
 };
+
+const sunVertexShader = /* glsl */ `
+    uniform float uTime;
+    varying vec3 vNormal;
+    varying vec3 vPos;
+    void main() {
+        vNormal = normal;
+        vPos = position;
+        float wobble = sin(uTime * 2.0 + position.y * 4.0) * 0.03;
+        vec3 displaced = position + normal * wobble;
+        gl_Position = projectionMatrix * modelViewMatrix * vec4(displaced, 1.0);
+    }
+`;
+
+const sunFragmentShader = /* glsl */ `
+    uniform float uTime;
+    uniform vec3 uColorCore;
+    uniform vec3 uColorRim;
+    uniform vec3 uColorGlow;
+    varying vec3 vNormal;
+    varying vec3 vPos;
+
+    float hash(vec3 p) {
+        p = vec3(dot(p, vec3(127.1, 311.7, 74.7)), dot(p, vec3(269.5, 183.3, 246.1)), dot(p, vec3(113.5, 271.9, 124.6)));
+        return fract(sin(p.x + p.y + p.z) * 43758.5453);
+    }
+
+    float noise(vec3 p) {
+        vec3 i = floor(p);
+        vec3 f = fract(p);
+        f = f * f * (3.0 - 2.0 * f);
+        float n000 = hash(i + vec3(0.0, 0.0, 0.0));
+        float n001 = hash(i + vec3(0.0, 0.0, 1.0));
+        float n010 = hash(i + vec3(0.0, 1.0, 0.0));
+        float n011 = hash(i + vec3(0.0, 1.0, 1.0));
+        float n100 = hash(i + vec3(1.0, 0.0, 0.0));
+        float n101 = hash(i + vec3(1.0, 0.0, 1.0));
+        float n110 = hash(i + vec3(1.0, 1.0, 0.0));
+        float n111 = hash(i + vec3(1.0, 1.0, 1.0));
+        float n00 = mix(n000, n100, f.x);
+        float n01 = mix(n001, n101, f.x);
+        float n10 = mix(n010, n110, f.x);
+        float n11 = mix(n011, n111, f.x);
+        float n0 = mix(n00, n10, f.y);
+        float n1 = mix(n01, n11, f.y);
+        return mix(n0, n1, f.z);
+    }
+
+    void main() {
+        float fresnel = pow(1.0 - max(dot(normalize(vNormal), vec3(0.0, 0.0, 1.0)), 0.0), 2.4);
+        float plasma = noise(vPos * 3.0 + vec3(uTime * 0.8));
+        plasma = smoothstep(0.2, 0.8, plasma);
+        vec3 base = mix(uColorCore, uColorRim, plasma);
+        vec3 glow = uColorGlow * fresnel * 1.5;
+        vec3 color = base + glow;
+        gl_FragColor = vec4(color, 1.0);
+    }
+`;
+
+function SunSphere({ score, isIsolated, seed = 1 }: { score: number; isIsolated: boolean; seed?: number }) {
+    const meshRef = useRef<THREE.Mesh>(null);
+    const haloRef = useRef<THREE.Points>(null);
+    const timeRef = useRef(0);
+    const phase = useMemo(() => pseudoRandom(seed) * Math.PI * 2, [seed]);
+    const jitter = 0.08 + score * 0.04;
+
+    const haloPositions = useMemo(() => {
+        const count = 120;
+        const arr = new Float32Array(count * 3);
+        for (let i = 0; i < count; i++) {
+            const r1 = pseudoRandom(seed * 97 + i * 17);
+            const r2 = pseudoRandom(seed * 41 + i * 13);
+            const r3 = pseudoRandom(seed * 59 + i * 23);
+            const theta = Math.acos(2 * r1 - 1);
+            const phi = 2 * Math.PI * r2;
+            const radius = 0.9 + r3 * 0.5;
+            const x = radius * Math.sin(theta) * Math.cos(phi);
+            const y = radius * Math.sin(theta) * Math.sin(phi);
+            const z = radius * Math.cos(theta);
+            arr[i * 3] = x;
+            arr[i * 3 + 1] = y;
+            arr[i * 3 + 2] = z;
+        }
+        return arr;
+    }, [seed]);
+
+    useFrame((state) => {
+        timeRef.current += state.clock.getDelta();
+        const t = timeRef.current;
+        if (meshRef.current) {
+            const mat = meshRef.current.material as THREE.ShaderMaterial;
+            if (mat?.uniforms?.uTime) mat.uniforms.uTime.value = t;
+            meshRef.current.position.x = Math.sin(t * 0.8 + phase) * jitter;
+            meshRef.current.position.y = Math.sin(t * 0.6 + phase * 0.7) * jitter * 0.8;
+            meshRef.current.position.z = Math.cos(t * 0.7 + phase * 1.3) * jitter;
+        }
+        if (haloRef.current) {
+            haloRef.current.rotation.y += 0.08 * state.clock.getDelta();
+        }
+    });
+
+    const coreColor = isIsolated ? new Color("#0ea5e9") : new Color("#fcd34d");
+    const rimColor = isIsolated ? new Color("#22d3ee") : new Color("#fb7185");
+    const glowColor = isIsolated ? new Color("#0ea5e9") : new Color("#fff1a1");
+
+    return (
+        <group>
+            <mesh ref={meshRef}>
+                <sphereGeometry args={[0.55, 48, 48]} />
+                <shaderMaterial
+                    uniforms={{
+                        uTime: { value: 0 },
+                        uColorCore: { value: coreColor },
+                        uColorRim: { value: rimColor },
+                        uColorGlow: { value: glowColor },
+                    }}
+                    vertexShader={sunVertexShader}
+                    fragmentShader={sunFragmentShader}
+                />
+            </mesh>
+            <points ref={haloRef} frustumCulled={false}>
+                <bufferGeometry>
+                    <bufferAttribute attach="attributes-position" args={[haloPositions, 3]} />
+                </bufferGeometry>
+                <pointsMaterial
+                    size={0.08}
+                    sizeAttenuation
+                    color={isIsolated ? "#38bdf8" : "#fde68a"}
+                    transparent
+                    opacity={0.9}
+                    depthWrite={false}
+                    blending={AdditiveBlending}
+                />
+            </points>
+        </group>
+    );
+}
 
 function EdgeGasClouds({
     edges,
@@ -318,16 +456,7 @@ export function CompatibilityCanvas({
                 const nodeScore = edges.reduce((max, edge) => (edge.sourceId === node.id || edge.targetId === node.id ? Math.max(max, edge.score) : max), 0);
                 return (
                     <group key={node.id} position={node.position}>
-                        <mesh>
-                            <sphereGeometry args={[0.55, 32, 32]} />
-                            <meshStandardMaterial
-                                color={isIsolated ? "#0b1220" : scoreColor(nodeScore + 0.1)}
-                                emissive={isIsolated ? "#111827" : "#0ea5e9"}
-                                emissiveIntensity={isIsolated ? 0.7 : 0.35}
-                                metalness={isIsolated ? 0.4 : 0.1}
-                                roughness={isIsolated ? 0.8 : 0.35}
-                            />
-                        </mesh>
+                        <SunSphere score={nodeScore} isIsolated={isIsolated} seed={pseudoRandom(Number.parseInt(node.id.slice(0, 6), 16) || 1) * 10_000} />
                         <Html position={[0, 0.9, 0]} center className="pointer-events-none select-none text-xs">
                             <div className="rounded-lg bg-background/85 px-3 py-1 font-semibold shadow">{isIsolated ? `Black hole: ${node.alias}` : node.alias}</div>
                         </Html>
