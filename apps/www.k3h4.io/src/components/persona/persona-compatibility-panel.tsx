@@ -32,6 +32,8 @@ export function PersonaCompatibilityPanel({ apiBase, userEmail }: { apiBase: str
         details,
         probabilities,
         confusion,
+        categoryEdges,
+        bridgeEdges,
     } = usePersonaCompatibility(apiBase);
 
     const [threshold, setThreshold] = useState(0.5);
@@ -73,7 +75,21 @@ export function PersonaCompatibilityPanel({ apiBase, userEmail }: { apiBase: str
                             <Sparkles className="mr-2 h-4 w-4" /> {generatePersona.isPending ? "Working..." : "Generate persona"}
                         </Button>
                     </div>
-                    <CompatibilityCanvas nodes={nodes} edges={edges} />
+                    <CompatibilityCanvas nodes={nodes} edges={edges} categoryEdges={categoryEdges} bridgeEdges={bridgeEdges} />
+                    <div className="pointer-events-none absolute left-3 bottom-3 z-10 flex flex-col gap-2 text-[11px] text-muted-foreground">
+                        <div className="flex items-center gap-2 rounded-full bg-background/80 px-3 py-1 shadow">
+                            <span className="h-2 w-2 rounded-full bg-emerald-500" />
+                            <span>Token similarity clouds</span>
+                        </div>
+                        <div className="flex items-center gap-2 rounded-full bg-background/80 px-3 py-1 shadow">
+                            <span className="h-2 w-2 rounded-full bg-purple-400" />
+                            <span>Category similarity clouds</span>
+                        </div>
+                        <div className="flex items-center gap-2 rounded-full bg-background/80 px-3 py-1 shadow">
+                            <span className="h-2 w-2 rounded-full bg-pink-400" />
+                            <span>Context bridges</span>
+                        </div>
+                    </div>
                     {nodes.length === 0 ? (
                         <div className="pointer-events-none absolute inset-0 flex items-center justify-center text-sm text-muted-foreground">
                             Add personas to see compatibility.
