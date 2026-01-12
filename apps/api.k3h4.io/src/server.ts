@@ -60,7 +60,7 @@ await server.register(fastifyRateLimit, {
   },
 });
 
-const swaggerTagMap: Record<string, { name: string; description: string }> = {
+const swaggerTags: Record<string, { name: string; description: string }> = {
   health: { name: "Health", description: "Health and diagnostics" },
   auth: { name: "Auth", description: "Authentication and session" },
   profile: { name: "Profile", description: "User profiles" },
@@ -75,6 +75,25 @@ const swaggerTagMap: Record<string, { name: string; description: string }> = {
   arcade: { name: "Arcade", description: "Arcade simulator" },
   usda: { name: "USDA", description: "USDA data" },
   telemetry: { name: "Telemetry", description: "Telemetry intake" },
+};
+
+const swaggerTagMap: Record<string, { name: string; description: string }> = {
+  health: swaggerTags.health,
+  auth: swaggerTags.auth,
+  profile: swaggerTags.profile,
+  bank: swaggerTags.bank,
+  persona: swaggerTags.persona,
+  personas: swaggerTags.persona, // plural route prefix
+  assignment: swaggerTags.assignment,
+  assignments: swaggerTags.assignment, // plural route prefix
+  freight: swaggerTags.freight,
+  warehouse: swaggerTags.warehouse,
+  pos: swaggerTags.pos,
+  agriculture: swaggerTags.agriculture,
+  culinary: swaggerTags.culinary,
+  arcade: swaggerTags.arcade,
+  usda: swaggerTags.usda,
+  telemetry: swaggerTags.telemetry,
 };
 
 const getSessionId = (request: FastifyRequest) => {
@@ -190,7 +209,7 @@ const openApiOptions = {
       },
     },
     security: [{ bearerAuth: [] }],
-    tags: Object.values(swaggerTagMap),
+    tags: Object.values(swaggerTags),
   },
 };
 
