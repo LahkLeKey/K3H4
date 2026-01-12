@@ -104,6 +104,99 @@ const pseudoRandom = (seed: number) => {
     return s - Math.floor(s);
 };
 
+const hashString = (value: string) => {
+    let h = 0;
+    for (let i = 0; i < value.length; i++) {
+        h = (h * 31 + value.charCodeAt(i)) | 0;
+    }
+    return Math.abs(h) + 1;
+};
+
+function GalaxyDisk({
+    innerRadius,
+    outerRadius,
+    thickness = 0.25,
+    edges,
+}: {
+    innerRadius: number;
+    outerRadius: number;
+    thickness?: number;
+    edges: GraphEdge[];
+}) {
+    const count = edges.length;
+    if (count === 0) return null;
+    const geometryRef = useRef<THREE.BufferGeometry>(null);
+    const positions = useMemo(() => new Float32Array(count * 3), [count]);
+    const angles = useMemo(() => new Float32Array(count), [count]);
+    const radii = useMemo(() => new Float32Array(count), [count]);
+    const speeds = useMemo(() => new Float32Array(count), [count]);
+    const colors = useMemo(() => new Float32Array(count * 3), [count]);
+
+    useMemo(() => {
+        const colorInner = new Color("#fef3c7");
+        const colorOuter = new Color("#a855f7");
+        for (let i = 0; i < count; i++) {
+            const edge = edges[i];
+            const seed = hashString(edge.id) + i;
+            const score = Math.max(0.0001, edge.score);
+            const rBias = 1 - Math.pow(score, 0.55); // higher score closer to center
+            const rRand = pseudoRandom(seed * 0.031) * 0.35;
+            const r = innerRadius + Math.min(1, rBias + rRand) * (outerRadius - innerRadius);
+            const arm = Math.floor(pseudoRandom(seed * 0.17) * 4);
+            const baseAngle = (arm / 4) * Math.PI * 2;
+            const jitter = (pseudoRandom(seed * 0.29) - 0.5) * 0.3;
+            const angle = baseAngle + jitter + r * 0.16; // gentle spiral
+
+            radii[i] = r;
+            angles[i] = angle;
+            const speed = 0.42 * Math.pow(Math.max(0.12, r), -1.02); // Kepler-ish falloff
+            speeds[i] = speed;
+
+            const y = (pseudoRandom(seed * 0.53) - 0.5) * thickness;
+            positions[i * 3] = Math.cos(angle) * r;
+            positions[i * 3 + 1] = y;
+            positions[i * 3 + 2] = Math.sin(angle) * r;
+
+            const t = Math.min(1, (r - innerRadius) / Math.max(0.0001, outerRadius - innerRadius));
+            const c = colorInner.clone().lerp(colorOuter, t);
+            colors[i * 3] = c.r;
+            colors[i * 3 + 1] = c.g;
+            colors[i * 3 + 2] = c.b;
+        }
+    }, [count, edges, innerRadius, outerRadius, thickness, positions, angles, radii, speeds, colors]);
+
+    useFrame((state) => {
+        const dt = state.clock.getDelta();
+        for (let i = 0; i < count; i++) {
+            angles[i] += speeds[i] * dt;
+            const r = radii[i];
+            positions[i * 3] = Math.cos(angles[i]) * r;
+            positions[i * 3 + 2] = Math.sin(angles[i]) * r;
+        }
+        if (geometryRef.current) {
+            geometryRef.current.attributes.position.needsUpdate = true;
+        }
+    });
+
+    return (
+        <points frustumCulled={false} renderOrder={-2}>
+            <bufferGeometry ref={geometryRef}>
+                <bufferAttribute attach="attributes-position" args={[positions, 3]} />
+                <bufferAttribute attach="attributes-color" args={[colors, 3]} />
+            </bufferGeometry>
+            <pointsMaterial
+                size={0.04}
+                sizeAttenuation
+                vertexColors
+                transparent
+                opacity={0.9}
+                depthWrite={false}
+                blending={AdditiveBlending}
+            />
+        </points>
+    );
+}
+
 const sunVertexShader = /* glsl */ `
     uniform float uTime;
     varying vec3 vNormal;
@@ -162,32 +255,54 @@ const sunFragmentShader = /* glsl */ `
     }
 `;
 
-function SunSphere({ score, isIsolated, seed = 1 }: { score: number; isIsolated: boolean; seed?: number }) {
+type ConnectionVector = { dir: [number, number, number]; weight: number };
+
+function SunSphere({ score, isIsolated, seed = 1, connections }: { score: number; isIsolated: boolean; seed?: number; connections: ConnectionVector[] }) {
     const meshRef = useRef<THREE.Mesh>(null);
     const haloRef = useRef<THREE.Points>(null);
     const timeRef = useRef(0);
     const phase = useMemo(() => pseudoRandom(seed) * Math.PI * 2, [seed]);
     const jitter = 0.08 + score * 0.04;
-
     const haloPositions = useMemo(() => {
-        const count = 120;
-        const arr = new Float32Array(count * 3);
-        for (let i = 0; i < count; i++) {
-            const r1 = pseudoRandom(seed * 97 + i * 17);
-            const r2 = pseudoRandom(seed * 41 + i * 13);
-            const r3 = pseudoRandom(seed * 59 + i * 23);
-            const theta = Math.acos(2 * r1 - 1);
-            const phi = 2 * Math.PI * r2;
-            const radius = 0.9 + r3 * 0.5;
-            const x = radius * Math.sin(theta) * Math.cos(phi);
-            const y = radius * Math.sin(theta) * Math.sin(phi);
-            const z = radius * Math.cos(theta);
-            arr[i * 3] = x;
-            arr[i * 3 + 1] = y;
-            arr[i * 3 + 2] = z;
-        }
+        const perConnection = 6;
+        const count = connections.length * perConnection;
+        const arr = new Float32Array(Math.max(0, count) * 3);
+        connections.forEach((conn, idx) => {
+            const [dx, dy, dz] = conn.dir;
+            const base = Math.max(0.6, conn.weight * 1.2);
+            for (let j = 0; j < perConnection; j++) {
+                const k = idx * perConnection + j;
+                const jitterR = pseudoRandom(seed * 97 + k * 17) * 0.25;
+                const wobble = (pseudoRandom(seed * 41 + k * 31) - 0.5) * 0.18;
+                const radius = base + jitterR;
+                const nx = dx + wobble;
+                const ny = dy + wobble * 0.6;
+                const nz = dz + wobble;
+                const norm = Math.max(0.0001, Math.hypot(nx, ny, nz));
+                const x = (nx / norm) * radius;
+                const y = (ny / norm) * radius;
+                const z = (nz / norm) * radius;
+                arr[k * 3] = x;
+                arr[k * 3 + 1] = y;
+                arr[k * 3 + 2] = z;
+            }
+        });
         return arr;
-    }, [seed]);
+    }, [connections, seed]);
+
+    const haloSizes = useMemo(() => {
+        const perConnection = 6;
+        const count = connections.length * perConnection;
+        const arr = new Float32Array(Math.max(0, count));
+        connections.forEach((conn, idx) => {
+            for (let j = 0; j < perConnection; j++) {
+                const k = idx * perConnection + j;
+                const jitter = 0.7 + pseudoRandom(seed * 13 + k * 19) * 0.6;
+                arr[k] = 0.06 + conn.weight * 0.08 * jitter;
+            }
+        });
+        return arr;
+    }, [connections, seed]);
 
     useFrame((state) => {
         timeRef.current += state.clock.getDelta();
@@ -226,6 +341,7 @@ function SunSphere({ score, isIsolated, seed = 1 }: { score: number; isIsolated:
             <points ref={haloRef} frustumCulled={false}>
                 <bufferGeometry>
                     <bufferAttribute attach="attributes-position" args={[haloPositions, 3]} />
+                    <bufferAttribute attach="attributes-size" args={[haloSizes, 1]} />
                 </bufferGeometry>
                 <pointsMaterial
                     size={0.08}
@@ -386,11 +502,32 @@ export function CompatibilityCanvas({
         bridgeEdges.forEach(bump);
         return counts as Record<string, number>;
     }, [nodes, edges, categoryEdges, bridgeEdges]);
+
+    const connectionVectorsByNode = useMemo(() => {
+        const map: Record<string, ConnectionVector[]> = Object.fromEntries(nodes.map((n) => [n.id, []]));
+        const add = (edge: GraphEdge) => {
+            const sourcePos = positions[edge.sourceId];
+            const targetPos = positions[edge.targetId];
+            if (!sourcePos || !targetPos) return;
+            const dx = targetPos[0] - sourcePos[0];
+            const dy = targetPos[1] - sourcePos[1];
+            const dz = targetPos[2] - sourcePos[2];
+            const len = Math.max(0.0001, Math.hypot(dx, dy, dz));
+            const dir = [dx / len, dy / len, dz / len] as [number, number, number];
+            map[edge.sourceId]?.push({ dir, weight: edge.score });
+            map[edge.targetId]?.push({ dir: [-dir[0], -dir[1], -dir[2]], weight: edge.score });
+        };
+        edges.forEach(add);
+        categoryEdges.forEach(add);
+        bridgeEdges.forEach(add);
+        return map;
+    }, [nodes, edges, categoryEdges, bridgeEdges, positions]);
     return (
         <Canvas camera={{ position: [0, 4, 10], fov: 62 }}>
             <color attach="background" args={["#050816"]} />
             <ambientLight intensity={0.6} />
             <directionalLight position={[6, 8, 6]} intensity={0.8} />
+            <GalaxyDisk innerRadius={Math.max(0.8, frameRadius * 0.12)} outerRadius={frameRadius * 0.92} edges={categoryEdges} />
             {dodecaFrame.map((segment, idx) => (
                 <Line key={`frame-${idx}`} points={segment} color="#1e293b" lineWidth={1.5} />
             ))}
@@ -456,7 +593,12 @@ export function CompatibilityCanvas({
                 const nodeScore = edges.reduce((max, edge) => (edge.sourceId === node.id || edge.targetId === node.id ? Math.max(max, edge.score) : max), 0);
                 return (
                     <group key={node.id} position={node.position}>
-                        <SunSphere score={nodeScore} isIsolated={isIsolated} seed={pseudoRandom(Number.parseInt(node.id.slice(0, 6), 16) || 1) * 10_000} />
+                        <SunSphere
+                            score={nodeScore}
+                            isIsolated={isIsolated}
+                            seed={pseudoRandom(Number.parseInt(node.id.slice(0, 6), 16) || 1) * 10_000}
+                            connections={connectionVectorsByNode[node.id] ?? []}
+                        />
                         <Html position={[0, 0.9, 0]} center className="pointer-events-none select-none text-xs">
                             <div className="rounded-lg bg-background/85 px-3 py-1 font-semibold shadow">{isIsolated ? `Black hole: ${node.alias}` : node.alias}</div>
                         </Html>
