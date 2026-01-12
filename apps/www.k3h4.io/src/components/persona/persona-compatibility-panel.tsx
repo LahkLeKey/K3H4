@@ -459,6 +459,10 @@ export function PersonaCompatibilityPanel({ apiBase, userEmail }: { apiBase: str
         label: (compat.overlappingTokens?.length ?? 0) > 0,
     })), [compatibilities]);
 
+    const maxConfusionPairs = 2000;
+    const confusionPairs = useMemo(() => labeledPairs.slice(0, maxConfusionPairs), [labeledPairs]);
+    const trimmedPairs = Math.max(0, labeledPairs.length - confusionPairs.length);
+
     const confusionCounts = confusion?.counts ?? { tp: 0, fp: 0, tn: 0, fn: 0 };
     const confusionMetrics = confusion?.metrics ?? { accuracy: 0, precision: 0, recall: 0, f1: 0 };
     const details = useMemo(() => confusion?.details ?? [], [confusion]);
@@ -574,12 +578,17 @@ export function PersonaCompatibilityPanel({ apiBase, userEmail }: { apiBase: str
                                 </div>
                                 <Button
                                     size="sm"
-                                    onClick={() => runConfusion(apiBase, { pairs: labeledPairs, threshold })}
+                                    onClick={() => runConfusion(apiBase, { pairs: confusionPairs, threshold })}
                                     disabled={loadingConfusion || labeledPairs.length === 0}
                                 >
                                     {loadingConfusion ? "Evaluating..." : "Run"}
                                 </Button>
                             </div>
+                            {trimmedPairs > 0 ? (
+                                <p className="text-[11px] text-muted-foreground">
+                                    Using first {confusionPairs.length} of {labeledPairs.length} pairs (API limit {maxConfusionPairs}).
+                                </p>
+                            ) : null}
                             <ConfusionMatrix counts={confusionCounts} metrics={confusionMetrics} />
                             <div className="grid gap-2 lg:grid-cols-2 lg:items-start">
                                 <MetricsBars metrics={confusionMetrics} />
