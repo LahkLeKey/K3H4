@@ -150,8 +150,8 @@ export function Shell() {
             description: "Mock personas for testing",
             render: () => (
                 <IndustryDashboard>
-                    <PersonaTable apiBase={apiBase} userEmail={userEmail} />
                     <PersonaCompatibilityPanel apiBase={apiBase} userEmail={userEmail} />
+                    <PersonaTable apiBase={apiBase} userEmail={userEmail} />
                 </IndustryDashboard>
             ),
         },

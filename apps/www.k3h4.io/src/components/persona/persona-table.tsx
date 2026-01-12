@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Plus, RefreshCcw, Send, Sparkles } from "lucide-react";
 
 import { useK3h4Bank } from "../../hooks/use-k3h4-bank";
@@ -50,14 +50,18 @@ export function PersonaTable({ apiBase, userEmail }: PersonaTableProps) {
         rowAmounts: {} as Record<string, string>,
         rowNotes: {} as Record<string, string>,
         inlineError: "",
+        page: 1,
+        pageSize: 10,
     }));
 
-    const { filter, newPersona, rowAmounts, rowNotes, inlineError } = uiStore.useShallow((state) => state);
+    const { filter, newPersona, rowAmounts, rowNotes, inlineError, page, pageSize } = uiStore.useShallow((state) => state);
     const setFilter = (value: string) => uiStore.setState({ filter: value });
     const setNewPersona = (updater: (prev: typeof newPersona) => typeof newPersona) => uiStore.setState((prev) => ({ newPersona: updater(prev.newPersona) }));
     const setRowAmounts = (updater: (prev: Record<string, string>) => Record<string, string>) => uiStore.setState((prev) => ({ rowAmounts: updater(prev.rowAmounts) }));
     const setRowNotes = (updater: (prev: Record<string, string>) => Record<string, string>) => uiStore.setState((prev) => ({ rowNotes: updater(prev.rowNotes) }));
     const setInlineError = (value: string) => uiStore.setState({ inlineError: value });
+    const setPage = (value: number) => uiStore.setState({ page: value });
+    const setPageSize = (value: number) => uiStore.setState({ pageSize: value });
 
     const formattedBalance = useMemo(() => {
         if (balance === null) return loading ? "Loading..." : "--";
@@ -75,6 +79,16 @@ export function PersonaTable({ apiBase, userEmail }: PersonaTableProps) {
                 .some((value) => value?.toLowerCase().includes(term))
         );
     }, [filter, personasQuery.data]);
+
+    const totalPages = Math.max(1, Math.ceil((filteredPersonas.length || 0) / pageSize));
+    useEffect(() => {
+        if (page > totalPages) setPage(totalPages);
+    }, [page, totalPages]);
+
+    const pagedPersonas = useMemo(() => {
+        const start = (page - 1) * pageSize;
+        return filteredPersonas.slice(start, start + pageSize);
+    }, [filteredPersonas, page, pageSize]);
 
     const handleAddPersona = async () => {
         if (!newPersona.alias.trim() || !newPersona.account.trim()) {
@@ -208,7 +222,7 @@ export function PersonaTable({ apiBase, userEmail }: PersonaTableProps) {
                         </TableRow>
                     </TableHeader>
                     <TableBody>
-                        {filteredPersonas.map((persona) => (
+                        {pagedPersonas.map((persona) => (
                             <TableRow key={persona.id}>
                                 <TableCell className="space-y-1">
                                     <div className="font-semibold leading-tight">{persona.alias}</div>
@@ -266,6 +280,44 @@ export function PersonaTable({ apiBase, userEmail }: PersonaTableProps) {
                         ) : null}
                     </TableBody>
                 </Table>
+
+                <div className="flex flex-wrap items-center justify-between gap-3 text-sm">
+                    <div className="flex items-center gap-2">
+                        <span className="text-muted-foreground">Per page</span>
+                        <select
+                            className="rounded-md border bg-background px-2 py-1"
+                            value={pageSize}
+                            onChange={(e) => {
+                                const next = Number(e.target.value) || 5;
+                                setPageSize(next);
+                                setPage(1);
+                            }}
+                        >
+                            {[5, 10, 20, 50].map((size) => (
+                                <option key={size} value={size}>{size}</option>
+                            ))}
+                        </select>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setPage(Math.max(1, page - 1))}
+                            disabled={page <= 1}
+                        >
+                            Prev
+                        </Button>
+                        <span className="text-muted-foreground">Page {page} / {totalPages}</span>
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setPage(Math.min(totalPages, page + 1))}
+                            disabled={page >= totalPages}
+                        >
+                            Next
+                        </Button>
+                    </div>
+                </div>
             </CardContent>
         </Card>
     );

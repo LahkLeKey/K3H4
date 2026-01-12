@@ -21,11 +21,12 @@ const scoreColor = (score: number) => {
 
 const buildNodePositions = (personas: Persona[]) => {
     const count = Math.max(personas.length, 1);
-    const radius = 4.2;
+    const radiusX = Math.max(5, count * 0.45);
+    const radiusZ = 2.4;
     return personas.map((persona, index) => {
-        const angle = (2 * Math.PI * index) / count;
-        const x = Math.cos(angle) * radius;
-        const z = Math.sin(angle) * radius;
+        const angle = (Math.PI * index) / Math.max(count - 1, 1) - Math.PI / 2;
+        const x = Math.cos(angle) * radiusX;
+        const z = Math.sin(angle) * radiusZ;
         return { ...persona, position: [x, 0.6, z] as [number, number, number] };
     });
 };
@@ -43,7 +44,7 @@ type GraphEdge = {
 function CompatibilityCanvas({ nodes, edges }: { nodes: GraphNode[]; edges: GraphEdge[] }) {
     const positions = useMemo(() => Object.fromEntries(nodes.map((node) => [node.id, node.position])), [nodes]);
     return (
-        <Canvas camera={{ position: [0, 6, 10], fov: 52 }}>
+        <Canvas camera={{ position: [0, 4, 10], fov: 62 }}>
             <color attach="background" args={["#050816"]} />
             <ambientLight intensity={0.6} />
             <directionalLight position={[6, 8, 6]} intensity={0.8} />
@@ -90,7 +91,7 @@ function CompatibilityCanvas({ nodes, edges }: { nodes: GraphNode[]; edges: Grap
     );
 }
 
-function CompatibilityList({ edges }: { edges: PersonaCompatibility[] }) {
+function CompatibilityList({ edges, personaIndex }: { edges: PersonaCompatibility[]; personaIndex: Record<string, Persona> }) {
     if (edges.length === 0) return <p className="text-sm text-muted-foreground">No compatibility pairs yet.</p>;
     return (
         <div className="space-y-2 text-sm">
@@ -98,11 +99,11 @@ function CompatibilityList({ edges }: { edges: PersonaCompatibility[] }) {
                 <div key={edge.id} className="rounded-lg border bg-muted/40 px-3 py-2">
                     <div className="flex items-center justify-between">
                         <div className="font-semibold">
-                            {edge.source.alias} &lt;-&gt; {edge.target.alias}
+                            {(personaIndex[edge.sourceId]?.alias ?? edge.source?.alias ?? edge.sourceId)} &lt;-&gt; {(personaIndex[edge.targetId]?.alias ?? edge.target?.alias ?? edge.targetId)}
                         </div>
-                        <Badge variant="secondary">{(edge.jaccardScore * 100).toFixed(0)}%</Badge>
+                        <Badge variant="secondary">{(Number.isFinite(edge.jaccardScore) ? edge.jaccardScore * 100 : 0).toFixed(0)}%</Badge>
                     </div>
-                    <div className="text-xs text-muted-foreground">Overlap: {edge.overlappingTokens.join(", ") || "None"}</div>
+                    <div className="text-xs text-muted-foreground">Overlap: {(edge.overlappingTokens ?? []).join(", ") || "None"}</div>
                 </div>
             ))}
         </div>
@@ -160,10 +161,10 @@ function MetricsBars({ metrics }: { metrics: { accuracy: number; precision: numb
         { name: "F1", value: metrics.f1 },
     ];
     return (
-        <div className="h-44">
+        <div className="h-32">
             <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={data} margin={{ top: 8, right: 12, bottom: 8, left: 12 }}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(148,163,184,0.35)" />
+                <BarChart data={data} margin={{ top: 6, right: 8, bottom: 6, left: 8 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(148,163,184,0.28)" />
                     <XAxis dataKey="name" tick={{ fontSize: 11 }} axisLine={false} tickLine={false} />
                     <YAxis domain={[0, 1]} tick={{ fontSize: 11 }} axisLine={false} tickLine={false} />
                     <Tooltip formatter={(value: number) => `${(value * 100).toFixed(1)}%`} />
@@ -180,7 +181,7 @@ function ProbabilitySparkline({ probabilities }: { probabilities: number[] }) {
     }
     const clamped = probabilities.map((value, idx) => ({ idx, value: Math.min(Math.max(value, 0), 1) }));
     return (
-        <div className="h-32">
+        <div className="h-24">
             <ResponsiveContainer width="100%" height="100%">
                 <AreaChart data={clamped} margin={{ top: 4, right: 8, bottom: 4, left: 0 }}>
                     <YAxis hide domain={[0, 1]} />
@@ -268,6 +269,8 @@ export function PersonaCompatibilityPanel({ apiBase, userEmail }: { apiBase: str
         clearAttempted: state.clearAttempted,
     }));
     const [threshold, setThreshold] = useState(0.5);
+    const [pairPage, setPairPage] = useState(1);
+    const pairPageSize = 4;
 
     useEffect(() => {
         if (!personas.length && !loadingPersonas && !errors.personas) {
@@ -301,11 +304,23 @@ export function PersonaCompatibilityPanel({ apiBase, userEmail }: { apiBase: str
             id: compat.id,
             sourceId: compat.sourceId,
             targetId: compat.targetId,
-            score: compat.jaccardScore,
-            overlap: compat.overlappingTokens,
+            score: Number.isFinite(compat.jaccardScore) ? compat.jaccardScore : 0,
+            overlap: compat.overlappingTokens ?? [],
         })),
         [compatibilities],
     );
+
+    const personaIndex = useMemo(() => Object.fromEntries(personas.map((p) => [p.id, p])), [personas]);
+
+    const totalPairPages = Math.max(1, Math.ceil((compatibilities.length || 0) / pairPageSize));
+    useEffect(() => {
+        if (pairPage > totalPairPages) setPairPage(totalPairPages);
+    }, [pairPage, totalPairPages]);
+
+    const pagedCompatibilities = useMemo(() => {
+        const start = (pairPage - 1) * pairPageSize;
+        return compatibilities.slice(start, start + pairPageSize);
+    }, [compatibilities, pairPage, pairPageSize]);
 
     const labeledPairs = useMemo(() => compatibilities.map((compat) => ({
         sourceId: compat.sourceId,
@@ -320,11 +335,7 @@ export function PersonaCompatibilityPanel({ apiBase, userEmail }: { apiBase: str
 
     return (
         <Card className="border bg-background/80">
-            <CardHeader className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                <div className="space-y-1">
-                    <CardTitle className="text-lg">Compatibility graph</CardTitle>
-                    <CardDescription>3D view of persona overlap by Jaccard similarity.</CardDescription>
-                </div>
+            <CardHeader className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-end">
                 <div className="flex flex-wrap items-center gap-2 text-sm">
                     <Badge variant="secondary">User: {userEmail ?? "guest"}</Badge>
                     <Button
@@ -337,88 +348,109 @@ export function PersonaCompatibilityPanel({ apiBase, userEmail }: { apiBase: str
                     </Button>
                 </div>
             </CardHeader>
-            <CardContent className="grid gap-4 lg:grid-cols-[1.3fr_0.7fr]">
-                {(errors.personas || errors.compatibility) ? (
-                    <div className="lg:col-span-2 space-y-1 text-sm text-destructive">
-                        {errors.personas ? (
-                            <div className="flex flex-wrap items-center gap-2">
-                                <p>Personas: {errors.personas}</p>
-                                <Button size="sm" variant="outline" onClick={() => { clearError("personas"); void loadPersonas(apiBase); }}>
-                                    Retry personas
-                                </Button>
-                            </div>
-                        ) : null}
-                        {errors.compatibility ? (
-                            <div className="flex flex-wrap items-center gap-2">
-                                <p>Compatibility: {errors.compatibility}</p>
-                                <Button size="sm" variant="outline" onClick={() => { clearError("compatibility"); clearAttempted(); void loadCompatibility(apiBase); }}>
-                                    Retry compatibility
-                                </Button>
-                            </div>
-                        ) : null}
-                    </div>
-                ) : null}
-                <div className="relative h-[420px] overflow-hidden rounded-2xl border bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950">
+            <CardContent className="flex flex-col gap-4">
+                <div className="relative h-[460px] md:h-[560px] overflow-hidden rounded-[28px] border bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950">
+                    <CompatibilityCanvas nodes={nodes} edges={edges} />
+                    {nodes.length === 0 ? (
+                        <div className="pointer-events-none absolute inset-0 flex items-center justify-center text-sm text-muted-foreground">
+                            Add personas to see compatibility.
+                        </div>
+                    ) : null}
+                    {(errors.personas || errors.compatibility) ? (
+                        <div className="pointer-events-none absolute left-3 top-3 space-y-1 text-xs text-destructive">
+                            {errors.personas ? (
+                                <div className="rounded border border-destructive/40 bg-background/80 px-2 py-1 shadow">Personas: {errors.personas}</div>
+                            ) : null}
+                            {errors.compatibility ? (
+                                <div className="rounded border border-destructive/40 bg-background/80 px-2 py-1 shadow">Compatibility: {errors.compatibility}</div>
+                            ) : null}
+                        </div>
+                    ) : null}
                     {loadingPersonas || loadingCompatibility ? (
-                        <div className="absolute inset-0 flex items-center justify-center text-sm text-muted-foreground">
+                        <div className="pointer-events-none absolute inset-0 flex items-center justify-center text-sm text-muted-foreground">
                             <Sparkles className="mr-2 h-4 w-4" /> Preparing graph...
                         </div>
                     ) : null}
-                    {nodes.length > 0 ? <CompatibilityCanvas nodes={nodes} edges={edges} /> : (
-                        <div className="absolute inset-0 flex items-center justify-center text-sm text-muted-foreground">
-                            Add personas to see compatibility.
-                        </div>
-                    )}
-                    <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-background/10 to-transparent" />
                 </div>
-                <div className="space-y-3">
-                    <div className="flex items-center justify-between">
-                        <div>
-                            <div className="text-sm font-semibold">Top pairs</div>
-                            <p className="text-xs text-muted-foreground">Edges ranked by Jaccard similarity.</p>
-                        </div>
-                        <Badge variant="outline">{compatibilities.length} pairs</Badge>
-                    </div>
-                    <CompatibilityList edges={compatibilities} />
 
-                    <div className="rounded-lg border p-3 space-y-3">
-                        <div className="flex items-center justify-between">
+                <div className="grid grid-cols-2 gap-4 items-stretch">
+                    <Card className="border bg-muted/40 h-full">
+                        <CardHeader className="space-y-1">
+                            <CardTitle className="text-sm">Top pairs</CardTitle>
+                            <CardDescription>Edges ranked by Jaccard similarity.</CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-3">
+                            <div className="flex flex-wrap items-center gap-2 text-xs">
+                                <Badge variant="outline">{compatibilities.length} pairs</Badge>
+                                <span className="text-muted-foreground">4 per page</span>
+                                <div className="flex items-center gap-2">
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => setPairPage(Math.max(1, pairPage - 1))}
+                                        disabled={pairPage <= 1}
+                                    >
+                                        Prev
+                                    </Button>
+                                    <span className="text-muted-foreground">Page {pairPage} / {totalPairPages}</span>
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => setPairPage(Math.min(totalPairPages, pairPage + 1))}
+                                        disabled={pairPage >= totalPairPages}
+                                    >
+                                        Next
+                                    </Button>
+                                </div>
+                            </div>
+                            <div className="max-h-[320px] overflow-y-auto pr-1">
+                                <CompatibilityList edges={pagedCompatibilities} personaIndex={personaIndex} />
+                            </div>
+                        </CardContent>
+                    </Card>
+
+                    <Card className="border bg-muted/40 h-full">
+                        <CardHeader className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                             <div>
-                                <div className="text-sm font-semibold">Confusion matrix</div>
-                                <p className="text-xs text-muted-foreground">Uses ONNX probabilities when available.</p>
+                                <CardTitle className="text-sm">Confusion matrix</CardTitle>
+                                <CardDescription>Uses ONNX probabilities when available.</CardDescription>
                             </div>
                             <Badge variant="secondary">Threshold {threshold.toFixed(2)}</Badge>
-                        </div>
-                        <div className="grid gap-2 sm:grid-cols-[1fr,auto] sm:items-center">
-                            <div className="space-y-1">
-                                <label className="text-xs font-semibold text-muted-foreground" htmlFor="conf-threshold">Decision threshold</label>
-                                <Input
-                                    id="conf-threshold"
-                                    type="number"
-                                    min={0}
-                                    max={1}
-                                    step={0.01}
-                                    value={threshold}
-                                    onChange={(e) => setThreshold(Math.min(Math.max(Number(e.target.value) || 0, 0), 1))}
-                                />
+                        </CardHeader>
+                        <CardContent className="space-y-2">
+                            <div className="grid gap-2 sm:grid-cols-[1fr,auto] sm:items-center">
+                                <div className="space-y-1">
+                                    <label className="text-xs font-semibold text-muted-foreground" htmlFor="conf-threshold">Decision threshold</label>
+                                    <Input
+                                        id="conf-threshold"
+                                        type="number"
+                                        min={0}
+                                        max={1}
+                                        step={0.01}
+                                        value={threshold}
+                                        onChange={(e) => setThreshold(Math.min(Math.max(Number(e.target.value) || 0, 0), 1))}
+                                    />
+                                </div>
+                                <Button
+                                    size="sm"
+                                    onClick={() => runConfusion(apiBase, { pairs: labeledPairs, threshold })}
+                                    disabled={loadingConfusion || labeledPairs.length === 0}
+                                >
+                                    {loadingConfusion ? "Evaluating..." : "Run"}
+                                </Button>
                             </div>
-                            <Button
-                                size="sm"
-                                onClick={() => runConfusion(apiBase, { pairs: labeledPairs, threshold })}
-                                disabled={loadingConfusion || labeledPairs.length === 0}
-                            >
-                                {loadingConfusion ? "Evaluating..." : "Run"}
-                            </Button>
-                        </div>
-                        <ConfusionMatrix counts={confusionCounts} metrics={confusionMetrics} />
-                        <ProbabilityHeatmap details={details} />
-                        <ProbabilitySparkline probabilities={probabilities} />
-                        <MetricsBars metrics={confusionMetrics} />
-                        <p className="text-xs text-muted-foreground">
-                            Evaluated {confusion?.evaluated ?? 0} pairs; {confusion?.missing ?? 0} missing.
-                        </p>
-                        {errors.confusion ? <p className="text-xs text-destructive">Confusion run failed: {errors.confusion}</p> : null}
-                    </div>
+                            <ConfusionMatrix counts={confusionCounts} metrics={confusionMetrics} />
+                            <div className="grid gap-2 lg:grid-cols-2 lg:items-start">
+                                <MetricsBars metrics={confusionMetrics} />
+                                <ProbabilitySparkline probabilities={probabilities} />
+                            </div>
+                            <ProbabilityHeatmap details={details} />
+                            <p className="text-xs text-muted-foreground">
+                                Evaluated {confusion?.evaluated ?? 0} pairs; {confusion?.missing ?? 0} missing.
+                            </p>
+                            {errors.confusion ? <p className="text-xs text-destructive">Confusion run failed: {errors.confusion}</p> : null}
+                        </CardContent>
+                    </Card>
                 </div>
             </CardContent>
         </Card>
