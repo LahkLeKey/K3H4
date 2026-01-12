@@ -364,6 +364,11 @@ function EdgeGasClouds({
     particlesPerEdge = 12,
     opacity = 0.68,
     pointScale = 140,
+    sizeMultiplier = 1,
+    pushFromCenter = () => 0,
+    spiralArms = 0,
+    spiralTightness = 0.12,
+    spiralNoise = 0.25,
     label,
     labelLimit = 32,
 }: {
@@ -373,6 +378,11 @@ function EdgeGasClouds({
     particlesPerEdge?: number;
     opacity?: number;
     pointScale?: number;
+    sizeMultiplier?: number;
+    pushFromCenter?: (edge: GraphEdge) => number;
+    spiralArms?: number;
+    spiralTightness?: number;
+    spiralNoise?: number;
     label?: (edge: GraphEdge) => string;
     labelLimit?: number;
 }) {
@@ -398,8 +408,28 @@ function EdgeGasClouds({
                 (source[2] + target[2]) * 0.5,
             ];
 
+            const push = Math.max(0, pushFromCenter(edge));
+            if (push > 0) {
+                const len = Math.max(0.0001, Math.hypot(baseMid[0], baseMid[1], baseMid[2]));
+                baseMid[0] += (baseMid[0] / len) * push;
+                baseMid[1] += (baseMid[1] / len) * (push * 0.6);
+                baseMid[2] += (baseMid[2] / len) * push;
+            }
+
+            if (spiralArms > 0) {
+                const r = Math.max(0.0001, Math.hypot(baseMid[0], baseMid[2]));
+                const theta = Math.atan2(baseMid[2], baseMid[0]);
+                const armIndex = hashString(edge.id) % spiralArms;
+                const armOffset = (armIndex / spiralArms) * Math.PI * 2;
+                const swirl = r * spiralTightness;
+                const noise = (pseudoRandom(hashString(edge.id) * 0.17) - 0.5) * spiralNoise;
+                const newAngle = theta + swirl + armOffset + noise;
+                baseMid[0] = Math.cos(newAngle) * r;
+                baseMid[2] = Math.sin(newAngle) * r;
+            }
+
             const spread = 0.7 + edge.score * 1.6;
-            const sizeBase = 0.9 + edge.score * 1.8;
+            const sizeBase = (0.9 + edge.score * 1.8) * sizeMultiplier;
             colorHelper.set(colorForEdge(edge));
 
             if (label && labelData.length < labelLimit) {
@@ -408,6 +438,23 @@ function EdgeGasClouds({
                     (source[1] + target[1]) * 0.5 + 0.18,
                     (source[2] + target[2]) * 0.5,
                 ];
+                if (push > 0) {
+                    const len = Math.max(0.0001, Math.hypot(labelMid[0], labelMid[1], labelMid[2]));
+                    labelMid[0] += (labelMid[0] / len) * push;
+                    labelMid[1] += (labelMid[1] / len) * (push * 0.6);
+                    labelMid[2] += (labelMid[2] / len) * push;
+                }
+                if (spiralArms > 0) {
+                    const r = Math.max(0.0001, Math.hypot(labelMid[0], labelMid[2]));
+                    const theta = Math.atan2(labelMid[2], labelMid[0]);
+                    const armIndex = hashString(edge.id) % spiralArms;
+                    const armOffset = (armIndex / spiralArms) * Math.PI * 2;
+                    const swirl = r * spiralTightness;
+                    const noise = (pseudoRandom(hashString(edge.id) * 0.33) - 0.5) * spiralNoise;
+                    const newAngle = theta + swirl + armOffset + noise;
+                    labelMid[0] = Math.cos(newAngle) * r;
+                    labelMid[2] = Math.sin(newAngle) * r;
+                }
                 labelData.push({ id: edge.id, pos: labelMid, text: label(edge), score: edge.score });
             }
 
@@ -488,9 +535,6 @@ export function CompatibilityCanvas({
 }) {
     const positions = useMemo(() => Object.fromEntries(nodes.map((node) => [node.id, node.position])), [nodes]);
     const frameRadius = useMemo(() => Math.max(...nodes.map((n) => Math.hypot(n.position[0], n.position[2])), 6), [nodes]);
-    const dodecaFrame = useMemo(() => getDodecahedronFrame(frameRadius), [frameRadius]);
-    const dodecaVertices = useMemo(() => getDodecahedronVertices(frameRadius), [frameRadius]);
-    const center = useMemo<[number, number, number]>(() => [0, 0.25, 0], []);
     const degreeByNode = useMemo(() => {
         const counts = Object.fromEntries(nodes.map((n) => [n.id, 0]));
         const bump = (edge: GraphEdge) => {
@@ -528,12 +572,6 @@ export function CompatibilityCanvas({
             <ambientLight intensity={0.6} />
             <directionalLight position={[6, 8, 6]} intensity={0.8} />
             <GalaxyDisk innerRadius={Math.max(0.8, frameRadius * 0.12)} outerRadius={frameRadius * 0.92} edges={categoryEdges} />
-            {dodecaFrame.map((segment, idx) => (
-                <Line key={`frame-${idx}`} points={segment} color="#1e293b" lineWidth={1.5} />
-            ))}
-            {dodecaVertices.map((v, idx) => (
-                <Line key={`radial-${idx}`} points={[v, center]} color="#0ea5e9" lineWidth={0.75} dashed dashSize={0.35} gapSize={0.25} />
-            ))}
             <EdgeGasClouds
                 edges={edges}
                 positions={positions}
@@ -543,6 +581,9 @@ export function CompatibilityCanvas({
                     return `Tokens ${a} ↔ ${b} ${(edge.score * 100).toFixed(0)}%`;
                 }}
                 labelLimit={edges.length}
+                spiralArms={5}
+                spiralTightness={0.11}
+                spiralNoise={0.18}
             />
             <EdgeGasClouds
                 edges={categoryEdges}
@@ -550,7 +591,12 @@ export function CompatibilityCanvas({
                 colorForEdge={() => "#c084fc"}
                 opacity={0.54}
                 particlesPerEdge={10}
-                pointScale={160}
+                pointScale={180}
+                sizeMultiplier={1.35}
+                pushFromCenter={(edge) => 0.8 + edge.score * 1.8}
+                spiralArms={4}
+                spiralTightness={0.16}
+                spiralNoise={0.2}
                 label={(edge) => {
                     const a = compactAlias(nodes.find((n) => n.id === edge.sourceId)?.alias ?? edge.sourceId.slice(0, 4));
                     const b = compactAlias(nodes.find((n) => n.id === edge.targetId)?.alias ?? edge.targetId.slice(0, 4));
