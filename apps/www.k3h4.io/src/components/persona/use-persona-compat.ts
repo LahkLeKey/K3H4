@@ -180,9 +180,74 @@ export function usePersonaCompatibility(apiBase: string) {
             sourceId: compat.sourceId,
             targetId: compat.targetId,
             score: Number.isFinite(compat.jaccardScore) ? compat.jaccardScore : 0,
+            kind: "compat",
         })),
         [compatibilities],
     );
+
+    const categoryEdges = useMemo<GraphEdge[]>(() => {
+        if (personas.length < 2) return [];
+        const tokensByPersona = new Map<string, Set<string>>();
+        personas.forEach((p) => {
+            const tokens = new Set<string>();
+            (p.attributes ?? []).forEach((attr) => {
+                tokens.add(`${attr.category}:${attr.value}`);
+            });
+            tokensByPersona.set(p.id, tokens);
+        });
+
+        const edgeList: GraphEdge[] = [];
+        for (let i = 0; i < personas.length; i++) {
+            for (let j = i + 1; j < personas.length; j++) {
+                const a = personas[i];
+                const b = personas[j];
+                const aTokens = tokensByPersona.get(a.id) ?? new Set<string>();
+                const bTokens = tokensByPersona.get(b.id) ?? new Set<string>();
+                if (aTokens.size === 0 || bTokens.size === 0) continue;
+
+                let intersection = 0;
+                aTokens.forEach((t) => {
+                    if (bTokens.has(t)) intersection += 1;
+                });
+                const union = aTokens.size + bTokens.size - intersection;
+                const score = union > 0 ? intersection / union : 0;
+                if (score <= 0) continue;
+                edgeList.push({
+                    id: `category-${a.id}-${b.id}`,
+                    sourceId: a.id,
+                    targetId: b.id,
+                    score,
+                    kind: "category",
+                });
+            }
+        }
+
+        edgeList.sort((a, b) => b.score - a.score);
+        return edgeList.slice(0, 220);
+    }, [personas]);
+
+    const bridgeEdges = useMemo<GraphEdge[]>(() => {
+        if (!categoryEdges.length || !edges.length) return [];
+        const compatByPair = new Map<string, GraphEdge>();
+        edges.forEach((e) => compatByPair.set(`${e.sourceId}-${e.targetId}`, e));
+        const list: GraphEdge[] = [];
+        categoryEdges.forEach((cat) => {
+            const key = `${cat.sourceId}-${cat.targetId}`;
+            const compat = compatByPair.get(key) ?? compatByPair.get(`${cat.targetId}-${cat.sourceId}`);
+            if (!compat) return;
+            const blended = (compat.score * 0.6) + (cat.score * 0.4);
+            if (blended < 0.15) return;
+            list.push({
+                id: `bridge-${cat.id}`,
+                sourceId: cat.sourceId,
+                targetId: cat.targetId,
+                score: blended,
+                kind: "bridge",
+            });
+        });
+        list.sort((a, b) => b.score - a.score);
+        return list.slice(0, 120);
+    }, [categoryEdges, edges]);
 
     const personaIndex = useMemo(() => Object.fromEntries(personas.map((p) => [p.id, p])), [personas]);
 
@@ -227,5 +292,7 @@ export function usePersonaCompatibility(apiBase: string) {
         confusionMetrics,
         details,
         probabilities,
+        categoryEdges,
+        bridgeEdges,
     } as const;
 }
