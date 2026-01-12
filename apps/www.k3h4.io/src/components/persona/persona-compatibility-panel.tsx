@@ -270,8 +270,6 @@ export function PersonaCompatibilityPanel({ apiBase, userEmail }: { apiBase: str
         recomputeCompatibility,
         runConfusion,
         markAutoRecompute,
-        clearError,
-        clearAttempted,
     } = personaCompatStore.useShallow((state) => ({
         personas: state.personas,
         compatibilities: state.compatibilities,
@@ -288,8 +286,6 @@ export function PersonaCompatibilityPanel({ apiBase, userEmail }: { apiBase: str
         recomputeCompatibility: state.recomputeCompatibility,
         runConfusion: state.runConfusion,
         markAutoRecompute: state.markAutoRecompute,
-        clearError: state.clearError,
-        clearAttempted: state.clearAttempted,
     }));
     const [threshold, setThreshold] = useState(0.5);
     const [pairPage, setPairPage] = useState(1);
