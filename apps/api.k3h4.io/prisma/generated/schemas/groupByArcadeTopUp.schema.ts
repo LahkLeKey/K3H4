@@ -1,0 +1,15 @@
+import type { Prisma } from '@prisma/client';
+import * as z from 'zod';
+import { ArcadeTopUpWhereInputObjectSchema as ArcadeTopUpWhereInputObjectSchema } from './objects/ArcadeTopUpWhereInput.schema';
+import { ArcadeTopUpOrderByWithAggregationInputObjectSchema as ArcadeTopUpOrderByWithAggregationInputObjectSchema } from './objects/ArcadeTopUpOrderByWithAggregationInput.schema';
+import { ArcadeTopUpScalarWhereWithAggregatesInputObjectSchema as ArcadeTopUpScalarWhereWithAggregatesInputObjectSchema } from './objects/ArcadeTopUpScalarWhereWithAggregatesInput.schema';
+import { ArcadeTopUpScalarFieldEnumSchema } from './enums/ArcadeTopUpScalarFieldEnum.schema';
+import { ArcadeTopUpCountAggregateInputObjectSchema as ArcadeTopUpCountAggregateInputObjectSchema } from './objects/ArcadeTopUpCountAggregateInput.schema';
+import { ArcadeTopUpMinAggregateInputObjectSchema as ArcadeTopUpMinAggregateInputObjectSchema } from './objects/ArcadeTopUpMinAggregateInput.schema';
+import { ArcadeTopUpMaxAggregateInputObjectSchema as ArcadeTopUpMaxAggregateInputObjectSchema } from './objects/ArcadeTopUpMaxAggregateInput.schema';
+import { ArcadeTopUpAvgAggregateInputObjectSchema as ArcadeTopUpAvgAggregateInputObjectSchema } from './objects/ArcadeTopUpAvgAggregateInput.schema';
+import { ArcadeTopUpSumAggregateInputObjectSchema as ArcadeTopUpSumAggregateInputObjectSchema } from './objects/ArcadeTopUpSumAggregateInput.schema';
+
+export const ArcadeTopUpGroupBySchema: z.ZodType<Prisma.ArcadeTopUpGroupByArgs> = z.object({ where: ArcadeTopUpWhereInputObjectSchema.optional(), orderBy: z.union([ArcadeTopUpOrderByWithAggregationInputObjectSchema, ArcadeTopUpOrderByWithAggregationInputObjectSchema.array()]).optional(), having: ArcadeTopUpScalarWhereWithAggregatesInputObjectSchema.optional(), take: z.number().optional(), skip: z.number().optional(), by: z.array(ArcadeTopUpScalarFieldEnumSchema), _count: z.union([ z.literal(true), ArcadeTopUpCountAggregateInputObjectSchema ]).optional(), _min: ArcadeTopUpMinAggregateInputObjectSchema.optional(), _max: ArcadeTopUpMaxAggregateInputObjectSchema.optional(), _avg: ArcadeTopUpAvgAggregateInputObjectSchema.optional(), _sum: ArcadeTopUpSumAggregateInputObjectSchema.optional() }).strict() as unknown as z.ZodType<Prisma.ArcadeTopUpGroupByArgs>;
+
+export const ArcadeTopUpGroupByZodSchema = z.object({ where: ArcadeTopUpWhereInputObjectSchema.optional(), orderBy: z.union([ArcadeTopUpOrderByWithAggregationInputObjectSchema, ArcadeTopUpOrderByWithAggregationInputObjectSchema.array()]).optional(), having: ArcadeTopUpScalarWhereWithAggregatesInputObjectSchema.optional(), take: z.number().optional(), skip: z.number().optional(), by: z.array(ArcadeTopUpScalarFieldEnumSchema), _count: z.union([ z.literal(true), ArcadeTopUpCountAggregateInputObjectSchema ]).optional(), _min: ArcadeTopUpMinAggregateInputObjectSchema.optional(), _max: ArcadeTopUpMaxAggregateInputObjectSchema.optional(), _avg: ArcadeTopUpAvgAggregateInputObjectSchema.optional(), _sum: ArcadeTopUpSumAggregateInputObjectSchema.optional() }).strict();

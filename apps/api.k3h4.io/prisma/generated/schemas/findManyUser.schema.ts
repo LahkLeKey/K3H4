@@ -1,0 +1,100 @@
+import type { Prisma } from '@prisma/client';
+import * as z from 'zod';
+import { UserIncludeObjectSchema as UserIncludeObjectSchema } from './objects/UserInclude.schema';
+import { UserOrderByWithRelationInputObjectSchema as UserOrderByWithRelationInputObjectSchema } from './objects/UserOrderByWithRelationInput.schema';
+import { UserWhereInputObjectSchema as UserWhereInputObjectSchema } from './objects/UserWhereInput.schema';
+import { UserWhereUniqueInputObjectSchema as UserWhereUniqueInputObjectSchema } from './objects/UserWhereUniqueInput.schema';
+import { UserScalarFieldEnumSchema } from './enums/UserScalarFieldEnum.schema';
+
+// Select schema needs to be in file to prevent circular imports
+//------------------------------------------------------
+
+export const UserFindManySelectSchema: z.ZodType<Prisma.UserSelect> = z.object({
+    id: z.boolean().optional(),
+    email: z.boolean().optional(),
+    provider: z.boolean().optional(),
+    providerId: z.boolean().optional(),
+    k3h4CoinBalance: z.boolean().optional(),
+    displayName: z.boolean().optional(),
+    avatarUrl: z.boolean().optional(),
+    createdAt: z.boolean().optional(),
+    updatedAt: z.boolean().optional(),
+    refreshTokens: z.boolean().optional(),
+    preference: z.boolean().optional(),
+    telemetry: z.boolean().optional(),
+    bankTransactions: z.boolean().optional(),
+    personas: z.boolean().optional(),
+    assignments: z.boolean().optional(),
+    freightLoads: z.boolean().optional(),
+    warehouseItems: z.boolean().optional(),
+    posStores: z.boolean().optional(),
+    posTickets: z.boolean().optional(),
+    agriculturePlots: z.boolean().optional(),
+    agricultureTasks: z.boolean().optional(),
+    agricultureShipments: z.boolean().optional(),
+    agricultureCropPlans: z.boolean().optional(),
+    agriculturePlotConditions: z.boolean().optional(),
+    agricultureInventories: z.boolean().optional(),
+    agricultureInventoryMovements: z.boolean().optional(),
+    agricultureSlots: z.boolean().optional(),
+    culinaryMenuItems: z.boolean().optional(),
+    culinaryPrepTasks: z.boolean().optional(),
+    culinarySupplierNeeds: z.boolean().optional(),
+    arcadeMachines: z.boolean().optional(),
+    arcadeCards: z.boolean().optional(),
+    arcadeTopUps: z.boolean().optional(),
+    arcadePrizes: z.boolean().optional(),
+    arcadeSessions: z.boolean().optional(),
+    arcadeRedemptions: z.boolean().optional(),
+    providerGrants: z.boolean().optional(),
+    personaAttributes: z.boolean().optional(),
+    personaCompatibilities: z.boolean().optional(),
+    _count: z.boolean().optional()
+  }).strict() as unknown as z.ZodType<Prisma.UserSelect>;
+
+export const UserFindManySelectZodSchema = z.object({
+    id: z.boolean().optional(),
+    email: z.boolean().optional(),
+    provider: z.boolean().optional(),
+    providerId: z.boolean().optional(),
+    k3h4CoinBalance: z.boolean().optional(),
+    displayName: z.boolean().optional(),
+    avatarUrl: z.boolean().optional(),
+    createdAt: z.boolean().optional(),
+    updatedAt: z.boolean().optional(),
+    refreshTokens: z.boolean().optional(),
+    preference: z.boolean().optional(),
+    telemetry: z.boolean().optional(),
+    bankTransactions: z.boolean().optional(),
+    personas: z.boolean().optional(),
+    assignments: z.boolean().optional(),
+    freightLoads: z.boolean().optional(),
+    warehouseItems: z.boolean().optional(),
+    posStores: z.boolean().optional(),
+    posTickets: z.boolean().optional(),
+    agriculturePlots: z.boolean().optional(),
+    agricultureTasks: z.boolean().optional(),
+    agricultureShipments: z.boolean().optional(),
+    agricultureCropPlans: z.boolean().optional(),
+    agriculturePlotConditions: z.boolean().optional(),
+    agricultureInventories: z.boolean().optional(),
+    agricultureInventoryMovements: z.boolean().optional(),
+    agricultureSlots: z.boolean().optional(),
+    culinaryMenuItems: z.boolean().optional(),
+    culinaryPrepTasks: z.boolean().optional(),
+    culinarySupplierNeeds: z.boolean().optional(),
+    arcadeMachines: z.boolean().optional(),
+    arcadeCards: z.boolean().optional(),
+    arcadeTopUps: z.boolean().optional(),
+    arcadePrizes: z.boolean().optional(),
+    arcadeSessions: z.boolean().optional(),
+    arcadeRedemptions: z.boolean().optional(),
+    providerGrants: z.boolean().optional(),
+    personaAttributes: z.boolean().optional(),
+    personaCompatibilities: z.boolean().optional(),
+    _count: z.boolean().optional()
+  }).strict();
+
+export const UserFindManySchema: z.ZodType<Prisma.UserFindManyArgs> = z.object({ select: UserFindManySelectSchema.optional(), include: z.lazy(() => UserIncludeObjectSchema.optional()), orderBy: z.union([UserOrderByWithRelationInputObjectSchema, UserOrderByWithRelationInputObjectSchema.array()]).optional(), where: UserWhereInputObjectSchema.optional(), cursor: UserWhereUniqueInputObjectSchema.optional(), take: z.number().optional(), skip: z.number().optional(), distinct: z.union([UserScalarFieldEnumSchema, UserScalarFieldEnumSchema.array()]).optional() }).strict() as unknown as z.ZodType<Prisma.UserFindManyArgs>;
+
+export const UserFindManyZodSchema = z.object({ select: UserFindManySelectSchema.optional(), include: z.lazy(() => UserIncludeObjectSchema.optional()), orderBy: z.union([UserOrderByWithRelationInputObjectSchema, UserOrderByWithRelationInputObjectSchema.array()]).optional(), where: UserWhereInputObjectSchema.optional(), cursor: UserWhereUniqueInputObjectSchema.optional(), take: z.number().optional(), skip: z.number().optional(), distinct: z.union([UserScalarFieldEnumSchema, UserScalarFieldEnumSchema.array()]).optional() }).strict();

@@ -1,0 +1,31 @@
+import * as z from 'zod';
+import type { Prisma } from '@prisma/client';
+import { UserArgsObjectSchema as UserArgsObjectSchema } from './UserArgs.schema';
+import { WarehouseItemFindManySchema as WarehouseItemFindManySchema } from '../findManyWarehouseItem.schema';
+import { AgricultureShipmentFindManySchema as AgricultureShipmentFindManySchema } from '../findManyAgricultureShipment.schema';
+import { FreightLoadCountOutputTypeArgsObjectSchema as FreightLoadCountOutputTypeArgsObjectSchema } from './FreightLoadCountOutputTypeArgs.schema'
+
+const makeSchema = () => z.object({
+  id: z.boolean().optional(),
+  userId: z.boolean().optional(),
+  user: z.union([z.boolean(), z.lazy(() => UserArgsObjectSchema)]).optional(),
+  title: z.boolean().optional(),
+  originName: z.boolean().optional(),
+  originLat: z.boolean().optional(),
+  originLng: z.boolean().optional(),
+  destinationName: z.boolean().optional(),
+  destinationLat: z.boolean().optional(),
+  destinationLng: z.boolean().optional(),
+  distanceKm: z.boolean().optional(),
+  durationMinutes: z.boolean().optional(),
+  cost: z.boolean().optional(),
+  status: z.boolean().optional(),
+  routeGeoJson: z.boolean().optional(),
+  createdAt: z.boolean().optional(),
+  updatedAt: z.boolean().optional(),
+  warehouseItems: z.union([z.boolean(), z.lazy(() => WarehouseItemFindManySchema)]).optional(),
+  agricultureShipments: z.union([z.boolean(), z.lazy(() => AgricultureShipmentFindManySchema)]).optional(),
+  _count: z.union([z.boolean(), z.lazy(() => FreightLoadCountOutputTypeArgsObjectSchema)]).optional()
+}).strict();
+export const FreightLoadSelectObjectSchema: z.ZodType<Prisma.FreightLoadSelect> = makeSchema() as unknown as z.ZodType<Prisma.FreightLoadSelect>;
+export const FreightLoadSelectObjectZodSchema = makeSchema();

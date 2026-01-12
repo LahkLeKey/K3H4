@@ -1,0 +1,10 @@
+import type { Prisma } from '@prisma/client';
+import * as z from 'zod';
+import { ArcadeRedemptionOrderByWithRelationInputObjectSchema as ArcadeRedemptionOrderByWithRelationInputObjectSchema } from './objects/ArcadeRedemptionOrderByWithRelationInput.schema';
+import { ArcadeRedemptionWhereInputObjectSchema as ArcadeRedemptionWhereInputObjectSchema } from './objects/ArcadeRedemptionWhereInput.schema';
+import { ArcadeRedemptionWhereUniqueInputObjectSchema as ArcadeRedemptionWhereUniqueInputObjectSchema } from './objects/ArcadeRedemptionWhereUniqueInput.schema';
+import { ArcadeRedemptionCountAggregateInputObjectSchema as ArcadeRedemptionCountAggregateInputObjectSchema } from './objects/ArcadeRedemptionCountAggregateInput.schema';
+
+export const ArcadeRedemptionCountSchema: z.ZodType<Prisma.ArcadeRedemptionCountArgs> = z.object({ orderBy: z.union([ArcadeRedemptionOrderByWithRelationInputObjectSchema, ArcadeRedemptionOrderByWithRelationInputObjectSchema.array()]).optional(), where: ArcadeRedemptionWhereInputObjectSchema.optional(), cursor: ArcadeRedemptionWhereUniqueInputObjectSchema.optional(), take: z.number().optional(), skip: z.number().optional(), select: z.union([ z.literal(true), ArcadeRedemptionCountAggregateInputObjectSchema ]).optional() }).strict() as unknown as z.ZodType<Prisma.ArcadeRedemptionCountArgs>;
+
+export const ArcadeRedemptionCountZodSchema = z.object({ orderBy: z.union([ArcadeRedemptionOrderByWithRelationInputObjectSchema, ArcadeRedemptionOrderByWithRelationInputObjectSchema.array()]).optional(), where: ArcadeRedemptionWhereInputObjectSchema.optional(), cursor: ArcadeRedemptionWhereUniqueInputObjectSchema.optional(), take: z.number().optional(), skip: z.number().optional(), select: z.union([ z.literal(true), ArcadeRedemptionCountAggregateInputObjectSchema ]).optional() }).strict();

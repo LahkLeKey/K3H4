@@ -1,0 +1,48 @@
+/**
+ * Input Variant Schemas
+ * Auto-generated - do not edit manually
+ */
+
+export { UserInputSchema } from './User.input';
+export { PersonaInputSchema } from './Persona.input';
+export { PersonaAttributeInputSchema } from './PersonaAttribute.input';
+export { PersonaCompatibilityInputSchema } from './PersonaCompatibility.input';
+export { RefreshTokenInputSchema } from './RefreshToken.input';
+export { ProviderGrantInputSchema } from './ProviderGrant.input';
+export { UserPreferenceInputSchema } from './UserPreference.input';
+export { TelemetryEventInputSchema } from './TelemetryEvent.input';
+export { BankTransactionInputSchema } from './BankTransaction.input';
+export { AssignmentInputSchema } from './Assignment.input';
+export { AgricultureCropPlanInputSchema } from './AgricultureCropPlan.input';
+export { AgriculturePlotConditionInputSchema } from './AgriculturePlotCondition.input';
+export { AgricultureInventoryInputSchema } from './AgricultureInventory.input';
+export { AgricultureInventoryMovementInputSchema } from './AgricultureInventoryMovement.input';
+export { AssignmentTimecardInputSchema } from './AssignmentTimecard.input';
+export { AssignmentPayoutInputSchema } from './AssignmentPayout.input';
+export { FreightLoadInputSchema } from './FreightLoad.input';
+export { WarehouseItemInputSchema } from './WarehouseItem.input';
+export { PosStoreInputSchema } from './PosStore.input';
+export { PosTicketInputSchema } from './PosTicket.input';
+export { PosLineItemInputSchema } from './PosLineItem.input';
+export { AgriculturePlotInputSchema } from './AgriculturePlot.input';
+export { AgricultureSlotInputSchema } from './AgricultureSlot.input';
+export { AgricultureTaskInputSchema } from './AgricultureTask.input';
+export { AgricultureShipmentInputSchema } from './AgricultureShipment.input';
+export { AgricultureResourceCategoryInputSchema } from './AgricultureResourceCategory.input';
+export { AgricultureResourceInputSchema } from './AgricultureResource.input';
+export { CulinaryMenuItemInputSchema } from './CulinaryMenuItem.input';
+export { CulinaryPrepTaskInputSchema } from './CulinaryPrepTask.input';
+export { CulinarySupplierNeedInputSchema } from './CulinarySupplierNeed.input';
+export { ArcadeMachineInputSchema } from './ArcadeMachine.input';
+export { ArcadeCardInputSchema } from './ArcadeCard.input';
+export { ArcadeTopUpInputSchema } from './ArcadeTopUp.input';
+export { ArcadePrizeInputSchema } from './ArcadePrize.input';
+export { ArcadeSessionInputSchema } from './ArcadeSession.input';
+export { ArcadeRedemptionInputSchema } from './ArcadeRedemption.input';
+export { UsdaRegionInputSchema } from './UsdaRegion.input';
+export { UsdaCountryInputSchema } from './UsdaCountry.input';
+export { UsdaCommodityInputSchema } from './UsdaCommodity.input';
+export { UsdaUnitInputSchema } from './UsdaUnit.input';
+export { UsdaReleaseInputSchema } from './UsdaRelease.input';
+export { UsdaCacheEntryInputSchema } from './UsdaCacheEntry.input';
+export { UsdaSyncStateInputSchema } from './UsdaSyncState.input';

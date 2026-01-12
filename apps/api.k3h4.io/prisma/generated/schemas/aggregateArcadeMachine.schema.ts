@@ -1,0 +1,12 @@
+import type { Prisma } from '@prisma/client';
+import * as z from 'zod';
+import { ArcadeMachineOrderByWithRelationInputObjectSchema as ArcadeMachineOrderByWithRelationInputObjectSchema } from './objects/ArcadeMachineOrderByWithRelationInput.schema';
+import { ArcadeMachineWhereInputObjectSchema as ArcadeMachineWhereInputObjectSchema } from './objects/ArcadeMachineWhereInput.schema';
+import { ArcadeMachineWhereUniqueInputObjectSchema as ArcadeMachineWhereUniqueInputObjectSchema } from './objects/ArcadeMachineWhereUniqueInput.schema';
+import { ArcadeMachineCountAggregateInputObjectSchema as ArcadeMachineCountAggregateInputObjectSchema } from './objects/ArcadeMachineCountAggregateInput.schema';
+import { ArcadeMachineMinAggregateInputObjectSchema as ArcadeMachineMinAggregateInputObjectSchema } from './objects/ArcadeMachineMinAggregateInput.schema';
+import { ArcadeMachineMaxAggregateInputObjectSchema as ArcadeMachineMaxAggregateInputObjectSchema } from './objects/ArcadeMachineMaxAggregateInput.schema';
+
+export const ArcadeMachineAggregateSchema: z.ZodType<Prisma.ArcadeMachineAggregateArgs> = z.object({ orderBy: z.union([ArcadeMachineOrderByWithRelationInputObjectSchema, ArcadeMachineOrderByWithRelationInputObjectSchema.array()]).optional(), where: ArcadeMachineWhereInputObjectSchema.optional(), cursor: ArcadeMachineWhereUniqueInputObjectSchema.optional(), take: z.number().optional(), skip: z.number().optional(), _count: z.union([ z.literal(true), ArcadeMachineCountAggregateInputObjectSchema ]).optional(), _min: ArcadeMachineMinAggregateInputObjectSchema.optional(), _max: ArcadeMachineMaxAggregateInputObjectSchema.optional() }).strict() as unknown as z.ZodType<Prisma.ArcadeMachineAggregateArgs>;
+
+export const ArcadeMachineAggregateZodSchema = z.object({ orderBy: z.union([ArcadeMachineOrderByWithRelationInputObjectSchema, ArcadeMachineOrderByWithRelationInputObjectSchema.array()]).optional(), where: ArcadeMachineWhereInputObjectSchema.optional(), cursor: ArcadeMachineWhereUniqueInputObjectSchema.optional(), take: z.number().optional(), skip: z.number().optional(), _count: z.union([ z.literal(true), ArcadeMachineCountAggregateInputObjectSchema ]).optional(), _min: ArcadeMachineMinAggregateInputObjectSchema.optional(), _max: ArcadeMachineMaxAggregateInputObjectSchema.optional() }).strict();

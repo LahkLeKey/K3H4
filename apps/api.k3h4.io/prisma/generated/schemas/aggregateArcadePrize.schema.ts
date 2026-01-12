@@ -1,0 +1,14 @@
+import type { Prisma } from '@prisma/client';
+import * as z from 'zod';
+import { ArcadePrizeOrderByWithRelationInputObjectSchema as ArcadePrizeOrderByWithRelationInputObjectSchema } from './objects/ArcadePrizeOrderByWithRelationInput.schema';
+import { ArcadePrizeWhereInputObjectSchema as ArcadePrizeWhereInputObjectSchema } from './objects/ArcadePrizeWhereInput.schema';
+import { ArcadePrizeWhereUniqueInputObjectSchema as ArcadePrizeWhereUniqueInputObjectSchema } from './objects/ArcadePrizeWhereUniqueInput.schema';
+import { ArcadePrizeCountAggregateInputObjectSchema as ArcadePrizeCountAggregateInputObjectSchema } from './objects/ArcadePrizeCountAggregateInput.schema';
+import { ArcadePrizeMinAggregateInputObjectSchema as ArcadePrizeMinAggregateInputObjectSchema } from './objects/ArcadePrizeMinAggregateInput.schema';
+import { ArcadePrizeMaxAggregateInputObjectSchema as ArcadePrizeMaxAggregateInputObjectSchema } from './objects/ArcadePrizeMaxAggregateInput.schema';
+import { ArcadePrizeAvgAggregateInputObjectSchema as ArcadePrizeAvgAggregateInputObjectSchema } from './objects/ArcadePrizeAvgAggregateInput.schema';
+import { ArcadePrizeSumAggregateInputObjectSchema as ArcadePrizeSumAggregateInputObjectSchema } from './objects/ArcadePrizeSumAggregateInput.schema';
+
+export const ArcadePrizeAggregateSchema: z.ZodType<Prisma.ArcadePrizeAggregateArgs> = z.object({ orderBy: z.union([ArcadePrizeOrderByWithRelationInputObjectSchema, ArcadePrizeOrderByWithRelationInputObjectSchema.array()]).optional(), where: ArcadePrizeWhereInputObjectSchema.optional(), cursor: ArcadePrizeWhereUniqueInputObjectSchema.optional(), take: z.number().optional(), skip: z.number().optional(), _count: z.union([ z.literal(true), ArcadePrizeCountAggregateInputObjectSchema ]).optional(), _min: ArcadePrizeMinAggregateInputObjectSchema.optional(), _max: ArcadePrizeMaxAggregateInputObjectSchema.optional(), _avg: ArcadePrizeAvgAggregateInputObjectSchema.optional(), _sum: ArcadePrizeSumAggregateInputObjectSchema.optional() }).strict() as unknown as z.ZodType<Prisma.ArcadePrizeAggregateArgs>;
+
+export const ArcadePrizeAggregateZodSchema = z.object({ orderBy: z.union([ArcadePrizeOrderByWithRelationInputObjectSchema, ArcadePrizeOrderByWithRelationInputObjectSchema.array()]).optional(), where: ArcadePrizeWhereInputObjectSchema.optional(), cursor: ArcadePrizeWhereUniqueInputObjectSchema.optional(), take: z.number().optional(), skip: z.number().optional(), _count: z.union([ z.literal(true), ArcadePrizeCountAggregateInputObjectSchema ]).optional(), _min: ArcadePrizeMinAggregateInputObjectSchema.optional(), _max: ArcadePrizeMaxAggregateInputObjectSchema.optional(), _avg: ArcadePrizeAvgAggregateInputObjectSchema.optional(), _sum: ArcadePrizeSumAggregateInputObjectSchema.optional() }).strict();

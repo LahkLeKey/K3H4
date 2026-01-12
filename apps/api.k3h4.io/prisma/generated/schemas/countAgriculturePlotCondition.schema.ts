@@ -1,0 +1,10 @@
+import type { Prisma } from '@prisma/client';
+import * as z from 'zod';
+import { AgriculturePlotConditionOrderByWithRelationInputObjectSchema as AgriculturePlotConditionOrderByWithRelationInputObjectSchema } from './objects/AgriculturePlotConditionOrderByWithRelationInput.schema';
+import { AgriculturePlotConditionWhereInputObjectSchema as AgriculturePlotConditionWhereInputObjectSchema } from './objects/AgriculturePlotConditionWhereInput.schema';
+import { AgriculturePlotConditionWhereUniqueInputObjectSchema as AgriculturePlotConditionWhereUniqueInputObjectSchema } from './objects/AgriculturePlotConditionWhereUniqueInput.schema';
+import { AgriculturePlotConditionCountAggregateInputObjectSchema as AgriculturePlotConditionCountAggregateInputObjectSchema } from './objects/AgriculturePlotConditionCountAggregateInput.schema';
+
+export const AgriculturePlotConditionCountSchema: z.ZodType<Prisma.AgriculturePlotConditionCountArgs> = z.object({ orderBy: z.union([AgriculturePlotConditionOrderByWithRelationInputObjectSchema, AgriculturePlotConditionOrderByWithRelationInputObjectSchema.array()]).optional(), where: AgriculturePlotConditionWhereInputObjectSchema.optional(), cursor: AgriculturePlotConditionWhereUniqueInputObjectSchema.optional(), take: z.number().optional(), skip: z.number().optional(), select: z.union([ z.literal(true), AgriculturePlotConditionCountAggregateInputObjectSchema ]).optional() }).strict() as unknown as z.ZodType<Prisma.AgriculturePlotConditionCountArgs>;
+
+export const AgriculturePlotConditionCountZodSchema = z.object({ orderBy: z.union([AgriculturePlotConditionOrderByWithRelationInputObjectSchema, AgriculturePlotConditionOrderByWithRelationInputObjectSchema.array()]).optional(), where: AgriculturePlotConditionWhereInputObjectSchema.optional(), cursor: AgriculturePlotConditionWhereUniqueInputObjectSchema.optional(), take: z.number().optional(), skip: z.number().optional(), select: z.union([ z.literal(true), AgriculturePlotConditionCountAggregateInputObjectSchema ]).optional() }).strict();

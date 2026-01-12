@@ -1,0 +1,14 @@
+import type { Prisma } from '@prisma/client';
+import * as z from 'zod';
+import { BankTransactionOrderByWithRelationInputObjectSchema as BankTransactionOrderByWithRelationInputObjectSchema } from './objects/BankTransactionOrderByWithRelationInput.schema';
+import { BankTransactionWhereInputObjectSchema as BankTransactionWhereInputObjectSchema } from './objects/BankTransactionWhereInput.schema';
+import { BankTransactionWhereUniqueInputObjectSchema as BankTransactionWhereUniqueInputObjectSchema } from './objects/BankTransactionWhereUniqueInput.schema';
+import { BankTransactionCountAggregateInputObjectSchema as BankTransactionCountAggregateInputObjectSchema } from './objects/BankTransactionCountAggregateInput.schema';
+import { BankTransactionMinAggregateInputObjectSchema as BankTransactionMinAggregateInputObjectSchema } from './objects/BankTransactionMinAggregateInput.schema';
+import { BankTransactionMaxAggregateInputObjectSchema as BankTransactionMaxAggregateInputObjectSchema } from './objects/BankTransactionMaxAggregateInput.schema';
+import { BankTransactionAvgAggregateInputObjectSchema as BankTransactionAvgAggregateInputObjectSchema } from './objects/BankTransactionAvgAggregateInput.schema';
+import { BankTransactionSumAggregateInputObjectSchema as BankTransactionSumAggregateInputObjectSchema } from './objects/BankTransactionSumAggregateInput.schema';
+
+export const BankTransactionAggregateSchema: z.ZodType<Prisma.BankTransactionAggregateArgs> = z.object({ orderBy: z.union([BankTransactionOrderByWithRelationInputObjectSchema, BankTransactionOrderByWithRelationInputObjectSchema.array()]).optional(), where: BankTransactionWhereInputObjectSchema.optional(), cursor: BankTransactionWhereUniqueInputObjectSchema.optional(), take: z.number().optional(), skip: z.number().optional(), _count: z.union([ z.literal(true), BankTransactionCountAggregateInputObjectSchema ]).optional(), _min: BankTransactionMinAggregateInputObjectSchema.optional(), _max: BankTransactionMaxAggregateInputObjectSchema.optional(), _avg: BankTransactionAvgAggregateInputObjectSchema.optional(), _sum: BankTransactionSumAggregateInputObjectSchema.optional() }).strict() as unknown as z.ZodType<Prisma.BankTransactionAggregateArgs>;
+
+export const BankTransactionAggregateZodSchema = z.object({ orderBy: z.union([BankTransactionOrderByWithRelationInputObjectSchema, BankTransactionOrderByWithRelationInputObjectSchema.array()]).optional(), where: BankTransactionWhereInputObjectSchema.optional(), cursor: BankTransactionWhereUniqueInputObjectSchema.optional(), take: z.number().optional(), skip: z.number().optional(), _count: z.union([ z.literal(true), BankTransactionCountAggregateInputObjectSchema ]).optional(), _min: BankTransactionMinAggregateInputObjectSchema.optional(), _max: BankTransactionMaxAggregateInputObjectSchema.optional(), _avg: BankTransactionAvgAggregateInputObjectSchema.optional(), _sum: BankTransactionSumAggregateInputObjectSchema.optional() }).strict();

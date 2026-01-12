@@ -1,0 +1,10 @@
+import type { Prisma } from '@prisma/client';
+import * as z from 'zod';
+import { PersonaAttributeOrderByWithRelationInputObjectSchema as PersonaAttributeOrderByWithRelationInputObjectSchema } from './objects/PersonaAttributeOrderByWithRelationInput.schema';
+import { PersonaAttributeWhereInputObjectSchema as PersonaAttributeWhereInputObjectSchema } from './objects/PersonaAttributeWhereInput.schema';
+import { PersonaAttributeWhereUniqueInputObjectSchema as PersonaAttributeWhereUniqueInputObjectSchema } from './objects/PersonaAttributeWhereUniqueInput.schema';
+import { PersonaAttributeCountAggregateInputObjectSchema as PersonaAttributeCountAggregateInputObjectSchema } from './objects/PersonaAttributeCountAggregateInput.schema';
+
+export const PersonaAttributeCountSchema: z.ZodType<Prisma.PersonaAttributeCountArgs> = z.object({ orderBy: z.union([PersonaAttributeOrderByWithRelationInputObjectSchema, PersonaAttributeOrderByWithRelationInputObjectSchema.array()]).optional(), where: PersonaAttributeWhereInputObjectSchema.optional(), cursor: PersonaAttributeWhereUniqueInputObjectSchema.optional(), take: z.number().optional(), skip: z.number().optional(), select: z.union([ z.literal(true), PersonaAttributeCountAggregateInputObjectSchema ]).optional() }).strict() as unknown as z.ZodType<Prisma.PersonaAttributeCountArgs>;
+
+export const PersonaAttributeCountZodSchema = z.object({ orderBy: z.union([PersonaAttributeOrderByWithRelationInputObjectSchema, PersonaAttributeOrderByWithRelationInputObjectSchema.array()]).optional(), where: PersonaAttributeWhereInputObjectSchema.optional(), cursor: PersonaAttributeWhereUniqueInputObjectSchema.optional(), take: z.number().optional(), skip: z.number().optional(), select: z.union([ z.literal(true), PersonaAttributeCountAggregateInputObjectSchema ]).optional() }).strict();

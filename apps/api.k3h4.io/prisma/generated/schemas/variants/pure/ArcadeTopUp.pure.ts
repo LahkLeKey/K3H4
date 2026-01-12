@@ -1,0 +1,14 @@
+import * as z from 'zod';
+// prettier-ignore
+export const ArcadeTopUpModelSchema = z.object({
+    id: z.string(),
+    userId: z.string(),
+    user: z.unknown(),
+    cardId: z.string(),
+    card: z.unknown(),
+    amount: z.number(),
+    source: z.string(),
+    createdAt: z.date()
+}).strict();
+
+export type ArcadeTopUpPureType = z.infer<typeof ArcadeTopUpModelSchema>;

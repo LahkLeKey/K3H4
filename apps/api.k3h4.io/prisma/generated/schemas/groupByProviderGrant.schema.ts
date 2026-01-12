@@ -1,0 +1,13 @@
+import type { Prisma } from '@prisma/client';
+import * as z from 'zod';
+import { ProviderGrantWhereInputObjectSchema as ProviderGrantWhereInputObjectSchema } from './objects/ProviderGrantWhereInput.schema';
+import { ProviderGrantOrderByWithAggregationInputObjectSchema as ProviderGrantOrderByWithAggregationInputObjectSchema } from './objects/ProviderGrantOrderByWithAggregationInput.schema';
+import { ProviderGrantScalarWhereWithAggregatesInputObjectSchema as ProviderGrantScalarWhereWithAggregatesInputObjectSchema } from './objects/ProviderGrantScalarWhereWithAggregatesInput.schema';
+import { ProviderGrantScalarFieldEnumSchema } from './enums/ProviderGrantScalarFieldEnum.schema';
+import { ProviderGrantCountAggregateInputObjectSchema as ProviderGrantCountAggregateInputObjectSchema } from './objects/ProviderGrantCountAggregateInput.schema';
+import { ProviderGrantMinAggregateInputObjectSchema as ProviderGrantMinAggregateInputObjectSchema } from './objects/ProviderGrantMinAggregateInput.schema';
+import { ProviderGrantMaxAggregateInputObjectSchema as ProviderGrantMaxAggregateInputObjectSchema } from './objects/ProviderGrantMaxAggregateInput.schema';
+
+export const ProviderGrantGroupBySchema: z.ZodType<Prisma.ProviderGrantGroupByArgs> = z.object({ where: ProviderGrantWhereInputObjectSchema.optional(), orderBy: z.union([ProviderGrantOrderByWithAggregationInputObjectSchema, ProviderGrantOrderByWithAggregationInputObjectSchema.array()]).optional(), having: ProviderGrantScalarWhereWithAggregatesInputObjectSchema.optional(), take: z.number().optional(), skip: z.number().optional(), by: z.array(ProviderGrantScalarFieldEnumSchema), _count: z.union([ z.literal(true), ProviderGrantCountAggregateInputObjectSchema ]).optional(), _min: ProviderGrantMinAggregateInputObjectSchema.optional(), _max: ProviderGrantMaxAggregateInputObjectSchema.optional() }).strict() as unknown as z.ZodType<Prisma.ProviderGrantGroupByArgs>;
+
+export const ProviderGrantGroupByZodSchema = z.object({ where: ProviderGrantWhereInputObjectSchema.optional(), orderBy: z.union([ProviderGrantOrderByWithAggregationInputObjectSchema, ProviderGrantOrderByWithAggregationInputObjectSchema.array()]).optional(), having: ProviderGrantScalarWhereWithAggregatesInputObjectSchema.optional(), take: z.number().optional(), skip: z.number().optional(), by: z.array(ProviderGrantScalarFieldEnumSchema), _count: z.union([ z.literal(true), ProviderGrantCountAggregateInputObjectSchema ]).optional(), _min: ProviderGrantMinAggregateInputObjectSchema.optional(), _max: ProviderGrantMaxAggregateInputObjectSchema.optional() }).strict();
