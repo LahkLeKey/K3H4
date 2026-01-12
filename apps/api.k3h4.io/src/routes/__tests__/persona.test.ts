@@ -27,6 +27,9 @@ describe("persona routes", () => {
         findMany,
         createMany: vi.fn().mockResolvedValue({ count: 3 }),
       },
+      personaAttribute: {
+        createMany: vi.fn(),
+      },
     };
     const server = buildServer(prisma);
     const res = await server.inject({ method: "GET", url: "/personas" });
@@ -40,6 +43,9 @@ describe("persona routes", () => {
       persona: {
         create: vi.fn().mockResolvedValue({ id: "p2", alias: "B", account: "b@test.com", handle: null, note: null, tags: [], createdAt: new Date(), updatedAt: new Date() }),
         findMany: vi.fn(),
+      },
+      personaAttribute: {
+        createMany: vi.fn(),
       },
     };
     const server = buildServer(prisma);
@@ -57,6 +63,9 @@ describe("persona routes", () => {
           { id: "p3", alias: "C", account: "c@test.com", handle: "@c", note: null, tags: [], createdAt: new Date(), updatedAt: new Date() },
           { id: "p4", alias: "D", account: "d@test.com", handle: "@d", note: null, tags: [], createdAt: new Date(), updatedAt: new Date() },
         ]),
+      },
+      personaAttribute: {
+        createMany: vi.fn(),
       },
     };
     const server = buildServer(prisma);
@@ -81,11 +90,100 @@ describe("persona routes", () => {
           updatedAt: new Date(),
         }))),
       },
+      personaAttribute: {
+        createMany: vi.fn(),
+      },
     };
     const server = buildServer(prisma);
     const res = await server.inject({ method: "POST", url: "/personas/generate", payload: { count: 50 } });
     expect(res.statusCode).toBe(200);
     expect(prisma.persona.createMany).toHaveBeenCalledWith(expect.objectContaining({ data: expect.any(Array) }));
     expect(res.json().personas).toHaveLength(10);
+  });
+
+  it("updates persona attributes", async () => {
+    const persona = { id: "p-attr", alias: "Attr", account: "attr@test.com", handle: null, note: null, tags: [], userId, createdAt: new Date(), updatedAt: new Date() };
+    const prisma = {
+      persona: {
+        findFirst: vi.fn().mockResolvedValue(persona),
+        findUnique: vi.fn().mockResolvedValue({ ...persona, attributes: [{ id: "a1", category: "skill", value: "ops", weight: 1 }] }),
+      },
+      personaAttribute: {
+        deleteMany: vi.fn().mockResolvedValue({ count: 1 }),
+        createMany: vi.fn().mockResolvedValue({ count: 2 }),
+      },
+      personaCompatibility: { deleteMany: vi.fn(), createMany: vi.fn(), findMany: vi.fn() },
+    };
+
+    const server = buildServer(prisma);
+    const res = await server.inject({ method: "PUT", url: "/personas/p-attr/attributes", payload: { attributes: [{ category: "skill", values: ["ops", "infra"] }] } });
+    expect(res.statusCode).toBe(200);
+    expect(prisma.personaAttribute.deleteMany).toHaveBeenCalled();
+    expect(prisma.personaAttribute.createMany).toHaveBeenCalledWith(expect.objectContaining({ data: expect.any(Array) }));
+    expect(res.json().persona.attributes).toHaveLength(1);
+  });
+
+  it("recomputes compatibility graph", async () => {
+    const personas = [
+      {
+        id: "p1",
+        userId,
+        alias: "Alpha",
+        account: "a@test.com",
+        handle: null,
+        note: null,
+        tags: ["fintech", "payments"],
+        attributes: [{ id: "a1", category: "stack", value: "node", weight: 1 }],
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+      {
+        id: "p2",
+        userId,
+        alias: "Beta",
+        account: "b@test.com",
+        handle: null,
+        note: null,
+        tags: ["fintech", "logistics"],
+        attributes: [{ id: "a2", category: "stack", value: "node", weight: 1 }],
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+    ];
+
+    const compatRecord = {
+      id: "c1",
+      userId,
+      sourceId: "p1",
+      targetId: "p2",
+      jaccardScore: 0.25,
+      intersectionCount: 2,
+      unionCount: 8,
+      overlappingTokens: ["fintech", "stack:node"],
+      computedAt: new Date(),
+      rationale: null,
+      status: "active",
+      source: personas[0],
+      target: personas[1],
+    };
+
+    const prisma = {
+      persona: {
+        findMany: vi.fn().mockResolvedValue(personas),
+      },
+      personaCompatibility: {
+        deleteMany: vi.fn().mockResolvedValue({ count: 0 }),
+        createMany: vi.fn().mockResolvedValue({ count: 1 }),
+        findMany: vi.fn().mockResolvedValue([compatRecord]),
+      },
+    };
+
+    const server = buildServer(prisma);
+    const res = await server.inject({ method: "POST", url: "/personas/compatibility/recompute" });
+    expect(res.statusCode).toBe(200);
+    expect(prisma.personaCompatibility.createMany).toHaveBeenCalled();
+    const body = res.json();
+    expect(body.compatibilities[0].jaccardScore).toBeCloseTo(0.25);
+    expect(recordTelemetry).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({ eventType: "persona.compatibility.recompute" }));
   });
 });

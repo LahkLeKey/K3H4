@@ -10,6 +10,7 @@ import { BankTable } from "./bank/bank-table";
 import { AssignmentAgency } from "./agency/assignment-agency";
 import { FreightManager } from "./freight/freight-manager";
 import { PersonaTable } from "./persona/persona-table";
+import { PersonaCompatibilityPanel } from "./persona/persona-compatibility-panel";
 import { WarehouseDashboard } from "./warehouse/warehouse-dashboard";
 import { PosDashboard } from "./pos/pos-dashboard";
 import { AgricultureDashboard } from "./agriculture/agriculture-dashboard";
@@ -149,6 +150,7 @@ export function Shell() {
             description: "Mock personas for testing",
             render: () => (
                 <IndustryDashboard>
+                    <PersonaCompatibilityPanel apiBase={apiBase} userEmail={userEmail} />
                     <PersonaTable apiBase={apiBase} userEmail={userEmail} />
                 </IndustryDashboard>
             ),

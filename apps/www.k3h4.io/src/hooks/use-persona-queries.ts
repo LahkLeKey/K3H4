@@ -13,10 +13,34 @@ export type Persona = {
   tags?: string[];
   createdAt?: string;
   updatedAt?: string;
+  attributes?: PersonaAttribute[];
+};
+
+export type PersonaAttribute = {
+  id: string;
+  category: string;
+  value: string;
+  weight: number;
+};
+
+export type PersonaCompatibility = {
+  id: string;
+  sourceId: string;
+  targetId: string;
+  jaccardScore: number;
+  intersectionCount: number;
+  unionCount: number;
+  overlappingTokens: string[];
+  computedAt: string;
+  status: string;
+  rationale?: string;
+  source: Persona;
+  target: Persona;
 };
 
 const personaKeys = {
   list: (apiBase: string, token: string) => ["personas", apiBase, token || "anon"],
+  compatibility: (apiBase: string, token: string, personaId?: string) => ["personas", "compatibility", apiBase, token || "anon", personaId ?? "all"],
 };
 
 function getToken() {
@@ -101,6 +125,68 @@ export function useGeneratePersonaMutation(apiBase: string) {
     onSuccess: () => {
       const token = getToken();
       void queryClient.invalidateQueries({ queryKey: ["personas", apiBase, token] });
+      void queryClient.invalidateQueries({ queryKey: personaKeys.compatibility(apiBase, token) });
+    },
+  });
+}
+
+export function usePersonaCompatibilityQuery(apiBase: string, personaId?: string) {
+  const auth = getAuthHeaders();
+  const enabled = !!auth?.token;
+
+  return useQuery({
+    queryKey: personaKeys.compatibility(apiBase, auth?.token || "", personaId),
+    enabled,
+    queryFn: async () => {
+      if (!auth) throw new Error("Sign in to access compatibility.");
+      const url = personaId ? `${apiBase}/personas/compatibility?personaId=${encodeURIComponent(personaId)}` : `${apiBase}/personas/compatibility`;
+      const data = await fetchJson<{ compatibilities: PersonaCompatibility[] }>(url, { headers: auth.headers }, "persona.compatibility.error");
+      void trackTelemetry("persona.compatibility.success", { count: data.compatibilities.length });
+      return data.compatibilities;
+    },
+  });
+}
+
+export function useRecomputePersonaCompatibilityMutation(apiBase: string) {
+  const auth = getAuthHeaders();
+  return useMutation({
+    mutationKey: ["personas", "compatibility", "recompute", apiBase, auth?.token || ""],
+    mutationFn: async () => {
+      if (!auth) throw new Error("Sign in to recompute compatibility.");
+      const data = await fetchJson<{ compatibilities: PersonaCompatibility[] }>(
+        `${apiBase}/personas/compatibility/recompute`,
+        { method: "POST", headers: auth.headers },
+        "persona.compatibility.recompute.error",
+      );
+      void trackTelemetry("persona.compatibility.recompute.success", { count: data.compatibilities.length });
+      return data.compatibilities;
+    },
+    onSuccess: () => {
+      const token = getToken();
+      void queryClient.invalidateQueries({ queryKey: personaKeys.compatibility(apiBase, token) });
+      void queryClient.invalidateQueries({ queryKey: ["personas", apiBase, token] });
+    },
+  });
+}
+
+export function useUpsertPersonaAttributesMutation(apiBase: string) {
+  const auth = getAuthHeaders();
+  return useMutation({
+    mutationKey: ["personas", "attributes", apiBase, auth?.token || ""],
+    mutationFn: async (payload: { personaId: string; attributes: { category: string; values: string[]; weight?: number }[] }) => {
+      if (!auth) throw new Error("Sign in to update attributes.");
+      const data = await fetchJson<{ persona: Persona }>(
+        `${apiBase}/personas/${payload.personaId}/attributes`,
+        { method: "PUT", headers: auth.headers, body: JSON.stringify({ attributes: payload.attributes }) },
+        "persona.attributes.error",
+      );
+      void trackTelemetry("persona.attributes.success", { personaId: payload.personaId, count: payload.attributes.length });
+      return data.persona;
+    },
+    onSuccess: () => {
+      const token = getToken();
+      void queryClient.invalidateQueries({ queryKey: ["personas", apiBase, token] });
+      void queryClient.invalidateQueries({ queryKey: personaKeys.compatibility(apiBase, token) });
     },
   });
 }

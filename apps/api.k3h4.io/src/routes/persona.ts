@@ -3,6 +3,20 @@ import { type Prisma, type PrismaClient } from "@prisma/client";
 import { type FastifyInstance } from "fastify";
 import { type RecordTelemetryFn } from "./types";
 
+type PersonaWithAttributes = Prisma.PersonaGetPayload<{ include: { attributes: true } }>;
+
+type CompatibilityWithNodes = Prisma.PersonaCompatibilityGetPayload<{
+  include: {
+    source: { include: { attributes: true } };
+    target: { include: { attributes: true } };
+  };
+}>;
+
+const serializeAttributes = (attrs: { id: string; category: string; value: string; weight: number }[] | undefined) =>
+  attrs?.map((attr) => ({ id: attr.id, category: attr.category, value: attr.value, weight: attr.weight })) ?? [];
+
+const tagArray = (value: Prisma.JsonValue | null | undefined) => (Array.isArray(value) ? (value as string[]).filter((tag) => typeof tag === "string" && tag.trim().length > 0) : []);
+
 const serializePersona = (persona: {
   id: string;
   alias: string;
@@ -12,11 +26,13 @@ const serializePersona = (persona: {
   tags: Prisma.JsonValue | null;
   createdAt: Date;
   updatedAt: Date;
+  attributes?: { id: string; category: string; value: string; weight: number }[];
 }) => ({
   ...persona,
   handle: persona.handle ?? undefined,
   note: persona.note ?? undefined,
   tags: Array.isArray(persona.tags) ? (persona.tags as string[]) : [],
+  attributes: serializeAttributes(persona.attributes),
 });
 
 const buildFakerPersona = () => ({
@@ -27,6 +43,81 @@ const buildFakerPersona = () => ({
   tags: [faker.hacker.noun(), faker.company.buzzNoun()].map((tag) => tag.toLowerCase()),
 });
 
+const buildSeedAttributes = (personaId: string, userId: string, tags: string[]) => {
+  const industries = ["fintech", "logistics", "commerce", "gaming", "media", "operations"];
+  const stacks = ["node", "python", "go", "rust", "rails"];
+  const tones = ["analytical", "playful", "direct", "technical", "empathetic"];
+  return [
+    { userId, personaId, category: "industry", value: tags[0]?.toLowerCase() || faker.helpers.arrayElement(industries) },
+    { userId, personaId, category: "stack", value: faker.helpers.arrayElement(stacks) },
+    { userId, personaId, category: "tone", value: faker.helpers.arrayElement(tones) },
+  ];
+};
+
+const normalizeToken = (value: string) => value.trim().toLowerCase().replace(/\s+/g, "-");
+
+const tokensForPersona = (persona: PersonaWithAttributes) => {
+  const tokens = new Set<string>();
+  tokens.add(normalizeToken(persona.alias));
+  if (persona.handle) tokens.add(normalizeToken(persona.handle));
+  if (Array.isArray(persona.tags)) {
+    (persona.tags as string[]).forEach((tag) => tokens.add(normalizeToken(tag)));
+  }
+  persona.attributes?.forEach((attr) => {
+    tokens.add(`${normalizeToken(attr.category)}:${normalizeToken(attr.value)}`);
+  });
+  return tokens;
+};
+
+const calculateJaccard = (a: Set<string>, b: Set<string>) => {
+  const intersection = new Set<string>();
+  a.forEach((token) => {
+    if (b.has(token)) intersection.add(token);
+  });
+  const unionCount = new Set([...a, ...b]).size || 1;
+  const intersectionCount = intersection.size;
+  const score = unionCount === 0 ? 0 : Number((intersectionCount / unionCount).toFixed(4));
+  return { score, intersectionCount, unionCount, overlap: Array.from(intersection) };
+};
+
+const buildCompatibilityPayload = (personas: PersonaWithAttributes[]) => {
+  const payload: Prisma.PersonaCompatibilityCreateManyInput[] = [];
+  for (let i = 0; i < personas.length; i += 1) {
+    for (let j = i + 1; j < personas.length; j += 1) {
+      const left = personas[i];
+      const right = personas[j];
+      const leftTokens = tokensForPersona(left);
+      const rightTokens = tokensForPersona(right);
+      const { score, intersectionCount, unionCount, overlap } = calculateJaccard(leftTokens, rightTokens);
+      payload.push({
+        userId: left.userId,
+        sourceId: left.id,
+        targetId: right.id,
+        jaccardScore: score,
+        intersectionCount,
+        unionCount,
+        overlappingTokens: overlap,
+      });
+    }
+  }
+  return payload;
+};
+
+const serializeCompatibility = (compat: CompatibilityWithNodes) => ({
+  id: compat.id,
+  jaccardScore: compat.jaccardScore,
+  intersectionCount: compat.intersectionCount,
+  unionCount: compat.unionCount,
+  overlappingTokens: Array.isArray(compat.overlappingTokens) ? (compat.overlappingTokens as string[]) : [],
+  computedAt: compat.computedAt.toISOString(),
+  sourceId: compat.sourceId,
+  targetId: compat.targetId,
+  status: compat.status,
+  rationale: compat.rationale ?? undefined,
+  source: serializePersona(compat.source),
+  target: serializePersona(compat.target),
+});
+
 export function registerPersonaRoutes(server: FastifyInstance, prisma: PrismaClient, recordTelemetry: RecordTelemetryFn) {
   server.get(
     "/personas",
@@ -34,12 +125,17 @@ export function registerPersonaRoutes(server: FastifyInstance, prisma: PrismaCli
     async (request, reply) => {
       const userId = (request.user as { sub: string }).sub;
 
-      let personas = await prisma.persona.findMany({ where: { userId }, orderBy: { createdAt: "desc" } });
+      let personas = await prisma.persona.findMany({ where: { userId }, orderBy: { createdAt: "desc" }, include: { attributes: true } });
 
       if (personas.length === 0) {
         const seedPayload = Array.from({ length: 3 }).map(() => ({ ...buildFakerPersona(), userId }));
         await prisma.persona.createMany({ data: seedPayload });
-        personas = await prisma.persona.findMany({ where: { userId }, orderBy: { createdAt: "desc" } });
+        personas = await prisma.persona.findMany({ where: { userId }, orderBy: { createdAt: "desc" }, include: { attributes: true } });
+        const attributeSeeds = personas.flatMap((p) => buildSeedAttributes(p.id, userId, tagArray(p.tags)));
+        if (attributeSeeds.length > 0) {
+          await prisma.personaAttribute.createMany({ data: attributeSeeds, skipDuplicates: true });
+          personas = await prisma.persona.findMany({ where: { userId }, orderBy: { createdAt: "desc" }, include: { attributes: true } });
+        }
         await recordTelemetry(request, {
           eventType: "persona.seed",
           source: "api",
@@ -62,11 +158,30 @@ export function registerPersonaRoutes(server: FastifyInstance, prisma: PrismaCli
     { preHandler: [server.authenticate] },
     async (request, reply) => {
       const userId = (request.user as { sub: string }).sub;
-      const body = request.body as { alias?: string; account?: string; handle?: string; note?: string; tags?: string[] } | undefined;
+      const body = request.body as {
+        alias?: string;
+        account?: string;
+        handle?: string;
+        note?: string;
+        tags?: string[];
+        attributes?: { category?: string; values?: string[]; weight?: number }[];
+      } | undefined;
 
       const alias = body?.alias?.trim();
       const account = body?.account?.trim();
       if (!alias || !account) return reply.status(400).send({ error: "alias and account are required" });
+
+      const attributes = (body?.attributes ?? [])
+        .flatMap((entry) => {
+          const category = entry.category?.trim();
+          if (!category) return [];
+          const weight = Number.isFinite(entry.weight) ? Number(entry.weight) : 1;
+          return (entry.values ?? []).map((value) => ({
+            category,
+            value: value.trim(),
+            weight: weight || 1,
+          })).filter((attr) => attr.value.length > 0);
+        });
 
       const persona = await prisma.persona.create({
         data: {
@@ -79,13 +194,18 @@ export function registerPersonaRoutes(server: FastifyInstance, prisma: PrismaCli
         },
       });
 
+      if (attributes.length > 0) {
+        await prisma.personaAttribute.createMany({ data: attributes.map((attr) => ({ ...attr, userId, personaId: persona.id })) });
+      }
+
       await recordTelemetry(request, {
         eventType: "persona.create",
         source: "api",
         payload: { hasTags: Array.isArray(body?.tags) && body?.tags.length > 0 },
       });
 
-      return { persona: serializePersona(persona) };
+      const withAttributes = await prisma.persona.findUnique({ where: { id: persona.id }, include: { attributes: true } });
+      return { persona: withAttributes ? serializePersona(withAttributes) : serializePersona(persona) };
     },
   );
 
@@ -103,7 +223,13 @@ export function registerPersonaRoutes(server: FastifyInstance, prisma: PrismaCli
 
       const payload = Array.from({ length: count }).map(() => ({ ...buildFakerPersona(), userId }));
       await prisma.persona.createMany({ data: payload });
-      const personas = await prisma.persona.findMany({ where: { userId }, orderBy: { createdAt: "desc" }, take: count });
+      let personas = await prisma.persona.findMany({ where: { userId }, orderBy: { createdAt: "desc" }, take: count, include: { attributes: true } });
+
+      const attributeSeeds = personas.flatMap((p) => buildSeedAttributes(p.id, userId, tagArray(p.tags)));
+      if (attributeSeeds.length > 0) {
+        await prisma.personaAttribute.createMany({ data: attributeSeeds, skipDuplicates: true });
+        personas = await prisma.persona.findMany({ where: { userId }, orderBy: { createdAt: "desc" }, take: count, include: { attributes: true } });
+      }
 
       await recordTelemetry(request, {
         eventType: "persona.generate",
@@ -112,6 +238,116 @@ export function registerPersonaRoutes(server: FastifyInstance, prisma: PrismaCli
       });
 
       return { personas: personas.map(serializePersona) };
+    },
+  );
+
+  server.put(
+    "/personas/:id/attributes",
+    { preHandler: [server.authenticate] },
+    async (request, reply) => {
+      const userId = (request.user as { sub: string }).sub;
+      const personaId = (request.params as { id?: string } | undefined)?.id;
+      if (!personaId) return reply.status(400).send({ error: "persona id is required" });
+
+      const persona = await prisma.persona.findFirst({ where: { id: personaId, userId } });
+      if (!persona) return reply.status(404).send({ error: "persona not found" });
+
+      const body = request.body as { attributes?: { category?: string; values?: string[]; weight?: number }[] } | undefined;
+      const attributes = (body?.attributes ?? [])
+        .flatMap((entry) => {
+          const category = entry.category?.trim();
+          if (!category) return [];
+          const weight = Number.isFinite(entry.weight) ? Number(entry.weight) : 1;
+          return (entry.values ?? []).map((value) => ({
+            category,
+            value: value.trim(),
+            weight: weight || 1,
+          })).filter((attr) => attr.value.length > 0);
+        });
+
+      const attributeTx: Prisma.PrismaPromise<unknown>[] = [
+        prisma.personaAttribute.deleteMany({ where: { personaId } }),
+      ];
+
+      if (attributes.length > 0) {
+        attributeTx.push(prisma.personaAttribute.createMany({ data: attributes.map((attr) => ({ ...attr, userId, personaId })) }));
+      }
+
+      await prisma.$transaction(attributeTx);
+
+      const updated = await prisma.persona.findUnique({ where: { id: personaId }, include: { attributes: true } });
+
+      await recordTelemetry(request, {
+        eventType: "persona.attributes.update",
+        source: "api",
+        payload: { count: attributes.length },
+      });
+
+      return { persona: updated ? serializePersona(updated) : serializePersona(persona) };
+    },
+  );
+
+  server.post(
+    "/personas/compatibility/recompute",
+    { preHandler: [server.authenticate] },
+    async (request, reply) => {
+      const userId = (request.user as { sub: string }).sub;
+      const personas = await prisma.persona.findMany({ where: { userId }, include: { attributes: true } });
+
+      if (personas.length < 2) {
+        await prisma.personaCompatibility.deleteMany({ where: { userId } });
+        return { compatibilities: [] };
+      }
+
+      const payload = buildCompatibilityPayload(personas);
+
+      await prisma.$transaction([
+        prisma.personaCompatibility.deleteMany({ where: { userId } }),
+        prisma.personaCompatibility.createMany({ data: payload, skipDuplicates: true }),
+      ]);
+
+      const compatibilities = await prisma.personaCompatibility.findMany({
+        where: { userId },
+        include: {
+          source: { include: { attributes: true } },
+          target: { include: { attributes: true } },
+        },
+        orderBy: { jaccardScore: "desc" },
+      });
+
+      await recordTelemetry(request, {
+        eventType: "persona.compatibility.recompute",
+        source: "api",
+        payload: { count: compatibilities.length },
+      });
+
+      return { compatibilities: compatibilities.map(serializeCompatibility) };
+    },
+  );
+
+  server.get(
+    "/personas/compatibility",
+    { preHandler: [server.authenticate] },
+    async (request) => {
+      const userId = (request.user as { sub: string }).sub;
+      const personaId = (request.query as { personaId?: string } | undefined)?.personaId;
+
+      const compatibilities = await prisma.personaCompatibility.findMany({
+        where: personaId ? { userId, OR: [{ sourceId: personaId }, { targetId: personaId }] } : { userId },
+        include: {
+          source: { include: { attributes: true } },
+          target: { include: { attributes: true } },
+        },
+        orderBy: { jaccardScore: "desc" },
+      });
+
+      await recordTelemetry(request, {
+        eventType: "persona.compatibility.list",
+        source: "api",
+        payload: { count: compatibilities.length },
+      });
+
+      return { compatibilities: compatibilities.map(serializeCompatibility) };
     },
   );
 }
