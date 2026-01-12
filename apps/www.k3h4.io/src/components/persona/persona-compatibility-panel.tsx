@@ -88,7 +88,10 @@ function CompatibilityCanvas({ nodes, edges }: { nodes: GraphNode[]; edges: Grap
                             gapSize={0.25}
                         />
                         <Html position={mid} center className="pointer-events-none select-none text-xs">
-                            <div className="rounded-full bg-background/80 px-2 py-1 font-semibold shadow">
+                            <div
+                                className="rounded-full bg-background/80 px-2 py-1 font-semibold shadow"
+                                title={`Match ${(edge.score * 100).toFixed(1)}%\n${edge.overlap.length ? `Overlap: ${edge.overlap.join(", ")}` : "No shared tokens"}`}
+                            >
                                 {(edge.score * 100).toFixed(0)}%
                             </div>
                         </Html>
@@ -121,10 +124,15 @@ function CompatibilityList({ edges, personaIndex }: { edges: PersonaCompatibilit
             {edges.slice(0, 8).map((edge) => (
                 <div key={edge.id} className="rounded-lg border bg-muted/40 px-3 py-2">
                     <div className="flex items-center justify-between">
-                        <div className="font-semibold">
+                        <div className="font-semibold" title={`Overlap: ${(edge.overlappingTokens ?? []).join(", ") || "None"}`}>
                             {(personaIndex[edge.sourceId]?.alias ?? edge.source?.alias ?? edge.sourceId)} &lt;-&gt; {(personaIndex[edge.targetId]?.alias ?? edge.target?.alias ?? edge.targetId)}
                         </div>
-                        <Badge variant="secondary">{(Number.isFinite(edge.jaccardScore) ? edge.jaccardScore * 100 : 0).toFixed(0)}%</Badge>
+                        <Badge
+                            variant="secondary"
+                            title={`Match ${(Number.isFinite(edge.jaccardScore) ? edge.jaccardScore * 100 : 0).toFixed(1)}%`}
+                        >
+                            {(Number.isFinite(edge.jaccardScore) ? edge.jaccardScore * 100 : 0).toFixed(0)}%
+                        </Badge>
                     </div>
                     <div className="text-xs text-muted-foreground">Overlap: {(edge.overlappingTokens ?? []).join(", ") || "None"}</div>
                 </div>
@@ -336,6 +344,31 @@ export function PersonaCompatibilityPanel({ apiBase, userEmail }: { apiBase: str
             };
         });
     }, [personasQuery.data]);
+
+    useEffect(() => {
+        if (loadingCompatibility) return;
+        if (personas.length < 2) return;
+        const personaIds = new Set(personas.map((p) => p.id));
+        const edgeCoverage = new Set<string>();
+        for (const edge of compatibilities) {
+            edgeCoverage.add(edge.sourceId);
+            edgeCoverage.add(edge.targetId);
+        }
+        const missingPersona = Array.from(personaIds).some((id) => !edgeCoverage.has(id));
+        if (compatibilities.length === 0 || missingPersona) {
+            void recomputeCompatibility(apiBase);
+        }
+    }, [apiBase, personas, compatibilities, loadingCompatibility, recomputeCompatibility]);
+
+    useEffect(() => {
+        if (loadingCompatibility) return;
+        if (errors.compatibility) return;
+        if (personas.length < 2) return;
+        if (compatibilities.length > 0) return;
+        // Reset debounce so the initial load can recompute immediately after the first compatibility fetch returns empty.
+        personaCompatStore.setState({ lastCompatibilityRequest: 0 });
+        void recomputeCompatibility(apiBase);
+    }, [apiBase, personas.length, compatibilities.length, loadingCompatibility, errors.compatibility, recomputeCompatibility]);
 
     useEffect(() => {
         if (loadingCompatibility || errors.compatibility) return;
