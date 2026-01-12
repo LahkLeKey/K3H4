@@ -6,14 +6,14 @@ Public monorepo for the K3H4 platform: Fastify + Prisma API and a React (Bun + V
 - apps/api.k3h4.io — Fastify API with Prisma, JWT auth, and feature routes (auth, bank, freight, agriculture, culinary, POS, warehouse, personas).
 - apps/www.k3h4.io — React SPA built with Bun, Vite, TanStack Query, Radix UI, Tailwind, and a new Graphics Engine module (R3F + three.js) for reusable spatial scenes.
 
+## Shared UI Components (web)
+- Location: apps/www.k3h4.io/src/components/ui — base primitives (Button, Badge, Dialog, Table, etc.) plus HUD-specific helpers.
+- HUD primitives: HudCard, HudToolbar, HudChip, HudListPanel/Item, MetricTile, Empty/Spinner, FormActions, FieldRow; prefer these over ad-hoc flex/div stacks.
+- Patterns: use TanStack Query hooks for data, Zustand stores under src/stores for state, and telemetry via src/lib/telemetry.
+
 ## Industry Modules (web)
 - Bank, Persona, Agency (staffing), Freight, Warehouse, POS, Agriculture, Culinary
 - Graphics Engine (R3F): spatial canvas for plot drawing, freight lanes, and immersive flows reused across industries
-
-## Business Flows (orchestration)
-- Neighborhood Bakery: Culinary → Warehouse → Freight → POS → Bank (+ Graphics Engine for 3D menu lanes)
-- Farm Supply Loop: Agriculture → Freight → Warehouse → Culinary → Bank (+ Graphics Engine for plot overlays)
-- Retro Arcade: Graphics Engine (playable R3F arcade machines like Tetris/Snake/Invaders) → POS for sessions → Bank top-ups (k3h4-coin game cards) → Warehouse for physical prize payouts
 
 ## Prerequisites
 - Bun 1.3.x (repo scripts assume Bun)
@@ -73,11 +73,6 @@ bun run test --coverage
 - TypeScript strict in both apps.
 - Vitest + Testing Library for tests.
 - Radix UI + Tailwind for UI primitives.
-
-## Shared UI Components (web)
-- Location: apps/www.k3h4.io/src/components/ui — base primitives (Button, Badge, Dialog, Table, etc.) plus HUD-specific helpers.
-- HUD primitives: HudCard, HudToolbar, HudChip, HudListPanel/Item, MetricTile, Empty/Spinner, FormActions, FieldRow; prefer these over ad-hoc flex/div stacks.
-- Patterns: use TanStack Query hooks for data, Zustand stores under src/stores for state, and telemetry via src/lib/telemetry.
 
 <!-- coverage-start -->
 ## Latest Coverage

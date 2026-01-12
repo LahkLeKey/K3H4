@@ -1,10 +1,11 @@
 import { Fragment, useEffect, useMemo, useState } from "react";
 import { Canvas } from "@react-three/fiber";
 import { Html, Line, OrbitControls } from "@react-three/drei";
+import { DodecahedronGeometry, WireframeGeometry } from "three";
 import { RefreshCcw, Sparkles } from "lucide-react";
 import { ResponsiveContainer, BarChart, Bar, CartesianGrid, XAxis, YAxis, Tooltip, AreaChart, Area } from "recharts";
 
-import { type Persona, type PersonaCompatibility } from "../../hooks/use-persona-queries";
+import { useGeneratePersonaMutation, usePersonaListQuery, type Persona, type PersonaCompatibility } from "../../hooks/use-persona-queries";
 import { personaCompatStore } from "../../stores/persona-compat-store";
 import { Badge } from "../ui/badge";
 import { Button } from "../ui/button";
@@ -19,23 +20,61 @@ const scoreColor = (score: number) => {
     return "#94a3b8";
 };
 
-const hexVertex = (edge: number, radius: number) => {
-    const angle = Math.PI / 6 + edge * (Math.PI / 3);
-    return [Math.cos(angle) * radius, Math.sin(angle) * radius] as [number, number];
+const golden = (1 + Math.sqrt(5)) / 2;
+
+const getDodecahedronVertices = (radius: number) => {
+    const phi = golden;
+    const invPhi = 1 / phi;
+    const raw: Array<[number, number, number]> = [
+        [-1, -1, -1],
+        [-1, -1, 1],
+        [-1, 1, -1],
+        [-1, 1, 1],
+        [1, -1, -1],
+        [1, -1, 1],
+        [1, 1, -1],
+        [1, 1, 1],
+        [0, -invPhi, -phi],
+        [0, -invPhi, phi],
+        [0, invPhi, -phi],
+        [0, invPhi, phi],
+        [-invPhi, -phi, 0],
+        [-invPhi, phi, 0],
+        [invPhi, -phi, 0],
+        [invPhi, phi, 0],
+        [-phi, 0, -invPhi],
+        [-phi, 0, invPhi],
+        [phi, 0, -invPhi],
+        [phi, 0, invPhi],
+    ];
+    return raw.map(([x, y, z]) => {
+        const mag = Math.hypot(x, y, z) || 1;
+        const scale = radius / mag;
+        return [x * scale, y * scale, z * scale] as [number, number, number];
+    });
+};
+
+const getDodecahedronFrame = (radius: number) => {
+    const geometry = new DodecahedronGeometry(radius);
+    const wire = new WireframeGeometry(geometry);
+    const pos = wire.getAttribute("position");
+    const segments: Array<[[number, number, number], [number, number, number]]> = [];
+    for (let i = 0; i < pos.count; i += 2) {
+        segments.push([
+            [pos.getX(i), pos.getY(i), pos.getZ(i)],
+            [pos.getX(i + 1), pos.getY(i + 1), pos.getZ(i + 1)],
+        ]);
+    }
+    return segments;
 };
 
 const buildNodePositions = (personas: Persona[]) => {
     const count = Math.max(personas.length, 1);
-    const radius = Math.max(5.5, count * 0.45);
+    const radius = Math.max(6, count * 0.55);
+    const vertices = getDodecahedronVertices(radius);
     return personas.map((persona, index) => {
-        const t = count === 1 ? 0 : index / count; // normalized position along the hex perimeter
-        const edge = Math.floor(t * 6) % 6;
-        const edgeT = t * 6 - edge;
-        const [x1, z1] = hexVertex(edge, radius);
-        const [x2, z2] = hexVertex((edge + 1) % 6, radius);
-        const x = x1 + (x2 - x1) * edgeT;
-        const z = z1 + (z2 - z1) * edgeT;
-        return { ...persona, position: [x, 0.6, z] as [number, number, number] };
+        const v = vertices[index % vertices.length];
+        return { ...persona, position: [v[0], v[1], v[2]] as [number, number, number] };
     });
 };
 
@@ -51,22 +90,21 @@ type GraphEdge = {
 
 function CompatibilityCanvas({ nodes, edges }: { nodes: GraphNode[]; edges: GraphEdge[] }) {
     const positions = useMemo(() => Object.fromEntries(nodes.map((node) => [node.id, node.position])), [nodes]);
-    const hexFrame = useMemo(() => {
-        const radius = Math.max(...nodes.map((n) => Math.hypot(n.position[0], n.position[2])), 6);
-        const vertices = Array.from({ length: 6 }, (_, i) => hexVertex(i, radius));
-        const points = vertices.map(([x, z]) => [x, 0.1, z] as [number, number, number]);
-        points.push(points[0]);
-        return points;
-    }, [nodes]);
-
+    const frameRadius = useMemo(() => Math.max(...nodes.map((n) => Math.hypot(n.position[0], n.position[2])), 6), [nodes]);
+    const dodecaFrame = useMemo(() => getDodecahedronFrame(frameRadius), [frameRadius]);
+    const dodecaVertices = useMemo(() => getDodecahedronVertices(frameRadius), [frameRadius]);
     const center = useMemo<[number, number, number]>(() => [0, 0.25, 0], []);
     return (
         <Canvas camera={{ position: [0, 4, 10], fov: 62 }}>
             <color attach="background" args={["#050816"]} />
             <ambientLight intensity={0.6} />
             <directionalLight position={[6, 8, 6]} intensity={0.8} />
-            <Line points={hexFrame} color="#1e293b" lineWidth={1.5} />
-            <Line points={[...hexFrame.slice(0, 6), center, hexFrame[0]]} color="#0ea5e9" lineWidth={0.75} dashed dashSize={0.35} gapSize={0.25} />
+            {dodecaFrame.map((segment, idx) => (
+                <Line key={`frame-${idx}`} points={segment} color="#1e293b" lineWidth={1.5} />
+            ))}
+            {dodecaVertices.map((v, idx) => (
+                <Line key={`radial-${idx}`} points={[v, center]} color="#0ea5e9" lineWidth={0.75} dashed dashSize={0.35} gapSize={0.25} />
+            ))}
             {edges.map((edge) => {
                 const source = positions[edge.sourceId];
                 const target = positions[edge.targetId];
@@ -88,7 +126,10 @@ function CompatibilityCanvas({ nodes, edges }: { nodes: GraphNode[]; edges: Grap
                             gapSize={0.25}
                         />
                         <Html position={mid} center className="pointer-events-none select-none text-xs">
-                            <div className="rounded-full bg-background/80 px-2 py-1 font-semibold shadow">
+                            <div
+                                className="rounded-full bg-background/80 px-2 py-1 font-semibold shadow"
+                                title={`Match ${(edge.score * 100).toFixed(1)}%\n${edge.overlap.length ? `Overlap: ${edge.overlap.join(", ")}` : "No shared tokens"}`}
+                            >
                                 {(edge.score * 100).toFixed(0)}%
                             </div>
                         </Html>
@@ -121,10 +162,15 @@ function CompatibilityList({ edges, personaIndex }: { edges: PersonaCompatibilit
             {edges.slice(0, 8).map((edge) => (
                 <div key={edge.id} className="rounded-lg border bg-muted/40 px-3 py-2">
                     <div className="flex items-center justify-between">
-                        <div className="font-semibold">
+                        <div className="font-semibold" title={`Overlap: ${(edge.overlappingTokens ?? []).join(", ") || "None"}`}>
                             {(personaIndex[edge.sourceId]?.alias ?? edge.source?.alias ?? edge.sourceId)} &lt;-&gt; {(personaIndex[edge.targetId]?.alias ?? edge.target?.alias ?? edge.targetId)}
                         </div>
-                        <Badge variant="secondary">{(Number.isFinite(edge.jaccardScore) ? edge.jaccardScore * 100 : 0).toFixed(0)}%</Badge>
+                        <Badge
+                            variant="secondary"
+                            title={`Match ${(Number.isFinite(edge.jaccardScore) ? edge.jaccardScore * 100 : 0).toFixed(1)}%`}
+                        >
+                            {(Number.isFinite(edge.jaccardScore) ? edge.jaccardScore * 100 : 0).toFixed(0)}%
+                        </Badge>
                     </div>
                     <div className="text-xs text-muted-foreground">Overlap: {(edge.overlappingTokens ?? []).join(", ") || "None"}</div>
                 </div>
@@ -254,6 +300,8 @@ function ProbabilityHeatmap({
 }
 
 export function PersonaCompatibilityPanel({ apiBase, userEmail }: { apiBase: string; userEmail: string | null }) {
+    const personasQuery = usePersonaListQuery(apiBase);
+    const generatePersona = useGeneratePersonaMutation(apiBase);
     const {
         personas,
         compatibilities,
@@ -296,6 +344,70 @@ export function PersonaCompatibilityPanel({ apiBase, userEmail }: { apiBase: str
             void loadPersonas(apiBase);
         }
     }, [apiBase, personas.length, loadingPersonas, errors.personas, loadPersonas]);
+
+    useEffect(() => {
+        if (!personasQuery.data) return;
+        const latest = personasQuery.data;
+        personaCompatStore.setState((state) => {
+            const prev = state.personas;
+            const sameLength = prev.length === latest.length;
+            const sameContent = sameLength && prev.every((p, idx) => {
+                const next = latest[idx];
+                if (!next) return false;
+                if (p.id !== next.id) return false;
+                if (p.updatedAt && next.updatedAt) return p.updatedAt === next.updatedAt;
+                return (
+                    p.alias === next.alias &&
+                    p.account === next.account &&
+                    (p.handle ?? "") === (next.handle ?? "") &&
+                    (p.note ?? "") === (next.note ?? "")
+                );
+            });
+
+            if (sameContent) return state;
+
+            const personasChanged = !sameContent;
+            return {
+                ...state,
+                personas: latest,
+                lastPersonasLoad: Date.now(),
+                ...(personasChanged
+                    ? {
+                        compatibilities: [],
+                        compatibilityAttempted: false,
+                        autoRecomputeLocked: false,
+                        lastCompatibilityLoad: 0,
+                        lastCompatibilityRequest: 0,
+                    }
+                    : {}),
+            };
+        });
+    }, [personasQuery.data]);
+
+    useEffect(() => {
+        if (loadingCompatibility) return;
+        if (personas.length < 2) return;
+        const personaIds = new Set(personas.map((p) => p.id));
+        const edgeCoverage = new Set<string>();
+        for (const edge of compatibilities) {
+            edgeCoverage.add(edge.sourceId);
+            edgeCoverage.add(edge.targetId);
+        }
+        const missingPersona = Array.from(personaIds).some((id) => !edgeCoverage.has(id));
+        if (compatibilities.length === 0 || missingPersona) {
+            void recomputeCompatibility(apiBase);
+        }
+    }, [apiBase, personas, compatibilities, loadingCompatibility, recomputeCompatibility]);
+
+    useEffect(() => {
+        if (loadingCompatibility) return;
+        if (errors.compatibility) return;
+        if (personas.length < 2) return;
+        if (compatibilities.length > 0) return;
+        // Reset debounce so the initial load can recompute immediately after the first compatibility fetch returns empty.
+        personaCompatStore.setState({ lastCompatibilityRequest: 0 });
+        void recomputeCompatibility(apiBase);
+    }, [apiBase, personas.length, compatibilities.length, loadingCompatibility, errors.compatibility, recomputeCompatibility]);
 
     useEffect(() => {
         if (loadingCompatibility || errors.compatibility) return;
@@ -369,6 +481,16 @@ export function PersonaCompatibilityPanel({ apiBase, userEmail }: { apiBase: str
             </CardHeader>
             <CardContent className="flex flex-col gap-4">
                 <div className="relative h-[460px] md:h-[560px] overflow-hidden rounded-[28px] border bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950">
+                    <div className="absolute right-3 top-3 z-10 flex gap-2">
+                        <Button
+                            variant="secondary"
+                            size="sm"
+                            onClick={() => generatePersona.mutate(1)}
+                            disabled={generatePersona.isPending}
+                        >
+                            <Sparkles className="mr-2 h-4 w-4" /> {generatePersona.isPending ? "Working..." : "Generate persona"}
+                        </Button>
+                    </div>
                     <CompatibilityCanvas nodes={nodes} edges={edges} />
                     {nodes.length === 0 ? (
                         <div className="pointer-events-none absolute inset-0 flex items-center justify-center text-sm text-muted-foreground">

@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from "react";
+import { useCallback, useEffect, useMemo, useRef } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 
 import { authStore, type AuthStatus } from "../stores/auth-store";
@@ -63,6 +63,23 @@ export function useAuthProfile() {
   }));
 
   const linkedinUrlMutation = useLinkedinUrlMutation(apiBase);
+  const redirectingRef = useRef(false);
+
+  const redirectToLogin = useCallback((message: string) => {
+    setAuthState("error", message);
+    if (redirectingRef.current) return;
+    if (typeof window === "undefined") return;
+    // Avoid interrupting active OAuth callbacks
+    if (window.location.hash.startsWith("#/auth/")) return;
+    redirectingRef.current = true;
+    const target = "#/";
+    if (window.location.hash !== target) {
+      window.location.hash = target;
+    }
+    setTimeout(() => {
+      redirectingRef.current = false;
+    }, 500);
+  }, [setAuthState]);
 
   const handleLinkedinLogin = async () => {
     setAuthState("loading", "Redirecting to LinkedIn...");
@@ -120,11 +137,11 @@ export function useAuthProfile() {
       setHasToken(false);
       setUser({ status: "anonymous" });
       setProfileFromServer(null);
-      setAuthState("idle", "Session expired - please sign in again");
+      redirectToLogin("Session expired - redirecting to sign in");
     };
     window.addEventListener("k3h4:auth-signed-out", handler);
     return () => window.removeEventListener("k3h4:auth-signed-out", handler);
-  }, [setAuthState, setProfileFromServer, setUser]);
+  }, [redirectToLogin, setProfileFromServer, setUser]);
 
   useEffect(() => {
     if (!hasToken) {
@@ -146,7 +163,7 @@ export function useAuthProfile() {
       setProfileFromServer(null);
       setHasToken(false);
       const message = sessionQuery.error instanceof Error ? sessionQuery.error.message : "";
-      setAuthState("idle", message || "Session expired - please sign in again");
+      redirectToLogin(message || "Session expired - redirecting to sign in");
       return;
     }
     setUser(userIdentity);
@@ -199,6 +216,7 @@ export function useAuthProfile() {
     setProfileFromServer(null);
     setAuthState("idle", "Signed out");
     setHasToken(false);
+    redirectToLogin("Signed out - redirecting to login");
   }
 
   const handleDeleteAccount = async (confirmText: string) => {
