@@ -4,7 +4,7 @@ import { Html, Line, OrbitControls } from "@react-three/drei";
 import { RefreshCcw, Sparkles } from "lucide-react";
 import { ResponsiveContainer, BarChart, Bar, CartesianGrid, XAxis, YAxis, Tooltip, AreaChart, Area } from "recharts";
 
-import { type Persona, type PersonaCompatibility } from "../../hooks/use-persona-queries";
+import { usePersonaListQuery, type Persona, type PersonaCompatibility } from "../../hooks/use-persona-queries";
 import { personaCompatStore } from "../../stores/persona-compat-store";
 import { Badge } from "../ui/badge";
 import { Button } from "../ui/button";
@@ -254,6 +254,7 @@ function ProbabilityHeatmap({
 }
 
 export function PersonaCompatibilityPanel({ apiBase, userEmail }: { apiBase: string; userEmail: string | null }) {
+    const personasQuery = usePersonaListQuery(apiBase);
     const {
         personas,
         compatibilities,
@@ -296,6 +297,45 @@ export function PersonaCompatibilityPanel({ apiBase, userEmail }: { apiBase: str
             void loadPersonas(apiBase);
         }
     }, [apiBase, personas.length, loadingPersonas, errors.personas, loadPersonas]);
+
+    useEffect(() => {
+        if (!personasQuery.data) return;
+        const latest = personasQuery.data;
+        personaCompatStore.setState((state) => {
+            const prev = state.personas;
+            const sameLength = prev.length === latest.length;
+            const sameContent = sameLength && prev.every((p, idx) => {
+                const next = latest[idx];
+                if (!next) return false;
+                if (p.id !== next.id) return false;
+                if (p.updatedAt && next.updatedAt) return p.updatedAt === next.updatedAt;
+                return (
+                    p.alias === next.alias &&
+                    p.account === next.account &&
+                    (p.handle ?? "") === (next.handle ?? "") &&
+                    (p.note ?? "") === (next.note ?? "")
+                );
+            });
+
+            if (sameContent) return state;
+
+            const personasChanged = !sameContent;
+            return {
+                ...state,
+                personas: latest,
+                lastPersonasLoad: Date.now(),
+                ...(personasChanged
+                    ? {
+                        compatibilities: [],
+                        compatibilityAttempted: false,
+                        autoRecomputeLocked: false,
+                        lastCompatibilityLoad: 0,
+                        lastCompatibilityRequest: 0,
+                    }
+                    : {}),
+            };
+        });
+    }, [personasQuery.data]);
 
     useEffect(() => {
         if (loadingCompatibility || errors.compatibility) return;
