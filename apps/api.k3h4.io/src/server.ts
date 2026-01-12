@@ -4,6 +4,7 @@ import fastifySwagger from "@fastify/swagger";
 import fastifySwaggerUi from "@fastify/swagger-ui";
 import fastifyJwt from "@fastify/jwt";
 import fastifyCors from "@fastify/cors";
+import fastifyRateLimit from "@fastify/rate-limit";
 import { PrismaClient } from "@prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { registerAuthRoutes } from "./routes/auth";
@@ -45,7 +46,21 @@ const server = Fastify({
   logger: true,
 });
 
-const swaggerTagMap: Record<string, { name: string; description: string }> = {
+await server.register(fastifyRateLimit, {
+  max: Number(process.env.RATE_LIMIT_MAX || 120),
+  timeWindow: process.env.RATE_LIMIT_WINDOW || "1 minute",
+  allowList: (request) => request.url?.startsWith("/telemetry") || false,
+  errorResponseBuilder: () => ({ error: "Too many requests", code: 429, retryAfter: 60 }),
+  addHeaders: {
+    // keep defaults and ensure retry-after is present
+    "x-ratelimit-limit": true,
+    "x-ratelimit-remaining": true,
+    "x-ratelimit-reset": true,
+    "retry-after": true,
+  },
+});
+
+const swaggerTags: Record<string, { name: string; description: string }> = {
   health: { name: "Health", description: "Health and diagnostics" },
   auth: { name: "Auth", description: "Authentication and session" },
   profile: { name: "Profile", description: "User profiles" },
@@ -60,6 +75,25 @@ const swaggerTagMap: Record<string, { name: string; description: string }> = {
   arcade: { name: "Arcade", description: "Arcade simulator" },
   usda: { name: "USDA", description: "USDA data" },
   telemetry: { name: "Telemetry", description: "Telemetry intake" },
+};
+
+const swaggerTagMap: Record<string, { name: string; description: string }> = {
+  health: swaggerTags.health,
+  auth: swaggerTags.auth,
+  profile: swaggerTags.profile,
+  bank: swaggerTags.bank,
+  persona: swaggerTags.persona,
+  personas: swaggerTags.persona, // plural route prefix
+  assignment: swaggerTags.assignment,
+  assignments: swaggerTags.assignment, // plural route prefix
+  freight: swaggerTags.freight,
+  warehouse: swaggerTags.warehouse,
+  pos: swaggerTags.pos,
+  agriculture: swaggerTags.agriculture,
+  culinary: swaggerTags.culinary,
+  arcade: swaggerTags.arcade,
+  usda: swaggerTags.usda,
+  telemetry: swaggerTags.telemetry,
 };
 
 const getSessionId = (request: FastifyRequest) => {
@@ -175,7 +209,7 @@ const openApiOptions = {
       },
     },
     security: [{ bearerAuth: [] }],
-    tags: Object.values(swaggerTagMap),
+    tags: Object.values(swaggerTags),
   },
 };
 

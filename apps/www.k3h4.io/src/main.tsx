@@ -68,6 +68,16 @@ import { ErrorBoundary } from './components/error-boundary'
 import { queryClient } from './lib/query-client'
 import { installTelemetryDomHooks, setTelemetryApiBase } from './lib/telemetry'
 
+// React DevTools can throw if a renderer reports an empty version; patch renderers in the devtools hook if missing.
+const devtoolsHook = (globalThis as any).__REACT_DEVTOOLS_GLOBAL_HOOK__;
+if (devtoolsHook?.renderers && typeof devtoolsHook.renderers.forEach === 'function') {
+  devtoolsHook.renderers.forEach((renderer: any) => {
+    if (!renderer?.version || typeof renderer.version !== 'string' || renderer.version.trim() === '') {
+      renderer.version = '19.2.3';
+    }
+  });
+}
+
 // Normalize provider callbacks (GitHub, LinkedIn) to HashRouter routes when the provider sends users back to /auth/github or /auth/linkedin/callback
 const path = window.location.pathname
 if (path.startsWith('/auth/github')) {

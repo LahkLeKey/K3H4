@@ -27,6 +27,11 @@ services:
     working_dir: /app
     volumes:
       - ./apps/www.k3h4.io:/app
+    environment:
+      # Enable polling so file changes from host (Windows/macOS bind mounts) trigger Vite/Bun watchers without restarting the container
+      - CHOKIDAR_USEPOLLING=1
+      - BUN_WATCHER_USE_POLLING=1
+      - BUN_WATCHER_POLL_INTERVAL=500
     command: ["sh", "-c", "bun install && bun run dev --host --port 5173"]
     env_file:
       - ./apps/www.k3h4.io/.env

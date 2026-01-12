@@ -44,6 +44,8 @@ model User {
   arcadeSessions ArcadeSession[]
   arcadeRedemptions ArcadeRedemption[]
   providerGrants ProviderGrant[]
+  personaAttributes PersonaAttribute[]
+  personaCompatibilities PersonaCompatibility[]
 
   @@unique([provider, providerId])
 }
@@ -62,8 +64,47 @@ model Persona {
 
   assignments Assignment[]
   assignmentPayouts AssignmentPayout[]
+  attributes PersonaAttribute[]
+  compatibilitySources PersonaCompatibility[] @relation("PersonaCompatibilitySource")
+  compatibilityTargets PersonaCompatibility[] @relation("PersonaCompatibilityTarget")
 
   @@index([userId, alias])
+}
+
+model PersonaAttribute {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  personaId String
+  persona   Persona  @relation(fields: [personaId], references: [id], onDelete: Cascade)
+  category  String
+  value     String
+  weight    Int      @default(1)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId, category])
+  @@unique([personaId, category, value])
+}
+
+model PersonaCompatibility {
+  id                 String   @id @default(cuid())
+  userId             String
+  user               User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  sourceId           String
+  source             Persona  @relation("PersonaCompatibilitySource", fields: [sourceId], references: [id], onDelete: Cascade)
+  targetId           String
+  target             Persona  @relation("PersonaCompatibilityTarget", fields: [targetId], references: [id], onDelete: Cascade)
+  jaccardScore       Float
+  intersectionCount  Int
+  unionCount         Int
+  overlappingTokens  Json?
+  computedAt         DateTime @default(now())
+  rationale          String?
+  status             String   @default("active")
+
+  @@unique([userId, sourceId, targetId])
+  @@index([userId, computedAt])
 }
 
 model RefreshToken {
