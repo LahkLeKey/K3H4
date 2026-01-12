@@ -19,14 +19,22 @@ const scoreColor = (score: number) => {
     return "#94a3b8";
 };
 
+const hexVertex = (edge: number, radius: number) => {
+    const angle = Math.PI / 6 + edge * (Math.PI / 3);
+    return [Math.cos(angle) * radius, Math.sin(angle) * radius] as [number, number];
+};
+
 const buildNodePositions = (personas: Persona[]) => {
     const count = Math.max(personas.length, 1);
-    const radiusX = Math.max(5, count * 0.45);
-    const radiusZ = 2.4;
+    const radius = Math.max(5.5, count * 0.45);
     return personas.map((persona, index) => {
-        const angle = (Math.PI * index) / Math.max(count - 1, 1) - Math.PI / 2;
-        const x = Math.cos(angle) * radiusX;
-        const z = Math.sin(angle) * radiusZ;
+        const t = count === 1 ? 0 : index / count; // normalized position along the hex perimeter
+        const edge = Math.floor(t * 6) % 6;
+        const edgeT = t * 6 - edge;
+        const [x1, z1] = hexVertex(edge, radius);
+        const [x2, z2] = hexVertex((edge + 1) % 6, radius);
+        const x = x1 + (x2 - x1) * edgeT;
+        const z = z1 + (z2 - z1) * edgeT;
         return { ...persona, position: [x, 0.6, z] as [number, number, number] };
     });
 };
@@ -43,21 +51,36 @@ type GraphEdge = {
 
 function CompatibilityCanvas({ nodes, edges }: { nodes: GraphNode[]; edges: GraphEdge[] }) {
     const positions = useMemo(() => Object.fromEntries(nodes.map((node) => [node.id, node.position])), [nodes]);
+    const hexFrame = useMemo(() => {
+        const radius = Math.max(...nodes.map((n) => Math.hypot(n.position[0], n.position[2])), 6);
+        const vertices = Array.from({ length: 6 }, (_, i) => hexVertex(i, radius));
+        const points = vertices.map(([x, z]) => [x, 0.1, z] as [number, number, number]);
+        points.push(points[0]);
+        return points;
+    }, [nodes]);
+
+    const center = useMemo<[number, number, number]>(() => [0, 0.25, 0], []);
     return (
         <Canvas camera={{ position: [0, 4, 10], fov: 62 }}>
             <color attach="background" args={["#050816"]} />
             <ambientLight intensity={0.6} />
             <directionalLight position={[6, 8, 6]} intensity={0.8} />
+            <Line points={hexFrame} color="#1e293b" lineWidth={1.5} />
+            <Line points={[...hexFrame.slice(0, 6), center, hexFrame[0]]} color="#0ea5e9" lineWidth={0.75} dashed dashSize={0.35} gapSize={0.25} />
             {edges.map((edge) => {
                 const source = positions[edge.sourceId];
                 const target = positions[edge.targetId];
                 if (!source || !target) return null;
-                const mid = [(source[0] + target[0]) / 2, 0.4, (source[2] + target[2]) / 2] as [number, number, number];
+                const mid = [
+                    (source[0] + target[0]) * 0.35,
+                    0.25,
+                    (source[2] + target[2]) * 0.35,
+                ] as [number, number, number];
                 const color = scoreColor(edge.score);
                 return (
                     <group key={edge.id}>
                         <Line
-                            points={[source, target]}
+                            points={[source, mid, target]}
                             color={color}
                             lineWidth={2}
                             dashed
