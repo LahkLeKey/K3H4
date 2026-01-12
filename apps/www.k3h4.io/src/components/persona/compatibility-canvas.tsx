@@ -1,7 +1,7 @@
 import { useMemo, useRef } from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
 import { Html, Line, OrbitControls } from "@react-three/drei";
-import { AdditiveBlending, Color, DodecahedronGeometry, WireframeGeometry } from "three";
+import { AdditiveBlending, Color } from "three";
 import type * as THREE from "three";
 
 const scoreColor = (score: number) => {
@@ -45,20 +45,6 @@ const getDodecahedronVertices = (radius: number) => {
         const scale = radius / mag;
         return [x * scale, y * scale, z * scale] as [number, number, number];
     });
-};
-
-const getDodecahedronFrame = (radius: number) => {
-    const geometry = new DodecahedronGeometry(radius);
-    const wire = new WireframeGeometry(geometry);
-    const pos = wire.getAttribute("position");
-    const segments: Array<[[number, number, number], [number, number, number]]> = [];
-    for (let i = 0; i < pos.count; i += 2) {
-        segments.push([
-            [pos.getX(i), pos.getY(i), pos.getZ(i)],
-            [pos.getX(i + 1), pos.getY(i + 1), pos.getZ(i + 1)],
-        ]);
-    }
-    return segments;
 };
 
 export type GraphNode = {
