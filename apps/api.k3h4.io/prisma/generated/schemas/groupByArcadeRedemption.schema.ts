@@ -1,0 +1,13 @@
+import type { Prisma } from '@prisma/client';
+import * as z from 'zod';
+import { ArcadeRedemptionWhereInputObjectSchema as ArcadeRedemptionWhereInputObjectSchema } from './objects/ArcadeRedemptionWhereInput.schema';
+import { ArcadeRedemptionOrderByWithAggregationInputObjectSchema as ArcadeRedemptionOrderByWithAggregationInputObjectSchema } from './objects/ArcadeRedemptionOrderByWithAggregationInput.schema';
+import { ArcadeRedemptionScalarWhereWithAggregatesInputObjectSchema as ArcadeRedemptionScalarWhereWithAggregatesInputObjectSchema } from './objects/ArcadeRedemptionScalarWhereWithAggregatesInput.schema';
+import { ArcadeRedemptionScalarFieldEnumSchema } from './enums/ArcadeRedemptionScalarFieldEnum.schema';
+import { ArcadeRedemptionCountAggregateInputObjectSchema as ArcadeRedemptionCountAggregateInputObjectSchema } from './objects/ArcadeRedemptionCountAggregateInput.schema';
+import { ArcadeRedemptionMinAggregateInputObjectSchema as ArcadeRedemptionMinAggregateInputObjectSchema } from './objects/ArcadeRedemptionMinAggregateInput.schema';
+import { ArcadeRedemptionMaxAggregateInputObjectSchema as ArcadeRedemptionMaxAggregateInputObjectSchema } from './objects/ArcadeRedemptionMaxAggregateInput.schema';
+
+export const ArcadeRedemptionGroupBySchema: z.ZodType<Prisma.ArcadeRedemptionGroupByArgs> = z.object({ where: ArcadeRedemptionWhereInputObjectSchema.optional(), orderBy: z.union([ArcadeRedemptionOrderByWithAggregationInputObjectSchema, ArcadeRedemptionOrderByWithAggregationInputObjectSchema.array()]).optional(), having: ArcadeRedemptionScalarWhereWithAggregatesInputObjectSchema.optional(), take: z.number().optional(), skip: z.number().optional(), by: z.array(ArcadeRedemptionScalarFieldEnumSchema), _count: z.union([ z.literal(true), ArcadeRedemptionCountAggregateInputObjectSchema ]).optional(), _min: ArcadeRedemptionMinAggregateInputObjectSchema.optional(), _max: ArcadeRedemptionMaxAggregateInputObjectSchema.optional() }).strict() as unknown as z.ZodType<Prisma.ArcadeRedemptionGroupByArgs>;
+
+export const ArcadeRedemptionGroupByZodSchema = z.object({ where: ArcadeRedemptionWhereInputObjectSchema.optional(), orderBy: z.union([ArcadeRedemptionOrderByWithAggregationInputObjectSchema, ArcadeRedemptionOrderByWithAggregationInputObjectSchema.array()]).optional(), having: ArcadeRedemptionScalarWhereWithAggregatesInputObjectSchema.optional(), take: z.number().optional(), skip: z.number().optional(), by: z.array(ArcadeRedemptionScalarFieldEnumSchema), _count: z.union([ z.literal(true), ArcadeRedemptionCountAggregateInputObjectSchema ]).optional(), _min: ArcadeRedemptionMinAggregateInputObjectSchema.optional(), _max: ArcadeRedemptionMaxAggregateInputObjectSchema.optional() }).strict();

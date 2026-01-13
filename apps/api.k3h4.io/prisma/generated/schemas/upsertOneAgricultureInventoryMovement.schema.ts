@@ -1,0 +1,13 @@
+import type { Prisma } from '@prisma/client';
+import * as z from 'zod';
+import { AgricultureInventoryMovementSelectObjectSchema as AgricultureInventoryMovementSelectObjectSchema } from './objects/AgricultureInventoryMovementSelect.schema';
+import { AgricultureInventoryMovementIncludeObjectSchema as AgricultureInventoryMovementIncludeObjectSchema } from './objects/AgricultureInventoryMovementInclude.schema';
+import { AgricultureInventoryMovementWhereUniqueInputObjectSchema as AgricultureInventoryMovementWhereUniqueInputObjectSchema } from './objects/AgricultureInventoryMovementWhereUniqueInput.schema';
+import { AgricultureInventoryMovementCreateInputObjectSchema as AgricultureInventoryMovementCreateInputObjectSchema } from './objects/AgricultureInventoryMovementCreateInput.schema';
+import { AgricultureInventoryMovementUncheckedCreateInputObjectSchema as AgricultureInventoryMovementUncheckedCreateInputObjectSchema } from './objects/AgricultureInventoryMovementUncheckedCreateInput.schema';
+import { AgricultureInventoryMovementUpdateInputObjectSchema as AgricultureInventoryMovementUpdateInputObjectSchema } from './objects/AgricultureInventoryMovementUpdateInput.schema';
+import { AgricultureInventoryMovementUncheckedUpdateInputObjectSchema as AgricultureInventoryMovementUncheckedUpdateInputObjectSchema } from './objects/AgricultureInventoryMovementUncheckedUpdateInput.schema';
+
+export const AgricultureInventoryMovementUpsertOneSchema: z.ZodType<Prisma.AgricultureInventoryMovementUpsertArgs> = z.object({ select: AgricultureInventoryMovementSelectObjectSchema.optional(), include: AgricultureInventoryMovementIncludeObjectSchema.optional(), where: AgricultureInventoryMovementWhereUniqueInputObjectSchema, create: z.union([ AgricultureInventoryMovementCreateInputObjectSchema, AgricultureInventoryMovementUncheckedCreateInputObjectSchema ]), update: z.union([ AgricultureInventoryMovementUpdateInputObjectSchema, AgricultureInventoryMovementUncheckedUpdateInputObjectSchema ]) }).strict() as unknown as z.ZodType<Prisma.AgricultureInventoryMovementUpsertArgs>;
+
+export const AgricultureInventoryMovementUpsertOneZodSchema = z.object({ select: AgricultureInventoryMovementSelectObjectSchema.optional(), include: AgricultureInventoryMovementIncludeObjectSchema.optional(), where: AgricultureInventoryMovementWhereUniqueInputObjectSchema, create: z.union([ AgricultureInventoryMovementCreateInputObjectSchema, AgricultureInventoryMovementUncheckedCreateInputObjectSchema ]), update: z.union([ AgricultureInventoryMovementUpdateInputObjectSchema, AgricultureInventoryMovementUncheckedUpdateInputObjectSchema ]) }).strict();

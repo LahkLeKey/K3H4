@@ -1,0 +1,15 @@
+import * as z from 'zod';
+import type { Prisma } from '@prisma/client';
+
+
+const makeSchema = () => z.object({
+  id: z.string().optional(),
+  item: z.string(),
+  quantity: z.string(),
+  status: z.string().optional(),
+  dueDate: z.coerce.date().optional().nullable(),
+  createdAt: z.coerce.date().optional(),
+  updatedAt: z.coerce.date().optional()
+}).strict();
+export const CulinarySupplierNeedUncheckedCreateWithoutUserInputObjectSchema: z.ZodType<Prisma.CulinarySupplierNeedUncheckedCreateWithoutUserInput> = makeSchema() as unknown as z.ZodType<Prisma.CulinarySupplierNeedUncheckedCreateWithoutUserInput>;
+export const CulinarySupplierNeedUncheckedCreateWithoutUserInputObjectZodSchema = makeSchema();

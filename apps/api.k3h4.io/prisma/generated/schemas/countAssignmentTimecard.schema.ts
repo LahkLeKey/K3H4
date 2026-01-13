@@ -1,0 +1,10 @@
+import type { Prisma } from '@prisma/client';
+import * as z from 'zod';
+import { AssignmentTimecardOrderByWithRelationInputObjectSchema as AssignmentTimecardOrderByWithRelationInputObjectSchema } from './objects/AssignmentTimecardOrderByWithRelationInput.schema';
+import { AssignmentTimecardWhereInputObjectSchema as AssignmentTimecardWhereInputObjectSchema } from './objects/AssignmentTimecardWhereInput.schema';
+import { AssignmentTimecardWhereUniqueInputObjectSchema as AssignmentTimecardWhereUniqueInputObjectSchema } from './objects/AssignmentTimecardWhereUniqueInput.schema';
+import { AssignmentTimecardCountAggregateInputObjectSchema as AssignmentTimecardCountAggregateInputObjectSchema } from './objects/AssignmentTimecardCountAggregateInput.schema';
+
+export const AssignmentTimecardCountSchema: z.ZodType<Prisma.AssignmentTimecardCountArgs> = z.object({ orderBy: z.union([AssignmentTimecardOrderByWithRelationInputObjectSchema, AssignmentTimecardOrderByWithRelationInputObjectSchema.array()]).optional(), where: AssignmentTimecardWhereInputObjectSchema.optional(), cursor: AssignmentTimecardWhereUniqueInputObjectSchema.optional(), take: z.number().optional(), skip: z.number().optional(), select: z.union([ z.literal(true), AssignmentTimecardCountAggregateInputObjectSchema ]).optional() }).strict() as unknown as z.ZodType<Prisma.AssignmentTimecardCountArgs>;
+
+export const AssignmentTimecardCountZodSchema = z.object({ orderBy: z.union([AssignmentTimecardOrderByWithRelationInputObjectSchema, AssignmentTimecardOrderByWithRelationInputObjectSchema.array()]).optional(), where: AssignmentTimecardWhereInputObjectSchema.optional(), cursor: AssignmentTimecardWhereUniqueInputObjectSchema.optional(), take: z.number().optional(), skip: z.number().optional(), select: z.union([ z.literal(true), AssignmentTimecardCountAggregateInputObjectSchema ]).optional() }).strict();

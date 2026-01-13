@@ -1,0 +1,12 @@
+import type { Prisma } from '@prisma/client';
+import * as z from 'zod';
+import { CulinaryPrepTaskOrderByWithRelationInputObjectSchema as CulinaryPrepTaskOrderByWithRelationInputObjectSchema } from './objects/CulinaryPrepTaskOrderByWithRelationInput.schema';
+import { CulinaryPrepTaskWhereInputObjectSchema as CulinaryPrepTaskWhereInputObjectSchema } from './objects/CulinaryPrepTaskWhereInput.schema';
+import { CulinaryPrepTaskWhereUniqueInputObjectSchema as CulinaryPrepTaskWhereUniqueInputObjectSchema } from './objects/CulinaryPrepTaskWhereUniqueInput.schema';
+import { CulinaryPrepTaskCountAggregateInputObjectSchema as CulinaryPrepTaskCountAggregateInputObjectSchema } from './objects/CulinaryPrepTaskCountAggregateInput.schema';
+import { CulinaryPrepTaskMinAggregateInputObjectSchema as CulinaryPrepTaskMinAggregateInputObjectSchema } from './objects/CulinaryPrepTaskMinAggregateInput.schema';
+import { CulinaryPrepTaskMaxAggregateInputObjectSchema as CulinaryPrepTaskMaxAggregateInputObjectSchema } from './objects/CulinaryPrepTaskMaxAggregateInput.schema';
+
+export const CulinaryPrepTaskAggregateSchema: z.ZodType<Prisma.CulinaryPrepTaskAggregateArgs> = z.object({ orderBy: z.union([CulinaryPrepTaskOrderByWithRelationInputObjectSchema, CulinaryPrepTaskOrderByWithRelationInputObjectSchema.array()]).optional(), where: CulinaryPrepTaskWhereInputObjectSchema.optional(), cursor: CulinaryPrepTaskWhereUniqueInputObjectSchema.optional(), take: z.number().optional(), skip: z.number().optional(), _count: z.union([ z.literal(true), CulinaryPrepTaskCountAggregateInputObjectSchema ]).optional(), _min: CulinaryPrepTaskMinAggregateInputObjectSchema.optional(), _max: CulinaryPrepTaskMaxAggregateInputObjectSchema.optional() }).strict() as unknown as z.ZodType<Prisma.CulinaryPrepTaskAggregateArgs>;
+
+export const CulinaryPrepTaskAggregateZodSchema = z.object({ orderBy: z.union([CulinaryPrepTaskOrderByWithRelationInputObjectSchema, CulinaryPrepTaskOrderByWithRelationInputObjectSchema.array()]).optional(), where: CulinaryPrepTaskWhereInputObjectSchema.optional(), cursor: CulinaryPrepTaskWhereUniqueInputObjectSchema.optional(), take: z.number().optional(), skip: z.number().optional(), _count: z.union([ z.literal(true), CulinaryPrepTaskCountAggregateInputObjectSchema ]).optional(), _min: CulinaryPrepTaskMinAggregateInputObjectSchema.optional(), _max: CulinaryPrepTaskMaxAggregateInputObjectSchema.optional() }).strict();

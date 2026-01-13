@@ -1,0 +1,10 @@
+import type { Prisma } from '@prisma/client';
+import * as z from 'zod';
+import { AgricultureInventoryMovementOrderByWithRelationInputObjectSchema as AgricultureInventoryMovementOrderByWithRelationInputObjectSchema } from './objects/AgricultureInventoryMovementOrderByWithRelationInput.schema';
+import { AgricultureInventoryMovementWhereInputObjectSchema as AgricultureInventoryMovementWhereInputObjectSchema } from './objects/AgricultureInventoryMovementWhereInput.schema';
+import { AgricultureInventoryMovementWhereUniqueInputObjectSchema as AgricultureInventoryMovementWhereUniqueInputObjectSchema } from './objects/AgricultureInventoryMovementWhereUniqueInput.schema';
+import { AgricultureInventoryMovementCountAggregateInputObjectSchema as AgricultureInventoryMovementCountAggregateInputObjectSchema } from './objects/AgricultureInventoryMovementCountAggregateInput.schema';
+
+export const AgricultureInventoryMovementCountSchema: z.ZodType<Prisma.AgricultureInventoryMovementCountArgs> = z.object({ orderBy: z.union([AgricultureInventoryMovementOrderByWithRelationInputObjectSchema, AgricultureInventoryMovementOrderByWithRelationInputObjectSchema.array()]).optional(), where: AgricultureInventoryMovementWhereInputObjectSchema.optional(), cursor: AgricultureInventoryMovementWhereUniqueInputObjectSchema.optional(), take: z.number().optional(), skip: z.number().optional(), select: z.union([ z.literal(true), AgricultureInventoryMovementCountAggregateInputObjectSchema ]).optional() }).strict() as unknown as z.ZodType<Prisma.AgricultureInventoryMovementCountArgs>;
+
+export const AgricultureInventoryMovementCountZodSchema = z.object({ orderBy: z.union([AgricultureInventoryMovementOrderByWithRelationInputObjectSchema, AgricultureInventoryMovementOrderByWithRelationInputObjectSchema.array()]).optional(), where: AgricultureInventoryMovementWhereInputObjectSchema.optional(), cursor: AgricultureInventoryMovementWhereUniqueInputObjectSchema.optional(), take: z.number().optional(), skip: z.number().optional(), select: z.union([ z.literal(true), AgricultureInventoryMovementCountAggregateInputObjectSchema ]).optional() }).strict();

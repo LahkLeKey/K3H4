@@ -1,0 +1,12 @@
+import type { Prisma } from '@prisma/client';
+import * as z from 'zod';
+import { UsdaRegionOrderByWithRelationInputObjectSchema as UsdaRegionOrderByWithRelationInputObjectSchema } from './objects/UsdaRegionOrderByWithRelationInput.schema';
+import { UsdaRegionWhereInputObjectSchema as UsdaRegionWhereInputObjectSchema } from './objects/UsdaRegionWhereInput.schema';
+import { UsdaRegionWhereUniqueInputObjectSchema as UsdaRegionWhereUniqueInputObjectSchema } from './objects/UsdaRegionWhereUniqueInput.schema';
+import { UsdaRegionCountAggregateInputObjectSchema as UsdaRegionCountAggregateInputObjectSchema } from './objects/UsdaRegionCountAggregateInput.schema';
+import { UsdaRegionMinAggregateInputObjectSchema as UsdaRegionMinAggregateInputObjectSchema } from './objects/UsdaRegionMinAggregateInput.schema';
+import { UsdaRegionMaxAggregateInputObjectSchema as UsdaRegionMaxAggregateInputObjectSchema } from './objects/UsdaRegionMaxAggregateInput.schema';
+
+export const UsdaRegionAggregateSchema: z.ZodType<Prisma.UsdaRegionAggregateArgs> = z.object({ orderBy: z.union([UsdaRegionOrderByWithRelationInputObjectSchema, UsdaRegionOrderByWithRelationInputObjectSchema.array()]).optional(), where: UsdaRegionWhereInputObjectSchema.optional(), cursor: UsdaRegionWhereUniqueInputObjectSchema.optional(), take: z.number().optional(), skip: z.number().optional(), _count: z.union([ z.literal(true), UsdaRegionCountAggregateInputObjectSchema ]).optional(), _min: UsdaRegionMinAggregateInputObjectSchema.optional(), _max: UsdaRegionMaxAggregateInputObjectSchema.optional() }).strict() as unknown as z.ZodType<Prisma.UsdaRegionAggregateArgs>;
+
+export const UsdaRegionAggregateZodSchema = z.object({ orderBy: z.union([UsdaRegionOrderByWithRelationInputObjectSchema, UsdaRegionOrderByWithRelationInputObjectSchema.array()]).optional(), where: UsdaRegionWhereInputObjectSchema.optional(), cursor: UsdaRegionWhereUniqueInputObjectSchema.optional(), take: z.number().optional(), skip: z.number().optional(), _count: z.union([ z.literal(true), UsdaRegionCountAggregateInputObjectSchema ]).optional(), _min: UsdaRegionMinAggregateInputObjectSchema.optional(), _max: UsdaRegionMaxAggregateInputObjectSchema.optional() }).strict();

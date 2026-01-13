@@ -1,0 +1,16 @@
+import * as z from 'zod';
+import type { Prisma } from '@prisma/client';
+import { UserCreateNestedOneWithoutPersonaAttributesInputObjectSchema as UserCreateNestedOneWithoutPersonaAttributesInputObjectSchema } from './UserCreateNestedOneWithoutPersonaAttributesInput.schema';
+import { PersonaCreateNestedOneWithoutAttributesInputObjectSchema as PersonaCreateNestedOneWithoutAttributesInputObjectSchema } from './PersonaCreateNestedOneWithoutAttributesInput.schema'
+
+const makeSchema = () => z.object({
+  id: z.string().optional(),
+  category: z.string(),
+  value: z.string(),
+  weight: z.number().int().optional(),
+  createdAt: z.coerce.date().optional(),
+  user: z.lazy(() => UserCreateNestedOneWithoutPersonaAttributesInputObjectSchema),
+  persona: z.lazy(() => PersonaCreateNestedOneWithoutAttributesInputObjectSchema)
+}).strict();
+export const PersonaAttributeCreateInputObjectSchema: z.ZodType<Prisma.PersonaAttributeCreateInput> = makeSchema() as unknown as z.ZodType<Prisma.PersonaAttributeCreateInput>;
+export const PersonaAttributeCreateInputObjectZodSchema = makeSchema();

@@ -1,0 +1,12 @@
+import type { Prisma } from '@prisma/client';
+import * as z from 'zod';
+import { UsdaReleaseOrderByWithRelationInputObjectSchema as UsdaReleaseOrderByWithRelationInputObjectSchema } from './objects/UsdaReleaseOrderByWithRelationInput.schema';
+import { UsdaReleaseWhereInputObjectSchema as UsdaReleaseWhereInputObjectSchema } from './objects/UsdaReleaseWhereInput.schema';
+import { UsdaReleaseWhereUniqueInputObjectSchema as UsdaReleaseWhereUniqueInputObjectSchema } from './objects/UsdaReleaseWhereUniqueInput.schema';
+import { UsdaReleaseCountAggregateInputObjectSchema as UsdaReleaseCountAggregateInputObjectSchema } from './objects/UsdaReleaseCountAggregateInput.schema';
+import { UsdaReleaseMinAggregateInputObjectSchema as UsdaReleaseMinAggregateInputObjectSchema } from './objects/UsdaReleaseMinAggregateInput.schema';
+import { UsdaReleaseMaxAggregateInputObjectSchema as UsdaReleaseMaxAggregateInputObjectSchema } from './objects/UsdaReleaseMaxAggregateInput.schema';
+
+export const UsdaReleaseAggregateSchema: z.ZodType<Prisma.UsdaReleaseAggregateArgs> = z.object({ orderBy: z.union([UsdaReleaseOrderByWithRelationInputObjectSchema, UsdaReleaseOrderByWithRelationInputObjectSchema.array()]).optional(), where: UsdaReleaseWhereInputObjectSchema.optional(), cursor: UsdaReleaseWhereUniqueInputObjectSchema.optional(), take: z.number().optional(), skip: z.number().optional(), _count: z.union([ z.literal(true), UsdaReleaseCountAggregateInputObjectSchema ]).optional(), _min: UsdaReleaseMinAggregateInputObjectSchema.optional(), _max: UsdaReleaseMaxAggregateInputObjectSchema.optional() }).strict() as unknown as z.ZodType<Prisma.UsdaReleaseAggregateArgs>;
+
+export const UsdaReleaseAggregateZodSchema = z.object({ orderBy: z.union([UsdaReleaseOrderByWithRelationInputObjectSchema, UsdaReleaseOrderByWithRelationInputObjectSchema.array()]).optional(), where: UsdaReleaseWhereInputObjectSchema.optional(), cursor: UsdaReleaseWhereUniqueInputObjectSchema.optional(), take: z.number().optional(), skip: z.number().optional(), _count: z.union([ z.literal(true), UsdaReleaseCountAggregateInputObjectSchema ]).optional(), _min: UsdaReleaseMinAggregateInputObjectSchema.optional(), _max: UsdaReleaseMaxAggregateInputObjectSchema.optional() }).strict();

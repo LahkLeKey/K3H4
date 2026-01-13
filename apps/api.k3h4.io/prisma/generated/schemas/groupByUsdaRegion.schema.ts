@@ -1,0 +1,13 @@
+import type { Prisma } from '@prisma/client';
+import * as z from 'zod';
+import { UsdaRegionWhereInputObjectSchema as UsdaRegionWhereInputObjectSchema } from './objects/UsdaRegionWhereInput.schema';
+import { UsdaRegionOrderByWithAggregationInputObjectSchema as UsdaRegionOrderByWithAggregationInputObjectSchema } from './objects/UsdaRegionOrderByWithAggregationInput.schema';
+import { UsdaRegionScalarWhereWithAggregatesInputObjectSchema as UsdaRegionScalarWhereWithAggregatesInputObjectSchema } from './objects/UsdaRegionScalarWhereWithAggregatesInput.schema';
+import { UsdaRegionScalarFieldEnumSchema } from './enums/UsdaRegionScalarFieldEnum.schema';
+import { UsdaRegionCountAggregateInputObjectSchema as UsdaRegionCountAggregateInputObjectSchema } from './objects/UsdaRegionCountAggregateInput.schema';
+import { UsdaRegionMinAggregateInputObjectSchema as UsdaRegionMinAggregateInputObjectSchema } from './objects/UsdaRegionMinAggregateInput.schema';
+import { UsdaRegionMaxAggregateInputObjectSchema as UsdaRegionMaxAggregateInputObjectSchema } from './objects/UsdaRegionMaxAggregateInput.schema';
+
+export const UsdaRegionGroupBySchema: z.ZodType<Prisma.UsdaRegionGroupByArgs> = z.object({ where: UsdaRegionWhereInputObjectSchema.optional(), orderBy: z.union([UsdaRegionOrderByWithAggregationInputObjectSchema, UsdaRegionOrderByWithAggregationInputObjectSchema.array()]).optional(), having: UsdaRegionScalarWhereWithAggregatesInputObjectSchema.optional(), take: z.number().optional(), skip: z.number().optional(), by: z.array(UsdaRegionScalarFieldEnumSchema), _count: z.union([ z.literal(true), UsdaRegionCountAggregateInputObjectSchema ]).optional(), _min: UsdaRegionMinAggregateInputObjectSchema.optional(), _max: UsdaRegionMaxAggregateInputObjectSchema.optional() }).strict() as unknown as z.ZodType<Prisma.UsdaRegionGroupByArgs>;
+
+export const UsdaRegionGroupByZodSchema = z.object({ where: UsdaRegionWhereInputObjectSchema.optional(), orderBy: z.union([UsdaRegionOrderByWithAggregationInputObjectSchema, UsdaRegionOrderByWithAggregationInputObjectSchema.array()]).optional(), having: UsdaRegionScalarWhereWithAggregatesInputObjectSchema.optional(), take: z.number().optional(), skip: z.number().optional(), by: z.array(UsdaRegionScalarFieldEnumSchema), _count: z.union([ z.literal(true), UsdaRegionCountAggregateInputObjectSchema ]).optional(), _min: UsdaRegionMinAggregateInputObjectSchema.optional(), _max: UsdaRegionMaxAggregateInputObjectSchema.optional() }).strict();

@@ -1,0 +1,12 @@
+import type { Prisma } from '@prisma/client';
+import * as z from 'zod';
+import { UsdaSyncStateOrderByWithRelationInputObjectSchema as UsdaSyncStateOrderByWithRelationInputObjectSchema } from './objects/UsdaSyncStateOrderByWithRelationInput.schema';
+import { UsdaSyncStateWhereInputObjectSchema as UsdaSyncStateWhereInputObjectSchema } from './objects/UsdaSyncStateWhereInput.schema';
+import { UsdaSyncStateWhereUniqueInputObjectSchema as UsdaSyncStateWhereUniqueInputObjectSchema } from './objects/UsdaSyncStateWhereUniqueInput.schema';
+import { UsdaSyncStateCountAggregateInputObjectSchema as UsdaSyncStateCountAggregateInputObjectSchema } from './objects/UsdaSyncStateCountAggregateInput.schema';
+import { UsdaSyncStateMinAggregateInputObjectSchema as UsdaSyncStateMinAggregateInputObjectSchema } from './objects/UsdaSyncStateMinAggregateInput.schema';
+import { UsdaSyncStateMaxAggregateInputObjectSchema as UsdaSyncStateMaxAggregateInputObjectSchema } from './objects/UsdaSyncStateMaxAggregateInput.schema';
+
+export const UsdaSyncStateAggregateSchema: z.ZodType<Prisma.UsdaSyncStateAggregateArgs> = z.object({ orderBy: z.union([UsdaSyncStateOrderByWithRelationInputObjectSchema, UsdaSyncStateOrderByWithRelationInputObjectSchema.array()]).optional(), where: UsdaSyncStateWhereInputObjectSchema.optional(), cursor: UsdaSyncStateWhereUniqueInputObjectSchema.optional(), take: z.number().optional(), skip: z.number().optional(), _count: z.union([ z.literal(true), UsdaSyncStateCountAggregateInputObjectSchema ]).optional(), _min: UsdaSyncStateMinAggregateInputObjectSchema.optional(), _max: UsdaSyncStateMaxAggregateInputObjectSchema.optional() }).strict() as unknown as z.ZodType<Prisma.UsdaSyncStateAggregateArgs>;
+
+export const UsdaSyncStateAggregateZodSchema = z.object({ orderBy: z.union([UsdaSyncStateOrderByWithRelationInputObjectSchema, UsdaSyncStateOrderByWithRelationInputObjectSchema.array()]).optional(), where: UsdaSyncStateWhereInputObjectSchema.optional(), cursor: UsdaSyncStateWhereUniqueInputObjectSchema.optional(), take: z.number().optional(), skip: z.number().optional(), _count: z.union([ z.literal(true), UsdaSyncStateCountAggregateInputObjectSchema ]).optional(), _min: UsdaSyncStateMinAggregateInputObjectSchema.optional(), _max: UsdaSyncStateMaxAggregateInputObjectSchema.optional() }).strict();

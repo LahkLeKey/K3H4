@@ -1,0 +1,14 @@
+import type { Prisma } from '@prisma/client';
+import * as z from 'zod';
+import { PosTicketOrderByWithRelationInputObjectSchema as PosTicketOrderByWithRelationInputObjectSchema } from './objects/PosTicketOrderByWithRelationInput.schema';
+import { PosTicketWhereInputObjectSchema as PosTicketWhereInputObjectSchema } from './objects/PosTicketWhereInput.schema';
+import { PosTicketWhereUniqueInputObjectSchema as PosTicketWhereUniqueInputObjectSchema } from './objects/PosTicketWhereUniqueInput.schema';
+import { PosTicketCountAggregateInputObjectSchema as PosTicketCountAggregateInputObjectSchema } from './objects/PosTicketCountAggregateInput.schema';
+import { PosTicketMinAggregateInputObjectSchema as PosTicketMinAggregateInputObjectSchema } from './objects/PosTicketMinAggregateInput.schema';
+import { PosTicketMaxAggregateInputObjectSchema as PosTicketMaxAggregateInputObjectSchema } from './objects/PosTicketMaxAggregateInput.schema';
+import { PosTicketAvgAggregateInputObjectSchema as PosTicketAvgAggregateInputObjectSchema } from './objects/PosTicketAvgAggregateInput.schema';
+import { PosTicketSumAggregateInputObjectSchema as PosTicketSumAggregateInputObjectSchema } from './objects/PosTicketSumAggregateInput.schema';
+
+export const PosTicketAggregateSchema: z.ZodType<Prisma.PosTicketAggregateArgs> = z.object({ orderBy: z.union([PosTicketOrderByWithRelationInputObjectSchema, PosTicketOrderByWithRelationInputObjectSchema.array()]).optional(), where: PosTicketWhereInputObjectSchema.optional(), cursor: PosTicketWhereUniqueInputObjectSchema.optional(), take: z.number().optional(), skip: z.number().optional(), _count: z.union([ z.literal(true), PosTicketCountAggregateInputObjectSchema ]).optional(), _min: PosTicketMinAggregateInputObjectSchema.optional(), _max: PosTicketMaxAggregateInputObjectSchema.optional(), _avg: PosTicketAvgAggregateInputObjectSchema.optional(), _sum: PosTicketSumAggregateInputObjectSchema.optional() }).strict() as unknown as z.ZodType<Prisma.PosTicketAggregateArgs>;
+
+export const PosTicketAggregateZodSchema = z.object({ orderBy: z.union([PosTicketOrderByWithRelationInputObjectSchema, PosTicketOrderByWithRelationInputObjectSchema.array()]).optional(), where: PosTicketWhereInputObjectSchema.optional(), cursor: PosTicketWhereUniqueInputObjectSchema.optional(), take: z.number().optional(), skip: z.number().optional(), _count: z.union([ z.literal(true), PosTicketCountAggregateInputObjectSchema ]).optional(), _min: PosTicketMinAggregateInputObjectSchema.optional(), _max: PosTicketMaxAggregateInputObjectSchema.optional(), _avg: PosTicketAvgAggregateInputObjectSchema.optional(), _sum: PosTicketSumAggregateInputObjectSchema.optional() }).strict();

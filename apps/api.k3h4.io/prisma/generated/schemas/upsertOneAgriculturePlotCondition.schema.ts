@@ -1,0 +1,13 @@
+import type { Prisma } from '@prisma/client';
+import * as z from 'zod';
+import { AgriculturePlotConditionSelectObjectSchema as AgriculturePlotConditionSelectObjectSchema } from './objects/AgriculturePlotConditionSelect.schema';
+import { AgriculturePlotConditionIncludeObjectSchema as AgriculturePlotConditionIncludeObjectSchema } from './objects/AgriculturePlotConditionInclude.schema';
+import { AgriculturePlotConditionWhereUniqueInputObjectSchema as AgriculturePlotConditionWhereUniqueInputObjectSchema } from './objects/AgriculturePlotConditionWhereUniqueInput.schema';
+import { AgriculturePlotConditionCreateInputObjectSchema as AgriculturePlotConditionCreateInputObjectSchema } from './objects/AgriculturePlotConditionCreateInput.schema';
+import { AgriculturePlotConditionUncheckedCreateInputObjectSchema as AgriculturePlotConditionUncheckedCreateInputObjectSchema } from './objects/AgriculturePlotConditionUncheckedCreateInput.schema';
+import { AgriculturePlotConditionUpdateInputObjectSchema as AgriculturePlotConditionUpdateInputObjectSchema } from './objects/AgriculturePlotConditionUpdateInput.schema';
+import { AgriculturePlotConditionUncheckedUpdateInputObjectSchema as AgriculturePlotConditionUncheckedUpdateInputObjectSchema } from './objects/AgriculturePlotConditionUncheckedUpdateInput.schema';
+
+export const AgriculturePlotConditionUpsertOneSchema: z.ZodType<Prisma.AgriculturePlotConditionUpsertArgs> = z.object({ select: AgriculturePlotConditionSelectObjectSchema.optional(), include: AgriculturePlotConditionIncludeObjectSchema.optional(), where: AgriculturePlotConditionWhereUniqueInputObjectSchema, create: z.union([ AgriculturePlotConditionCreateInputObjectSchema, AgriculturePlotConditionUncheckedCreateInputObjectSchema ]), update: z.union([ AgriculturePlotConditionUpdateInputObjectSchema, AgriculturePlotConditionUncheckedUpdateInputObjectSchema ]) }).strict() as unknown as z.ZodType<Prisma.AgriculturePlotConditionUpsertArgs>;
+
+export const AgriculturePlotConditionUpsertOneZodSchema = z.object({ select: AgriculturePlotConditionSelectObjectSchema.optional(), include: AgriculturePlotConditionIncludeObjectSchema.optional(), where: AgriculturePlotConditionWhereUniqueInputObjectSchema, create: z.union([ AgriculturePlotConditionCreateInputObjectSchema, AgriculturePlotConditionUncheckedCreateInputObjectSchema ]), update: z.union([ AgriculturePlotConditionUpdateInputObjectSchema, AgriculturePlotConditionUncheckedUpdateInputObjectSchema ]) }).strict();

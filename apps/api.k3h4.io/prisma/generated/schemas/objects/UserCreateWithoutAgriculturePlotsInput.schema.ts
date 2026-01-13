@@ -1,0 +1,82 @@
+import * as z from 'zod';
+import { Prisma } from '@prisma/client';
+import { RefreshTokenCreateNestedManyWithoutUserInputObjectSchema as RefreshTokenCreateNestedManyWithoutUserInputObjectSchema } from './RefreshTokenCreateNestedManyWithoutUserInput.schema';
+import { UserPreferenceCreateNestedOneWithoutUserInputObjectSchema as UserPreferenceCreateNestedOneWithoutUserInputObjectSchema } from './UserPreferenceCreateNestedOneWithoutUserInput.schema';
+import { TelemetryEventCreateNestedManyWithoutUserInputObjectSchema as TelemetryEventCreateNestedManyWithoutUserInputObjectSchema } from './TelemetryEventCreateNestedManyWithoutUserInput.schema';
+import { BankTransactionCreateNestedManyWithoutUserInputObjectSchema as BankTransactionCreateNestedManyWithoutUserInputObjectSchema } from './BankTransactionCreateNestedManyWithoutUserInput.schema';
+import { PersonaCreateNestedManyWithoutUserInputObjectSchema as PersonaCreateNestedManyWithoutUserInputObjectSchema } from './PersonaCreateNestedManyWithoutUserInput.schema';
+import { AssignmentCreateNestedManyWithoutUserInputObjectSchema as AssignmentCreateNestedManyWithoutUserInputObjectSchema } from './AssignmentCreateNestedManyWithoutUserInput.schema';
+import { FreightLoadCreateNestedManyWithoutUserInputObjectSchema as FreightLoadCreateNestedManyWithoutUserInputObjectSchema } from './FreightLoadCreateNestedManyWithoutUserInput.schema';
+import { WarehouseItemCreateNestedManyWithoutUserInputObjectSchema as WarehouseItemCreateNestedManyWithoutUserInputObjectSchema } from './WarehouseItemCreateNestedManyWithoutUserInput.schema';
+import { PosStoreCreateNestedManyWithoutUserInputObjectSchema as PosStoreCreateNestedManyWithoutUserInputObjectSchema } from './PosStoreCreateNestedManyWithoutUserInput.schema';
+import { PosTicketCreateNestedManyWithoutUserInputObjectSchema as PosTicketCreateNestedManyWithoutUserInputObjectSchema } from './PosTicketCreateNestedManyWithoutUserInput.schema';
+import { AgricultureTaskCreateNestedManyWithoutUserInputObjectSchema as AgricultureTaskCreateNestedManyWithoutUserInputObjectSchema } from './AgricultureTaskCreateNestedManyWithoutUserInput.schema';
+import { AgricultureShipmentCreateNestedManyWithoutUserInputObjectSchema as AgricultureShipmentCreateNestedManyWithoutUserInputObjectSchema } from './AgricultureShipmentCreateNestedManyWithoutUserInput.schema';
+import { AgricultureCropPlanCreateNestedManyWithoutUserInputObjectSchema as AgricultureCropPlanCreateNestedManyWithoutUserInputObjectSchema } from './AgricultureCropPlanCreateNestedManyWithoutUserInput.schema';
+import { AgriculturePlotConditionCreateNestedManyWithoutUserInputObjectSchema as AgriculturePlotConditionCreateNestedManyWithoutUserInputObjectSchema } from './AgriculturePlotConditionCreateNestedManyWithoutUserInput.schema';
+import { AgricultureInventoryCreateNestedManyWithoutUserInputObjectSchema as AgricultureInventoryCreateNestedManyWithoutUserInputObjectSchema } from './AgricultureInventoryCreateNestedManyWithoutUserInput.schema';
+import { AgricultureInventoryMovementCreateNestedManyWithoutUserInputObjectSchema as AgricultureInventoryMovementCreateNestedManyWithoutUserInputObjectSchema } from './AgricultureInventoryMovementCreateNestedManyWithoutUserInput.schema';
+import { AgricultureSlotCreateNestedManyWithoutUserInputObjectSchema as AgricultureSlotCreateNestedManyWithoutUserInputObjectSchema } from './AgricultureSlotCreateNestedManyWithoutUserInput.schema';
+import { CulinaryMenuItemCreateNestedManyWithoutUserInputObjectSchema as CulinaryMenuItemCreateNestedManyWithoutUserInputObjectSchema } from './CulinaryMenuItemCreateNestedManyWithoutUserInput.schema';
+import { CulinaryPrepTaskCreateNestedManyWithoutUserInputObjectSchema as CulinaryPrepTaskCreateNestedManyWithoutUserInputObjectSchema } from './CulinaryPrepTaskCreateNestedManyWithoutUserInput.schema';
+import { CulinarySupplierNeedCreateNestedManyWithoutUserInputObjectSchema as CulinarySupplierNeedCreateNestedManyWithoutUserInputObjectSchema } from './CulinarySupplierNeedCreateNestedManyWithoutUserInput.schema';
+import { ArcadeMachineCreateNestedManyWithoutUserInputObjectSchema as ArcadeMachineCreateNestedManyWithoutUserInputObjectSchema } from './ArcadeMachineCreateNestedManyWithoutUserInput.schema';
+import { ArcadeCardCreateNestedManyWithoutUserInputObjectSchema as ArcadeCardCreateNestedManyWithoutUserInputObjectSchema } from './ArcadeCardCreateNestedManyWithoutUserInput.schema';
+import { ArcadeTopUpCreateNestedManyWithoutUserInputObjectSchema as ArcadeTopUpCreateNestedManyWithoutUserInputObjectSchema } from './ArcadeTopUpCreateNestedManyWithoutUserInput.schema';
+import { ArcadePrizeCreateNestedManyWithoutUserInputObjectSchema as ArcadePrizeCreateNestedManyWithoutUserInputObjectSchema } from './ArcadePrizeCreateNestedManyWithoutUserInput.schema';
+import { ArcadeSessionCreateNestedManyWithoutUserInputObjectSchema as ArcadeSessionCreateNestedManyWithoutUserInputObjectSchema } from './ArcadeSessionCreateNestedManyWithoutUserInput.schema';
+import { ArcadeRedemptionCreateNestedManyWithoutUserInputObjectSchema as ArcadeRedemptionCreateNestedManyWithoutUserInputObjectSchema } from './ArcadeRedemptionCreateNestedManyWithoutUserInput.schema';
+import { ProviderGrantCreateNestedManyWithoutUserInputObjectSchema as ProviderGrantCreateNestedManyWithoutUserInputObjectSchema } from './ProviderGrantCreateNestedManyWithoutUserInput.schema';
+import { PersonaAttributeCreateNestedManyWithoutUserInputObjectSchema as PersonaAttributeCreateNestedManyWithoutUserInputObjectSchema } from './PersonaAttributeCreateNestedManyWithoutUserInput.schema';
+import { PersonaCompatibilityCreateNestedManyWithoutUserInputObjectSchema as PersonaCompatibilityCreateNestedManyWithoutUserInputObjectSchema } from './PersonaCompatibilityCreateNestedManyWithoutUserInput.schema'
+
+import { DecimalJSLikeSchema, isValidDecimalInput } from '../../helpers/decimal-helpers';
+const makeSchema = () => z.object({
+  id: z.string().optional(),
+  email: z.string(),
+  provider: z.string(),
+  providerId: z.string(),
+  k3h4CoinBalance: z.union([
+  z.number(),
+  z.string(),
+  z.instanceof(Prisma.Decimal),
+  DecimalJSLikeSchema,
+]).refine((v) => isValidDecimalInput(v), {
+  message: "Field 'k3h4CoinBalance' must be a Decimal",
+}).optional(),
+  displayName: z.string().optional().nullable(),
+  avatarUrl: z.string().optional().nullable(),
+  createdAt: z.coerce.date().optional(),
+  updatedAt: z.coerce.date().optional(),
+  refreshTokens: z.lazy(() => RefreshTokenCreateNestedManyWithoutUserInputObjectSchema).optional(),
+  preference: z.lazy(() => UserPreferenceCreateNestedOneWithoutUserInputObjectSchema).optional(),
+  telemetry: z.lazy(() => TelemetryEventCreateNestedManyWithoutUserInputObjectSchema).optional(),
+  bankTransactions: z.lazy(() => BankTransactionCreateNestedManyWithoutUserInputObjectSchema).optional(),
+  personas: z.lazy(() => PersonaCreateNestedManyWithoutUserInputObjectSchema).optional(),
+  assignments: z.lazy(() => AssignmentCreateNestedManyWithoutUserInputObjectSchema).optional(),
+  freightLoads: z.lazy(() => FreightLoadCreateNestedManyWithoutUserInputObjectSchema).optional(),
+  warehouseItems: z.lazy(() => WarehouseItemCreateNestedManyWithoutUserInputObjectSchema).optional(),
+  posStores: z.lazy(() => PosStoreCreateNestedManyWithoutUserInputObjectSchema).optional(),
+  posTickets: z.lazy(() => PosTicketCreateNestedManyWithoutUserInputObjectSchema).optional(),
+  agricultureTasks: z.lazy(() => AgricultureTaskCreateNestedManyWithoutUserInputObjectSchema).optional(),
+  agricultureShipments: z.lazy(() => AgricultureShipmentCreateNestedManyWithoutUserInputObjectSchema).optional(),
+  agricultureCropPlans: z.lazy(() => AgricultureCropPlanCreateNestedManyWithoutUserInputObjectSchema).optional(),
+  agriculturePlotConditions: z.lazy(() => AgriculturePlotConditionCreateNestedManyWithoutUserInputObjectSchema).optional(),
+  agricultureInventories: z.lazy(() => AgricultureInventoryCreateNestedManyWithoutUserInputObjectSchema).optional(),
+  agricultureInventoryMovements: z.lazy(() => AgricultureInventoryMovementCreateNestedManyWithoutUserInputObjectSchema).optional(),
+  agricultureSlots: z.lazy(() => AgricultureSlotCreateNestedManyWithoutUserInputObjectSchema).optional(),
+  culinaryMenuItems: z.lazy(() => CulinaryMenuItemCreateNestedManyWithoutUserInputObjectSchema).optional(),
+  culinaryPrepTasks: z.lazy(() => CulinaryPrepTaskCreateNestedManyWithoutUserInputObjectSchema).optional(),
+  culinarySupplierNeeds: z.lazy(() => CulinarySupplierNeedCreateNestedManyWithoutUserInputObjectSchema).optional(),
+  arcadeMachines: z.lazy(() => ArcadeMachineCreateNestedManyWithoutUserInputObjectSchema).optional(),
+  arcadeCards: z.lazy(() => ArcadeCardCreateNestedManyWithoutUserInputObjectSchema).optional(),
+  arcadeTopUps: z.lazy(() => ArcadeTopUpCreateNestedManyWithoutUserInputObjectSchema).optional(),
+  arcadePrizes: z.lazy(() => ArcadePrizeCreateNestedManyWithoutUserInputObjectSchema).optional(),
+  arcadeSessions: z.lazy(() => ArcadeSessionCreateNestedManyWithoutUserInputObjectSchema).optional(),
+  arcadeRedemptions: z.lazy(() => ArcadeRedemptionCreateNestedManyWithoutUserInputObjectSchema).optional(),
+  providerGrants: z.lazy(() => ProviderGrantCreateNestedManyWithoutUserInputObjectSchema).optional(),
+  personaAttributes: z.lazy(() => PersonaAttributeCreateNestedManyWithoutUserInputObjectSchema).optional(),
+  personaCompatibilities: z.lazy(() => PersonaCompatibilityCreateNestedManyWithoutUserInputObjectSchema).optional()
+}).strict();
+export const UserCreateWithoutAgriculturePlotsInputObjectSchema: z.ZodType<Prisma.UserCreateWithoutAgriculturePlotsInput> = makeSchema() as unknown as z.ZodType<Prisma.UserCreateWithoutAgriculturePlotsInput>;
+export const UserCreateWithoutAgriculturePlotsInputObjectZodSchema = makeSchema();

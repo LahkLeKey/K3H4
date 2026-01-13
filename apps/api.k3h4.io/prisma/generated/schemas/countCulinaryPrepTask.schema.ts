@@ -1,0 +1,10 @@
+import type { Prisma } from '@prisma/client';
+import * as z from 'zod';
+import { CulinaryPrepTaskOrderByWithRelationInputObjectSchema as CulinaryPrepTaskOrderByWithRelationInputObjectSchema } from './objects/CulinaryPrepTaskOrderByWithRelationInput.schema';
+import { CulinaryPrepTaskWhereInputObjectSchema as CulinaryPrepTaskWhereInputObjectSchema } from './objects/CulinaryPrepTaskWhereInput.schema';
+import { CulinaryPrepTaskWhereUniqueInputObjectSchema as CulinaryPrepTaskWhereUniqueInputObjectSchema } from './objects/CulinaryPrepTaskWhereUniqueInput.schema';
+import { CulinaryPrepTaskCountAggregateInputObjectSchema as CulinaryPrepTaskCountAggregateInputObjectSchema } from './objects/CulinaryPrepTaskCountAggregateInput.schema';
+
+export const CulinaryPrepTaskCountSchema: z.ZodType<Prisma.CulinaryPrepTaskCountArgs> = z.object({ orderBy: z.union([CulinaryPrepTaskOrderByWithRelationInputObjectSchema, CulinaryPrepTaskOrderByWithRelationInputObjectSchema.array()]).optional(), where: CulinaryPrepTaskWhereInputObjectSchema.optional(), cursor: CulinaryPrepTaskWhereUniqueInputObjectSchema.optional(), take: z.number().optional(), skip: z.number().optional(), select: z.union([ z.literal(true), CulinaryPrepTaskCountAggregateInputObjectSchema ]).optional() }).strict() as unknown as z.ZodType<Prisma.CulinaryPrepTaskCountArgs>;
+
+export const CulinaryPrepTaskCountZodSchema = z.object({ orderBy: z.union([CulinaryPrepTaskOrderByWithRelationInputObjectSchema, CulinaryPrepTaskOrderByWithRelationInputObjectSchema.array()]).optional(), where: CulinaryPrepTaskWhereInputObjectSchema.optional(), cursor: CulinaryPrepTaskWhereUniqueInputObjectSchema.optional(), take: z.number().optional(), skip: z.number().optional(), select: z.union([ z.literal(true), CulinaryPrepTaskCountAggregateInputObjectSchema ]).optional() }).strict();

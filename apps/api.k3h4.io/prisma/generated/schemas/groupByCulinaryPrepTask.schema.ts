@@ -1,0 +1,13 @@
+import type { Prisma } from '@prisma/client';
+import * as z from 'zod';
+import { CulinaryPrepTaskWhereInputObjectSchema as CulinaryPrepTaskWhereInputObjectSchema } from './objects/CulinaryPrepTaskWhereInput.schema';
+import { CulinaryPrepTaskOrderByWithAggregationInputObjectSchema as CulinaryPrepTaskOrderByWithAggregationInputObjectSchema } from './objects/CulinaryPrepTaskOrderByWithAggregationInput.schema';
+import { CulinaryPrepTaskScalarWhereWithAggregatesInputObjectSchema as CulinaryPrepTaskScalarWhereWithAggregatesInputObjectSchema } from './objects/CulinaryPrepTaskScalarWhereWithAggregatesInput.schema';
+import { CulinaryPrepTaskScalarFieldEnumSchema } from './enums/CulinaryPrepTaskScalarFieldEnum.schema';
+import { CulinaryPrepTaskCountAggregateInputObjectSchema as CulinaryPrepTaskCountAggregateInputObjectSchema } from './objects/CulinaryPrepTaskCountAggregateInput.schema';
+import { CulinaryPrepTaskMinAggregateInputObjectSchema as CulinaryPrepTaskMinAggregateInputObjectSchema } from './objects/CulinaryPrepTaskMinAggregateInput.schema';
+import { CulinaryPrepTaskMaxAggregateInputObjectSchema as CulinaryPrepTaskMaxAggregateInputObjectSchema } from './objects/CulinaryPrepTaskMaxAggregateInput.schema';
+
+export const CulinaryPrepTaskGroupBySchema: z.ZodType<Prisma.CulinaryPrepTaskGroupByArgs> = z.object({ where: CulinaryPrepTaskWhereInputObjectSchema.optional(), orderBy: z.union([CulinaryPrepTaskOrderByWithAggregationInputObjectSchema, CulinaryPrepTaskOrderByWithAggregationInputObjectSchema.array()]).optional(), having: CulinaryPrepTaskScalarWhereWithAggregatesInputObjectSchema.optional(), take: z.number().optional(), skip: z.number().optional(), by: z.array(CulinaryPrepTaskScalarFieldEnumSchema), _count: z.union([ z.literal(true), CulinaryPrepTaskCountAggregateInputObjectSchema ]).optional(), _min: CulinaryPrepTaskMinAggregateInputObjectSchema.optional(), _max: CulinaryPrepTaskMaxAggregateInputObjectSchema.optional() }).strict() as unknown as z.ZodType<Prisma.CulinaryPrepTaskGroupByArgs>;
+
+export const CulinaryPrepTaskGroupByZodSchema = z.object({ where: CulinaryPrepTaskWhereInputObjectSchema.optional(), orderBy: z.union([CulinaryPrepTaskOrderByWithAggregationInputObjectSchema, CulinaryPrepTaskOrderByWithAggregationInputObjectSchema.array()]).optional(), having: CulinaryPrepTaskScalarWhereWithAggregatesInputObjectSchema.optional(), take: z.number().optional(), skip: z.number().optional(), by: z.array(CulinaryPrepTaskScalarFieldEnumSchema), _count: z.union([ z.literal(true), CulinaryPrepTaskCountAggregateInputObjectSchema ]).optional(), _min: CulinaryPrepTaskMinAggregateInputObjectSchema.optional(), _max: CulinaryPrepTaskMaxAggregateInputObjectSchema.optional() }).strict();

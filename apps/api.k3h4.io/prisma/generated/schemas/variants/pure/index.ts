@@ -1,0 +1,48 @@
+/**
+ * Pure Variant Schemas
+ * Auto-generated - do not edit manually
+ */
+
+export { UserModelSchema } from './User.pure';
+export { PersonaModelSchema } from './Persona.pure';
+export { PersonaAttributeModelSchema } from './PersonaAttribute.pure';
+export { PersonaCompatibilityModelSchema } from './PersonaCompatibility.pure';
+export { RefreshTokenModelSchema } from './RefreshToken.pure';
+export { ProviderGrantModelSchema } from './ProviderGrant.pure';
+export { UserPreferenceModelSchema } from './UserPreference.pure';
+export { TelemetryEventModelSchema } from './TelemetryEvent.pure';
+export { BankTransactionModelSchema } from './BankTransaction.pure';
+export { AssignmentModelSchema } from './Assignment.pure';
+export { AgricultureCropPlanModelSchema } from './AgricultureCropPlan.pure';
+export { AgriculturePlotConditionModelSchema } from './AgriculturePlotCondition.pure';
+export { AgricultureInventoryModelSchema } from './AgricultureInventory.pure';
+export { AgricultureInventoryMovementModelSchema } from './AgricultureInventoryMovement.pure';
+export { AssignmentTimecardModelSchema } from './AssignmentTimecard.pure';
+export { AssignmentPayoutModelSchema } from './AssignmentPayout.pure';
+export { FreightLoadModelSchema } from './FreightLoad.pure';
+export { WarehouseItemModelSchema } from './WarehouseItem.pure';
+export { PosStoreModelSchema } from './PosStore.pure';
+export { PosTicketModelSchema } from './PosTicket.pure';
+export { PosLineItemModelSchema } from './PosLineItem.pure';
+export { AgriculturePlotModelSchema } from './AgriculturePlot.pure';
+export { AgricultureSlotModelSchema } from './AgricultureSlot.pure';
+export { AgricultureTaskModelSchema } from './AgricultureTask.pure';
+export { AgricultureShipmentModelSchema } from './AgricultureShipment.pure';
+export { AgricultureResourceCategoryModelSchema } from './AgricultureResourceCategory.pure';
+export { AgricultureResourceModelSchema } from './AgricultureResource.pure';
+export { CulinaryMenuItemModelSchema } from './CulinaryMenuItem.pure';
+export { CulinaryPrepTaskModelSchema } from './CulinaryPrepTask.pure';
+export { CulinarySupplierNeedModelSchema } from './CulinarySupplierNeed.pure';
+export { ArcadeMachineModelSchema } from './ArcadeMachine.pure';
+export { ArcadeCardModelSchema } from './ArcadeCard.pure';
+export { ArcadeTopUpModelSchema } from './ArcadeTopUp.pure';
+export { ArcadePrizeModelSchema } from './ArcadePrize.pure';
+export { ArcadeSessionModelSchema } from './ArcadeSession.pure';
+export { ArcadeRedemptionModelSchema } from './ArcadeRedemption.pure';
+export { UsdaRegionModelSchema } from './UsdaRegion.pure';
+export { UsdaCountryModelSchema } from './UsdaCountry.pure';
+export { UsdaCommodityModelSchema } from './UsdaCommodity.pure';
+export { UsdaUnitModelSchema } from './UsdaUnit.pure';
+export { UsdaReleaseModelSchema } from './UsdaRelease.pure';
+export { UsdaCacheEntryModelSchema } from './UsdaCacheEntry.pure';
+export { UsdaSyncStateModelSchema } from './UsdaSyncState.pure';

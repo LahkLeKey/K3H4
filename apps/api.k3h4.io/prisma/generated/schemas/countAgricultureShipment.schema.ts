@@ -1,0 +1,10 @@
+import type { Prisma } from '@prisma/client';
+import * as z from 'zod';
+import { AgricultureShipmentOrderByWithRelationInputObjectSchema as AgricultureShipmentOrderByWithRelationInputObjectSchema } from './objects/AgricultureShipmentOrderByWithRelationInput.schema';
+import { AgricultureShipmentWhereInputObjectSchema as AgricultureShipmentWhereInputObjectSchema } from './objects/AgricultureShipmentWhereInput.schema';
+import { AgricultureShipmentWhereUniqueInputObjectSchema as AgricultureShipmentWhereUniqueInputObjectSchema } from './objects/AgricultureShipmentWhereUniqueInput.schema';
+import { AgricultureShipmentCountAggregateInputObjectSchema as AgricultureShipmentCountAggregateInputObjectSchema } from './objects/AgricultureShipmentCountAggregateInput.schema';
+
+export const AgricultureShipmentCountSchema: z.ZodType<Prisma.AgricultureShipmentCountArgs> = z.object({ orderBy: z.union([AgricultureShipmentOrderByWithRelationInputObjectSchema, AgricultureShipmentOrderByWithRelationInputObjectSchema.array()]).optional(), where: AgricultureShipmentWhereInputObjectSchema.optional(), cursor: AgricultureShipmentWhereUniqueInputObjectSchema.optional(), take: z.number().optional(), skip: z.number().optional(), select: z.union([ z.literal(true), AgricultureShipmentCountAggregateInputObjectSchema ]).optional() }).strict() as unknown as z.ZodType<Prisma.AgricultureShipmentCountArgs>;
+
+export const AgricultureShipmentCountZodSchema = z.object({ orderBy: z.union([AgricultureShipmentOrderByWithRelationInputObjectSchema, AgricultureShipmentOrderByWithRelationInputObjectSchema.array()]).optional(), where: AgricultureShipmentWhereInputObjectSchema.optional(), cursor: AgricultureShipmentWhereUniqueInputObjectSchema.optional(), take: z.number().optional(), skip: z.number().optional(), select: z.union([ z.literal(true), AgricultureShipmentCountAggregateInputObjectSchema ]).optional() }).strict();

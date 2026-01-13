@@ -1,0 +1,13 @@
+import type { Prisma } from '@prisma/client';
+import * as z from 'zod';
+import { UsdaSyncStateWhereInputObjectSchema as UsdaSyncStateWhereInputObjectSchema } from './objects/UsdaSyncStateWhereInput.schema';
+import { UsdaSyncStateOrderByWithAggregationInputObjectSchema as UsdaSyncStateOrderByWithAggregationInputObjectSchema } from './objects/UsdaSyncStateOrderByWithAggregationInput.schema';
+import { UsdaSyncStateScalarWhereWithAggregatesInputObjectSchema as UsdaSyncStateScalarWhereWithAggregatesInputObjectSchema } from './objects/UsdaSyncStateScalarWhereWithAggregatesInput.schema';
+import { UsdaSyncStateScalarFieldEnumSchema } from './enums/UsdaSyncStateScalarFieldEnum.schema';
+import { UsdaSyncStateCountAggregateInputObjectSchema as UsdaSyncStateCountAggregateInputObjectSchema } from './objects/UsdaSyncStateCountAggregateInput.schema';
+import { UsdaSyncStateMinAggregateInputObjectSchema as UsdaSyncStateMinAggregateInputObjectSchema } from './objects/UsdaSyncStateMinAggregateInput.schema';
+import { UsdaSyncStateMaxAggregateInputObjectSchema as UsdaSyncStateMaxAggregateInputObjectSchema } from './objects/UsdaSyncStateMaxAggregateInput.schema';
+
+export const UsdaSyncStateGroupBySchema: z.ZodType<Prisma.UsdaSyncStateGroupByArgs> = z.object({ where: UsdaSyncStateWhereInputObjectSchema.optional(), orderBy: z.union([UsdaSyncStateOrderByWithAggregationInputObjectSchema, UsdaSyncStateOrderByWithAggregationInputObjectSchema.array()]).optional(), having: UsdaSyncStateScalarWhereWithAggregatesInputObjectSchema.optional(), take: z.number().optional(), skip: z.number().optional(), by: z.array(UsdaSyncStateScalarFieldEnumSchema), _count: z.union([ z.literal(true), UsdaSyncStateCountAggregateInputObjectSchema ]).optional(), _min: UsdaSyncStateMinAggregateInputObjectSchema.optional(), _max: UsdaSyncStateMaxAggregateInputObjectSchema.optional() }).strict() as unknown as z.ZodType<Prisma.UsdaSyncStateGroupByArgs>;
+
+export const UsdaSyncStateGroupByZodSchema = z.object({ where: UsdaSyncStateWhereInputObjectSchema.optional(), orderBy: z.union([UsdaSyncStateOrderByWithAggregationInputObjectSchema, UsdaSyncStateOrderByWithAggregationInputObjectSchema.array()]).optional(), having: UsdaSyncStateScalarWhereWithAggregatesInputObjectSchema.optional(), take: z.number().optional(), skip: z.number().optional(), by: z.array(UsdaSyncStateScalarFieldEnumSchema), _count: z.union([ z.literal(true), UsdaSyncStateCountAggregateInputObjectSchema ]).optional(), _min: UsdaSyncStateMinAggregateInputObjectSchema.optional(), _max: UsdaSyncStateMaxAggregateInputObjectSchema.optional() }).strict();
