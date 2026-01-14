@@ -61,6 +61,14 @@ type Quest = {
 
 type CombatLog = { id: string; text: string; tone?: "good" | "warn" | "bad" };
 
+type ShopItem = {
+    id: string;
+    name: string;
+    description: string;
+    cost: number;
+    effect: "heal" | "energize" | "burst";
+};
+
 const initialHero: HeroState = {
     name: "Arin of Verdantia",
     level: 1,
@@ -173,6 +181,12 @@ const baseQuests: Quest[] = [
     },
 ];
 
+const shopStock: ShopItem[] = [
+    { id: "ward-draught", name: "Ward Draught", description: "Restore 24 HP.", cost: 14, effect: "heal" },
+    { id: "ember-ampoule", name: "Ember Ampoule", description: "Restore 14 Energy.", cost: 12, effect: "energize" },
+    { id: "sunshard-surge", name: "Sunshard Surge", description: "Charge ward by 25%.", cost: 18, effect: "burst" },
+];
+
 function capLog(log: CombatLog[], entry: CombatLog, limit = 16) {
     const next = [entry, ...log];
     return next.slice(0, limit);
@@ -242,6 +256,7 @@ export function FantasyRpgModule({ userEmail }: FantasyRpgModuleProps) {
             text: "Verdantia's ward is dim. The road is overrun. Strike, gather shards, and relight the gate.",
         },
     ]);
+    const [inventory, setInventory] = useState<Record<string, number>>({});
     const [selectedEnemy, setSelectedEnemy] = useState<string>(baseEnemies[0].id);
     const [wardCharge, setWardCharge] = useState(20);
 
@@ -250,7 +265,7 @@ export function FantasyRpgModule({ userEmail }: FantasyRpgModuleProps) {
     const unlocked = useMemo(() => new Set(skills.filter((skill) => skill.unlocked).map((skill) => skill.id)), [skills]);
     const currentEnemy = enemies.find((enemy) => enemy.id === selectedEnemy && enemy.alive) ?? enemies.find((enemy) => enemy.alive) ?? enemies[0];
     const heroCritChance = 0.12 + (unlocked.has("starcaller") ? 0.08 : 0);
-    const [sidePanel, setSidePanel] = useState<"quests" | "skills" | "log">("quests");
+    const [sidePanel, setSidePanel] = useState<"quests" | "skills" | "log" | "shop" | "inventory">("quests");
 
     const cycleEnemy = (direction: 1 | -1) => {
         const alive = enemies.filter((enemy) => enemy.alive);
@@ -422,6 +437,41 @@ export function FantasyRpgModule({ userEmail }: FantasyRpgModuleProps) {
         setLog((prev) => capLog(prev, { id: crypto.randomUUID(), text: "The gate flares—vitality floods back.", tone: "good" }));
     }
 
+    function buyItem(itemId: string) {
+        const item = shopStock.find((i) => i.id === itemId);
+        if (!item) return;
+        if (hero.gold < item.cost) {
+            setLog((prev) => capLog(prev, { id: crypto.randomUUID(), text: "Not enough gold for that purchase.", tone: "warn" }));
+            return;
+        }
+        setHero((prev) => ({ ...prev, gold: prev.gold - item.cost }));
+        setInventory((prev) => ({ ...prev, [item.id]: (prev[item.id] ?? 0) + 1 }));
+        setLog((prev) => capLog(prev, { id: crypto.randomUUID(), text: `Bought ${item.name} for ${item.cost}g.` }));
+    }
+
+    function useItem(itemId: string) {
+        const item = shopStock.find((i) => i.id === itemId);
+        if (!item) return;
+        const count = inventory[itemId] ?? 0;
+        if (count <= 0) {
+            setLog((prev) => capLog(prev, { id: crypto.randomUUID(), text: "You don't have that item.", tone: "warn" }));
+            return;
+        }
+
+        setInventory((prev) => ({ ...prev, [itemId]: Math.max(0, (prev[itemId] ?? 0) - 1) }));
+
+        if (item.effect === "heal") {
+            setHero((prev) => ({ ...prev, hp: clamp(prev.hp + 24, 0, prev.maxHp) }));
+            setLog((prev) => capLog(prev, { id: crypto.randomUUID(), text: "You drink a ward draught and mend.", tone: "good" }));
+        } else if (item.effect === "energize") {
+            setHero((prev) => ({ ...prev, energy: clamp(prev.energy + 14, 0, prev.maxEnergy) }));
+            setLog((prev) => capLog(prev, { id: crypto.randomUUID(), text: "Ember ampoule restores your focus.", tone: "good" }));
+        } else if (item.effect === "burst") {
+            setWardCharge((prev) => clamp(prev + 25, 0, 100));
+            setLog((prev) => capLog(prev, { id: crypto.randomUUID(), text: "Sunshard surge hums through the ward.", tone: "good" }));
+        }
+    }
+
     useEffect(() => {
         const onKey = (event: KeyboardEvent) => {
             if (event.key === "1") {
@@ -558,7 +608,7 @@ export function FantasyRpgModule({ userEmail }: FantasyRpgModuleProps) {
 
                             <div className="flex-1" />
 
-                            <div className="pointer-events-auto flex w-[320px] flex-col gap-2">
+                            <div className="pointer-events-auto flex w-[360px] flex-col gap-2">
                                 <div className="rounded-xl border bg-background/85 p-3 text-xs shadow">
                                     <div className="flex items-center justify-between text-sm font-semibold">
                                         <div className="flex items-center gap-2">
@@ -583,10 +633,12 @@ export function FantasyRpgModule({ userEmail }: FantasyRpgModuleProps) {
                                     <div className="flex items-center gap-2 text-xs font-semibold">
                                         <Button size="sm" variant={sidePanel === "quests" ? "default" : "outline"} onClick={() => setSidePanel("quests")}>Quests</Button>
                                         <Button size="sm" variant={sidePanel === "skills" ? "default" : "outline"} onClick={() => setSidePanel("skills")}>Skills</Button>
+                                        <Button size="sm" variant={sidePanel === "shop" ? "default" : "outline"} onClick={() => setSidePanel("shop")}>Shop</Button>
+                                        <Button size="sm" variant={sidePanel === "inventory" ? "default" : "outline"} onClick={() => setSidePanel("inventory")}>Bag</Button>
                                         <Button size="sm" variant={sidePanel === "log" ? "default" : "outline"} onClick={() => setSidePanel("log")}>Log</Button>
                                     </div>
                                     {sidePanel === "quests" ? (
-                                        <div className="space-y-2 max-h-52 overflow-auto pr-1">
+                                        <div className="space-y-2 max-h-64 overflow-auto pr-1">
                                             {quests.map((quest) => (
                                                 <div key={quest.id} className="rounded-lg border bg-muted/30 p-2 text-[12px]">
                                                     <div className="flex items-center justify-between">
@@ -621,6 +673,45 @@ export function FantasyRpgModule({ userEmail }: FantasyRpgModuleProps) {
                                                     </Button>
                                                 </div>
                                             ))}
+                                        </div>
+                                    ) : null}
+                                    {sidePanel === "shop" ? (
+                                        <div className="space-y-2 max-h-52 overflow-auto pr-1">
+                                            {shopStock.map((item) => (
+                                                <div key={item.id} className="rounded-lg border bg-muted/25 p-2 text-[12px]">
+                                                    <div className="flex items-center justify-between">
+                                                        <span className="font-semibold">{item.name}</span>
+                                                        <Badge variant="secondary">{item.cost}g</Badge>
+                                                    </div>
+                                                    <p className="text-muted-foreground text-[11px]">{item.description}</p>
+                                                    <Button size="sm" className="mt-2" variant="outline" onClick={() => buyItem(item.id)} disabled={hero.gold < item.cost}>
+                                                        Buy
+                                                    </Button>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    ) : null}
+                                    {sidePanel === "inventory" ? (
+                                        <div className="space-y-2 max-h-52 overflow-auto pr-1">
+                                            {shopStock.filter((item) => (inventory[item.id] ?? 0) > 0).length === 0 ? (
+                                                <div className="rounded-lg border bg-muted/20 p-3 text-[12px] text-muted-foreground">Your bag is empty. Buy items in the shop.</div>
+                                            ) : null}
+                                            {shopStock.map((item) => {
+                                                const count = inventory[item.id] ?? 0;
+                                                if (count <= 0) return null;
+                                                return (
+                                                    <div key={item.id} className="rounded-lg border bg-muted/30 p-2 text-[12px]">
+                                                        <div className="flex items-center justify-between">
+                                                            <span className="font-semibold">{item.name}</span>
+                                                            <Badge variant="outline">x{count}</Badge>
+                                                        </div>
+                                                        <p className="text-muted-foreground text-[11px]">{item.description}</p>
+                                                        <Button size="sm" className="mt-2" variant="secondary" onClick={() => useItem(item.id)}>
+                                                            Use
+                                                        </Button>
+                                                    </div>
+                                                );
+                                            })}
                                         </div>
                                     ) : null}
                                     {sidePanel === "log" ? (
