@@ -195,6 +195,12 @@ function enemyColor(tier: Enemy["tier"]) {
     }
 }
 
+function focusAccent(focus: Enemy["focus"]) {
+    if (focus === "arcane") return "#67e8f9";
+    if (focus === "blades") return "#f43f5e";
+    return "#a3e635";
+}
+
 function focusIcon(focus: Enemy["focus"]) {
     if (focus === "arcane") return "✦";
     if (focus === "blades") return "⚔";
@@ -244,6 +250,7 @@ export function FantasyRpgModule({ userEmail }: FantasyRpgModuleProps) {
     const unlocked = useMemo(() => new Set(skills.filter((skill) => skill.unlocked).map((skill) => skill.id)), [skills]);
     const currentEnemy = enemies.find((enemy) => enemy.id === selectedEnemy && enemy.alive) ?? enemies.find((enemy) => enemy.alive) ?? enemies[0];
     const heroCritChance = 0.12 + (unlocked.has("starcaller") ? 0.08 : 0);
+    const [sidePanel, setSidePanel] = useState<"quests" | "skills" | "log">("quests");
 
     const cycleEnemy = (direction: 1 | -1) => {
         const alive = enemies.filter((enemy) => enemy.alive);
@@ -420,7 +427,7 @@ export function FantasyRpgModule({ userEmail }: FantasyRpgModuleProps) {
             if (event.key === "1") {
                 event.preventDefault();
                 if (currentEnemy) handleAttack(currentEnemy.id);
-            } else if (event.key === "2") {
+            } else if (event.key === "2" || event.key === "r" || event.key === "R") {
                 event.preventDefault();
                 handleRest();
             } else if (event.key === "3") {
@@ -507,122 +514,93 @@ export function FantasyRpgModule({ userEmail }: FantasyRpgModuleProps) {
                                 enemy={enemy}
                                 index={index}
                                 selected={enemy.id === currentEnemy?.id}
+                                onSelect={setSelectedEnemy}
                             />
                         ))}
                         <OrbitControls enablePan={false} maxDistance={16} minDistance={6} target={[0, 0.8, 0]} />
                     </Suspense>
+                </Canvas>
+                <div className="pointer-events-none absolute inset-0 flex flex-col p-3 sm:p-4 lg:p-6">
+                    <div className="pointer-events-auto mx-auto flex w-full max-w-4xl items-center gap-2 rounded-full border bg-background/80 px-3 py-2 text-xs font-semibold shadow">
+                        <span className="hidden sm:inline text-muted-foreground">Shards of Verdantia</span>
+                        <Badge variant="outline">Tier {encounterTier}</Badge>
+                        <Badge variant="secondary">HP {hero.hp}/{hero.maxHp}</Badge>
+                        <Badge variant="outline">Energy {hero.energy}/{hero.maxEnergy}</Badge>
+                        <Badge variant="outline">Gold {hero.gold}</Badge>
+                        <Badge variant="outline">Ward {wardCharge}%</Badge>
+                        <div className="ml-auto flex items-center gap-2 text-muted-foreground"><span>Controls</span><Badge variant="outline">1-5 actions, Q/E target</Badge></div>
+                    </div>
 
-                    <Html fullscreen wrapperClass="pointer-events-none">
-                        <div className="pointer-events-none absolute inset-0 flex flex-col gap-3 p-3 sm:p-4 lg:p-6">
-                            <div className="pointer-events-auto mx-auto flex w-full max-w-6xl flex-wrap items-center gap-2 rounded-2xl border bg-background/85 px-3 py-2 text-xs font-semibold shadow">
-                                <Badge variant="outline">Story</Badge>
-                                <p className="text-sm text-muted-foreground">{storyline}</p>
-                                <Badge variant="secondary">Tier {encounterTier}</Badge>
-                                <Badge variant="outline">User: {userEmail ?? "guest"}</Badge>
+                    <div className="pointer-events-none relative mt-auto flex items-end justify-center">
+                        <div className="pointer-events-none flex max-w-5xl w-full items-end gap-3">
+                            <div className="pointer-events-auto flex w-64 flex-col gap-2 text-xs text-muted-foreground">
+                                <div className="rounded-lg border bg-background/85 px-3 py-2 shadow">
+                                    <div className="flex items-center justify-between gap-2 text-sm font-semibold">{hero.name}<Badge variant="outline">Lvl {hero.level}</Badge></div>
+                                    <div className="mt-1 flex items-center gap-2">
+                                        <span>XP</span><Progress className="flex-1" value={Math.min(100, (hero.xp / hero.nextLevelXp) * 100)} />
+                                    </div>
+                                    <div className="mt-2 flex items-center gap-2 text-xs">
+                                        <Button size="sm" variant="secondary" onClick={handleRest}>Rest (2)</Button>
+                                        <Button size="sm" variant="ghost" onClick={() => cycleEnemy(-1)}>Q ←</Button>
+                                        <Button size="sm" variant="ghost" onClick={() => cycleEnemy(1)}>E →</Button>
+                                    </div>
+                                </div>
+                                <ScrollArea className="h-24 w-full rounded-lg border bg-background/75 p-2 shadow">
+                                    <div className="space-y-2">
+                                        {log.slice(0, 6).map((entry) => (
+                                            <div key={entry.id} className={cn("rounded-md border px-2 py-1 text-[11px]", entry.tone === "good" && "border-green-500/40 bg-green-500/10", entry.tone === "warn" && "border-amber-500/40 bg-amber-500/10", entry.tone === "bad" && "border-red-500/40 bg-red-500/10")}>
+                                                {entry.text}
+                                            </div>
+                                        ))}
+                                    </div>
+                                </ScrollArea>
                             </div>
 
-                            <div className="pointer-events-auto mx-auto flex w-full max-w-6xl flex-1 min-h-0 flex-col gap-3 lg:flex-row">
-                                <div className="flex-1 space-y-3 min-h-0">
-                                    <SectionCard className="space-y-3 bg-background/85">
-                                        <div className="flex flex-wrap items-center gap-3">
-                                            <div>
-                                                <div className="text-xs uppercase tracking-wide text-muted-foreground">Warden</div>
-                                                <div className="text-lg font-semibold">{hero.name}</div>
-                                            </div>
-                                            <Badge variant="outline">HP {hero.hp}/{hero.maxHp}</Badge>
-                                            <Badge variant="outline">Energy {hero.energy}/{hero.maxEnergy}</Badge>
-                                            <Badge variant="secondary">Gold {hero.gold}</Badge>
-                                            <Badge variant="outline">Ward {wardCharge}%</Badge>
-                                            <Badge variant="outline">Foes {aliveCount}</Badge>
-                                        </div>
-                                        <div className="space-y-2">
-                                            <div className="space-y-1">
-                                                <div className="flex items-center justify-between text-xs text-muted-foreground">
-                                                    <span>XP</span>
-                                                    <span>{hero.xp} / {hero.nextLevelXp}</span>
-                                                </div>
-                                                <Progress value={Math.min(100, (hero.xp / hero.nextLevelXp) * 100)} />
-                                            </div>
-                                            <div className="grid grid-cols-2 gap-2 text-xs text-muted-foreground">
-                                                <div className="rounded-lg border bg-muted/40 px-3 py-2">Skill points: {hero.skillPoints}</div>
-                                                <div className="rounded-lg border bg-muted/40 px-3 py-2">Current foe: {currentEnemy?.name ?? "None"}</div>
-                                            </div>
-                                        </div>
-                                        <div className="flex flex-wrap gap-2">
-                                            {enemies.map((enemy) => (
-                                                <Button
-                                                    key={enemy.id}
-                                                    variant={enemy.id === currentEnemy?.id ? "default" : "outline"}
-                                                    size="sm"
-                                                    onClick={() => setSelectedEnemy(enemy.id)}
-                                                    disabled={!enemy.alive}
-                                                >
-                                                    {enemy.name}
-                                                </Button>
-                                            ))}
-                                        </div>
-                                        <div className="flex flex-wrap gap-2">
-                                            <Button onClick={() => currentEnemy && handleAttack(currentEnemy.id)} disabled={!currentEnemy}>
-                                                Attack
-                                            </Button>
-                                            <Button variant="secondary" onClick={handleRest}>Rest</Button>
-                                            <Button variant="outline" onClick={handleWardBurst}>Ward burst</Button>
-                                            <Button variant="outline" onClick={handleRelightWard}>Relight ward</Button>
-                                            <Button variant="ghost" onClick={resetEncounter}>New encounter</Button>
-                                        </div>
-                                    </SectionCard>
+                            <div className="flex-1" />
 
-                                    <SectionCard className="space-y-3 bg-background/85">
-                                        <div className="flex items-center justify-between">
-                                            <div>
-                                                <p className="text-xs uppercase tracking-wide text-muted-foreground">Combat log</p>
-                                                <p className="text-sm text-muted-foreground">Latest encounters and quest events.</p>
-                                            </div>
-                                            <Badge variant="secondary">Level {hero.level}</Badge>
+                            <div className="pointer-events-auto flex w-[320px] flex-col gap-2">
+                                <div className="rounded-xl border bg-background/85 p-3 text-xs shadow">
+                                    <div className="flex items-center justify-between text-sm font-semibold">
+                                        <div className="flex items-center gap-2">
+                                            <span>{currentEnemy?.name ?? "No target"}</span>
+                                            {currentEnemy ? <Badge variant="outline">{focusIcon(currentEnemy.focus)}</Badge> : null}
                                         </div>
-                                        <ScrollArea className="max-h-48 rounded-xl border bg-muted/50">
-                                            <div className="space-y-2 p-3">
-                                                {log.map((entry) => (
-                                                    <div key={entry.id} className={cn("rounded-lg border px-3 py-2 text-sm", entry.tone === "good" && "border-green-500/50 bg-green-500/10", entry.tone === "warn" && "border-amber-500/60 bg-amber-500/10", entry.tone === "bad" && "border-red-500/50 bg-red-500/10")}>
-                                                        {entry.text}
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        </ScrollArea>
-                                    </SectionCard>
+                                        <Badge variant="secondary">Foes {aliveCount}</Badge>
+                                    </div>
+                                    <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-foreground/20">
+                                        <div className="h-full rounded-full bg-primary" style={{ width: `${currentEnemy ? (currentEnemy.hp / currentEnemy.maxHp) * 100 : 0}%` }} />
+                                    </div>
+                                    <div className="mt-2 flex flex-wrap gap-2 text-sm">
+                                        <Button onClick={() => currentEnemy && handleAttack(currentEnemy.id)} disabled={!currentEnemy}>Attack (1)</Button>
+                                        <Button variant="outline" onClick={handleWardBurst}>Burst (3)</Button>
+                                        <Button variant="outline" onClick={handleRelightWard}>Relight (4)</Button>
+                                        <Button variant="ghost" onClick={resetEncounter}>New wave (5)</Button>
+                                    </div>
+                                    <div className="mt-2 text-muted-foreground">Click a shard to set target or use Q/E.</div>
                                 </div>
 
-                                <div className="w-full space-y-3 min-h-0 lg:w-[380px]">
-                                    <SectionCard className="space-y-3 bg-background/85">
-                                        <div className="flex items-center justify-between">
-                                            <div>
-                                                <div className="text-sm font-semibold">Quests</div>
-                                                <p className="text-xs text-muted-foreground">Track goals and turn in for XP and gold.</p>
-                                            </div>
-                                            <Badge variant="outline">Story beat</Badge>
-                                        </div>
-                                        <div className="space-y-3">
+                                <div className="flex flex-col gap-2 rounded-xl border bg-background/90 p-3 shadow">
+                                    <div className="flex items-center gap-2 text-xs font-semibold">
+                                        <Button size="sm" variant={sidePanel === "quests" ? "default" : "outline"} onClick={() => setSidePanel("quests")}>Quests</Button>
+                                        <Button size="sm" variant={sidePanel === "skills" ? "default" : "outline"} onClick={() => setSidePanel("skills")}>Skills</Button>
+                                        <Button size="sm" variant={sidePanel === "log" ? "default" : "outline"} onClick={() => setSidePanel("log")}>Log</Button>
+                                    </div>
+                                    {sidePanel === "quests" ? (
+                                        <div className="space-y-2 max-h-52 overflow-auto pr-1">
                                             {quests.map((quest) => (
-                                                <div key={quest.id} className="rounded-xl border bg-muted/40 p-3">
-                                                    <div className="flex items-start justify-between gap-2">
-                                                        <div className="space-y-1">
-                                                            <div className="text-sm font-semibold">{quest.title}</div>
-                                                            <p className="text-xs text-muted-foreground">{quest.detail}</p>
-                                                        </div>
-                                                        <Badge variant={quest.status === "turned-in" ? "secondary" : quest.status === "ready" ? "default" : "outline"}>
-                                                            {quest.status === "turned-in" ? "Turned in" : quest.status === "ready" ? "Ready" : "Active"}
-                                                        </Badge>
+                                                <div key={quest.id} className="rounded-lg border bg-muted/30 p-2 text-[12px]">
+                                                    <div className="flex items-center justify-between">
+                                                        <span className="font-semibold">{quest.title}</span>
+                                                        <Badge variant={quest.status === "ready" ? "default" : quest.status === "turned-in" ? "secondary" : "outline"}>{quest.status}</Badge>
                                                     </div>
-                                                    <div className="mt-2 space-y-1">
-                                                        <Progress value={Math.min(100, (quest.progress / quest.target) * 100)} />
-                                                        <div className="flex items-center justify-between text-xs text-muted-foreground">
-                                                            <span>{quest.progress} / {quest.target} {quest.tag === "any" ? "any foes" : `${quest.tag} foes`}</span>
-                                                            <span>+{quest.rewardXp} xp / +{quest.rewardGold}g</span>
-                                                        </div>
+                                                    <div className="mt-1 text-muted-foreground">{quest.detail}</div>
+                                                    <div className="mt-1 flex items-center justify-between text-muted-foreground">
+                                                        <span>{quest.progress}/{quest.target} {quest.tag === "any" ? "any" : quest.tag}</span>
+                                                        <span>+{quest.rewardXp}xp/+{quest.rewardGold}g</span>
                                                     </div>
-                                                    <div className="mt-2 flex flex-wrap gap-2">
+                                                    <div className="mt-2 flex items-center gap-2">
                                                         <Button size="sm" variant="outline" onClick={() => setSelectedEnemy(quest.tag === "any" ? currentEnemy?.id ?? enemies[0].id : enemies.find((enemy) => enemy.focus === quest.tag && enemy.alive)?.id ?? selectedEnemy)}>
-                                                            Hunt target
+                                                            Hunt
                                                         </Button>
                                                         <Button size="sm" disabled={quest.status !== "ready"} onClick={() => handleTurnIn(quest.id)}>
                                                             Turn in
@@ -631,39 +609,36 @@ export function FantasyRpgModule({ userEmail }: FantasyRpgModuleProps) {
                                                 </div>
                                             ))}
                                         </div>
-                                    </SectionCard>
-
-                                    <SectionCard className="space-y-3 bg-background/85">
-                                        <div className="flex items-center justify-between">
-                                            <div>
-                                                <div className="text-sm font-semibold">Skill tree</div>
-                                                <p className="text-xs text-muted-foreground">Spend points earned from leveling.</p>
-                                            </div>
-                                            <Badge variant="outline">{hero.skillPoints} points</Badge>
-                                        </div>
-                                        <div className="grid gap-2 md:grid-cols-2">
+                                    ) : null}
+                                    {sidePanel === "skills" ? (
+                                        <div className="grid grid-cols-2 gap-2 max-h-52 overflow-auto pr-1">
                                             {skills.map((skill) => (
-                                                <div key={skill.id} className={cn("rounded-xl border p-3", skill.unlocked ? "border-primary/60 bg-primary/5" : "bg-muted/40")}>
-                                                    <div className="text-sm font-semibold">{skill.name}</div>
-                                                    <p className="text-xs text-muted-foreground">{skill.description}</p>
-                                                    <Button
-                                                        size="sm"
-                                                        className="mt-2"
-                                                        variant={skill.unlocked ? "secondary" : "outline"}
-                                                        disabled={skill.unlocked || hero.skillPoints <= 0}
-                                                        onClick={() => unlockSkill(skill.id)}
-                                                    >
+                                                <div key={skill.id} className={cn("rounded-lg border p-2 text-[12px]", skill.unlocked ? "border-primary/60 bg-primary/5" : "bg-muted/30")}>
+                                                    <div className="font-semibold text-sm">{skill.name}</div>
+                                                    <p className="text-muted-foreground text-[11px]">{skill.description}</p>
+                                                    <Button size="sm" className="mt-1" variant={skill.unlocked ? "secondary" : "outline"} disabled={skill.unlocked || hero.skillPoints <= 0} onClick={() => unlockSkill(skill.id)}>
                                                         {skill.unlocked ? "Unlocked" : `Unlock (-${skill.cost})`}
                                                     </Button>
                                                 </div>
                                             ))}
                                         </div>
-                                    </SectionCard>
+                                    ) : null}
+                                    {sidePanel === "log" ? (
+                                        <ScrollArea className="h-48 rounded-lg border bg-muted/40">
+                                            <div className="space-y-2 p-2 text-[12px]">
+                                                {log.map((entry) => (
+                                                    <div key={entry.id} className={cn("rounded-md border px-2 py-1", entry.tone === "good" && "border-green-500/40 bg-green-500/10", entry.tone === "warn" && "border-amber-500/40 bg-amber-500/10", entry.tone === "bad" && "border-red-500/40 bg-red-500/10")}>
+                                                        {entry.text}
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </ScrollArea>
+                                    ) : null}
                                 </div>
                             </div>
                         </div>
-                    </Html>
-                </Canvas>
+                    </div>
+                </div>
             </div>
         </div>
     );
@@ -689,15 +664,69 @@ function RiftChamber() {
     );
 }
 
+function HumanoidModel({ bodyColor, accentColor, glow = 0.3, stance = "idle", weapon }: { bodyColor: string; accentColor: string; glow?: number; stance?: "idle" | "ready"; weapon?: "blade" | "staff" | "claw"; }) {
+    const lean = stance === "ready" ? 0.2 : 0;
+    const armRaise = stance === "ready" ? 0.35 : 0.05;
+    return (
+        <group rotation={[0, 0, 0]}>
+            {/* Torso */}
+            <mesh castShadow position={[0, 0.9, 0]}>
+                <boxGeometry args={[0.8, 1.2, 0.4]} />
+                <meshStandardMaterial color={bodyColor} emissive={bodyColor} emissiveIntensity={glow} roughness={0.35} metalness={0.15} />
+            </mesh>
+            {/* Head */}
+            <mesh castShadow position={[0, 1.65, 0]}>
+                <sphereGeometry args={[0.28, 24, 24]} />
+                <meshStandardMaterial color={accentColor} emissive={accentColor} emissiveIntensity={glow * 1.6} roughness={0.25} metalness={0.2} />
+            </mesh>
+            {/* Arms */}
+            <group position={[0, 1.1, 0]} rotation={[0, 0, lean]}>
+                <mesh castShadow position={[-0.55, 0, 0]} rotation={[0, 0, armRaise]}>
+                    <boxGeometry args={[0.2, 0.9, 0.2]} />
+                    <meshStandardMaterial color={bodyColor} emissive={bodyColor} emissiveIntensity={glow * 0.9} roughness={0.4} metalness={0.1} />
+                </mesh>
+                <mesh castShadow position={[0.55, 0, 0]} rotation={[0, 0, -armRaise]}>
+                    <boxGeometry args={[0.2, 0.9, 0.2]} />
+                    <meshStandardMaterial color={bodyColor} emissive={bodyColor} emissiveIntensity={glow * 0.9} roughness={0.4} metalness={0.1} />
+                </mesh>
+                {weapon === "blade" ? (
+                    <mesh castShadow position={[0.75, 0.35, 0]} rotation={[-0.2, 0, 0.4]}>
+                        <boxGeometry args={[0.12, 0.9, 0.08]} />
+                        <meshStandardMaterial color={accentColor} emissive={accentColor} emissiveIntensity={glow * 1.5} metalness={0.4} roughness={0.25} />
+                    </mesh>
+                ) : null}
+                {weapon === "staff" ? (
+                    <mesh castShadow position={[0.7, 0.35, 0]} rotation={[0.1, 0, 0.2]}>
+                        <cylinderGeometry args={[0.05, 0.05, 1.1, 12]} />
+                        <meshStandardMaterial color={accentColor} emissive={accentColor} emissiveIntensity={glow * 1.2} metalness={0.2} roughness={0.3} />
+                    </mesh>
+                ) : null}
+                {weapon === "claw" ? (
+                    <mesh castShadow position={[0.7, 0.25, 0]} rotation={[0, 0, 0.3]}>
+                        <boxGeometry args={[0.28, 0.5, 0.2]} />
+                        <meshStandardMaterial color={accentColor} emissive={accentColor} emissiveIntensity={glow * 1.3} metalness={0.25} roughness={0.25} />
+                    </mesh>
+                ) : null}
+            </group>
+            {/* Legs */}
+            <mesh castShadow position={[-0.25, 0.2, 0]}>
+                <boxGeometry args={[0.25, 0.8, 0.25]} />
+                <meshStandardMaterial color={bodyColor} emissive={bodyColor} emissiveIntensity={glow * 0.7} roughness={0.45} metalness={0.1} />
+            </mesh>
+            <mesh castShadow position={[0.25, 0.2, 0]}>
+                <boxGeometry args={[0.25, 0.8, 0.25]} />
+                <meshStandardMaterial color={bodyColor} emissive={bodyColor} emissiveIntensity={glow * 0.7} roughness={0.45} metalness={0.1} />
+            </mesh>
+        </group>
+    );
+}
+
 function HeroAvatar({ color, hp, maxHp }: { color: string; hp: number; maxHp: number; }) {
     const pulse = clamp(hp / maxHp, 0.2, 1);
     return (
-        <group position={[0, 0.4, 0]}>
-            <Float speed={2} rotationIntensity={0.6} floatIntensity={0.5}>
-                <mesh castShadow>
-                    <dodecahedronGeometry args={[0.8, 0]} />
-                    <meshStandardMaterial color={color} emissive={color} emissiveIntensity={0.35 + (1 - pulse) * 0.3} roughness={0.2} metalness={0.25} />
-                </mesh>
+        <group position={[0, 0.15, 0]}>
+            <Float speed={1.4} rotationIntensity={0.25} floatIntensity={0.35}>
+                <HumanoidModel bodyColor={color} accentColor="#a5b4fc" glow={0.45 + (1 - pulse) * 0.2} stance="ready" weapon="blade" />
             </Float>
             <Html center position={[0, -0.6, 0]} className="pointer-events-none select-none">
                 <div className="flex items-center gap-2 rounded-full bg-background/90 px-3 py-1 text-xs font-semibold shadow">
@@ -709,25 +738,18 @@ function HeroAvatar({ color, hp, maxHp }: { color: string; hp: number; maxHp: nu
     );
 }
 
-function EnemyShard({ enemy, index, selected }: { enemy: Enemy; index: number; selected: boolean; }) {
+function EnemyShard({ enemy, index, selected, onSelect }: { enemy: Enemy; index: number; selected: boolean; onSelect: (id: string) => void; }) {
     const distance = 4.8 + index * 1.8;
     const angle = (index / 3) * Math.PI * 2 + 0.6;
     const position: [number, number, number] = [Math.cos(angle) * distance, 0.6, Math.sin(angle) * distance];
     const color = enemyColor(enemy.tier);
+    const accent = focusAccent(enemy.focus);
+    const weapon: "blade" | "staff" | "claw" = enemy.focus === "blades" ? "blade" : enemy.focus === "arcane" ? "staff" : "claw";
     return (
-        <group position={position}>
-            <Float speed={1.1 + index * 0.2} rotationIntensity={0.5} floatIntensity={1.1}>
-                <mesh castShadow>
-                    <icosahedronGeometry args={[0.75, 0]} />
-                    <meshStandardMaterial
-                        color={color}
-                        emissive={color}
-                        emissiveIntensity={selected ? 0.65 : 0.4}
-                        transparent
-                        opacity={enemy.alive ? 1 : 0.25}
-                    />
-                </mesh>
-                <Html center position={[0, 1, 0]} className="pointer-events-none select-none">
+        <group position={position} onClick={() => onSelect(enemy.id)}>
+            <Float speed={1.1 + index * 0.2} rotationIntensity={0.4} floatIntensity={1.0}>
+                <HumanoidModel bodyColor={color} accentColor={accent} glow={selected ? 0.55 : 0.35} stance={selected ? "ready" : "idle"} weapon={weapon} />
+                <Html center position={[0, 1.35, 0]} className="pointer-events-none select-none">
                     <div className="rounded-lg bg-background/85 px-3 py-1 text-xs font-semibold shadow">
                         {enemy.name} {focusIcon(enemy.focus)}
                     </div>
