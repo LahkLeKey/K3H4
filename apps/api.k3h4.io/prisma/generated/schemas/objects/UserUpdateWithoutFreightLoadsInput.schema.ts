@@ -10,6 +10,11 @@ import { TelemetryEventUpdateManyWithoutUserNestedInputObjectSchema as Telemetry
 import { BankTransactionUpdateManyWithoutUserNestedInputObjectSchema as BankTransactionUpdateManyWithoutUserNestedInputObjectSchema } from './BankTransactionUpdateManyWithoutUserNestedInput.schema';
 import { PersonaUpdateManyWithoutUserNestedInputObjectSchema as PersonaUpdateManyWithoutUserNestedInputObjectSchema } from './PersonaUpdateManyWithoutUserNestedInput.schema';
 import { AssignmentUpdateManyWithoutUserNestedInputObjectSchema as AssignmentUpdateManyWithoutUserNestedInputObjectSchema } from './AssignmentUpdateManyWithoutUserNestedInput.schema';
+import { StaffingEngagementUpdateManyWithoutUserNestedInputObjectSchema as StaffingEngagementUpdateManyWithoutUserNestedInputObjectSchema } from './StaffingEngagementUpdateManyWithoutUserNestedInput.schema';
+import { StaffingRoleUpdateManyWithoutUserNestedInputObjectSchema as StaffingRoleUpdateManyWithoutUserNestedInputObjectSchema } from './StaffingRoleUpdateManyWithoutUserNestedInput.schema';
+import { StaffingCandidateUpdateManyWithoutUserNestedInputObjectSchema as StaffingCandidateUpdateManyWithoutUserNestedInputObjectSchema } from './StaffingCandidateUpdateManyWithoutUserNestedInput.schema';
+import { StaffingShiftUpdateManyWithoutUserNestedInputObjectSchema as StaffingShiftUpdateManyWithoutUserNestedInputObjectSchema } from './StaffingShiftUpdateManyWithoutUserNestedInput.schema';
+import { StaffingPlacementUpdateManyWithoutUserNestedInputObjectSchema as StaffingPlacementUpdateManyWithoutUserNestedInputObjectSchema } from './StaffingPlacementUpdateManyWithoutUserNestedInput.schema';
 import { WarehouseItemUpdateManyWithoutUserNestedInputObjectSchema as WarehouseItemUpdateManyWithoutUserNestedInputObjectSchema } from './WarehouseItemUpdateManyWithoutUserNestedInput.schema';
 import { PosStoreUpdateManyWithoutUserNestedInputObjectSchema as PosStoreUpdateManyWithoutUserNestedInputObjectSchema } from './PosStoreUpdateManyWithoutUserNestedInput.schema';
 import { PosTicketUpdateManyWithoutUserNestedInputObjectSchema as PosTicketUpdateManyWithoutUserNestedInputObjectSchema } from './PosTicketUpdateManyWithoutUserNestedInput.schema';
@@ -58,6 +63,11 @@ const makeSchema = () => z.object({
   bankTransactions: z.lazy(() => BankTransactionUpdateManyWithoutUserNestedInputObjectSchema).optional(),
   personas: z.lazy(() => PersonaUpdateManyWithoutUserNestedInputObjectSchema).optional(),
   assignments: z.lazy(() => AssignmentUpdateManyWithoutUserNestedInputObjectSchema).optional(),
+  staffingEngagements: z.lazy(() => StaffingEngagementUpdateManyWithoutUserNestedInputObjectSchema).optional(),
+  staffingRoles: z.lazy(() => StaffingRoleUpdateManyWithoutUserNestedInputObjectSchema).optional(),
+  staffingCandidates: z.lazy(() => StaffingCandidateUpdateManyWithoutUserNestedInputObjectSchema).optional(),
+  staffingShifts: z.lazy(() => StaffingShiftUpdateManyWithoutUserNestedInputObjectSchema).optional(),
+  staffingPlacements: z.lazy(() => StaffingPlacementUpdateManyWithoutUserNestedInputObjectSchema).optional(),
   warehouseItems: z.lazy(() => WarehouseItemUpdateManyWithoutUserNestedInputObjectSchema).optional(),
   posStores: z.lazy(() => PosStoreUpdateManyWithoutUserNestedInputObjectSchema).optional(),
   posTickets: z.lazy(() => PosTicketUpdateManyWithoutUserNestedInputObjectSchema).optional(),

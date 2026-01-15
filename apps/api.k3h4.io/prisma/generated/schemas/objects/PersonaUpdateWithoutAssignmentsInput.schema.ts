@@ -6,6 +6,9 @@ import { NullableJsonNullValueInputSchema } from '../enums/NullableJsonNullValue
 import { DateTimeFieldUpdateOperationsInputObjectSchema as DateTimeFieldUpdateOperationsInputObjectSchema } from './DateTimeFieldUpdateOperationsInput.schema';
 import { UserUpdateOneRequiredWithoutPersonasNestedInputObjectSchema as UserUpdateOneRequiredWithoutPersonasNestedInputObjectSchema } from './UserUpdateOneRequiredWithoutPersonasNestedInput.schema';
 import { AssignmentPayoutUpdateManyWithoutPersonaNestedInputObjectSchema as AssignmentPayoutUpdateManyWithoutPersonaNestedInputObjectSchema } from './AssignmentPayoutUpdateManyWithoutPersonaNestedInput.schema';
+import { StaffingCandidateUpdateManyWithoutPersonaNestedInputObjectSchema as StaffingCandidateUpdateManyWithoutPersonaNestedInputObjectSchema } from './StaffingCandidateUpdateManyWithoutPersonaNestedInput.schema';
+import { StaffingShiftUpdateManyWithoutAssignedPersonaNestedInputObjectSchema as StaffingShiftUpdateManyWithoutAssignedPersonaNestedInputObjectSchema } from './StaffingShiftUpdateManyWithoutAssignedPersonaNestedInput.schema';
+import { StaffingPlacementUpdateManyWithoutPersonaNestedInputObjectSchema as StaffingPlacementUpdateManyWithoutPersonaNestedInputObjectSchema } from './StaffingPlacementUpdateManyWithoutPersonaNestedInput.schema';
 import { PersonaAttributeUpdateManyWithoutPersonaNestedInputObjectSchema as PersonaAttributeUpdateManyWithoutPersonaNestedInputObjectSchema } from './PersonaAttributeUpdateManyWithoutPersonaNestedInput.schema';
 import { PersonaCompatibilityUpdateManyWithoutSourceNestedInputObjectSchema as PersonaCompatibilityUpdateManyWithoutSourceNestedInputObjectSchema } from './PersonaCompatibilityUpdateManyWithoutSourceNestedInput.schema';
 import { PersonaCompatibilityUpdateManyWithoutTargetNestedInputObjectSchema as PersonaCompatibilityUpdateManyWithoutTargetNestedInputObjectSchema } from './PersonaCompatibilityUpdateManyWithoutTargetNestedInput.schema'
@@ -23,6 +26,9 @@ const makeSchema = () => z.object({
   updatedAt: z.union([z.coerce.date(), z.lazy(() => DateTimeFieldUpdateOperationsInputObjectSchema)]).optional(),
   user: z.lazy(() => UserUpdateOneRequiredWithoutPersonasNestedInputObjectSchema).optional(),
   assignmentPayouts: z.lazy(() => AssignmentPayoutUpdateManyWithoutPersonaNestedInputObjectSchema).optional(),
+  staffingCandidates: z.lazy(() => StaffingCandidateUpdateManyWithoutPersonaNestedInputObjectSchema).optional(),
+  staffingShiftsAssigned: z.lazy(() => StaffingShiftUpdateManyWithoutAssignedPersonaNestedInputObjectSchema).optional(),
+  staffingPlacements: z.lazy(() => StaffingPlacementUpdateManyWithoutPersonaNestedInputObjectSchema).optional(),
   attributes: z.lazy(() => PersonaAttributeUpdateManyWithoutPersonaNestedInputObjectSchema).optional(),
   compatibilitySources: z.lazy(() => PersonaCompatibilityUpdateManyWithoutSourceNestedInputObjectSchema).optional(),
   compatibilityTargets: z.lazy(() => PersonaCompatibilityUpdateManyWithoutTargetNestedInputObjectSchema).optional()

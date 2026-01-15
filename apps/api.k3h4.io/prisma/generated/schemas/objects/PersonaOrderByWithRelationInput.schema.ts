@@ -5,6 +5,9 @@ import { SortOrderInputObjectSchema as SortOrderInputObjectSchema } from './Sort
 import { UserOrderByWithRelationInputObjectSchema as UserOrderByWithRelationInputObjectSchema } from './UserOrderByWithRelationInput.schema';
 import { AssignmentOrderByRelationAggregateInputObjectSchema as AssignmentOrderByRelationAggregateInputObjectSchema } from './AssignmentOrderByRelationAggregateInput.schema';
 import { AssignmentPayoutOrderByRelationAggregateInputObjectSchema as AssignmentPayoutOrderByRelationAggregateInputObjectSchema } from './AssignmentPayoutOrderByRelationAggregateInput.schema';
+import { StaffingCandidateOrderByRelationAggregateInputObjectSchema as StaffingCandidateOrderByRelationAggregateInputObjectSchema } from './StaffingCandidateOrderByRelationAggregateInput.schema';
+import { StaffingShiftOrderByRelationAggregateInputObjectSchema as StaffingShiftOrderByRelationAggregateInputObjectSchema } from './StaffingShiftOrderByRelationAggregateInput.schema';
+import { StaffingPlacementOrderByRelationAggregateInputObjectSchema as StaffingPlacementOrderByRelationAggregateInputObjectSchema } from './StaffingPlacementOrderByRelationAggregateInput.schema';
 import { PersonaAttributeOrderByRelationAggregateInputObjectSchema as PersonaAttributeOrderByRelationAggregateInputObjectSchema } from './PersonaAttributeOrderByRelationAggregateInput.schema';
 import { PersonaCompatibilityOrderByRelationAggregateInputObjectSchema as PersonaCompatibilityOrderByRelationAggregateInputObjectSchema } from './PersonaCompatibilityOrderByRelationAggregateInput.schema'
 
@@ -21,6 +24,9 @@ const makeSchema = () => z.object({
   user: z.lazy(() => UserOrderByWithRelationInputObjectSchema).optional(),
   assignments: z.lazy(() => AssignmentOrderByRelationAggregateInputObjectSchema).optional(),
   assignmentPayouts: z.lazy(() => AssignmentPayoutOrderByRelationAggregateInputObjectSchema).optional(),
+  staffingCandidates: z.lazy(() => StaffingCandidateOrderByRelationAggregateInputObjectSchema).optional(),
+  staffingShiftsAssigned: z.lazy(() => StaffingShiftOrderByRelationAggregateInputObjectSchema).optional(),
+  staffingPlacements: z.lazy(() => StaffingPlacementOrderByRelationAggregateInputObjectSchema).optional(),
   attributes: z.lazy(() => PersonaAttributeOrderByRelationAggregateInputObjectSchema).optional(),
   compatibilitySources: z.lazy(() => PersonaCompatibilityOrderByRelationAggregateInputObjectSchema).optional(),
   compatibilityTargets: z.lazy(() => PersonaCompatibilityOrderByRelationAggregateInputObjectSchema).optional()

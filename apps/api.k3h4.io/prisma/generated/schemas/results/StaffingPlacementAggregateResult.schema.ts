@@ -1,0 +1,67 @@
+import * as z from 'zod';
+export const StaffingPlacementAggregateResultSchema = z.object({  _count: z.object({
+    id: z.number(),
+    userId: z.number(),
+    user: z.number(),
+    engagementId: z.number(),
+    engagement: z.number(),
+    roleId: z.number(),
+    role: z.number(),
+    candidateId: z.number(),
+    candidate: z.number(),
+    personaId: z.number(),
+    persona: z.number(),
+    startDate: z.number(),
+    endDate: z.number(),
+    status: z.number(),
+    billRate: z.number(),
+    payRate: z.number(),
+    margin: z.number(),
+    note: z.number(),
+    createdAt: z.number(),
+    updatedAt: z.number()
+  }).optional(),
+  _sum: z.object({
+    billRate: z.number().nullable(),
+    payRate: z.number().nullable(),
+    margin: z.number().nullable()
+  }).nullable().optional(),
+  _avg: z.object({
+    billRate: z.number().nullable(),
+    payRate: z.number().nullable(),
+    margin: z.number().nullable()
+  }).nullable().optional(),
+  _min: z.object({
+    id: z.string().nullable(),
+    userId: z.string().nullable(),
+    engagementId: z.string().nullable(),
+    roleId: z.string().nullable(),
+    candidateId: z.string().nullable(),
+    personaId: z.string().nullable(),
+    startDate: z.date().nullable(),
+    endDate: z.date().nullable(),
+    status: z.string().nullable(),
+    billRate: z.number().nullable(),
+    payRate: z.number().nullable(),
+    margin: z.number().nullable(),
+    note: z.string().nullable(),
+    createdAt: z.date().nullable(),
+    updatedAt: z.date().nullable()
+  }).nullable().optional(),
+  _max: z.object({
+    id: z.string().nullable(),
+    userId: z.string().nullable(),
+    engagementId: z.string().nullable(),
+    roleId: z.string().nullable(),
+    candidateId: z.string().nullable(),
+    personaId: z.string().nullable(),
+    startDate: z.date().nullable(),
+    endDate: z.date().nullable(),
+    status: z.string().nullable(),
+    billRate: z.number().nullable(),
+    payRate: z.number().nullable(),
+    margin: z.number().nullable(),
+    note: z.string().nullable(),
+    createdAt: z.date().nullable(),
+    updatedAt: z.date().nullable()
+  }).nullable().optional()});

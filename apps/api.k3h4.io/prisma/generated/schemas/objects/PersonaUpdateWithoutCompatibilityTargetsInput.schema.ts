@@ -7,6 +7,9 @@ import { DateTimeFieldUpdateOperationsInputObjectSchema as DateTimeFieldUpdateOp
 import { UserUpdateOneRequiredWithoutPersonasNestedInputObjectSchema as UserUpdateOneRequiredWithoutPersonasNestedInputObjectSchema } from './UserUpdateOneRequiredWithoutPersonasNestedInput.schema';
 import { AssignmentUpdateManyWithoutPersonaNestedInputObjectSchema as AssignmentUpdateManyWithoutPersonaNestedInputObjectSchema } from './AssignmentUpdateManyWithoutPersonaNestedInput.schema';
 import { AssignmentPayoutUpdateManyWithoutPersonaNestedInputObjectSchema as AssignmentPayoutUpdateManyWithoutPersonaNestedInputObjectSchema } from './AssignmentPayoutUpdateManyWithoutPersonaNestedInput.schema';
+import { StaffingCandidateUpdateManyWithoutPersonaNestedInputObjectSchema as StaffingCandidateUpdateManyWithoutPersonaNestedInputObjectSchema } from './StaffingCandidateUpdateManyWithoutPersonaNestedInput.schema';
+import { StaffingShiftUpdateManyWithoutAssignedPersonaNestedInputObjectSchema as StaffingShiftUpdateManyWithoutAssignedPersonaNestedInputObjectSchema } from './StaffingShiftUpdateManyWithoutAssignedPersonaNestedInput.schema';
+import { StaffingPlacementUpdateManyWithoutPersonaNestedInputObjectSchema as StaffingPlacementUpdateManyWithoutPersonaNestedInputObjectSchema } from './StaffingPlacementUpdateManyWithoutPersonaNestedInput.schema';
 import { PersonaAttributeUpdateManyWithoutPersonaNestedInputObjectSchema as PersonaAttributeUpdateManyWithoutPersonaNestedInputObjectSchema } from './PersonaAttributeUpdateManyWithoutPersonaNestedInput.schema';
 import { PersonaCompatibilityUpdateManyWithoutSourceNestedInputObjectSchema as PersonaCompatibilityUpdateManyWithoutSourceNestedInputObjectSchema } from './PersonaCompatibilityUpdateManyWithoutSourceNestedInput.schema'
 
@@ -24,6 +27,9 @@ const makeSchema = () => z.object({
   user: z.lazy(() => UserUpdateOneRequiredWithoutPersonasNestedInputObjectSchema).optional(),
   assignments: z.lazy(() => AssignmentUpdateManyWithoutPersonaNestedInputObjectSchema).optional(),
   assignmentPayouts: z.lazy(() => AssignmentPayoutUpdateManyWithoutPersonaNestedInputObjectSchema).optional(),
+  staffingCandidates: z.lazy(() => StaffingCandidateUpdateManyWithoutPersonaNestedInputObjectSchema).optional(),
+  staffingShiftsAssigned: z.lazy(() => StaffingShiftUpdateManyWithoutAssignedPersonaNestedInputObjectSchema).optional(),
+  staffingPlacements: z.lazy(() => StaffingPlacementUpdateManyWithoutPersonaNestedInputObjectSchema).optional(),
   attributes: z.lazy(() => PersonaAttributeUpdateManyWithoutPersonaNestedInputObjectSchema).optional(),
   compatibilitySources: z.lazy(() => PersonaCompatibilityUpdateManyWithoutSourceNestedInputObjectSchema).optional()
 }).strict();

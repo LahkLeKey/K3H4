@@ -1,0 +1,10 @@
+import type { Prisma } from '@prisma/client';
+import * as z from 'zod';
+import { StaffingCandidateOrderByWithRelationInputObjectSchema as StaffingCandidateOrderByWithRelationInputObjectSchema } from './objects/StaffingCandidateOrderByWithRelationInput.schema';
+import { StaffingCandidateWhereInputObjectSchema as StaffingCandidateWhereInputObjectSchema } from './objects/StaffingCandidateWhereInput.schema';
+import { StaffingCandidateWhereUniqueInputObjectSchema as StaffingCandidateWhereUniqueInputObjectSchema } from './objects/StaffingCandidateWhereUniqueInput.schema';
+import { StaffingCandidateCountAggregateInputObjectSchema as StaffingCandidateCountAggregateInputObjectSchema } from './objects/StaffingCandidateCountAggregateInput.schema';
+
+export const StaffingCandidateCountSchema: z.ZodType<Prisma.StaffingCandidateCountArgs> = z.object({ orderBy: z.union([StaffingCandidateOrderByWithRelationInputObjectSchema, StaffingCandidateOrderByWithRelationInputObjectSchema.array()]).optional(), where: StaffingCandidateWhereInputObjectSchema.optional(), cursor: StaffingCandidateWhereUniqueInputObjectSchema.optional(), take: z.number().optional(), skip: z.number().optional(), select: z.union([ z.literal(true), StaffingCandidateCountAggregateInputObjectSchema ]).optional() }).strict() as unknown as z.ZodType<Prisma.StaffingCandidateCountArgs>;
+
+export const StaffingCandidateCountZodSchema = z.object({ orderBy: z.union([StaffingCandidateOrderByWithRelationInputObjectSchema, StaffingCandidateOrderByWithRelationInputObjectSchema.array()]).optional(), where: StaffingCandidateWhereInputObjectSchema.optional(), cursor: StaffingCandidateWhereUniqueInputObjectSchema.optional(), take: z.number().optional(), skip: z.number().optional(), select: z.union([ z.literal(true), StaffingCandidateCountAggregateInputObjectSchema ]).optional() }).strict();

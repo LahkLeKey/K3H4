@@ -6,6 +6,11 @@ import { TelemetryEventFindManySchema as TelemetryEventFindManySchema } from '..
 import { BankTransactionFindManySchema as BankTransactionFindManySchema } from '../findManyBankTransaction.schema';
 import { PersonaFindManySchema as PersonaFindManySchema } from '../findManyPersona.schema';
 import { AssignmentFindManySchema as AssignmentFindManySchema } from '../findManyAssignment.schema';
+import { StaffingEngagementFindManySchema as StaffingEngagementFindManySchema } from '../findManyStaffingEngagement.schema';
+import { StaffingRoleFindManySchema as StaffingRoleFindManySchema } from '../findManyStaffingRole.schema';
+import { StaffingCandidateFindManySchema as StaffingCandidateFindManySchema } from '../findManyStaffingCandidate.schema';
+import { StaffingShiftFindManySchema as StaffingShiftFindManySchema } from '../findManyStaffingShift.schema';
+import { StaffingPlacementFindManySchema as StaffingPlacementFindManySchema } from '../findManyStaffingPlacement.schema';
 import { FreightLoadFindManySchema as FreightLoadFindManySchema } from '../findManyFreightLoad.schema';
 import { WarehouseItemFindManySchema as WarehouseItemFindManySchema } from '../findManyWarehouseItem.schema';
 import { PosStoreFindManySchema as PosStoreFindManySchema } from '../findManyPosStore.schema';
@@ -48,6 +53,11 @@ const makeSchema = () => z.object({
   bankTransactions: z.union([z.boolean(), z.lazy(() => BankTransactionFindManySchema)]).optional(),
   personas: z.union([z.boolean(), z.lazy(() => PersonaFindManySchema)]).optional(),
   assignments: z.union([z.boolean(), z.lazy(() => AssignmentFindManySchema)]).optional(),
+  staffingEngagements: z.union([z.boolean(), z.lazy(() => StaffingEngagementFindManySchema)]).optional(),
+  staffingRoles: z.union([z.boolean(), z.lazy(() => StaffingRoleFindManySchema)]).optional(),
+  staffingCandidates: z.union([z.boolean(), z.lazy(() => StaffingCandidateFindManySchema)]).optional(),
+  staffingShifts: z.union([z.boolean(), z.lazy(() => StaffingShiftFindManySchema)]).optional(),
+  staffingPlacements: z.union([z.boolean(), z.lazy(() => StaffingPlacementFindManySchema)]).optional(),
   freightLoads: z.union([z.boolean(), z.lazy(() => FreightLoadFindManySchema)]).optional(),
   warehouseItems: z.union([z.boolean(), z.lazy(() => WarehouseItemFindManySchema)]).optional(),
   posStores: z.union([z.boolean(), z.lazy(() => PosStoreFindManySchema)]).optional(),

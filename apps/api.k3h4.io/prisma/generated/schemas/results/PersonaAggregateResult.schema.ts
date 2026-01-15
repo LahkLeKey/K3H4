@@ -12,6 +12,9 @@ export const PersonaAggregateResultSchema = z.object({  _count: z.object({
     updatedAt: z.number(),
     assignments: z.number(),
     assignmentPayouts: z.number(),
+    staffingCandidates: z.number(),
+    staffingShiftsAssigned: z.number(),
+    staffingPlacements: z.number(),
     attributes: z.number(),
     compatibilitySources: z.number(),
     compatibilityTargets: z.number()

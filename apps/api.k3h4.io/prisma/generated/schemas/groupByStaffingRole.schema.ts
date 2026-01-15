@@ -1,0 +1,15 @@
+import type { Prisma } from '@prisma/client';
+import * as z from 'zod';
+import { StaffingRoleWhereInputObjectSchema as StaffingRoleWhereInputObjectSchema } from './objects/StaffingRoleWhereInput.schema';
+import { StaffingRoleOrderByWithAggregationInputObjectSchema as StaffingRoleOrderByWithAggregationInputObjectSchema } from './objects/StaffingRoleOrderByWithAggregationInput.schema';
+import { StaffingRoleScalarWhereWithAggregatesInputObjectSchema as StaffingRoleScalarWhereWithAggregatesInputObjectSchema } from './objects/StaffingRoleScalarWhereWithAggregatesInput.schema';
+import { StaffingRoleScalarFieldEnumSchema } from './enums/StaffingRoleScalarFieldEnum.schema';
+import { StaffingRoleCountAggregateInputObjectSchema as StaffingRoleCountAggregateInputObjectSchema } from './objects/StaffingRoleCountAggregateInput.schema';
+import { StaffingRoleMinAggregateInputObjectSchema as StaffingRoleMinAggregateInputObjectSchema } from './objects/StaffingRoleMinAggregateInput.schema';
+import { StaffingRoleMaxAggregateInputObjectSchema as StaffingRoleMaxAggregateInputObjectSchema } from './objects/StaffingRoleMaxAggregateInput.schema';
+import { StaffingRoleAvgAggregateInputObjectSchema as StaffingRoleAvgAggregateInputObjectSchema } from './objects/StaffingRoleAvgAggregateInput.schema';
+import { StaffingRoleSumAggregateInputObjectSchema as StaffingRoleSumAggregateInputObjectSchema } from './objects/StaffingRoleSumAggregateInput.schema';
+
+export const StaffingRoleGroupBySchema: z.ZodType<Prisma.StaffingRoleGroupByArgs> = z.object({ where: StaffingRoleWhereInputObjectSchema.optional(), orderBy: z.union([StaffingRoleOrderByWithAggregationInputObjectSchema, StaffingRoleOrderByWithAggregationInputObjectSchema.array()]).optional(), having: StaffingRoleScalarWhereWithAggregatesInputObjectSchema.optional(), take: z.number().optional(), skip: z.number().optional(), by: z.array(StaffingRoleScalarFieldEnumSchema), _count: z.union([ z.literal(true), StaffingRoleCountAggregateInputObjectSchema ]).optional(), _min: StaffingRoleMinAggregateInputObjectSchema.optional(), _max: StaffingRoleMaxAggregateInputObjectSchema.optional(), _avg: StaffingRoleAvgAggregateInputObjectSchema.optional(), _sum: StaffingRoleSumAggregateInputObjectSchema.optional() }).strict() as unknown as z.ZodType<Prisma.StaffingRoleGroupByArgs>;
+
+export const StaffingRoleGroupByZodSchema = z.object({ where: StaffingRoleWhereInputObjectSchema.optional(), orderBy: z.union([StaffingRoleOrderByWithAggregationInputObjectSchema, StaffingRoleOrderByWithAggregationInputObjectSchema.array()]).optional(), having: StaffingRoleScalarWhereWithAggregatesInputObjectSchema.optional(), take: z.number().optional(), skip: z.number().optional(), by: z.array(StaffingRoleScalarFieldEnumSchema), _count: z.union([ z.literal(true), StaffingRoleCountAggregateInputObjectSchema ]).optional(), _min: StaffingRoleMinAggregateInputObjectSchema.optional(), _max: StaffingRoleMaxAggregateInputObjectSchema.optional(), _avg: StaffingRoleAvgAggregateInputObjectSchema.optional(), _sum: StaffingRoleSumAggregateInputObjectSchema.optional() }).strict();

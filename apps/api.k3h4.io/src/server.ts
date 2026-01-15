@@ -12,6 +12,7 @@ import { registerBankRoutes } from "./routes/bank";
 import { registerProfileRoutes } from "./routes/profile";
 import { registerPersonaRoutes } from "./routes/persona";
 import { registerAssignmentRoutes } from "./routes/assignment";
+import { registerStaffingRoutes } from "./routes/staffing";
 import { registerFreightRoutes } from "./routes/freight";
 import { registerWarehouseRoutes } from "./routes/warehouse";
 import { registerPosRoutes } from "./routes/pos";
@@ -67,6 +68,7 @@ const swaggerTags: Record<string, { name: string; description: string }> = {
   bank: { name: "Bank", description: "Banking and balances" },
   persona: { name: "Persona", description: "Persona management" },
   assignment: { name: "Assignment", description: "Assignments and tasks" },
+  staffing: { name: "Staffing", description: "Staffing cockpit and workforce planning" },
   freight: { name: "Freight", description: "Freight and routing" },
   warehouse: { name: "Warehouse", description: "Inventory and storage" },
   pos: { name: "POS", description: "Point of sale" },
@@ -86,6 +88,7 @@ const swaggerTagMap: Record<string, { name: string; description: string }> = {
   personas: swaggerTags.persona, // plural route prefix
   assignment: swaggerTags.assignment,
   assignments: swaggerTags.assignment, // plural route prefix
+  staffing: swaggerTags.staffing,
   freight: swaggerTags.freight,
   warehouse: swaggerTags.warehouse,
   pos: swaggerTags.pos,
@@ -320,6 +323,7 @@ registerProfileRoutes(server, prisma, recordTelemetry);
 registerBankRoutes(server, prisma, recordTelemetry);
 registerPersonaRoutes(server, prisma, recordTelemetry);
 registerAssignmentRoutes(server, prisma, recordTelemetry);
+registerStaffingRoutes(server, prisma, recordTelemetry);
 registerFreightRoutes(server, prisma, recordTelemetry);
 registerWarehouseRoutes(server, prisma, recordTelemetry);
 registerPosRoutes(server, prisma, recordTelemetry);

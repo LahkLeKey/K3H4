@@ -1,0 +1,11 @@
+import * as z from 'zod';
+import type { Prisma } from '@prisma/client';
+
+
+const makeSchema = () => z.object({
+  billRate: z.literal(true).optional(),
+  payRate: z.literal(true).optional(),
+  margin: z.literal(true).optional()
+}).strict();
+export const StaffingPlacementAvgAggregateInputObjectSchema: z.ZodType<Prisma.StaffingPlacementAvgAggregateInputType> = makeSchema() as unknown as z.ZodType<Prisma.StaffingPlacementAvgAggregateInputType>;
+export const StaffingPlacementAvgAggregateInputObjectZodSchema = makeSchema();

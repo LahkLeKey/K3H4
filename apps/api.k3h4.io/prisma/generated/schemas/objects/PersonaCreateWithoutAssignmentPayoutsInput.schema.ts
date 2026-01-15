@@ -3,6 +3,9 @@ import type { Prisma } from '@prisma/client';
 import { NullableJsonNullValueInputSchema } from '../enums/NullableJsonNullValueInput.schema';
 import { UserCreateNestedOneWithoutPersonasInputObjectSchema as UserCreateNestedOneWithoutPersonasInputObjectSchema } from './UserCreateNestedOneWithoutPersonasInput.schema';
 import { AssignmentCreateNestedManyWithoutPersonaInputObjectSchema as AssignmentCreateNestedManyWithoutPersonaInputObjectSchema } from './AssignmentCreateNestedManyWithoutPersonaInput.schema';
+import { StaffingCandidateCreateNestedManyWithoutPersonaInputObjectSchema as StaffingCandidateCreateNestedManyWithoutPersonaInputObjectSchema } from './StaffingCandidateCreateNestedManyWithoutPersonaInput.schema';
+import { StaffingShiftCreateNestedManyWithoutAssignedPersonaInputObjectSchema as StaffingShiftCreateNestedManyWithoutAssignedPersonaInputObjectSchema } from './StaffingShiftCreateNestedManyWithoutAssignedPersonaInput.schema';
+import { StaffingPlacementCreateNestedManyWithoutPersonaInputObjectSchema as StaffingPlacementCreateNestedManyWithoutPersonaInputObjectSchema } from './StaffingPlacementCreateNestedManyWithoutPersonaInput.schema';
 import { PersonaAttributeCreateNestedManyWithoutPersonaInputObjectSchema as PersonaAttributeCreateNestedManyWithoutPersonaInputObjectSchema } from './PersonaAttributeCreateNestedManyWithoutPersonaInput.schema';
 import { PersonaCompatibilityCreateNestedManyWithoutSourceInputObjectSchema as PersonaCompatibilityCreateNestedManyWithoutSourceInputObjectSchema } from './PersonaCompatibilityCreateNestedManyWithoutSourceInput.schema';
 import { PersonaCompatibilityCreateNestedManyWithoutTargetInputObjectSchema as PersonaCompatibilityCreateNestedManyWithoutTargetInputObjectSchema } from './PersonaCompatibilityCreateNestedManyWithoutTargetInput.schema'
@@ -20,6 +23,9 @@ const makeSchema = () => z.object({
   updatedAt: z.coerce.date().optional(),
   user: z.lazy(() => UserCreateNestedOneWithoutPersonasInputObjectSchema),
   assignments: z.lazy(() => AssignmentCreateNestedManyWithoutPersonaInputObjectSchema).optional(),
+  staffingCandidates: z.lazy(() => StaffingCandidateCreateNestedManyWithoutPersonaInputObjectSchema).optional(),
+  staffingShiftsAssigned: z.lazy(() => StaffingShiftCreateNestedManyWithoutAssignedPersonaInputObjectSchema).optional(),
+  staffingPlacements: z.lazy(() => StaffingPlacementCreateNestedManyWithoutPersonaInputObjectSchema).optional(),
   attributes: z.lazy(() => PersonaAttributeCreateNestedManyWithoutPersonaInputObjectSchema).optional(),
   compatibilitySources: z.lazy(() => PersonaCompatibilityCreateNestedManyWithoutSourceInputObjectSchema).optional(),
   compatibilityTargets: z.lazy(() => PersonaCompatibilityCreateNestedManyWithoutTargetInputObjectSchema).optional()

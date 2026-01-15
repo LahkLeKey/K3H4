@@ -5,6 +5,11 @@ import { TelemetryEventUncheckedCreateNestedManyWithoutUserInputObjectSchema as 
 import { BankTransactionUncheckedCreateNestedManyWithoutUserInputObjectSchema as BankTransactionUncheckedCreateNestedManyWithoutUserInputObjectSchema } from './BankTransactionUncheckedCreateNestedManyWithoutUserInput.schema';
 import { PersonaUncheckedCreateNestedManyWithoutUserInputObjectSchema as PersonaUncheckedCreateNestedManyWithoutUserInputObjectSchema } from './PersonaUncheckedCreateNestedManyWithoutUserInput.schema';
 import { AssignmentUncheckedCreateNestedManyWithoutUserInputObjectSchema as AssignmentUncheckedCreateNestedManyWithoutUserInputObjectSchema } from './AssignmentUncheckedCreateNestedManyWithoutUserInput.schema';
+import { StaffingEngagementUncheckedCreateNestedManyWithoutUserInputObjectSchema as StaffingEngagementUncheckedCreateNestedManyWithoutUserInputObjectSchema } from './StaffingEngagementUncheckedCreateNestedManyWithoutUserInput.schema';
+import { StaffingRoleUncheckedCreateNestedManyWithoutUserInputObjectSchema as StaffingRoleUncheckedCreateNestedManyWithoutUserInputObjectSchema } from './StaffingRoleUncheckedCreateNestedManyWithoutUserInput.schema';
+import { StaffingCandidateUncheckedCreateNestedManyWithoutUserInputObjectSchema as StaffingCandidateUncheckedCreateNestedManyWithoutUserInputObjectSchema } from './StaffingCandidateUncheckedCreateNestedManyWithoutUserInput.schema';
+import { StaffingShiftUncheckedCreateNestedManyWithoutUserInputObjectSchema as StaffingShiftUncheckedCreateNestedManyWithoutUserInputObjectSchema } from './StaffingShiftUncheckedCreateNestedManyWithoutUserInput.schema';
+import { StaffingPlacementUncheckedCreateNestedManyWithoutUserInputObjectSchema as StaffingPlacementUncheckedCreateNestedManyWithoutUserInputObjectSchema } from './StaffingPlacementUncheckedCreateNestedManyWithoutUserInput.schema';
 import { FreightLoadUncheckedCreateNestedManyWithoutUserInputObjectSchema as FreightLoadUncheckedCreateNestedManyWithoutUserInputObjectSchema } from './FreightLoadUncheckedCreateNestedManyWithoutUserInput.schema';
 import { WarehouseItemUncheckedCreateNestedManyWithoutUserInputObjectSchema as WarehouseItemUncheckedCreateNestedManyWithoutUserInputObjectSchema } from './WarehouseItemUncheckedCreateNestedManyWithoutUserInput.schema';
 import { PosStoreUncheckedCreateNestedManyWithoutUserInputObjectSchema as PosStoreUncheckedCreateNestedManyWithoutUserInputObjectSchema } from './PosStoreUncheckedCreateNestedManyWithoutUserInput.schema';
@@ -53,6 +58,11 @@ const makeSchema = () => z.object({
   bankTransactions: z.lazy(() => BankTransactionUncheckedCreateNestedManyWithoutUserInputObjectSchema).optional(),
   personas: z.lazy(() => PersonaUncheckedCreateNestedManyWithoutUserInputObjectSchema).optional(),
   assignments: z.lazy(() => AssignmentUncheckedCreateNestedManyWithoutUserInputObjectSchema).optional(),
+  staffingEngagements: z.lazy(() => StaffingEngagementUncheckedCreateNestedManyWithoutUserInputObjectSchema).optional(),
+  staffingRoles: z.lazy(() => StaffingRoleUncheckedCreateNestedManyWithoutUserInputObjectSchema).optional(),
+  staffingCandidates: z.lazy(() => StaffingCandidateUncheckedCreateNestedManyWithoutUserInputObjectSchema).optional(),
+  staffingShifts: z.lazy(() => StaffingShiftUncheckedCreateNestedManyWithoutUserInputObjectSchema).optional(),
+  staffingPlacements: z.lazy(() => StaffingPlacementUncheckedCreateNestedManyWithoutUserInputObjectSchema).optional(),
   freightLoads: z.lazy(() => FreightLoadUncheckedCreateNestedManyWithoutUserInputObjectSchema).optional(),
   warehouseItems: z.lazy(() => WarehouseItemUncheckedCreateNestedManyWithoutUserInputObjectSchema).optional(),
   posStores: z.lazy(() => PosStoreUncheckedCreateNestedManyWithoutUserInputObjectSchema).optional(),

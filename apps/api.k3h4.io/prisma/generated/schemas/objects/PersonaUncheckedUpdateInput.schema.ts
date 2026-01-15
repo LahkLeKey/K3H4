@@ -6,6 +6,9 @@ import { NullableJsonNullValueInputSchema } from '../enums/NullableJsonNullValue
 import { DateTimeFieldUpdateOperationsInputObjectSchema as DateTimeFieldUpdateOperationsInputObjectSchema } from './DateTimeFieldUpdateOperationsInput.schema';
 import { AssignmentUncheckedUpdateManyWithoutPersonaNestedInputObjectSchema as AssignmentUncheckedUpdateManyWithoutPersonaNestedInputObjectSchema } from './AssignmentUncheckedUpdateManyWithoutPersonaNestedInput.schema';
 import { AssignmentPayoutUncheckedUpdateManyWithoutPersonaNestedInputObjectSchema as AssignmentPayoutUncheckedUpdateManyWithoutPersonaNestedInputObjectSchema } from './AssignmentPayoutUncheckedUpdateManyWithoutPersonaNestedInput.schema';
+import { StaffingCandidateUncheckedUpdateManyWithoutPersonaNestedInputObjectSchema as StaffingCandidateUncheckedUpdateManyWithoutPersonaNestedInputObjectSchema } from './StaffingCandidateUncheckedUpdateManyWithoutPersonaNestedInput.schema';
+import { StaffingShiftUncheckedUpdateManyWithoutAssignedPersonaNestedInputObjectSchema as StaffingShiftUncheckedUpdateManyWithoutAssignedPersonaNestedInputObjectSchema } from './StaffingShiftUncheckedUpdateManyWithoutAssignedPersonaNestedInput.schema';
+import { StaffingPlacementUncheckedUpdateManyWithoutPersonaNestedInputObjectSchema as StaffingPlacementUncheckedUpdateManyWithoutPersonaNestedInputObjectSchema } from './StaffingPlacementUncheckedUpdateManyWithoutPersonaNestedInput.schema';
 import { PersonaAttributeUncheckedUpdateManyWithoutPersonaNestedInputObjectSchema as PersonaAttributeUncheckedUpdateManyWithoutPersonaNestedInputObjectSchema } from './PersonaAttributeUncheckedUpdateManyWithoutPersonaNestedInput.schema';
 import { PersonaCompatibilityUncheckedUpdateManyWithoutSourceNestedInputObjectSchema as PersonaCompatibilityUncheckedUpdateManyWithoutSourceNestedInputObjectSchema } from './PersonaCompatibilityUncheckedUpdateManyWithoutSourceNestedInput.schema';
 import { PersonaCompatibilityUncheckedUpdateManyWithoutTargetNestedInputObjectSchema as PersonaCompatibilityUncheckedUpdateManyWithoutTargetNestedInputObjectSchema } from './PersonaCompatibilityUncheckedUpdateManyWithoutTargetNestedInput.schema'
@@ -24,6 +27,9 @@ const makeSchema = () => z.object({
   updatedAt: z.union([z.coerce.date(), z.lazy(() => DateTimeFieldUpdateOperationsInputObjectSchema)]).optional(),
   assignments: z.lazy(() => AssignmentUncheckedUpdateManyWithoutPersonaNestedInputObjectSchema).optional(),
   assignmentPayouts: z.lazy(() => AssignmentPayoutUncheckedUpdateManyWithoutPersonaNestedInputObjectSchema).optional(),
+  staffingCandidates: z.lazy(() => StaffingCandidateUncheckedUpdateManyWithoutPersonaNestedInputObjectSchema).optional(),
+  staffingShiftsAssigned: z.lazy(() => StaffingShiftUncheckedUpdateManyWithoutAssignedPersonaNestedInputObjectSchema).optional(),
+  staffingPlacements: z.lazy(() => StaffingPlacementUncheckedUpdateManyWithoutPersonaNestedInputObjectSchema).optional(),
   attributes: z.lazy(() => PersonaAttributeUncheckedUpdateManyWithoutPersonaNestedInputObjectSchema).optional(),
   compatibilitySources: z.lazy(() => PersonaCompatibilityUncheckedUpdateManyWithoutSourceNestedInputObjectSchema).optional(),
   compatibilityTargets: z.lazy(() => PersonaCompatibilityUncheckedUpdateManyWithoutTargetNestedInputObjectSchema).optional()

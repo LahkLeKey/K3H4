@@ -8,6 +8,11 @@ import { TelemetryEventOrderByRelationAggregateInputObjectSchema as TelemetryEve
 import { BankTransactionOrderByRelationAggregateInputObjectSchema as BankTransactionOrderByRelationAggregateInputObjectSchema } from './BankTransactionOrderByRelationAggregateInput.schema';
 import { PersonaOrderByRelationAggregateInputObjectSchema as PersonaOrderByRelationAggregateInputObjectSchema } from './PersonaOrderByRelationAggregateInput.schema';
 import { AssignmentOrderByRelationAggregateInputObjectSchema as AssignmentOrderByRelationAggregateInputObjectSchema } from './AssignmentOrderByRelationAggregateInput.schema';
+import { StaffingEngagementOrderByRelationAggregateInputObjectSchema as StaffingEngagementOrderByRelationAggregateInputObjectSchema } from './StaffingEngagementOrderByRelationAggregateInput.schema';
+import { StaffingRoleOrderByRelationAggregateInputObjectSchema as StaffingRoleOrderByRelationAggregateInputObjectSchema } from './StaffingRoleOrderByRelationAggregateInput.schema';
+import { StaffingCandidateOrderByRelationAggregateInputObjectSchema as StaffingCandidateOrderByRelationAggregateInputObjectSchema } from './StaffingCandidateOrderByRelationAggregateInput.schema';
+import { StaffingShiftOrderByRelationAggregateInputObjectSchema as StaffingShiftOrderByRelationAggregateInputObjectSchema } from './StaffingShiftOrderByRelationAggregateInput.schema';
+import { StaffingPlacementOrderByRelationAggregateInputObjectSchema as StaffingPlacementOrderByRelationAggregateInputObjectSchema } from './StaffingPlacementOrderByRelationAggregateInput.schema';
 import { FreightLoadOrderByRelationAggregateInputObjectSchema as FreightLoadOrderByRelationAggregateInputObjectSchema } from './FreightLoadOrderByRelationAggregateInput.schema';
 import { WarehouseItemOrderByRelationAggregateInputObjectSchema as WarehouseItemOrderByRelationAggregateInputObjectSchema } from './WarehouseItemOrderByRelationAggregateInput.schema';
 import { PosStoreOrderByRelationAggregateInputObjectSchema as PosStoreOrderByRelationAggregateInputObjectSchema } from './PosStoreOrderByRelationAggregateInput.schema';
@@ -49,6 +54,11 @@ const makeSchema = () => z.object({
   bankTransactions: z.lazy(() => BankTransactionOrderByRelationAggregateInputObjectSchema).optional(),
   personas: z.lazy(() => PersonaOrderByRelationAggregateInputObjectSchema).optional(),
   assignments: z.lazy(() => AssignmentOrderByRelationAggregateInputObjectSchema).optional(),
+  staffingEngagements: z.lazy(() => StaffingEngagementOrderByRelationAggregateInputObjectSchema).optional(),
+  staffingRoles: z.lazy(() => StaffingRoleOrderByRelationAggregateInputObjectSchema).optional(),
+  staffingCandidates: z.lazy(() => StaffingCandidateOrderByRelationAggregateInputObjectSchema).optional(),
+  staffingShifts: z.lazy(() => StaffingShiftOrderByRelationAggregateInputObjectSchema).optional(),
+  staffingPlacements: z.lazy(() => StaffingPlacementOrderByRelationAggregateInputObjectSchema).optional(),
   freightLoads: z.lazy(() => FreightLoadOrderByRelationAggregateInputObjectSchema).optional(),
   warehouseItems: z.lazy(() => WarehouseItemOrderByRelationAggregateInputObjectSchema).optional(),
   posStores: z.lazy(() => PosStoreOrderByRelationAggregateInputObjectSchema).optional(),
