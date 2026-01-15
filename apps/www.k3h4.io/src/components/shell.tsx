@@ -16,6 +16,7 @@ import { PosDashboard } from "./pos/pos-dashboard";
 import { AgricultureDashboard } from "./agriculture/agriculture-dashboard";
 import { CulinaryOps } from "./culinary/culinary-ops";
 import { GraphicsEngineModule } from "./graphics-engine/graphics-engine";
+import { FantasyRpgModule } from "./rpg/fantasy-rpg";
 import { ArcadeHub } from "./arcade/arcade-hub";
 import { ShellView } from "./shell/view";
 import { ShellBrand } from "./shell/brand";
@@ -33,7 +34,7 @@ import {
     DropdownMenuTrigger,
 } from "./ui/dropdown-menu";
 
-type IndustryModuleKey = "bank" | "persona" | "agency" | "freight" | "warehouse" | "pos" | "agriculture" | "culinary" | "graphics" | "arcade";
+type IndustryModuleKey = "bank" | "persona" | "agency" | "freight" | "warehouse" | "pos" | "agriculture" | "culinary" | "graphics" | "arcade" | "rpg";
 
 type IndustryModule = {
     key: IndustryModuleKey;
@@ -219,6 +220,16 @@ export function Shell() {
                         userEmail={userEmail}
                         onNavigate={handleModuleChange}
                     />
+                </IndustryDashboard>
+            ),
+        },
+        {
+            key: "rpg",
+            label: "Fantasy RPG",
+            description: "Three.js action slice with quests and skills",
+            render: () => (
+                <IndustryDashboard>
+                    <FantasyRpgModule userEmail={userEmail} />
                 </IndustryDashboard>
             ),
         },
