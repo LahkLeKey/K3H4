@@ -12,8 +12,26 @@ Public monorepo for the K3H4 platform: Fastify + Prisma API and a React (Bun + V
 - Patterns: use TanStack Query hooks for data, Zustand stores under src/stores for state, and telemetry via src/lib/telemetry.
 
 ## Industry Modules (web)
-- Bank, Persona, Agency (staffing), Freight, Warehouse, POS, Agriculture, Culinary
-- Graphics Engine (R3F): spatial canvas for plot drawing, freight lanes, and immersive flows reused across industries
+- **Bank**: ledgers, transactions, balances, reconciliation views, and payment flows.
+- **Persona**: persona records, tags, matching filters, and list/detail management.
+- **Agency (Staffing)**: assignment pipelines, candidate cards, scheduling, and dashboard metrics.
+- **Freight**: lane planner with overlays, waypoints, and freight status chips.
+- **Warehouse**: inventory, stock moves, restock alerts, and bulk actions using HUD primitives.
+- **POS**: receipt/sale workflows, payments, summaries, and validation patterns.
+- **Agriculture**: USDA-style datasets, resource dashboards, insights, and pagination/filtering.
+- **Culinary**: menu/recipe ops with ingredient tables, prep workflows, and cost views.
+- **Graphics Engine (R3F)**: reusable spatial canvas and HUD overlays for plot drawing, freight lanes, and immersive scenes.
+
+## Demo Slices
+- **Rift Arena RPG (Graphics Engine)**: React + R3F fantasy shard fight; demonstrates HUD chrome, contextual actions, inventory/shop/quests, combat logs, and spatial overlays.
+- **Bank**: ledger, transactions, and balances with inline edits and validation; showcases TanStack Query data flows and status toasts.
+- **Persona**: persona records, tags, and matching filters; list/detail pattern with optimistic saves and empty states.
+- **Agency (Staffing)**: assignment pipelines, candidate cards, and agency dashboards; highlights drag interactions and list/grid toggles.
+- **Freight**: lane planner with map-like overlays, lane drawing, waypoint markers, and freight status chips.
+- **Warehouse**: inventory and item movements with filters, bulk actions, and restock alerts using HUD primitives.
+- **POS**: sales/receipt workflows, payment capture, and summaries; form patterns with validation and step feedback.
+- **Agriculture**: USDA-style data tables, resource dashboards, and insight cards; demonstrates large-data pagination and filters.
+- **Culinary**: menu/recipe ops with ingredient tables and prep workflows; uses shared form/layout primitives.
 
 ## Prerequisites
 - Bun 1.3.x (repo scripts assume Bun)
