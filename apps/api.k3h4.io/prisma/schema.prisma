@@ -26,6 +26,11 @@ model User {
   bankTransactions BankTransaction[]
   personas       Persona[]
   assignments    Assignment[]
+  staffingEngagements StaffingEngagement[]
+  staffingRoles      StaffingRole[]
+  staffingCandidates StaffingCandidate[]
+  staffingShifts     StaffingShift[]
+  staffingPlacements StaffingPlacement[]
   freightLoads   FreightLoad[]
   warehouseItems WarehouseItem[]
   posStores      PosStore[]
@@ -68,6 +73,9 @@ model Persona {
 
   assignments Assignment[]
   assignmentPayouts AssignmentPayout[]
+  staffingCandidates StaffingCandidate[] @relation("StaffingCandidatePersona")
+  staffingShiftsAssigned StaffingShift[] @relation("StaffingShiftAssignedPersona")
+  staffingPlacements StaffingPlacement[] @relation("StaffingPlacementPersona")
   attributes PersonaAttribute[]
   compatibilitySources PersonaCompatibility[] @relation("PersonaCompatibilitySource")
   compatibilityTargets PersonaCompatibility[] @relation("PersonaCompatibilityTarget")
@@ -194,6 +202,29 @@ model Assignment {
   @@index([userId, personaId])
 }
 
+model StaffingEngagement {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name      String
+  client    String?
+  priority  String   @default("medium")
+  status    String   @default("active")
+  startDate DateTime?
+  endDate   DateTime?
+  budget    Decimal? @db.Decimal(18, 2)
+  forecast  Decimal? @db.Decimal(18, 2)
+  notes     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  roles      StaffingRole[]
+  candidates StaffingCandidate[] @relation("StaffingCandidateEngagement")
+  placements StaffingPlacement[] @relation("StaffingPlacementEngagement")
+
+  @@index([userId, status])
+}
+
 model AgricultureCropPlan {
   id              String          @id @default(cuid())
   userId          String
@@ -295,6 +326,113 @@ model AssignmentPayout {
   createdAt    DateTime @default(now())
 
   @@index([assignmentId, personaId])
+}
+
+model StaffingRole {
+  id           String   @id @default(cuid())
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  engagementId String?
+  engagement   StaffingEngagement? @relation(fields: [engagementId], references: [id], onDelete: SetNull)
+  title        String
+  location     String?
+  modality     String?  // remote, hybrid, onsite
+  openings     Int      @default(1)
+  filled       Int      @default(0)
+  priority     String   @default("normal")
+  status       String   @default("open")
+  rateMin      Decimal? @db.Decimal(18, 2)
+  rateMax      Decimal? @db.Decimal(18, 2)
+  billRate     Decimal? @db.Decimal(18, 2)
+  payRate      Decimal? @db.Decimal(18, 2)
+  tags         String?
+  skills       Json?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  candidates StaffingCandidate[] @relation("StaffingCandidateRole")
+  shifts     StaffingShift[] @relation("StaffingShiftRole")
+  placements StaffingPlacement[] @relation("StaffingPlacementRole")
+
+  @@index([userId, status])
+}
+
+model StaffingCandidate {
+  id             String   @id @default(cuid())
+  userId         String
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  engagementId   String?
+  engagement     StaffingEngagement? @relation("StaffingCandidateEngagement", fields: [engagementId], references: [id], onDelete: SetNull)
+  roleId         String?
+  role           StaffingRole? @relation("StaffingCandidateRole", fields: [roleId], references: [id], onDelete: SetNull)
+  personaId      String?
+  persona        Persona? @relation("StaffingCandidatePersona", fields: [personaId], references: [id], onDelete: SetNull)
+  fullName       String
+  email          String?
+  phone          String?
+  source         String?
+  stage          String   @default("prospect")
+  score          Decimal? @db.Decimal(5, 2)
+  desiredRate    Decimal? @db.Decimal(18, 2)
+  availability   String?
+  location       String?
+  note           String?
+  tags           Json?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  placements     StaffingPlacement[] @relation("StaffingPlacementCandidate")
+  shiftsAssigned StaffingShift[] @relation("StaffingShiftCandidate")
+
+  @@index([userId, stage])
+}
+
+model StaffingShift {
+  id                  String   @id @default(cuid())
+  userId              String
+  user                User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  roleId              String?
+  role                StaffingRole? @relation("StaffingShiftRole", fields: [roleId], references: [id], onDelete: SetNull)
+  title               String
+  location            String?
+  startsAt            DateTime
+  endsAt              DateTime
+  status              String   @default("scheduled")
+  coverageStatus      String   @default("unfilled")
+  assignedPersonaId   String?
+  assignedPersona     Persona? @relation("StaffingShiftAssignedPersona", fields: [assignedPersonaId], references: [id], onDelete: SetNull)
+  assignedCandidateId String?
+  assignedCandidate   StaffingCandidate? @relation("StaffingShiftCandidate", fields: [assignedCandidateId], references: [id], onDelete: SetNull)
+  notes               String?
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  @@index([userId, status])
+}
+
+model StaffingPlacement {
+  id           String   @id @default(cuid())
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  engagementId String?
+  engagement   StaffingEngagement? @relation("StaffingPlacementEngagement", fields: [engagementId], references: [id], onDelete: SetNull)
+  roleId       String?
+  role         StaffingRole? @relation("StaffingPlacementRole", fields: [roleId], references: [id], onDelete: SetNull)
+  candidateId  String?
+  candidate    StaffingCandidate? @relation("StaffingPlacementCandidate", fields: [candidateId], references: [id], onDelete: SetNull)
+  personaId    String?
+  persona      Persona? @relation("StaffingPlacementPersona", fields: [personaId], references: [id], onDelete: SetNull)
+  startDate    DateTime
+  endDate      DateTime?
+  status       String   @default("active")
+  billRate     Decimal? @db.Decimal(18, 2)
+  payRate      Decimal? @db.Decimal(18, 2)
+  margin       Decimal? @db.Decimal(18, 2)
+  note         String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([userId, status])
 }
 
 model FreightLoad {

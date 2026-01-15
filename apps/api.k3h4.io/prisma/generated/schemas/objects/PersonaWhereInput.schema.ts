@@ -8,6 +8,9 @@ import { UserScalarRelationFilterObjectSchema as UserScalarRelationFilterObjectS
 import { UserWhereInputObjectSchema as UserWhereInputObjectSchema } from './UserWhereInput.schema';
 import { AssignmentListRelationFilterObjectSchema as AssignmentListRelationFilterObjectSchema } from './AssignmentListRelationFilter.schema';
 import { AssignmentPayoutListRelationFilterObjectSchema as AssignmentPayoutListRelationFilterObjectSchema } from './AssignmentPayoutListRelationFilter.schema';
+import { StaffingCandidateListRelationFilterObjectSchema as StaffingCandidateListRelationFilterObjectSchema } from './StaffingCandidateListRelationFilter.schema';
+import { StaffingShiftListRelationFilterObjectSchema as StaffingShiftListRelationFilterObjectSchema } from './StaffingShiftListRelationFilter.schema';
+import { StaffingPlacementListRelationFilterObjectSchema as StaffingPlacementListRelationFilterObjectSchema } from './StaffingPlacementListRelationFilter.schema';
 import { PersonaAttributeListRelationFilterObjectSchema as PersonaAttributeListRelationFilterObjectSchema } from './PersonaAttributeListRelationFilter.schema';
 import { PersonaCompatibilityListRelationFilterObjectSchema as PersonaCompatibilityListRelationFilterObjectSchema } from './PersonaCompatibilityListRelationFilter.schema'
 
@@ -27,6 +30,9 @@ const personawhereinputSchema = z.object({
   user: z.union([z.lazy(() => UserScalarRelationFilterObjectSchema), z.lazy(() => UserWhereInputObjectSchema)]).optional(),
   assignments: z.lazy(() => AssignmentListRelationFilterObjectSchema).optional(),
   assignmentPayouts: z.lazy(() => AssignmentPayoutListRelationFilterObjectSchema).optional(),
+  staffingCandidates: z.lazy(() => StaffingCandidateListRelationFilterObjectSchema).optional(),
+  staffingShiftsAssigned: z.lazy(() => StaffingShiftListRelationFilterObjectSchema).optional(),
+  staffingPlacements: z.lazy(() => StaffingPlacementListRelationFilterObjectSchema).optional(),
   attributes: z.lazy(() => PersonaAttributeListRelationFilterObjectSchema).optional(),
   compatibilitySources: z.lazy(() => PersonaCompatibilityListRelationFilterObjectSchema).optional(),
   compatibilityTargets: z.lazy(() => PersonaCompatibilityListRelationFilterObjectSchema).optional()

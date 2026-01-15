@@ -1,0 +1,13 @@
+import type { Prisma } from '@prisma/client';
+import * as z from 'zod';
+import { StaffingShiftWhereInputObjectSchema as StaffingShiftWhereInputObjectSchema } from './objects/StaffingShiftWhereInput.schema';
+import { StaffingShiftOrderByWithAggregationInputObjectSchema as StaffingShiftOrderByWithAggregationInputObjectSchema } from './objects/StaffingShiftOrderByWithAggregationInput.schema';
+import { StaffingShiftScalarWhereWithAggregatesInputObjectSchema as StaffingShiftScalarWhereWithAggregatesInputObjectSchema } from './objects/StaffingShiftScalarWhereWithAggregatesInput.schema';
+import { StaffingShiftScalarFieldEnumSchema } from './enums/StaffingShiftScalarFieldEnum.schema';
+import { StaffingShiftCountAggregateInputObjectSchema as StaffingShiftCountAggregateInputObjectSchema } from './objects/StaffingShiftCountAggregateInput.schema';
+import { StaffingShiftMinAggregateInputObjectSchema as StaffingShiftMinAggregateInputObjectSchema } from './objects/StaffingShiftMinAggregateInput.schema';
+import { StaffingShiftMaxAggregateInputObjectSchema as StaffingShiftMaxAggregateInputObjectSchema } from './objects/StaffingShiftMaxAggregateInput.schema';
+
+export const StaffingShiftGroupBySchema: z.ZodType<Prisma.StaffingShiftGroupByArgs> = z.object({ where: StaffingShiftWhereInputObjectSchema.optional(), orderBy: z.union([StaffingShiftOrderByWithAggregationInputObjectSchema, StaffingShiftOrderByWithAggregationInputObjectSchema.array()]).optional(), having: StaffingShiftScalarWhereWithAggregatesInputObjectSchema.optional(), take: z.number().optional(), skip: z.number().optional(), by: z.array(StaffingShiftScalarFieldEnumSchema), _count: z.union([ z.literal(true), StaffingShiftCountAggregateInputObjectSchema ]).optional(), _min: StaffingShiftMinAggregateInputObjectSchema.optional(), _max: StaffingShiftMaxAggregateInputObjectSchema.optional() }).strict() as unknown as z.ZodType<Prisma.StaffingShiftGroupByArgs>;
+
+export const StaffingShiftGroupByZodSchema = z.object({ where: StaffingShiftWhereInputObjectSchema.optional(), orderBy: z.union([StaffingShiftOrderByWithAggregationInputObjectSchema, StaffingShiftOrderByWithAggregationInputObjectSchema.array()]).optional(), having: StaffingShiftScalarWhereWithAggregatesInputObjectSchema.optional(), take: z.number().optional(), skip: z.number().optional(), by: z.array(StaffingShiftScalarFieldEnumSchema), _count: z.union([ z.literal(true), StaffingShiftCountAggregateInputObjectSchema ]).optional(), _min: StaffingShiftMinAggregateInputObjectSchema.optional(), _max: StaffingShiftMaxAggregateInputObjectSchema.optional() }).strict();

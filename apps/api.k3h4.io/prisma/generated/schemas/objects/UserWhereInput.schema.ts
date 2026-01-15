@@ -11,6 +11,11 @@ import { TelemetryEventListRelationFilterObjectSchema as TelemetryEventListRelat
 import { BankTransactionListRelationFilterObjectSchema as BankTransactionListRelationFilterObjectSchema } from './BankTransactionListRelationFilter.schema';
 import { PersonaListRelationFilterObjectSchema as PersonaListRelationFilterObjectSchema } from './PersonaListRelationFilter.schema';
 import { AssignmentListRelationFilterObjectSchema as AssignmentListRelationFilterObjectSchema } from './AssignmentListRelationFilter.schema';
+import { StaffingEngagementListRelationFilterObjectSchema as StaffingEngagementListRelationFilterObjectSchema } from './StaffingEngagementListRelationFilter.schema';
+import { StaffingRoleListRelationFilterObjectSchema as StaffingRoleListRelationFilterObjectSchema } from './StaffingRoleListRelationFilter.schema';
+import { StaffingCandidateListRelationFilterObjectSchema as StaffingCandidateListRelationFilterObjectSchema } from './StaffingCandidateListRelationFilter.schema';
+import { StaffingShiftListRelationFilterObjectSchema as StaffingShiftListRelationFilterObjectSchema } from './StaffingShiftListRelationFilter.schema';
+import { StaffingPlacementListRelationFilterObjectSchema as StaffingPlacementListRelationFilterObjectSchema } from './StaffingPlacementListRelationFilter.schema';
 import { FreightLoadListRelationFilterObjectSchema as FreightLoadListRelationFilterObjectSchema } from './FreightLoadListRelationFilter.schema';
 import { WarehouseItemListRelationFilterObjectSchema as WarehouseItemListRelationFilterObjectSchema } from './WarehouseItemListRelationFilter.schema';
 import { PosStoreListRelationFilterObjectSchema as PosStoreListRelationFilterObjectSchema } from './PosStoreListRelationFilter.schema';
@@ -63,6 +68,11 @@ const userwhereinputSchema = z.object({
   bankTransactions: z.lazy(() => BankTransactionListRelationFilterObjectSchema).optional(),
   personas: z.lazy(() => PersonaListRelationFilterObjectSchema).optional(),
   assignments: z.lazy(() => AssignmentListRelationFilterObjectSchema).optional(),
+  staffingEngagements: z.lazy(() => StaffingEngagementListRelationFilterObjectSchema).optional(),
+  staffingRoles: z.lazy(() => StaffingRoleListRelationFilterObjectSchema).optional(),
+  staffingCandidates: z.lazy(() => StaffingCandidateListRelationFilterObjectSchema).optional(),
+  staffingShifts: z.lazy(() => StaffingShiftListRelationFilterObjectSchema).optional(),
+  staffingPlacements: z.lazy(() => StaffingPlacementListRelationFilterObjectSchema).optional(),
   freightLoads: z.lazy(() => FreightLoadListRelationFilterObjectSchema).optional(),
   warehouseItems: z.lazy(() => WarehouseItemListRelationFilterObjectSchema).optional(),
   posStores: z.lazy(() => PosStoreListRelationFilterObjectSchema).optional(),

@@ -5,6 +5,11 @@ import { UserCountOutputTypeCountTelemetryArgsObjectSchema as UserCountOutputTyp
 import { UserCountOutputTypeCountBankTransactionsArgsObjectSchema as UserCountOutputTypeCountBankTransactionsArgsObjectSchema } from './UserCountOutputTypeCountBankTransactionsArgs.schema';
 import { UserCountOutputTypeCountPersonasArgsObjectSchema as UserCountOutputTypeCountPersonasArgsObjectSchema } from './UserCountOutputTypeCountPersonasArgs.schema';
 import { UserCountOutputTypeCountAssignmentsArgsObjectSchema as UserCountOutputTypeCountAssignmentsArgsObjectSchema } from './UserCountOutputTypeCountAssignmentsArgs.schema';
+import { UserCountOutputTypeCountStaffingEngagementsArgsObjectSchema as UserCountOutputTypeCountStaffingEngagementsArgsObjectSchema } from './UserCountOutputTypeCountStaffingEngagementsArgs.schema';
+import { UserCountOutputTypeCountStaffingRolesArgsObjectSchema as UserCountOutputTypeCountStaffingRolesArgsObjectSchema } from './UserCountOutputTypeCountStaffingRolesArgs.schema';
+import { UserCountOutputTypeCountStaffingCandidatesArgsObjectSchema as UserCountOutputTypeCountStaffingCandidatesArgsObjectSchema } from './UserCountOutputTypeCountStaffingCandidatesArgs.schema';
+import { UserCountOutputTypeCountStaffingShiftsArgsObjectSchema as UserCountOutputTypeCountStaffingShiftsArgsObjectSchema } from './UserCountOutputTypeCountStaffingShiftsArgs.schema';
+import { UserCountOutputTypeCountStaffingPlacementsArgsObjectSchema as UserCountOutputTypeCountStaffingPlacementsArgsObjectSchema } from './UserCountOutputTypeCountStaffingPlacementsArgs.schema';
 import { UserCountOutputTypeCountFreightLoadsArgsObjectSchema as UserCountOutputTypeCountFreightLoadsArgsObjectSchema } from './UserCountOutputTypeCountFreightLoadsArgs.schema';
 import { UserCountOutputTypeCountWarehouseItemsArgsObjectSchema as UserCountOutputTypeCountWarehouseItemsArgsObjectSchema } from './UserCountOutputTypeCountWarehouseItemsArgs.schema';
 import { UserCountOutputTypeCountPosStoresArgsObjectSchema as UserCountOutputTypeCountPosStoresArgsObjectSchema } from './UserCountOutputTypeCountPosStoresArgs.schema';
@@ -36,6 +41,11 @@ const makeSchema = () => z.object({
   bankTransactions: z.union([z.boolean(), z.lazy(() => UserCountOutputTypeCountBankTransactionsArgsObjectSchema)]).optional(),
   personas: z.union([z.boolean(), z.lazy(() => UserCountOutputTypeCountPersonasArgsObjectSchema)]).optional(),
   assignments: z.union([z.boolean(), z.lazy(() => UserCountOutputTypeCountAssignmentsArgsObjectSchema)]).optional(),
+  staffingEngagements: z.union([z.boolean(), z.lazy(() => UserCountOutputTypeCountStaffingEngagementsArgsObjectSchema)]).optional(),
+  staffingRoles: z.union([z.boolean(), z.lazy(() => UserCountOutputTypeCountStaffingRolesArgsObjectSchema)]).optional(),
+  staffingCandidates: z.union([z.boolean(), z.lazy(() => UserCountOutputTypeCountStaffingCandidatesArgsObjectSchema)]).optional(),
+  staffingShifts: z.union([z.boolean(), z.lazy(() => UserCountOutputTypeCountStaffingShiftsArgsObjectSchema)]).optional(),
+  staffingPlacements: z.union([z.boolean(), z.lazy(() => UserCountOutputTypeCountStaffingPlacementsArgsObjectSchema)]).optional(),
   freightLoads: z.union([z.boolean(), z.lazy(() => UserCountOutputTypeCountFreightLoadsArgsObjectSchema)]).optional(),
   warehouseItems: z.union([z.boolean(), z.lazy(() => UserCountOutputTypeCountWarehouseItemsArgsObjectSchema)]).optional(),
   posStores: z.union([z.boolean(), z.lazy(() => UserCountOutputTypeCountPosStoresArgsObjectSchema)]).optional(),

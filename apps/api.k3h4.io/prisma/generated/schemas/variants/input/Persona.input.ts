@@ -13,6 +13,9 @@ export const PersonaInputSchema = z.object({
     updatedAt: z.date(),
     assignments: z.array(z.unknown()),
     assignmentPayouts: z.array(z.unknown()),
+    staffingCandidates: z.array(z.unknown()),
+    staffingShiftsAssigned: z.array(z.unknown()),
+    staffingPlacements: z.array(z.unknown()),
     attributes: z.array(z.unknown()),
     compatibilitySources: z.array(z.unknown()),
     compatibilityTargets: z.array(z.unknown())

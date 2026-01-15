@@ -3,6 +3,9 @@ import type { Prisma } from '@prisma/client';
 import { NullableJsonNullValueInputSchema } from '../enums/NullableJsonNullValueInput.schema';
 import { AssignmentUncheckedCreateNestedManyWithoutPersonaInputObjectSchema as AssignmentUncheckedCreateNestedManyWithoutPersonaInputObjectSchema } from './AssignmentUncheckedCreateNestedManyWithoutPersonaInput.schema';
 import { AssignmentPayoutUncheckedCreateNestedManyWithoutPersonaInputObjectSchema as AssignmentPayoutUncheckedCreateNestedManyWithoutPersonaInputObjectSchema } from './AssignmentPayoutUncheckedCreateNestedManyWithoutPersonaInput.schema';
+import { StaffingCandidateUncheckedCreateNestedManyWithoutPersonaInputObjectSchema as StaffingCandidateUncheckedCreateNestedManyWithoutPersonaInputObjectSchema } from './StaffingCandidateUncheckedCreateNestedManyWithoutPersonaInput.schema';
+import { StaffingShiftUncheckedCreateNestedManyWithoutAssignedPersonaInputObjectSchema as StaffingShiftUncheckedCreateNestedManyWithoutAssignedPersonaInputObjectSchema } from './StaffingShiftUncheckedCreateNestedManyWithoutAssignedPersonaInput.schema';
+import { StaffingPlacementUncheckedCreateNestedManyWithoutPersonaInputObjectSchema as StaffingPlacementUncheckedCreateNestedManyWithoutPersonaInputObjectSchema } from './StaffingPlacementUncheckedCreateNestedManyWithoutPersonaInput.schema';
 import { PersonaAttributeUncheckedCreateNestedManyWithoutPersonaInputObjectSchema as PersonaAttributeUncheckedCreateNestedManyWithoutPersonaInputObjectSchema } from './PersonaAttributeUncheckedCreateNestedManyWithoutPersonaInput.schema';
 import { PersonaCompatibilityUncheckedCreateNestedManyWithoutSourceInputObjectSchema as PersonaCompatibilityUncheckedCreateNestedManyWithoutSourceInputObjectSchema } from './PersonaCompatibilityUncheckedCreateNestedManyWithoutSourceInput.schema'
 
@@ -20,6 +23,9 @@ const makeSchema = () => z.object({
   updatedAt: z.coerce.date().optional(),
   assignments: z.lazy(() => AssignmentUncheckedCreateNestedManyWithoutPersonaInputObjectSchema).optional(),
   assignmentPayouts: z.lazy(() => AssignmentPayoutUncheckedCreateNestedManyWithoutPersonaInputObjectSchema).optional(),
+  staffingCandidates: z.lazy(() => StaffingCandidateUncheckedCreateNestedManyWithoutPersonaInputObjectSchema).optional(),
+  staffingShiftsAssigned: z.lazy(() => StaffingShiftUncheckedCreateNestedManyWithoutAssignedPersonaInputObjectSchema).optional(),
+  staffingPlacements: z.lazy(() => StaffingPlacementUncheckedCreateNestedManyWithoutPersonaInputObjectSchema).optional(),
   attributes: z.lazy(() => PersonaAttributeUncheckedCreateNestedManyWithoutPersonaInputObjectSchema).optional(),
   compatibilitySources: z.lazy(() => PersonaCompatibilityUncheckedCreateNestedManyWithoutSourceInputObjectSchema).optional()
 }).strict();
