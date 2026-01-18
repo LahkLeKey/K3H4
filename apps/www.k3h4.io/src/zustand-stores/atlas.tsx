@@ -1,6 +1,6 @@
 import { create } from "zustand";
 
-import { atlasContexts, type AtlasContext } from "../data/atlas";
+import { atlasContexts, type AtlasContext } from "../react-hooks/data/atlas";
 
 export type AtlasState = {
     contexts: AtlasContext[];

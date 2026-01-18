@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 
 import { useAuthStore, type Provider } from "../../react-hooks/auth";
+import { SignInProviderCard } from "./SignInProviderCard";
 
 export function LoginMenu() {
     const { apiBase, providerLoading, error, startOAuth } = useAuthStore();
@@ -19,7 +20,7 @@ export function LoginMenu() {
                         <div className="text-xs uppercase tracking-[0.3em] text-slate-400">Kyle Halek</div>
                         <div className="text-3xl font-bold text-white md:text-4xl">Welcome to my portfolio</div>
                         <p className="mt-2 max-w-xl text-sm text-slate-300">
-                            Log in with GitHub or LinkedIn. You control your footprintdelete your own data from my production database any time from your profile.
+                            Log in with GitHub or LinkedIn. You control your footprint—delete your own data from my production database any time from your profile.
                         </p>
                         <p className="mt-1 text-xs text-slate-500">API base: {apiBase}</p>
                     </div>
@@ -30,35 +31,22 @@ export function LoginMenu() {
                 </div>
 
                 <div className="mt-6 grid gap-3 md:grid-cols-2">
-                    <button
-                        className="group relative overflow-hidden rounded-2xl border border-white/10 bg-white/5 px-4 py-6 text-left transition hover:border-white/30 hover:bg-white/10"
-                        onClick={() => handleStart("github")}
-                        disabled={!!providerLoading}
-                    >
-                        <div className="absolute inset-0 opacity-0 blur-3xl transition group-hover:opacity-25" style={{ background: "radial-gradient(circle at 20% 20%, rgba(125,211,252,0.6), transparent 40%)" }} />
-                        <div className="flex items-center justify-between gap-3">
-                            <div>
-                                <div className="text-sm font-semibold text-white">Login with GitHub</div>
-                                <div className="text-xs text-slate-300">GitHub OAuth redirect</div>
-                            </div>
-                            <span className="text-lg text-slate-200 transition group-hover:translate-x-1">{providerLoading === "github" ? "…" : "→"}</span>
-                        </div>
-                    </button>
-
-                    <button
-                        className="group relative overflow-hidden rounded-2xl border border-white/10 bg-white/5 px-4 py-6 text-left transition hover:border-white/30 hover:bg-white/10"
-                        onClick={() => handleStart("linkedin")}
-                        disabled={!!providerLoading}
-                    >
-                        <div className="absolute inset-0 opacity-0 blur-3xl transition group-hover:opacity-25" style={{ background: "radial-gradient(circle at 80% 30%, rgba(165,180,252,0.6), transparent 40%)" }} />
-                        <div className="flex items-center justify-between gap-3">
-                            <div>
-                                <div className="text-sm font-semibold text-white">Login with LinkedIn</div>
-                                <div className="text-xs text-slate-300">LinkedIn OAuth redirect</div>
-                            </div>
-                            <span className="text-lg text-slate-200 transition group-hover:translate-x-1">{providerLoading === "linkedin" ? "…" : "→"}</span>
-                        </div>
-                    </button>
+                    <SignInProviderCard
+                        provider="github"
+                        title="Login with GitHub"
+                        subtitle="GitHub OAuth redirect"
+                        loading={providerLoading === "github"}
+                        onStart={handleStart}
+                        accentPosition="left"
+                    />
+                    <SignInProviderCard
+                        provider="linkedin"
+                        title="Login with LinkedIn"
+                        subtitle="LinkedIn OAuth redirect"
+                        loading={providerLoading === "linkedin"}
+                        onStart={handleStart}
+                        accentPosition="right"
+                    />
                 </div>
 
                 <div className="mt-4 flex flex-wrap items-center gap-3 text-xs text-slate-400">

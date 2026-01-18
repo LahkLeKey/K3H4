@@ -1,6 +1,6 @@
 import { Badge, Button, Card, Panel, StatChip, Table, Tabs } from "../radix-primitives";
 import { useAtlasState } from "../react-hooks/atlas";
-import type { AtlasAction, AtlasTimelineEvent, AtlasWorkItem, AtlasStream } from "../data/atlas";
+import type { AtlasAction, AtlasTimelineEvent, AtlasWorkItem, AtlasStream } from "../react-hooks/data/atlas";
 
 const statusTone: Record<AtlasWorkItem["status"], string> = {
     ready: "text-emerald-200",
