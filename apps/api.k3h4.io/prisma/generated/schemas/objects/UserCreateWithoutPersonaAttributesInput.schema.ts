@@ -33,6 +33,9 @@ import { ArcadePrizeCreateNestedManyWithoutUserInputObjectSchema as ArcadePrizeC
 import { ArcadeSessionCreateNestedManyWithoutUserInputObjectSchema as ArcadeSessionCreateNestedManyWithoutUserInputObjectSchema } from './ArcadeSessionCreateNestedManyWithoutUserInput.schema';
 import { ArcadeRedemptionCreateNestedManyWithoutUserInputObjectSchema as ArcadeRedemptionCreateNestedManyWithoutUserInputObjectSchema } from './ArcadeRedemptionCreateNestedManyWithoutUserInput.schema';
 import { ProviderGrantCreateNestedManyWithoutUserInputObjectSchema as ProviderGrantCreateNestedManyWithoutUserInputObjectSchema } from './ProviderGrantCreateNestedManyWithoutUserInput.schema';
+import { GeoRouteCacheCreateNestedManyWithoutUserInputObjectSchema as GeoRouteCacheCreateNestedManyWithoutUserInputObjectSchema } from './GeoRouteCacheCreateNestedManyWithoutUserInput.schema';
+import { GeoPoiCacheCreateNestedManyWithoutUserInputObjectSchema as GeoPoiCacheCreateNestedManyWithoutUserInputObjectSchema } from './GeoPoiCacheCreateNestedManyWithoutUserInput.schema';
+import { OsrmCacheEntryCreateNestedManyWithoutUserInputObjectSchema as OsrmCacheEntryCreateNestedManyWithoutUserInputObjectSchema } from './OsrmCacheEntryCreateNestedManyWithoutUserInput.schema';
 import { PersonaCompatibilityCreateNestedManyWithoutUserInputObjectSchema as PersonaCompatibilityCreateNestedManyWithoutUserInputObjectSchema } from './PersonaCompatibilityCreateNestedManyWithoutUserInput.schema'
 
 import { DecimalJSLikeSchema, isValidDecimalInput } from '../../helpers/decimal-helpers';
@@ -86,6 +89,9 @@ const makeSchema = () => z.object({
   arcadeSessions: z.lazy(() => ArcadeSessionCreateNestedManyWithoutUserInputObjectSchema).optional(),
   arcadeRedemptions: z.lazy(() => ArcadeRedemptionCreateNestedManyWithoutUserInputObjectSchema).optional(),
   providerGrants: z.lazy(() => ProviderGrantCreateNestedManyWithoutUserInputObjectSchema).optional(),
+  geoRouteCaches: z.lazy(() => GeoRouteCacheCreateNestedManyWithoutUserInputObjectSchema).optional(),
+  geoPoiCaches: z.lazy(() => GeoPoiCacheCreateNestedManyWithoutUserInputObjectSchema).optional(),
+  osrmCacheEntries: z.lazy(() => OsrmCacheEntryCreateNestedManyWithoutUserInputObjectSchema).optional(),
   personaCompatibilities: z.lazy(() => PersonaCompatibilityCreateNestedManyWithoutUserInputObjectSchema).optional()
 }).strict();
 export const UserCreateWithoutPersonaAttributesInputObjectSchema: z.ZodType<Prisma.UserCreateWithoutPersonaAttributesInput> = makeSchema() as unknown as z.ZodType<Prisma.UserCreateWithoutPersonaAttributesInput>;

@@ -1,0 +1,14 @@
+import type { Prisma } from '@prisma/client';
+import * as z from 'zod';
+import { OsrmCacheEntryOrderByWithRelationInputObjectSchema as OsrmCacheEntryOrderByWithRelationInputObjectSchema } from './objects/OsrmCacheEntryOrderByWithRelationInput.schema';
+import { OsrmCacheEntryWhereInputObjectSchema as OsrmCacheEntryWhereInputObjectSchema } from './objects/OsrmCacheEntryWhereInput.schema';
+import { OsrmCacheEntryWhereUniqueInputObjectSchema as OsrmCacheEntryWhereUniqueInputObjectSchema } from './objects/OsrmCacheEntryWhereUniqueInput.schema';
+import { OsrmCacheEntryCountAggregateInputObjectSchema as OsrmCacheEntryCountAggregateInputObjectSchema } from './objects/OsrmCacheEntryCountAggregateInput.schema';
+import { OsrmCacheEntryMinAggregateInputObjectSchema as OsrmCacheEntryMinAggregateInputObjectSchema } from './objects/OsrmCacheEntryMinAggregateInput.schema';
+import { OsrmCacheEntryMaxAggregateInputObjectSchema as OsrmCacheEntryMaxAggregateInputObjectSchema } from './objects/OsrmCacheEntryMaxAggregateInput.schema';
+import { OsrmCacheEntryAvgAggregateInputObjectSchema as OsrmCacheEntryAvgAggregateInputObjectSchema } from './objects/OsrmCacheEntryAvgAggregateInput.schema';
+import { OsrmCacheEntrySumAggregateInputObjectSchema as OsrmCacheEntrySumAggregateInputObjectSchema } from './objects/OsrmCacheEntrySumAggregateInput.schema';
+
+export const OsrmCacheEntryAggregateSchema: z.ZodType<Prisma.OsrmCacheEntryAggregateArgs> = z.object({ orderBy: z.union([OsrmCacheEntryOrderByWithRelationInputObjectSchema, OsrmCacheEntryOrderByWithRelationInputObjectSchema.array()]).optional(), where: OsrmCacheEntryWhereInputObjectSchema.optional(), cursor: OsrmCacheEntryWhereUniqueInputObjectSchema.optional(), take: z.number().optional(), skip: z.number().optional(), _count: z.union([ z.literal(true), OsrmCacheEntryCountAggregateInputObjectSchema ]).optional(), _min: OsrmCacheEntryMinAggregateInputObjectSchema.optional(), _max: OsrmCacheEntryMaxAggregateInputObjectSchema.optional(), _avg: OsrmCacheEntryAvgAggregateInputObjectSchema.optional(), _sum: OsrmCacheEntrySumAggregateInputObjectSchema.optional() }).strict() as unknown as z.ZodType<Prisma.OsrmCacheEntryAggregateArgs>;
+
+export const OsrmCacheEntryAggregateZodSchema = z.object({ orderBy: z.union([OsrmCacheEntryOrderByWithRelationInputObjectSchema, OsrmCacheEntryOrderByWithRelationInputObjectSchema.array()]).optional(), where: OsrmCacheEntryWhereInputObjectSchema.optional(), cursor: OsrmCacheEntryWhereUniqueInputObjectSchema.optional(), take: z.number().optional(), skip: z.number().optional(), _count: z.union([ z.literal(true), OsrmCacheEntryCountAggregateInputObjectSchema ]).optional(), _min: OsrmCacheEntryMinAggregateInputObjectSchema.optional(), _max: OsrmCacheEntryMaxAggregateInputObjectSchema.optional(), _avg: OsrmCacheEntryAvgAggregateInputObjectSchema.optional(), _sum: OsrmCacheEntrySumAggregateInputObjectSchema.optional() }).strict();

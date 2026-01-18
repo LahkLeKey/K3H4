@@ -32,6 +32,9 @@ import { UserCountOutputTypeCountArcadePrizesArgsObjectSchema as UserCountOutput
 import { UserCountOutputTypeCountArcadeSessionsArgsObjectSchema as UserCountOutputTypeCountArcadeSessionsArgsObjectSchema } from './UserCountOutputTypeCountArcadeSessionsArgs.schema';
 import { UserCountOutputTypeCountArcadeRedemptionsArgsObjectSchema as UserCountOutputTypeCountArcadeRedemptionsArgsObjectSchema } from './UserCountOutputTypeCountArcadeRedemptionsArgs.schema';
 import { UserCountOutputTypeCountProviderGrantsArgsObjectSchema as UserCountOutputTypeCountProviderGrantsArgsObjectSchema } from './UserCountOutputTypeCountProviderGrantsArgs.schema';
+import { UserCountOutputTypeCountGeoRouteCachesArgsObjectSchema as UserCountOutputTypeCountGeoRouteCachesArgsObjectSchema } from './UserCountOutputTypeCountGeoRouteCachesArgs.schema';
+import { UserCountOutputTypeCountGeoPoiCachesArgsObjectSchema as UserCountOutputTypeCountGeoPoiCachesArgsObjectSchema } from './UserCountOutputTypeCountGeoPoiCachesArgs.schema';
+import { UserCountOutputTypeCountOsrmCacheEntriesArgsObjectSchema as UserCountOutputTypeCountOsrmCacheEntriesArgsObjectSchema } from './UserCountOutputTypeCountOsrmCacheEntriesArgs.schema';
 import { UserCountOutputTypeCountPersonaAttributesArgsObjectSchema as UserCountOutputTypeCountPersonaAttributesArgsObjectSchema } from './UserCountOutputTypeCountPersonaAttributesArgs.schema';
 import { UserCountOutputTypeCountPersonaCompatibilitiesArgsObjectSchema as UserCountOutputTypeCountPersonaCompatibilitiesArgsObjectSchema } from './UserCountOutputTypeCountPersonaCompatibilitiesArgs.schema'
 
@@ -68,6 +71,9 @@ const makeSchema = () => z.object({
   arcadeSessions: z.union([z.boolean(), z.lazy(() => UserCountOutputTypeCountArcadeSessionsArgsObjectSchema)]).optional(),
   arcadeRedemptions: z.union([z.boolean(), z.lazy(() => UserCountOutputTypeCountArcadeRedemptionsArgsObjectSchema)]).optional(),
   providerGrants: z.union([z.boolean(), z.lazy(() => UserCountOutputTypeCountProviderGrantsArgsObjectSchema)]).optional(),
+  geoRouteCaches: z.union([z.boolean(), z.lazy(() => UserCountOutputTypeCountGeoRouteCachesArgsObjectSchema)]).optional(),
+  geoPoiCaches: z.union([z.boolean(), z.lazy(() => UserCountOutputTypeCountGeoPoiCachesArgsObjectSchema)]).optional(),
+  osrmCacheEntries: z.union([z.boolean(), z.lazy(() => UserCountOutputTypeCountOsrmCacheEntriesArgsObjectSchema)]).optional(),
   personaAttributes: z.union([z.boolean(), z.lazy(() => UserCountOutputTypeCountPersonaAttributesArgsObjectSchema)]).optional(),
   personaCompatibilities: z.union([z.boolean(), z.lazy(() => UserCountOutputTypeCountPersonaCompatibilitiesArgsObjectSchema)]).optional()
 }).strict();

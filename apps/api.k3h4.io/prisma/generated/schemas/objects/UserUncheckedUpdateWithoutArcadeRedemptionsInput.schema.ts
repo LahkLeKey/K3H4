@@ -36,6 +36,9 @@ import { ArcadeTopUpUncheckedUpdateManyWithoutUserNestedInputObjectSchema as Arc
 import { ArcadePrizeUncheckedUpdateManyWithoutUserNestedInputObjectSchema as ArcadePrizeUncheckedUpdateManyWithoutUserNestedInputObjectSchema } from './ArcadePrizeUncheckedUpdateManyWithoutUserNestedInput.schema';
 import { ArcadeSessionUncheckedUpdateManyWithoutUserNestedInputObjectSchema as ArcadeSessionUncheckedUpdateManyWithoutUserNestedInputObjectSchema } from './ArcadeSessionUncheckedUpdateManyWithoutUserNestedInput.schema';
 import { ProviderGrantUncheckedUpdateManyWithoutUserNestedInputObjectSchema as ProviderGrantUncheckedUpdateManyWithoutUserNestedInputObjectSchema } from './ProviderGrantUncheckedUpdateManyWithoutUserNestedInput.schema';
+import { GeoRouteCacheUncheckedUpdateManyWithoutUserNestedInputObjectSchema as GeoRouteCacheUncheckedUpdateManyWithoutUserNestedInputObjectSchema } from './GeoRouteCacheUncheckedUpdateManyWithoutUserNestedInput.schema';
+import { GeoPoiCacheUncheckedUpdateManyWithoutUserNestedInputObjectSchema as GeoPoiCacheUncheckedUpdateManyWithoutUserNestedInputObjectSchema } from './GeoPoiCacheUncheckedUpdateManyWithoutUserNestedInput.schema';
+import { OsrmCacheEntryUncheckedUpdateManyWithoutUserNestedInputObjectSchema as OsrmCacheEntryUncheckedUpdateManyWithoutUserNestedInputObjectSchema } from './OsrmCacheEntryUncheckedUpdateManyWithoutUserNestedInput.schema';
 import { PersonaAttributeUncheckedUpdateManyWithoutUserNestedInputObjectSchema as PersonaAttributeUncheckedUpdateManyWithoutUserNestedInputObjectSchema } from './PersonaAttributeUncheckedUpdateManyWithoutUserNestedInput.schema';
 import { PersonaCompatibilityUncheckedUpdateManyWithoutUserNestedInputObjectSchema as PersonaCompatibilityUncheckedUpdateManyWithoutUserNestedInputObjectSchema } from './PersonaCompatibilityUncheckedUpdateManyWithoutUserNestedInput.schema'
 
@@ -89,6 +92,9 @@ const makeSchema = () => z.object({
   arcadePrizes: z.lazy(() => ArcadePrizeUncheckedUpdateManyWithoutUserNestedInputObjectSchema).optional(),
   arcadeSessions: z.lazy(() => ArcadeSessionUncheckedUpdateManyWithoutUserNestedInputObjectSchema).optional(),
   providerGrants: z.lazy(() => ProviderGrantUncheckedUpdateManyWithoutUserNestedInputObjectSchema).optional(),
+  geoRouteCaches: z.lazy(() => GeoRouteCacheUncheckedUpdateManyWithoutUserNestedInputObjectSchema).optional(),
+  geoPoiCaches: z.lazy(() => GeoPoiCacheUncheckedUpdateManyWithoutUserNestedInputObjectSchema).optional(),
+  osrmCacheEntries: z.lazy(() => OsrmCacheEntryUncheckedUpdateManyWithoutUserNestedInputObjectSchema).optional(),
   personaAttributes: z.lazy(() => PersonaAttributeUncheckedUpdateManyWithoutUserNestedInputObjectSchema).optional(),
   personaCompatibilities: z.lazy(() => PersonaCompatibilityUncheckedUpdateManyWithoutUserNestedInputObjectSchema).optional()
 }).strict();

@@ -1,0 +1,76 @@
+import * as z from 'zod';
+export const GeoRouteCacheGroupByResultSchema = z.array(z.object({
+  id: z.string(),
+  userId: z.string(),
+  provider: z.string(),
+  signature: z.string(),
+  originLat: z.number(),
+  originLng: z.number(),
+  destinationLat: z.number(),
+  destinationLng: z.number(),
+  distanceKm: z.number(),
+  durationMinutes: z.number().int(),
+  geojson: z.unknown(),
+  expiresAt: z.date(),
+  createdAt: z.date(),
+  _count: z.object({
+    id: z.number(),
+    userId: z.number(),
+    user: z.number(),
+    provider: z.number(),
+    signature: z.number(),
+    originLat: z.number(),
+    originLng: z.number(),
+    destinationLat: z.number(),
+    destinationLng: z.number(),
+    distanceKm: z.number(),
+    durationMinutes: z.number(),
+    geojson: z.number(),
+    expiresAt: z.number(),
+    createdAt: z.number()
+  }).optional(),
+  _sum: z.object({
+    originLat: z.number().nullable(),
+    originLng: z.number().nullable(),
+    destinationLat: z.number().nullable(),
+    destinationLng: z.number().nullable(),
+    distanceKm: z.number().nullable(),
+    durationMinutes: z.number().nullable()
+  }).nullable().optional(),
+  _avg: z.object({
+    originLat: z.number().nullable(),
+    originLng: z.number().nullable(),
+    destinationLat: z.number().nullable(),
+    destinationLng: z.number().nullable(),
+    distanceKm: z.number().nullable(),
+    durationMinutes: z.number().nullable()
+  }).nullable().optional(),
+  _min: z.object({
+    id: z.string().nullable(),
+    userId: z.string().nullable(),
+    provider: z.string().nullable(),
+    signature: z.string().nullable(),
+    originLat: z.number().nullable(),
+    originLng: z.number().nullable(),
+    destinationLat: z.number().nullable(),
+    destinationLng: z.number().nullable(),
+    distanceKm: z.number().nullable(),
+    durationMinutes: z.number().int().nullable(),
+    expiresAt: z.date().nullable(),
+    createdAt: z.date().nullable()
+  }).nullable().optional(),
+  _max: z.object({
+    id: z.string().nullable(),
+    userId: z.string().nullable(),
+    provider: z.string().nullable(),
+    signature: z.string().nullable(),
+    originLat: z.number().nullable(),
+    originLng: z.number().nullable(),
+    destinationLat: z.number().nullable(),
+    destinationLng: z.number().nullable(),
+    distanceKm: z.number().nullable(),
+    durationMinutes: z.number().int().nullable(),
+    expiresAt: z.date().nullable(),
+    createdAt: z.date().nullable()
+  }).nullable().optional()
+}));

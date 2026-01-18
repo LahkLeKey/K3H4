@@ -52,6 +52,9 @@ export const UserGroupByResultSchema = z.array(z.object({
     arcadeSessions: z.number(),
     arcadeRedemptions: z.number(),
     providerGrants: z.number(),
+    geoRouteCaches: z.number(),
+    geoPoiCaches: z.number(),
+    osrmCacheEntries: z.number(),
     personaAttributes: z.number(),
     personaCompatibilities: z.number()
   }).optional(),
