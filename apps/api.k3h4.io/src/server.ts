@@ -239,8 +239,10 @@ await server.register(fastifySwaggerUi, {
   index: "index.html",
   baseDir: docsStaticDir,
 });
+const corsOrigins = process.env.CORS_ORIGIN?.split(",") ?? ["http://localhost:5173", "http://localhost:4173", "https://www.k3h4.dev", "https://api.k3h4.dev"];
+
 await server.register(fastifyCors, {
-  origin: process.env.CORS_ORIGIN?.split(",") ?? ["http://localhost:5173", "http://localhost:4173"],
+  origin: corsOrigins,
   credentials: true,
   methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
   allowedHeaders: [
