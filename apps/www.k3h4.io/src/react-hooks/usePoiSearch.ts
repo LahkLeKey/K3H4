@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
 import { enqueueOverpass } from "../lib/overpassQueue";
+import { apiUrl } from "../lib/apiBase";
 
 export type Poi = {
     id: string;
@@ -102,8 +103,8 @@ export function usePoiSearch(options?: { center?: { lat: number; lng: number }; 
             const doRequest = async () => {
                 try {
                     // Prefer cached API; fallback to Overpass if unavailable/unauthorized.
-                    const apiUrl = `/geo/pois?lat=${center.lat}&lng=${center.lng}&radiusM=${radiusM}&kinds=${encodeURIComponent(kinds.join(","))}`;
-                    const res = await fetch(apiUrl, { signal: controller.signal, credentials: "include" });
+                    const url = apiUrl(`/geo/pois?lat=${center.lat}&lng=${center.lng}&radiusM=${radiusM}&kinds=${encodeURIComponent(kinds.join(","))}`);
+                    const res = await fetch(url, { signal: controller.signal, credentials: "include" });
                     if (res.status === 429) {
                         cooldownUntil.current = Date.now() + 5000;
                         throw new Error("Rate limited, retrying soon");

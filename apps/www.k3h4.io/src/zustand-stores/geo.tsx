@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { apiUrl } from "../lib/apiBase";
 
 type GeoStatus = "idle" | "locating" | "ready" | "blocked" | "error";
 
@@ -29,7 +30,7 @@ const logStatus = async (payload: {
             body.centerLng = payload.center.lng;
         }
         if (payload.error) body.error = payload.error;
-        await fetch("/geo/status", {
+        await fetch(apiUrl("/geo/status"), {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             credentials: "include",
@@ -55,7 +56,6 @@ export const useGeoStore = create<GeoState>((set, get) => ({
     requested: false,
 
     requestLocation: () => {
-        if (get().requested) return;
         set({ status: "locating", requested: true, error: null });
         if (typeof navigator === "undefined" || !navigator.geolocation) {
             set({ status: "blocked", error: "geolocation unsupported" });
@@ -107,7 +107,7 @@ export const useGeoStore = create<GeoState>((set, get) => ({
                 kinds,
             }).toString();
 
-            const promise = fetch(`/geo/pois?${qs}`, { credentials: "include" })
+            const promise = fetch(apiUrl(`/geo/pois?${qs}`), { credentials: "include" })
                 .then(async (res) => {
                     if (!res.ok) throw new Error(`poi ${res.status}`);
                     return await res.json();

@@ -6,23 +6,10 @@ import fastifyJwt from "@fastify/jwt";
 import fastifyCors from "@fastify/cors";
 import fastifyRateLimit from "@fastify/rate-limit";
 import path from "node:path";
+import { existsSync } from "node:fs";
 import { PrismaClient } from "@prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
-import { registerAuthRoutes } from "./routes/auth";
-import { registerGeoRoutes } from "./routes/geo";
-import { registerBankRoutes } from "./routes/bank";
-import { registerProfileRoutes } from "./routes/profile";
-import { registerPersonaRoutes } from "./routes/persona";
-import { registerAssignmentRoutes } from "./routes/assignment";
-import { registerStaffingRoutes } from "./routes/staffing";
-import { registerFreightRoutes } from "./routes/freight";
-import { registerWarehouseRoutes } from "./routes/warehouse";
-import { registerPosRoutes } from "./routes/pos";
-import { registerAgricultureRoutes } from "./routes/agriculture";
-import { registerCulinaryRoutes } from "./routes/culinary";
-import { registerArcadeRoutes } from "./routes/arcade";
-import { registerUsdaRoutes } from "./routes/usda";
-import { registerOsrmRoutes } from "./routes/osrm";
+import { registerAllRoutes } from "./routes";
 
 dotenv.config();
 
@@ -225,11 +212,10 @@ const openApiOptions: SwaggerOptions = {
 
 await server.register(fastifySwagger, openApiOptions);
 const docsStaticDir = path.join(process.cwd(), "public", "docs", "static");
-
-await server.register(fastifySwaggerUi, {
+const swaggerUiOpts = {
   routePrefix: "/docs",
   uiHooks: {
-    onRequest: async (request, reply) => {
+    onRequest: async (request: FastifyRequest, reply: FastifyReply) => {
       const auth = request.headers.authorization;
       if (!auth) return; // allow read-only docs without a token
       try {
@@ -240,11 +226,18 @@ await server.register(fastifySwaggerUi, {
       }
     },
   },
-  transformStaticCSP: (header) => header, // keep defaults
+  transformStaticCSP: (header: string) => header, // keep defaults
   staticCSP: true,
   index: "index.html",
-  baseDir: docsStaticDir,
-});
+} as const;
+
+if (existsSync(docsStaticDir)) {
+  (swaggerUiOpts as any).baseDir = docsStaticDir;
+} else {
+  server.log.warn({ docsStaticDir }, "swagger ui static dir missing; using built-in assets");
+}
+
+await server.register(fastifySwaggerUi, swaggerUiOpts as any);
 const corsOrigins = process.env.CORS_ORIGIN?.split(",") ?? ["http://localhost:5173", "http://localhost:4173", "https://www.k3h4.dev", "https://api.k3h4.dev"];
 
 await server.register(fastifyCors, {
@@ -345,20 +338,7 @@ server.post("/telemetry", async (request, reply) => {
   return { ok: true, recorded: normalizedEvents.length };
 });
 
-registerAuthRoutes(server, prisma, recordTelemetry);
-registerProfileRoutes(server, prisma, recordTelemetry);
-registerBankRoutes(server, prisma, recordTelemetry);
-registerPersonaRoutes(server, prisma, recordTelemetry);
-registerAssignmentRoutes(server, prisma, recordTelemetry);
-registerStaffingRoutes(server, prisma, recordTelemetry);
-registerFreightRoutes(server, prisma, recordTelemetry);
-registerWarehouseRoutes(server, prisma, recordTelemetry);
-registerPosRoutes(server, prisma, recordTelemetry);
-registerAgricultureRoutes(server, prisma, recordTelemetry);
-registerCulinaryRoutes(server, prisma, recordTelemetry);
-registerArcadeRoutes(server, prisma, recordTelemetry);
-registerUsdaRoutes(server, prisma, recordTelemetry);
-registerOsrmRoutes(server, prisma, recordTelemetry);
+await registerAllRoutes(server, prisma, recordTelemetry);
 
 const port = Number(process.env.PORT || 8080);
 const host = process.env.HOST || "0.0.0.0";

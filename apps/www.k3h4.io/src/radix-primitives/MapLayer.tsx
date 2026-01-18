@@ -3,6 +3,7 @@ import maplibregl from "maplibre-gl";
 
 import { useMapView } from "../react-hooks/useMapView";
 import { useGeoState } from "../zustand-stores/geo";
+import { LocationOverview } from "./LocationOverview";
 
 const STYLE_URL = "https://basemaps.cartocdn.com/gl/positron-gl-style/style.json";
 
@@ -57,7 +58,7 @@ export function MapLayer() {
             mapRef.current = null;
             map.remove();
         };
-    }, [registerMap, updateView, userCenter]);
+    }, [registerMap, updateView, center]);
     // Fetch nearby POIs once after location is ready
     useEffect(() => {
         if (status === "ready") {
@@ -84,6 +85,7 @@ export function MapLayer() {
     return (
         <>
             <div ref={ref} className="absolute inset-0 z-0" />
+            <LocationOverview />
             <button
                 type="button"
                 onClick={requestLocation}
