@@ -14,8 +14,6 @@ export function StaffingBoard() {
         }
     }, [session?.accessToken, status, fetchDashboard]);
 
-    const disabled = !session?.accessToken || status === "loading";
-
     return (
         <div className="space-y-4">
             <div className="flex flex-wrap items-center gap-2">

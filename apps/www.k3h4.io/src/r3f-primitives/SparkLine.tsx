@@ -1,4 +1,4 @@
-import { Html } from "@react-three/drei";
+import { Html, Line } from "@react-three/drei";
 import { useMemo } from "react";
 import * as THREE from "three";
 
@@ -11,26 +11,22 @@ export type SparkLineProps = {
 };
 
 export function SparkLine({ points, color = "#22d3ee", width = 2.4, height = 0.8, position = [0, 0, 0] }: SparkLineProps) {
-    const geometry = useMemo(() => {
-        const geom = new THREE.BufferGeometry();
+    const linePoints = useMemo(() => {
         const len = Math.max(points.length, 2);
-        const verts: number[] = [];
+        const verts: THREE.Vector3[] = [];
         const max = Math.max(...points, 1);
         points.forEach((p, i) => {
             const x = (i / (len - 1)) * width;
             const y = (p / max) * height;
-            verts.push(x, y, 0);
+            verts.push(new THREE.Vector3(x, y, 0));
         });
-        if (verts.length === 0) verts.push(0, 0, 0, width, 0, 0);
-        geom.setAttribute("position", new THREE.Float32BufferAttribute(verts, 3));
-        return geom;
+        if (verts.length === 0) verts.push(new THREE.Vector3(0, 0, 0), new THREE.Vector3(width, 0, 0));
+        return verts;
     }, [points, width, height]);
 
     return (
         <group position={position}>
-            <line geometry={geometry}>
-                <lineBasicMaterial color={color} linewidth={2} />
-            </line>
+            <Line points={linePoints} color={color} lineWidth={2} />
             <Html position={[width + 0.1, height / 2, 0]} className="text-xs text-white">
                 {points[points.length - 1]?.toFixed(1) ?? ""}
             </Html>

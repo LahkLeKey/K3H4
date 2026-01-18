@@ -1,5 +1,4 @@
 import { useMemo } from "react";
-import * as THREE from "three";
 
 export type StackedBarsProps = {
     buckets: Array<{ label: string; value: number; color?: string }>;
