@@ -8,7 +8,11 @@ export type Session = {
     expiresAt?: string;
 };
 
-const getApiBase = () => (globalThis as any).__API_URL__ || (import.meta as any)?.API_URL || "http://localhost:3001";
+const getApiBase = () =>
+    (globalThis as any).__API_URL__ ||
+    (import.meta as any)?.API_URL ||
+    (import.meta as any)?.env?.API_URL ||
+    "http://localhost:3001";
 
 const persistSession = (session: Session | null) => {
     try {

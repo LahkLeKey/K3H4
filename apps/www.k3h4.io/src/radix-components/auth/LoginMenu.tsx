@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 
 import { useAuthStore, type Provider } from "../../react-hooks/auth";
-import { SignInProviderCard } from "./SignInProviderCard";
+import { SignInProviderCard } from "./SignInProviderCard.tsx";
 
 export function LoginMenu() {
     const { apiBase, providerLoading, error, startOAuth } = useAuthStore();
