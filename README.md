@@ -1,0 +1,42 @@
+# K3H4 Monorepo
+
+Bun/TypeScript workspace with a React/Three.js frontend and a Fastify + Prisma API backend. Docker compose is available for local stack spins.
+
+## Structure
+- apps/www.k3h4.io – Bun + React + R3F frontend
+- apps/api.k3h4.io – Fastify API with Prisma/Postgres
+- scripts/ – shared scripts and tooling
+
+## Requirements
+- Bun (for both apps)
+- Docker + Docker Compose (for local Postgres and API via compose)
+- Node-compatible toolchain (for editor/TS)
+
+## Environment
+- Frontend: `apps/www.k3h4.io/.env` with `API_URL`, `GITHUB_CLIENT_ID`, `LINKEDIN_CLIENT_ID`
+- Backend: `apps/api.k3h4.io/.env` with `DATABASE_URL`, `GITHUB_CLIENT_ID/SECRET`, `LINKEDIN_CLIENT_ID/SECRET`, `JWT_SECRET`, `CORS_ORIGIN`
+
+## Quick Start
+1) Install deps
+```
+bun install
+```
+2) Run via Docker Compose (API + DB)
+```
+docker compose up --build
+```
+3) Start frontend (from repo root)
+```
+cd apps/www.k3h4.io
+bun run dev
+```
+API docs available at `${API_URL}/docs`.
+
+## Useful Tasks (VS Code)
+- compose:up / compose:down – bring stack up/down
+- bun:dev (frontend) – run web dev server
+
+## Notes
+- OAuth callbacks expected at `http://localhost:5173/auth/callback/{provider}`.
+- API exposes `/auth/{provider}/url` and `/auth/{provider}/callback` for GitHub/LinkedIn.
+- Prisma schema is under `apps/api.k3h4.io/prisma/`; migrations tracked there.
