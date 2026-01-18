@@ -1,5 +1,5 @@
-import { Badge2D, Button2D, Dropdown2D, StatChip2D } from "./ui/2d";
-import { useAtlasState } from "../state/atlas";
+import { Badge2D, Button2D, Dropdown2D, StatChip2D } from "../radix-primitives";
+import { useAtlasState } from "../react-hooks/atlas";
 
 export type AtlasHudProps = {
     onOpenMap: () => void;

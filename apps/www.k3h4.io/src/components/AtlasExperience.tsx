@@ -2,8 +2,8 @@ import { AtlasHud } from "./AtlasHud";
 import { AtlasMapDialog } from "./AtlasMapDialog";
 import { CommandStrip } from "./CommandStrip";
 import { WorkspacePanel } from "./WorkspacePanel";
-import { Badge2D, Card2D, StatChip2D } from "./ui/2d";
-import { useAtlasState } from "../state/atlas";
+import { Badge2D, Card2D, StatChip2D } from "../radix-primitives";
+import { useAtlasState } from "../react-hooks/atlas";
 
 function SignalBoard() {
     const { activeContext } = useAtlasState();

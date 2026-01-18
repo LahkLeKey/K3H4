@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 
-import { Dialog2D } from "./ui/2d";
-import { useAtlasState } from "../state/atlas";
+import { Dialog2D } from "../radix-primitives";
+import { useAtlasState } from "../react-hooks/atlas";
 
 export type AtlasMapDialogProps = {
     open: boolean;
