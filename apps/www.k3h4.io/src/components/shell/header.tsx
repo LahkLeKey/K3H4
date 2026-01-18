@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { Home, LogOut } from "lucide-react";
+import { Home, LogOut, Map, MoveLeft, MoveRight } from "lucide-react";
 
 import { Button } from "../ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
@@ -14,7 +14,6 @@ import {
 import type { AuthStatus, ProfileState } from "../../stores/auth-store";
 import type { NavItem } from "./nav-links";
 import { NavLinks } from "./nav-links";
-import { StatusLine } from "./status-line";
 import { ShellBrand } from "./brand";
 import { ShellActionBar } from "./action-bar";
 import { SearchInput } from "./search-input";
@@ -37,6 +36,14 @@ type ShellHeaderProps = {
     actions?: ReactNode;
     modulesMenu?: ReactNode;
     onGithubLogin?: () => void;
+    onLinkedinLogin?: () => void;
+    activeLabel: string;
+    activeGlyph?: string;
+    previousLabel: string;
+    nextLabel: string;
+    onPrevContext: () => void;
+    onNextContext: () => void;
+    onOpenMap: () => void;
     // Delete props for ProfilePanel in dropdown
     onDeleteAccount?: (confirmText: string) => Promise<void> | void;
     deletingAccount?: boolean;
@@ -64,15 +71,31 @@ export function ShellHeader({
     deletingAccount,
     deleteProgress,
     deleteStatusText,
+    activeLabel,
+    activeGlyph,
+    previousLabel,
+    nextLabel,
+    onPrevContext,
+    onNextContext,
+    onOpenMap,
 }: ShellHeaderProps) {
     const displayName = profile?.displayName || userEmail || "Your profile";
     const avatarUrl = profile?.avatarUrl || undefined;
     const signedIn = !!userEmail || authStatus === "success";
 
     return (
-        <header className="sticky top-0 z-30 border-b bg-background/80 backdrop-blur">
+        <header className="fixed inset-x-0 top-0 z-30 border-b border-white/10 bg-slate-950/70 backdrop-blur-xl shadow-[0_10px_40px_rgba(0,0,0,0.35)]">
             <div className="mx-auto flex w-full max-w-6xl flex-wrap items-center gap-3 px-4 py-4">
                 {brand ?? <ShellBrand />}
+                <ContextControls
+                    activeLabel={activeLabel}
+                    activeGlyph={activeGlyph}
+                    previousLabel={previousLabel}
+                    nextLabel={nextLabel}
+                    onPrev={onPrevContext}
+                    onNext={onNextContext}
+                    onOpenMap={onOpenMap}
+                />
                 <NavLinks
                     items={navItems.map((item) => ({ icon: Home, ...item }))}
                     activePath={pathname}
@@ -84,6 +107,16 @@ export function ShellHeader({
                             API Docs
                         </a>
                     </Button>
+                ) : null}
+                {!signedIn ? (
+                    <div className="flex items-center gap-2">
+                        <Button variant="outline" size="sm" onClick={onGithubLogin}>
+                            GitHub
+                        </Button>
+                        <Button variant="default" size="sm" onClick={onLinkedinLogin}>
+                            LinkedIn
+                        </Button>
+                    </div>
                 ) : null}
                 {modulesMenu}
                 {actions ?? (
@@ -127,7 +160,36 @@ export function ShellHeader({
                     </ShellActionBar>
                 )}
             </div>
-            <StatusLine>{userEmail ? `Signed in as ${userEmail}` : authMessage}</StatusLine>
         </header>
+    );
+}
+
+type ContextControlsProps = {
+    activeLabel: string;
+    activeGlyph?: string;
+    previousLabel: string;
+    nextLabel: string;
+    onPrev: () => void;
+    onNext: () => void;
+    onOpenMap: () => void;
+};
+
+function ContextControls({ activeLabel, activeGlyph, previousLabel, nextLabel, onPrev, onNext, onOpenMap }: ContextControlsProps) {
+    return (
+        <div className="flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-2 py-1.5 text-white shadow-sm backdrop-blur">
+            <Button variant="ghost" size="icon" onClick={onPrev} aria-label={`Go to ${previousLabel}`} className="rounded-full text-white/90">
+                <MoveLeft className="h-4 w-4" />
+            </Button>
+            <div className="flex flex-col leading-tight">
+                <span className="text-[10px] uppercase tracking-[0.2em] text-slate-300">Context</span>
+                <span className="text-sm font-semibold text-white">{activeGlyph ? `${activeGlyph} ${activeLabel}` : activeLabel}</span>
+            </div>
+            <Button variant="ghost" size="icon" onClick={onNext} aria-label={`Go to ${nextLabel}`} className="rounded-full text-white/90">
+                <MoveRight className="h-4 w-4" />
+            </Button>
+            <Button variant="ghost" size="icon" onClick={onOpenMap} aria-label="Open world map" className="rounded-full text-white/90">
+                <Map className="h-4 w-4" />
+            </Button>
+        </div>
     );
 }

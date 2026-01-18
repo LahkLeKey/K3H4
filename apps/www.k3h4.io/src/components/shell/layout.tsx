@@ -1,14 +1,14 @@
-import type { ReactNode } from "react";
+import type { ReactNode, HTMLAttributes } from "react";
 
 import { cn } from "../../lib/utils";
 
 export type ShellLayoutProps = {
     children: ReactNode;
     className?: string;
-};
+} & HTMLAttributes<HTMLDivElement>;
 
-export function ShellLayout({ children, className }: ShellLayoutProps) {
-    return <div className={cn("min-h-screen bg-background text-foreground", className)}>{children}</div>;
+export function ShellLayout({ children, className, ...rest }: ShellLayoutProps) {
+    return <div className={cn("min-h-screen bg-background text-foreground", className)} {...rest}>{children}</div>;
 }
 
 export type ShellMainProps = {
