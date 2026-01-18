@@ -1,6 +1,6 @@
 import * as dotenv from "dotenv";
 import Fastify, { FastifyReply, FastifyRequest } from "fastify";
-import fastifySwagger from "@fastify/swagger";
+import fastifySwagger, { type SwaggerOptions } from "@fastify/swagger";
 import fastifySwaggerUi from "@fastify/swagger-ui";
 import fastifyJwt from "@fastify/jwt";
 import fastifyCors from "@fastify/cors";
@@ -28,7 +28,7 @@ declare module "fastify" {
     authenticate: (request: FastifyRequest, reply: FastifyReply) => Promise<void>;
   }
   interface FastifyRequest {
-    user?: {
+    user: {
       sub: string;
       email: string;
     };
@@ -176,7 +176,7 @@ server.addHook("onRoute", (routeOptions) => {
   if (existing && Array.isArray(existing) && existing.length > 0) return;
 
   const firstSegment = routeOptions.url?.split("/").filter(Boolean)[0];
-  const mapped = firstSegment && swaggerTagMap[firstSegment];
+  const mapped = firstSegment ? swaggerTagMap[firstSegment] : undefined;
   const fallback = firstSegment ?? "general";
   const tagName = mapped?.name ?? fallback;
   routeOptions.schema = { ...(routeOptions.schema ?? {}), tags: [tagName] };
@@ -192,7 +192,7 @@ const prisma = new PrismaClient({
 });
 
 // Basic OpenAPI definition for the service
-const openApiOptions = {
+const openApiOptions: SwaggerOptions = {
   openapi: {
     openapi: "3.0.0",
     info: {

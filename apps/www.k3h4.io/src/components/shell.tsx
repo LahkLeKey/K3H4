@@ -18,6 +18,7 @@ import { CulinaryOps } from "./culinary/culinary-ops";
 import { GraphicsEngineModule } from "./graphics-engine/graphics-engine";
 import { FantasyRpgModule } from "./rpg/fantasy-rpg";
 import { ArcadeHub } from "./arcade/arcade-hub";
+import { LaplaceTransformModule } from "./laplace/laplace-transform";
 import { ShellView } from "./shell/view";
 import { ShellBrand } from "./shell/brand";
 import { IndustryDashboard } from "./industry-dashboard";
@@ -34,7 +35,7 @@ import {
     DropdownMenuTrigger,
 } from "./ui/dropdown-menu";
 
-type IndustryModuleKey = "bank" | "persona" | "agency" | "freight" | "warehouse" | "pos" | "agriculture" | "culinary" | "graphics" | "arcade" | "rpg";
+type IndustryModuleKey = "bank" | "persona" | "agency" | "freight" | "warehouse" | "pos" | "agriculture" | "culinary" | "graphics" | "arcade" | "rpg" | "laplace";
 
 type IndustryModule = {
     key: IndustryModuleKey;
@@ -220,6 +221,16 @@ export function Shell() {
                         userEmail={userEmail}
                         onNavigate={handleModuleChange}
                     />
+                </IndustryDashboard>
+            ),
+        },
+        {
+            key: "laplace",
+            label: "Laplace",
+            description: "Laplace transform surface via Three.js",
+            render: () => (
+                <IndustryDashboard>
+                    <LaplaceTransformModule userEmail={userEmail} />
                 </IndustryDashboard>
             ),
         },
