@@ -1,3 +1,3 @@
 # Legacy components (deprecated)
 
-This folder marks the legacy module slices as reference-only while the Atlas rebuild progresses. Do not add new features here—migrate functionality into the Atlas zones, workspaces, and shared primitives instead.
+The entire pre-rescaffold frontend has been quarantined under `src/legacy` (including Atlas work-to-date) so we can audit and rebuild cleanly. Do not add new features here—reference only. All new Atlas work should start fresh from the new `src/` root.
