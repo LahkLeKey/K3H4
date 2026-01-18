@@ -3,6 +3,7 @@ import { Canvas, useFrame } from "@react-three/fiber";
 import { Suspense, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
 
+import { Alert3D } from "@/components/ui/3d";
 import { useActiveZone, useAtlas } from "../../state/atlas/atlas-store";
 import { Portal } from "../primitives3d/Portal";
 import { ZoneAnchor } from "../primitives3d/ZoneAnchor";
@@ -87,6 +88,14 @@ export function AtlasCanvas() {
                     {zones.map((zone) => (
                         <ZoneAnchor key={`${zone.id}-anchor`} position={zone.anchor} label={zone.label} glyph={zone.glyph} accent={zone.accent} />
                     ))}
+
+                    <Alert3D
+                        position={[activeZone.anchor[0], activeZone.anchor[1] + 2.4, activeZone.anchor[2]]}
+                        width={320}
+                        title={`${activeZone.glyph ? `${activeZone.glyph} ` : ""}${activeZone.label} context`}
+                        description="Portal HUD and workspace share live state; travel keeps your workspace pinned."
+                        tone="info"
+                    />
 
                     <Stars radius={50} depth={40} count={9000} factor={6} fade speed={0.6} saturation={0.8} />
                     <CameraController activeZone={activeZone} />

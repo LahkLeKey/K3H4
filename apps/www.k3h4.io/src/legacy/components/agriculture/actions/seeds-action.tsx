@@ -1,10 +1,10 @@
+import { Alert2D } from "@/components/ui/2d";
 import { Button } from "../../ui/button";
 import { FieldRow } from "../../ui/field-row";
 import { FormActions } from "../../ui/form-actions";
 import { HudSelect } from "../../ui/hud-select";
 import { Input } from "../../ui/input";
 import { LabeledField } from "../../ui/labeled-field";
-import { Alert, AlertDescription } from "../../ui/alert";
 
 export type SeedOption = {
     label: string;
@@ -47,9 +47,7 @@ export function SeedsActionForm({
                 <Input type="number" value={seedCost} onChange={(e) => onSeedCostChange(e.target.value)} />
             </LabeledField>
             <LabeledField label="Preview">
-                <Alert className="border-dashed bg-background/60">
-                    <AlertDescription>{preview}</AlertDescription>
-                </Alert>
+                <Alert2D className="border-dashed bg-background/70" description={preview} tone="info" />
             </LabeledField>
             <FormActions note="Debits coin and opens USDA signals.">
                 <Button size="sm" onClick={onConfirm} disabled={!seedCommodity || busy}>Purchase seeds</Button>

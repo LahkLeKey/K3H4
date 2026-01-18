@@ -2,6 +2,7 @@ import { Suspense, useMemo } from "react";
 import { Canvas } from "@react-three/fiber";
 import { Float, Grid, Html, Line, OrbitControls } from "@react-three/drei";
 
+import { Alert3D } from "@/components/ui/3d";
 import { Section } from "../section";
 import { SectionCard } from "../shell/section-card";
 import { Badge } from "../ui/badge";
@@ -140,7 +141,17 @@ function GraphicsCanvas({
             <color attach="background" args={["#05060a"]} />
             <hemisphereLight intensity={0.55} color="#dbeafe" groundColor="#0b1224" />
             <directionalLight position={[6, 10, 6]} intensity={1.1} castShadow shadow-mapSize-width={1024} shadow-mapSize-height={1024} />
-            <Suspense fallback={<Html center className="text-sm text-muted-foreground">Preparing scene…</Html>}>
+            <Suspense
+                fallback={(
+                    <Alert3D
+                        position={[0, 1.1, 0]}
+                        width={260}
+                        title="Preparing scene"
+                        description="Loading spatial plots, freight lanes, and overlays."
+                        tone="info"
+                    />
+                )}
+            >
                 <Grid args={[30, 30]} sectionSize={1} infiniteFade cellColor="#0b1224" sectionColor="#111827" position={[0, 0, 0]} />
                 {scene === "farm" ? plots.map((plot) => (
                     <FarmPlotTile
