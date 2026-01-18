@@ -1,19 +1,24 @@
 import { Html } from "@react-three/drei";
 import { Canvas } from "@react-three/fiber";
 
-import { AtlasScene } from "../r3f-components/AtlasScene";
-import { CallbackScreen } from "../radix-components/auth/CallbackScreen";
-import { LoginMenu } from "../radix-components/auth/LoginMenu";
+import { AtlasScene } from "../r3f-components/AtlasScene.tsx";
+import { AuthenticatedScene } from "../r3f-components/AuthenticatedScene.tsx";
+import { CallbackScreen } from "../radix-components/auth/CallbackScreen.tsx";
+import { LoginMenu } from "../radix-components/auth/LoginMenu.tsx";
+import { SessionLanding } from "../radix-components/auth/SessionLanding.tsx";
+import { useAuthStore } from "../react-hooks/auth";
 import { useAuthOverlay } from "../react-hooks/useAuthOverlay";
 
 export function AppShell() {
+    const { session } = useAuthStore();
     const view = useAuthOverlay();
-    const overlay = view === "callback" ? <CallbackScreen /> : <LoginMenu />;
+    const overlay = view === "callback" ? <CallbackScreen /> : session ? <SessionLanding session={session} /> : <LoginMenu />;
+    const scene = session ? <AuthenticatedScene /> : <AtlasScene />;
 
     return (
         <div className="relative h-screen w-screen overflow-hidden bg-slate-950">
             <Canvas shadows dpr={[1, 1.8]} className="h-full w-full">
-                <AtlasScene />
+                {scene}
                 <Html fullscreen>{overlay}</Html>
             </Canvas>
         </div>

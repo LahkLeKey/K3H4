@@ -14,6 +14,16 @@ const getApiBase = () =>
     (import.meta as any)?.env?.API_URL ||
     "http://localhost:3001";
 
+const loadSession = (): Session | null => {
+    try {
+        const raw = localStorage.getItem("k3h4.session");
+        return raw ? (JSON.parse(raw) as Session) : null;
+    } catch (err) {
+        console.warn("load session failed", err);
+        return null;
+    }
+};
+
 const persistSession = (session: Session | null) => {
     try {
         if (session) {
@@ -34,15 +44,21 @@ export type AuthState = {
     startOAuth: (provider: Provider, redirectUri?: string) => Promise<void>;
     finalizeCallback: (provider: Provider, code: string, redirectUri: string) => Promise<void>;
     clearError: () => void;
+    signOut: () => void;
 };
 
 export const useAuthStore = create<AuthState>((set, get) => ({
     apiBase: getApiBase(),
     providerLoading: null,
     error: null,
-    session: null,
+    session: loadSession(),
 
     clearError: () => set({ error: null }),
+
+    signOut: () => {
+        persistSession(null);
+        set({ session: null, providerLoading: null, error: null });
+    },
 
     startOAuth: async (provider, redirectUri) => {
         const apiBase = get().apiBase;
