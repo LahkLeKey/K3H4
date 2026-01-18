@@ -405,4 +405,90 @@ export const atlasContexts: AtlasContext[] = [
             { title: "Ship HUD tutorial", owner: "Lev", status: "ready", eta: "1h" },
         ],
     },
+    {
+        id: "culinary",
+        name: "Culinary",
+        glyph: "🍳",
+        accent: "#fb7185",
+        summary: "Menu engineering, prep lines, and supplier pulls.",
+        anchor: [2.4, 1.05, -3.8],
+        camera: { position: [5.6, 3.1, -5.8], target: [1.6, 1.4, -3.4] },
+        environment: {
+            background: "#14080d",
+            fog: { color: "#14080d", near: 12, far: 34 },
+            lights: {
+                key: { color: "#fb7185", intensity: 1.05, position: [4, 6, -6] },
+                fill: { color: "#9fd5ff", intensity: 0.4, position: [-6, 3, 4] },
+                rim: { color: "#fecdd3", intensity: 0.4, position: [0, 7, -4] },
+            },
+        },
+        metrics: [
+            { label: "Menu", value: "32 items", delta: "+2", tone: "up" },
+            { label: "Prep tasks", value: "14 open", delta: "-3", tone: "up" },
+            { label: "COGS", value: "31.4%", delta: "flat", tone: "steady" },
+        ],
+        actions: [
+            { label: "Batch prep", description: "Stage batch prep for dinner rush and push to stations.", tag: "prep", cta: "Stage" },
+            { label: "Update menu", description: "Publish seasonal menu and sync pricing to POS.", tag: "menu" },
+            { label: "Reorder", description: "Send supplier pulls for low stock staples.", tag: "sourcing" },
+        ],
+        timeline: [
+            { at: "14:12", title: "Prep done", detail: "Garde-manger cleared 6 tickets.", tone: "positive" },
+            { at: "13:44", title: "Menu push", detail: "Dinner menu synced to registers.", tone: "info" },
+            { at: "13:05", title: "86 alert", detail: "Out of basil; substitute flagged.", tone: "warn" },
+        ],
+        streams: [
+            { label: "Prep", status: "live", volume: "14 tasks", window: "today", accent: "#fb7185" },
+            { label: "Suppliers", status: "steady", volume: "6 open", window: "orders", accent: "#22d3ee" },
+            { label: "Menu", status: "ready", volume: "32", window: "items", accent: "#f97316" },
+        ],
+        work: [
+            { title: "Seasonal specials", owner: "Mika", status: "in-progress", eta: "40m" },
+            { title: "Prep audit", owner: "Theo", status: "ready", eta: "now" },
+            { title: "Costing update", owner: "Ari", status: "ready", eta: "1h" },
+        ],
+    },
+    {
+        id: "usda",
+        name: "USDA Data",
+        glyph: "📊",
+        accent: "#7dd3fc",
+        summary: "ESR + GATS reference feeds and trade telemetry.",
+        anchor: [8.2, 1.15, -6.2],
+        camera: { position: [11.4, 3.2, -8.2], target: [7.1, 1.5, -5.6] },
+        environment: {
+            background: "#06121a",
+            fog: { color: "#06121a", near: 13, far: 36 },
+            lights: {
+                key: { color: "#7dd3fc", intensity: 1.05, position: [6, 6, -6] },
+                fill: { color: "#8fb6ff", intensity: 0.45, position: [-7, 3, 6] },
+                rim: { color: "#b3e8ff", intensity: 0.35, position: [0, 8, -4] },
+            },
+        },
+        metrics: [
+            { label: "Regions", value: "--", delta: "sync", tone: "steady" },
+            { label: "Commodities", value: "--", delta: "sync", tone: "steady" },
+            { label: "Countries", value: "--", delta: "sync", tone: "steady" },
+        ],
+        actions: [
+            { label: "Refresh ESR", description: "Pull latest ESR reference tables into cache.", tag: "sync", cta: "Fetch" },
+            { label: "Update GATS", description: "Sync customs + census release dates for flows.", tag: "calendar" },
+            { label: "Pin commodity", description: "Track a commodity across partners for next run.", tag: "watch" },
+        ],
+        timeline: [
+            { at: "14:10", title: "ESR sync", detail: "Reference refreshed in cache.", tone: "positive" },
+            { at: "13:52", title: "GATS window", detail: "Next release window posted.", tone: "info" },
+            { at: "13:15", title: "Drift noted", detail: "Country code mismatch flagged.", tone: "warn" },
+        ],
+        streams: [
+            { label: "ESR", status: "ready", volume: "regions", window: "reference", accent: "#7dd3fc" },
+            { label: "GATS", status: "queued", volume: "releases", window: "calendar", accent: "#a78bfa" },
+            { label: "Flows", status: "watch", volume: "partners", window: "trade", accent: "#34d399" },
+        ],
+        work: [
+            { title: "Cache trims", owner: "Asha", status: "ready", eta: "15m" },
+            { title: "Partner mapping", owner: "Oli", status: "in-progress", eta: "42m" },
+            { title: "Commodity watchlist", owner: "Tess", status: "ready", eta: "1h" },
+        ],
+    },
 ];
