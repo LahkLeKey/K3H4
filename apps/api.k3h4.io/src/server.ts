@@ -233,7 +233,19 @@ await server.register(fastifySwaggerUi, {
   },
 });
 await server.register(fastifyCors, {
-  origin: process.env.CORS_ORIGIN?.split(",") ?? ["*"],
+  origin: process.env.CORS_ORIGIN?.split(",") ?? ["http://localhost:5173", "http://localhost:4173"],
+  credentials: true,
+  methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+  allowedHeaders: [
+    "Content-Type",
+    "Authorization",
+    "Accept",
+    "Origin",
+    "X-Requested-With",
+    "X-CSRF-Token",
+    "X-Session-Id",
+  ],
+  exposedHeaders: ["set-cookie"],
 });
 await server.register(fastifyJwt, {
   secret: process.env.JWT_SECRET || "dev-secret-change-me",

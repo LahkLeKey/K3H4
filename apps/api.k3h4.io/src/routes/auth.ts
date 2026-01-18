@@ -5,6 +5,7 @@ import { URLSearchParams } from "node:url";
 import { type RecordTelemetryFn } from "./types";
 
 const ACCOUNT_DELETE_PHRASE = "Delete-My-K3H4-Data";
+const OAUTH_STATE_TTL_MS = 10 * 60 * 1000;
 
 type DeleteJobStatus = {
   userId: string;
@@ -16,6 +17,25 @@ type DeleteJobStatus = {
 };
 
 const deletionJobs = new Map<string, DeleteJobStatus>();
+const linkedinStates = new Map<string, number>();
+
+const createState = (map: Map<string, number>) => {
+  const state = randomBytes(12).toString("hex");
+  map.set(state, Date.now());
+  return state;
+};
+
+const validateState = (map: Map<string, number>, state?: string) => {
+  if (!state) return false;
+  const ts = map.get(state);
+  if (!ts) return false;
+  if (Date.now() - ts > OAUTH_STATE_TTL_MS) {
+    map.delete(state);
+    return false;
+  }
+  map.delete(state);
+  return true;
+};
 
 const createSessionTokens = async (server: FastifyInstance, prisma: PrismaClient, userId: string, email?: string) => {
   const refreshToken = randomBytes(48).toString("hex");
@@ -266,15 +286,19 @@ export function registerAuthRoutes(server: FastifyInstance, prisma: PrismaClient
     if (!redirectUri) {
       return reply.status(400).send({ error: "redirectUri is required" });
     }
+    const state = createState(linkedinStates);
     // LinkedIn scopes: r_liteprofile r_emailaddress openid
-    const authorizeUrl = `https://www.linkedin.com/oauth/v2/authorization?response_type=code&client_id=${encodeURIComponent(clientId)}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=openid%20profile%20email&prompt=login`;
-    return { authorizeUrl };
+    const authorizeUrl = `https://www.linkedin.com/oauth/v2/authorization?response_type=code&client_id=${encodeURIComponent(clientId)}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=openid%20profile%20email&prompt=login&state=${state}`;
+    return { authorizeUrl, state };
   });
 
   server.post("/auth/linkedin/callback", async (request, reply) => {
-    const body = request.body as { code?: string; redirectUri?: string };
+    const body = request.body as { code?: string; redirectUri?: string; state?: string };
     if (!body?.code || !body?.redirectUri) {
       return reply.status(400).send({ error: "code and redirectUri are required" });
+    }
+    if (!validateState(linkedinStates, body.state)) {
+      return reply.status(400).send({ error: "Invalid or missing state" });
     }
 
     const clientId = process.env.LINKEDIN_CLIENT_ID;

@@ -2,160 +2,30 @@
 @tailwind components;
 @tailwind utilities;
 
-@layer base {
-  :root {
-    --background: 205 33% 98%;
-    --foreground: 204 28% 12%;
-
-    --muted: 205 35% 94%;
-    --muted-foreground: 204 20% 35%;
-
-    --popover: 205 33% 98%;
-    --popover-foreground: 204 28% 12%;
-
-    --card: 205 33% 98%;
-    --card-foreground: 204 28% 12%;
-
-    --border: 205 30% 88%;
-    --input: 205 30% 88%;
-
-    --primary: 158 38% 28%;
-    --primary-foreground: 180 25% 96%;
-
-    --secondary: 48 86% 72%;
-    --secondary-foreground: 204 28% 16%;
-
-    --accent: 200 85% 72%;
-    --accent-foreground: 204 28% 16%;
-
-    --destructive: 355 67% 50%;
-    --destructive-foreground: 180 25% 96%;
-
-    --ring: 200 75% 58%;
-
-    --radius: 1rem;
-
-    --chart-1: 158 38% 28%;
-    --chart-2: 48 86% 72%;
-    --chart-3: 200 85% 72%;
-    --chart-4: 184 45% 44%;
-    --chart-5: 15 70% 54%;
-    --sidebar-background: 205 33% 97%;
-    --sidebar-foreground: 204 28% 18%;
-    --sidebar-primary: 158 38% 28%;
-    --sidebar-primary-foreground: 180 25% 96%;
-    --sidebar-accent: 200 32% 90%;
-    --sidebar-accent-foreground: 204 28% 18%;
-    --sidebar-border: 205 30% 88%;
-    --sidebar-ring: 200 75% 58%;
-  }
-
-  .dark {
-    --background: 168 28% 12%;
-    --foreground: 200 65% 92%;
-
-    --muted: 170 22% 18%;
-    --muted-foreground: 190 25% 70%;
-
-    --popover: 168 28% 12%;
-    --popover-foreground: 200 65% 92%;
-
-    --card: 168 28% 12%;
-    --card-foreground: 200 65% 92%;
-
-    --border: 168 22% 20%;
-    --input: 168 22% 20%;
-
-    --primary: 158 50% 48%;
-    --primary-foreground: 180 25% 96%;
-
-    --secondary: 48 82% 68%;
-    --secondary-foreground: 168 30% 12%;
-
-    --accent: 200 80% 68%;
-    --accent-foreground: 168 30% 12%;
-
-    --destructive: 355 60% 55%;
-    --destructive-foreground: 180 25% 96%;
-
-    --ring: 200 80% 62%;
-
-    --radius: 1rem;
-
-    --chart-1: 158 50% 48%;
-    --chart-2: 48 82% 68%;
-    --chart-3: 200 80% 68%;
-    --chart-4: 184 45% 52%;
-    --chart-5: 15 68% 60%;
-    --sidebar-background: 168 26% 14%;
-    --sidebar-foreground: 200 60% 88%;
-    --sidebar-primary: 158 50% 48%;
-    --sidebar-primary-foreground: 180 25% 96%;
-    --sidebar-accent: 200 32% 24%;
-    --sidebar-accent-foreground: 200 60% 88%;
-    --sidebar-border: 168 22% 24%;
-    --sidebar-ring: 200 80% 62%;
-  }
-
-  * {
-    @apply border-border;
-  }
-
-  body {
-    @apply bg-transparent text-foreground;
-    font-feature-settings: "rlig" 1, "calt" 1;
-  }
+:root {
+    color-scheme: dark;
 }
 
-@layer components {
-  .glass-surface {
-    @apply rounded-3xl border bg-background/75 backdrop-blur;
-    border-color: hsl(var(--foreground) / 0.12);
-    box-shadow: 0 20px 50px -30px hsl(var(--foreground)/0.35);
-  }
-
-  .map-shell {
-    position: relative;
-    isolation: isolate;
-    width: 100%;
-    overflow: hidden;
-    border-radius: 1.25rem;
-    min-height: 360px;
-    height: clamp(320px, 50vh, 560px);
-    box-shadow: 0 14px 0 0 hsl(var(--primary)/0.12),
-      0 30px 60px -26px hsl(var(--foreground)/0.4);
-    background: radial-gradient(circle at 20% 20%, hsl(200 85% 92%), transparent 40%),
-      radial-gradient(circle at 80% 10%, hsl(48 86% 80%), transparent 35%),
-      radial-gradient(circle at 40% 80%, hsl(158 38% 30%), transparent 35%),
-      hsl(var(--background));
-  }
-
-  .dark .map-shell {
-    background: radial-gradient(circle at 20% 20%, hsl(200 80% 32%), transparent 40%),
-      radial-gradient(circle at 80% 10%, hsl(48 82% 38%), transparent 35%),
-      radial-gradient(circle at 40% 80%, hsl(158 50% 26%), transparent 35%),
-      hsl(var(--background));
-  }
-
-  .map-shell::after {
-    content: "";
-    position: absolute;
-    inset: 0;
-    pointer-events: none;
-    background: linear-gradient(
-      180deg,
-      hsl(var(--background)/0) 0%,
-      hsl(var(--background)/0.02) 60%,
-      hsl(var(--background)/0.08) 100%
-    );
-    mix-blend-mode: multiply;
-    opacity: 0.35;
-  }
-
-  .map-shell__map {
-    position: relative;
-    z-index: 1;
+:root {
     width: 100%;
     height: 100%;
-  }
+}
+
+html, body, #root {
+    width: 100%;
+    height: 100%;
+}
+
+body {
+    margin: 0;
+    min-height: 100vh;
+    background: #0b1020;
+    color: #e2e8f0;
+    font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+}
+
+* {
+    box-sizing: border-box;
 }
