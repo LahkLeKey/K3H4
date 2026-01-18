@@ -133,7 +133,7 @@ export const atlasContexts: AtlasContext[] = [
         ],
         timeline: [
             { at: "14:18", title: "Ticket sync", detail: "Bank ledger matched to arcade vault.", tone: "positive" },
-            { at: "13:50", title: "New drop staged", detail: """Night Freight"" run waiting for approval.", tone: "info" },
+            { at: "13:50", title: "New drop staged", detail: "\"Night Freight\" run waiting for approval.", tone: "info" },
             { at: "13:20", title: "Latency watch", detail: "Controller input spike on pod #3.", tone: "warn" },
         ],
         streams: [
