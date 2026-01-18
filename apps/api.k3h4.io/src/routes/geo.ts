@@ -43,6 +43,50 @@ async function fetchOverpass(center: { lat: number; lng: number }, radiusM: numb
 
 export function registerGeoRoutes(server: FastifyInstance, prisma: PrismaClient, recordTelemetry: RecordTelemetryFn) {
   const db = prisma as any;
+
+  const persistUserGeoPrefs = async (userId: string | null, prefs: {
+    center?: { lat: number; lng: number } | null;
+    view?: { zoom?: number | null; bearing?: number | null; pitch?: number | null };
+    poi?: { signature: string; kinds: string[]; radiusM: number; count: number; fetchedAt: Date };
+  }) => {
+    if (!userId) return;
+
+    const existing = await prisma.userPreference.findUnique({ where: { userId } });
+    const nextCenterLat = prefs.center?.lat ?? existing?.lastCenterLat ?? null;
+    const nextCenterLng = prefs.center?.lng ?? existing?.lastCenterLng ?? null;
+    const nextZoom = prefs.view?.zoom ?? existing?.lastZoom ?? null;
+    const nextBearing = prefs.view?.bearing ?? existing?.lastBearing ?? null;
+    const nextPitch = prefs.view?.pitch ?? existing?.lastPitch ?? null;
+
+    await prisma.userPreference.upsert({
+      where: { userId },
+      update: {
+        lastCenterLat: nextCenterLat !== null ? new Prisma.Decimal(nextCenterLat.toFixed(6)) : null,
+        lastCenterLng: nextCenterLng !== null ? new Prisma.Decimal(nextCenterLng.toFixed(6)) : null,
+        lastZoom: nextZoom,
+        lastBearing: nextBearing,
+        lastPitch: nextPitch,
+        lastPoiSignature: prefs.poi?.signature ?? existing?.lastPoiSignature ?? null,
+        lastPoiKinds: prefs.poi ? prefs.poi.kinds.join(",") : existing?.lastPoiKinds ?? null,
+        lastPoiRadiusM: prefs.poi?.radiusM ?? existing?.lastPoiRadiusM ?? null,
+        lastPoiCount: prefs.poi?.count ?? existing?.lastPoiCount ?? null,
+        lastPoiFetchedAt: prefs.poi?.fetchedAt ?? existing?.lastPoiFetchedAt ?? null,
+      },
+      create: {
+        userId,
+        lastCenterLat: nextCenterLat !== null ? new Prisma.Decimal(nextCenterLat.toFixed(6)) : null,
+        lastCenterLng: nextCenterLng !== null ? new Prisma.Decimal(nextCenterLng.toFixed(6)) : null,
+        lastZoom: nextZoom,
+        lastBearing: nextBearing,
+        lastPitch: nextPitch,
+        lastPoiSignature: prefs.poi?.signature ?? null,
+        lastPoiKinds: prefs.poi ? prefs.poi.kinds.join(",") : null,
+        lastPoiRadiusM: prefs.poi?.radiusM ?? null,
+        lastPoiCount: prefs.poi?.count ?? null,
+        lastPoiFetchedAt: prefs.poi?.fetchedAt ?? null,
+      },
+    });
+  };
   server.get(
     "/geo/route",
     { preHandler: [server.authenticate] },
@@ -134,6 +178,16 @@ export function registerGeoRoutes(server: FastifyInstance, prisma: PrismaClient,
 
       const cached = await db.geoPoiCache.findFirst({ where: { signature, expiresAt: { gt: now } } });
       if (cached) {
+        const expiresAt = cached.expiresAt instanceof Date ? cached.expiresAt : new Date(cached.expiresAt);
+        await prisma.geoQueryCache.upsert({
+          where: { signature },
+          update: { type: "poi", params: { lat, lng, radiusM, kinds }, payload: { pois: cached.pois }, count: cached.count, expiresAt, userId },
+          create: { type: "poi", signature, params: { lat, lng, radiusM, kinds }, payload: { pois: cached.pois }, count: cached.count, expiresAt, userId },
+        });
+        await persistUserGeoPrefs(userId, {
+          center: { lat, lng },
+          poi: { signature, kinds, radiusM, count: cached.count, fetchedAt: expiresAt },
+        });
         await recordTelemetry(request, { eventType: "geo.poi.cached", source: "api", payload: { signature, count: cached.count } });
         return { pois: cached.pois, count: cached.count, cached: true };
       }
@@ -169,11 +223,155 @@ export function registerGeoRoutes(server: FastifyInstance, prisma: PrismaClient,
           },
         });
 
+        const expiresAt = new Date(Date.now() + POI_TTL_MS);
+        await prisma.geoQueryCache.upsert({
+          where: { signature },
+          update: { type: "poi", params: { lat, lng, radiusM, kinds }, payload: { pois }, count: pois.length, expiresAt, userId },
+          create: { type: "poi", signature, params: { lat, lng, radiusM, kinds }, payload: { pois }, count: pois.length, expiresAt, userId },
+        });
+
+        await persistUserGeoPrefs(userId, {
+          center: { lat, lng },
+          poi: { signature, kinds, radiusM, count: pois.length, fetchedAt: expiresAt },
+        });
+
         await recordTelemetry(request, { eventType: "geo.poi.fetched", source: "api", payload: { signature, count: pois.length } });
         return { pois, count: pois.length, cached: false };
       } catch (err) {
         return reply.status(502).send({ error: err instanceof Error ? err.message : "Overpass unavailable" });
       }
+    },
+  );
+
+  server.get(
+    "/geo/prefs",
+    { preHandler: [server.authenticate] },
+    async (request, reply) => {
+      const userId = (request.user as { sub: string }).sub;
+      const now = new Date();
+
+      const pref = await prisma.userPreference.upsert({
+        where: { userId },
+        update: {},
+        create: { userId },
+      });
+
+      const view = pref.lastCenterLat && pref.lastCenterLng
+        ? {
+            center: { lat: Number(pref.lastCenterLat), lng: Number(pref.lastCenterLng) },
+            zoom: pref.lastZoom ?? null,
+            bearing: pref.lastBearing ?? null,
+            pitch: pref.lastPitch ?? null,
+          }
+        : null;
+
+      let poi: null | {
+        signature: string;
+        kinds: string[];
+        radiusM: number | null;
+        count: number | null;
+        cached: boolean;
+        fetchedAt: Date | null;
+        pois?: any;
+      } = null;
+
+      if (pref.lastPoiSignature) {
+        const kindsFromPref = pref.lastPoiKinds ? pref.lastPoiKinds.split(",").filter(Boolean) : [];
+        const geoQuery = await prisma.geoQueryCache.findUnique({ where: { signature: pref.lastPoiSignature } });
+        const stillValid = geoQuery && geoQuery.expiresAt > now;
+        if (stillValid) {
+          poi = {
+            signature: pref.lastPoiSignature,
+            kinds: kindsFromPref,
+            radiusM: pref.lastPoiRadiusM ?? null,
+            count: pref.lastPoiCount ?? geoQuery.count ?? null,
+            cached: true,
+            fetchedAt: pref.lastPoiFetchedAt ?? geoQuery.expiresAt,
+            pois: (geoQuery.payload as any)?.pois ?? geoQuery.payload ?? null,
+          };
+        } else {
+          const poiCache = await prisma.geoPoiCache.findUnique({ where: { signature: pref.lastPoiSignature } });
+          if (poiCache && poiCache.expiresAt > now) {
+            poi = {
+              signature: pref.lastPoiSignature,
+              kinds: kindsFromPref,
+              radiusM: pref.lastPoiRadiusM ?? null,
+              count: pref.lastPoiCount ?? poiCache.count ?? null,
+              cached: true,
+              fetchedAt: pref.lastPoiFetchedAt ?? poiCache.expiresAt,
+              pois: poiCache.pois,
+            };
+          }
+        }
+      }
+
+      return { view, poi };
+    },
+  );
+
+  server.post(
+    "/geo/prefs",
+    { preHandler: [server.authenticate] },
+    async (request, reply) => {
+      const userId = (request.user as { sub: string }).sub;
+      const body = request.body as {
+        center?: { lat?: number; lng?: number };
+        view?: { zoom?: number; bearing?: number; pitch?: number };
+        poi?: { signature?: string; kinds?: string[]; radiusM?: number; count?: number; expiresAtMs?: number; pois?: any[] };
+      };
+
+      const centerLat = body.center?.lat;
+      const centerLng = body.center?.lng;
+      if (centerLat !== undefined && !Number.isFinite(centerLat)) return reply.status(400).send({ error: "center.lat must be a number" });
+      if (centerLng !== undefined && !Number.isFinite(centerLng)) return reply.status(400).send({ error: "center.lng must be a number" });
+
+      const zoom = body.view?.zoom;
+      const bearing = body.view?.bearing;
+      const pitch = body.view?.pitch;
+      if (zoom !== undefined && !Number.isFinite(zoom)) return reply.status(400).send({ error: "view.zoom must be a number" });
+      if (bearing !== undefined && !Number.isFinite(bearing)) return reply.status(400).send({ error: "view.bearing must be a number" });
+      if (pitch !== undefined && !Number.isFinite(pitch)) return reply.status(400).send({ error: "view.pitch must be a number" });
+
+      const poiSig = body.poi?.signature;
+      const poiKinds = body.poi?.kinds ?? [];
+      const poiRadiusM = body.poi?.radiusM;
+      const poiCount = body.poi?.count;
+      const poiExpiresAt = body.poi?.expiresAtMs ? new Date(body.poi.expiresAtMs) : null;
+
+      await persistUserGeoPrefs(userId, {
+        center: centerLat !== undefined && centerLng !== undefined ? { lat: centerLat, lng: centerLng } : undefined,
+        view: { zoom: zoom ?? null, bearing: bearing ?? null, pitch: pitch ?? null },
+        poi:
+          poiSig && Number.isFinite(poiRadiusM)
+            ? { signature: poiSig, kinds: poiKinds, radiusM: poiRadiusM as number, count: poiCount ?? 0, fetchedAt: poiExpiresAt ?? new Date() }
+            : undefined,
+      });
+
+      if (poiSig && Array.isArray(body.poi?.pois) && poiExpiresAt) {
+        await prisma.geoQueryCache.upsert({
+          where: { signature: poiSig },
+          update: {
+            type: "poi",
+            params: { lat: centerLat ?? null, lng: centerLng ?? null, radiusM: poiRadiusM ?? null, kinds: poiKinds },
+            payload: { pois: body.poi?.pois },
+            count: poiCount ?? (body.poi?.pois?.length ?? null),
+            expiresAt: poiExpiresAt,
+            userId,
+          },
+          create: {
+            type: "poi",
+            signature: poiSig,
+            params: { lat: centerLat ?? null, lng: centerLng ?? null, radiusM: poiRadiusM ?? null, kinds: poiKinds },
+            payload: { pois: body.poi?.pois },
+            count: poiCount ?? (body.poi?.pois?.length ?? null),
+            expiresAt: poiExpiresAt,
+            userId,
+          },
+        });
+      }
+
+      await recordTelemetry(request, { eventType: "geo.prefs.update", source: "api" });
+      return { ok: true };
     },
   );
 

@@ -12,7 +12,8 @@ type GeoState = {
     poiStatus: "idle" | "loading" | "ready" | "error";
     requested: boolean;
     requestLocation: () => void;
-    fetchNearbyPois: (opts?: { radiusM?: number; kinds?: string[] }) => Promise<void>;
+    fetchNearbyPois: (opts?: { radiusM?: number; kinds?: string[]; token?: string }) => Promise<void>;
+    hydrateFromPrefs: (opts: { center?: { lat: number; lng: number } | null; pois?: any[] | null }) => void;
 };
 
 const DEFAULT_KINDS = "bank,atm,restaurant,cafe,fuel,bus_station,train_station";
@@ -54,6 +55,16 @@ export const useGeoStore = create<GeoState>((set, get) => ({
     poisFetched: false,
     poiStatus: "idle",
     requested: false,
+
+    hydrateFromPrefs: (opts) => {
+        set((prev) => ({
+            status: opts.center ? "ready" : prev.status,
+            center: opts.center ?? prev.center,
+            pois: opts.pois ?? prev.pois,
+            poisFetched: opts.pois ? true : prev.poisFetched,
+            poiStatus: opts.pois ? "ready" : prev.poiStatus,
+        }));
+    },
 
     requestLocation: () => {
         set({ status: "locating", requested: true, error: null });
@@ -107,7 +118,10 @@ export const useGeoStore = create<GeoState>((set, get) => ({
                 kinds,
             }).toString();
 
-            const promise = fetch(apiUrl(`/geo/pois?${qs}`), { credentials: "include" })
+            const headers: Record<string, string> = {};
+            if (opts?.token) headers.Authorization = `Bearer ${opts.token}`;
+
+            const promise = fetch(apiUrl(`/geo/pois?${qs}`), { credentials: "include", headers })
                 .then(async (res) => {
                     if (!res.ok) throw new Error(`poi ${res.status}`);
                     return await res.json();

@@ -55,6 +55,7 @@ model User {
   providerGrants ProviderGrant[]
   geoRouteCaches GeoRouteCache[]
   geoPoiCaches   GeoPoiCache[]
+  geoQueryCaches GeoQueryCache[]
   osrmCacheEntries OsrmCacheEntry[]
   geoStatusLogs GeoStatusLog[]
   personaAttributes PersonaAttribute[]
@@ -182,6 +183,22 @@ model GeoPoiCache {
   @@index([expiresAt])
 }
 
+model GeoQueryCache {
+  id         String   @id @default(cuid())
+  userId     String?
+  user       User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  type       String
+  signature  String   @unique
+  params     Json
+  payload    Json
+  count      Int?
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+
+  @@index([type])
+  @@index([expiresAt])
+}
+
 model GeoStatusLog {
   id         String   @id @default(cuid())
   userId     String?
@@ -229,6 +246,16 @@ model UserPreference {
   timezone       String   @default("UTC")
   marketingOptIn Boolean  @default(false)
   note           String?
+  lastCenterLat  Decimal? @db.Decimal(11, 6)
+  lastCenterLng  Decimal? @db.Decimal(11, 6)
+  lastZoom       Float?
+  lastBearing    Float?
+  lastPitch      Float?
+  lastPoiSignature String?
+  lastPoiKinds     String?
+  lastPoiRadiusM   Int?
+  lastPoiCount     Int?
+  lastPoiFetchedAt DateTime?
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 }
