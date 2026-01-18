@@ -1,4 +1,4 @@
-import { Suspense, useEffect, useMemo, useState } from "react";
+import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import { Canvas } from "@react-three/fiber";
 import { Grid, Html, Line, OrbitControls } from "@react-three/drei";
 import * as THREE from "three";
@@ -22,6 +22,8 @@ type LaplaceSurface = {
     omegaRange: [number, number];
     maxMagnitude: number;
     heightScale: number;
+    peakSigma: number;
+    peakOmega: number;
 };
 
 type LaplacePoint = {
@@ -106,6 +108,8 @@ function computeLaplaceSurface(samples: SignalSamples): LaplaceSurface {
     const resolution = surfaceResolution;
     const heightsRaw = new Float32Array(resolution * resolution);
     let maxMagnitude = 1e-6;
+    let peakSigma = sigmaRange[0];
+    let peakOmega = omegaRange[0];
 
     for (let zi = 0; zi < resolution; zi += 1) {
         const omega = lerp(omegaRange[0], omegaRange[1], zi / (resolution - 1));
@@ -114,7 +118,11 @@ function computeLaplaceSurface(samples: SignalSamples): LaplaceSurface {
             const { magnitude } = laplaceAt(samples, sigma, omega);
             const idx = zi * resolution + xi;
             heightsRaw[idx] = magnitude;
-            if (magnitude > maxMagnitude) maxMagnitude = magnitude;
+            if (magnitude > maxMagnitude) {
+                maxMagnitude = magnitude;
+                peakSigma = sigma;
+                peakOmega = omega;
+            }
         }
     }
 
@@ -124,7 +132,7 @@ function computeLaplaceSurface(samples: SignalSamples): LaplaceSurface {
         heights[i] = Math.log1p(heightsRaw[i]) * heightScale;
     }
 
-    return { heights, resolution, sigmaRange, omegaRange, maxMagnitude, heightScale };
+    return { heights, resolution, sigmaRange, omegaRange, maxMagnitude, heightScale, peakSigma, peakOmega };
 }
 
 function normalizedHeight(magnitude: number, surface: LaplaceSurface) {
@@ -197,6 +205,49 @@ function LaplaceSurfaceMesh({ surface, wireframe }: { surface: LaplaceSurface; w
     );
 }
 
+function MiniMap({
+    probeSigma,
+    probeOmega,
+    poleSigma,
+    poleOmega,
+    peakSigma,
+    peakOmega,
+    showPeak,
+}: {
+    probeSigma: number;
+    probeOmega: number;
+    poleSigma: number;
+    poleOmega: number;
+    peakSigma: number;
+    peakOmega: number;
+    showPeak: boolean;
+}) {
+    const width = 260;
+    const height = 180;
+    const toX = (sigma: number) => ((sigma - sigmaRange[0]) / (sigmaRange[1] - sigmaRange[0])) * width;
+    const toY = (omega: number) => height - ((omega - omegaRange[0]) / (omegaRange[1] - omegaRange[0])) * height;
+
+    return (
+        <svg viewBox={`0 0 ${width} ${height}`} className="w-full" role="img" aria-label="Top-down s-plane map">
+            <defs>
+                <linearGradient id="planeFill" x1="0%" y1="0%" x2="0%" y2="100%">
+                    <stop offset="0%" stopColor="#0ea5e9" stopOpacity={0.25} />
+                    <stop offset="100%" stopColor="#0f172a" stopOpacity={0.4} />
+                </linearGradient>
+            </defs>
+            <rect x={0} y={0} width={width} height={height} fill="url(#planeFill)" rx={12} />
+            <line x1={0} y1={toY(0)} x2={width} y2={toY(0)} stroke="#a855f7" strokeWidth={1.3} strokeDasharray="6 5" />
+            <line x1={toX(0)} y1={0} x2={toX(0)} y2={height} stroke="#38bdf8" strokeWidth={1.3} strokeDasharray="6 5" />
+            <circle cx={toX(probeSigma)} cy={toY(probeOmega)} r={7} fill="#fb923c" opacity={0.9} />
+            <circle cx={toX(poleSigma)} cy={toY(poleOmega)} r={6} fill="#facc15" opacity={0.9} />
+            {showPeak ? <circle cx={toX(peakSigma)} cy={toY(peakOmega)} r={5} fill="#22d3ee" opacity={0.9} /> : null}
+            <text x={8} y={18} className="fill-white text-[10px] font-semibold" opacity={0.8}>s-plane overview</text>
+            <text x={width - 10} y={toY(0) - 6} textAnchor="end" className="fill-white text-[10px]" opacity={0.7}>omega</text>
+            <text x={toX(0) + 8} y={height - 8} className="fill-white text-[10px]" opacity={0.7}>sigma</text>
+        </svg>
+    );
+}
+
 function ProbeMarker({ sigma, omega, height, label }: { sigma: number; omega: number; height: number; label: string; }) {
     return (
         <group position={[sigma, height, omega]}>
@@ -239,6 +290,23 @@ function PoleMarker({ sigma, omega, surface, label, samples }: { sigma: number; 
     );
 }
 
+function PeakMarker({ surface }: { surface: LaplaceSurface }) {
+    const height = normalizedHeight(surface.maxMagnitude, surface);
+    return (
+        <group position={[surface.peakSigma, height, surface.peakOmega]}>
+            <mesh>
+                <octahedronGeometry args={[0.17, 0]} />
+                <meshStandardMaterial color="#22d3ee" emissive="#22d3ee" emissiveIntensity={0.4} />
+            </mesh>
+            <Html position={[0, 0.34, 0]} center className="pointer-events-none select-none">
+                <div className="rounded-full bg-background/80 px-2 py-1 text-[10px] font-semibold shadow">
+                    Dominant peak
+                </div>
+            </Html>
+        </group>
+    );
+}
+
 function ContourLines({ surface }: { surface: LaplaceSurface }) {
     const { resolution, heights } = surface;
     const lines: [number, number, number][][] = [];
@@ -271,26 +339,35 @@ function LaplaceScene({
     surface,
     probeSigma,
     probeOmega,
-    probeMagnitude,
+    probeHeight,
     wireframe,
     autoRotate,
     poleSigma,
     poleOmega,
     samples,
     showContours,
+    probeTrail,
+    showProbeTrail,
+    showIsoPlane,
+    isoHeight,
+    showPeak,
 }: {
     surface: LaplaceSurface;
     probeSigma: number;
     probeOmega: number;
-    probeMagnitude: number;
+    probeHeight: number;
     wireframe: boolean;
     autoRotate: boolean;
     poleSigma: number;
     poleOmega: number;
     samples: SignalSamples;
     showContours: boolean;
+    probeTrail: [number, number, number][];
+    showProbeTrail: boolean;
+    showIsoPlane: boolean;
+    isoHeight: number;
+    showPeak: boolean;
 }) {
-    const probeHeight = normalizedHeight(probeMagnitude, surface);
     const probeLines: [number, number, number][][] = useMemo(() => ([
         [[probeSigma, 0, probeOmega], [probeSigma, probeHeight, probeOmega]],
         [[surface.sigmaRange[0], 0, probeOmega], [surface.sigmaRange[1], 0, probeOmega]],
@@ -305,14 +382,27 @@ function LaplaceScene({
                 <Grid args={[24, 24]} sectionSize={1.5} infiniteFade cellColor="#0f172a" sectionColor="#1f2937" position={[0, 0, 0]} />
                 <LaplaceSurfaceMesh surface={surface} wireframe={wireframe} />
                 {showContours ? <ContourLines surface={surface} /> : null}
+                {showIsoPlane ? (
+                    <mesh
+                        position={[(sigmaRange[0] + sigmaRange[1]) / 2, isoHeight, (omegaRange[0] + omegaRange[1]) / 2]}
+                        rotation={[-Math.PI / 2, 0, 0]}
+                    >
+                        <planeGeometry args={[sigmaRange[1] - sigmaRange[0], omegaRange[1] - omegaRange[0]]} />
+                        <meshStandardMaterial color="#22d3ee" transparent opacity={0.18} side={THREE.DoubleSide} />
+                    </mesh>
+                ) : null}
                 <Line points={[[sigmaRange[0], 0, 0], [sigmaRange[1], 0, 0]]} color="#38bdf8" lineWidth={2} />
                 <Line points={[[0, 0, omegaRange[0]], [0, 0, omegaRange[1]]]} color="#a855f7" lineWidth={2} />
                 <Line points={[[sigmaRange[0], 0, 0], [0, 0, omegaRange[1]]]} color="#0ea5e9" lineWidth={1} dashed dashSize={0.3} gapSize={0.25} />
                 {probeLines.map((pts, idx) => (
                     <Line key={idx} points={pts} color="#f97316" lineWidth={1} dashed dashSize={0.18} gapSize={0.14} />
                 ))}
+                {showProbeTrail && probeTrail.length > 1 ? (
+                    <Line points={probeTrail} color="#f97316" lineWidth={2} dashed dashSize={0.12} gapSize={0.1} />
+                ) : null}
                 <ProbeMarker sigma={probeSigma} omega={probeOmega} height={probeHeight} label="|F(s)|" />
                 <PoleMarker sigma={poleSigma} omega={poleOmega} surface={surface} samples={samples} label="Expected pole" />
+                {showPeak ? <PeakMarker surface={surface} /> : null}
                 <Html position={[sigmaRange[1] + 0.2, 0.2, 0]} className="pointer-events-none select-none text-xs text-muted-foreground">
                     sigma (real)
                 </Html>
@@ -417,7 +507,14 @@ export function LaplaceTransformModule({ userEmail }: { userEmail: string | null
     const [wireframe, setWireframe] = useState(false);
     const [autoRotate, setAutoRotate] = useState(true);
     const [autoSweep, setAutoSweep] = useState(false);
+    const [sweepSpeed, setSweepSpeed] = useState(1);
     const [showContours, setShowContours] = useState(false);
+    const [showProbeTrail, setShowProbeTrail] = useState(true);
+    const [showIsoPlane, setShowIsoPlane] = useState(false);
+    const [showPeak, setShowPeak] = useState(true);
+    const [holdTrail, setHoldTrail] = useState(false);
+    const [showMiniMap, setShowMiniMap] = useState(true);
+    const [probeTrail, setProbeTrail] = useState<[number, number, number][]>([]);
 
     const samples = useMemo(() => buildSignalSamples(decay, frequency, gain), [decay, frequency, gain]);
     const surface = useMemo(() => computeLaplaceSurface(samples), [samples]);
@@ -429,6 +526,24 @@ export function LaplaceTransformModule({ userEmail }: { userEmail: string | null
     const phase = useMemo(() => Math.atan2(probe.imag, probe.real), [probe.imag, probe.real]);
     const dbMagnitude = useMemo(() => 20 * Math.log10(Math.max(probe.magnitude, 1e-6)), [probe.magnitude]);
     const poleDistance = useMemo(() => Math.hypot(probeSigma - poleSigma, probeOmega - poleOmega), [probeSigma, probeOmega, poleSigma, poleOmega]);
+    const qFactor = useMemo(() => (frequency > 0 && decay > 0 ? frequency / (2 * decay) : 0), [decay, frequency]);
+    const probeHeight = useMemo(() => normalizedHeight(probe.magnitude, surface), [probe.magnitude, surface]);
+    const isoHeight = useMemo(() => Math.log1p(surface.maxMagnitude * 0.65) * surface.heightScale, [surface.heightScale, surface.maxMagnitude]);
+    const formulaPreview = useMemo(() => `F(s) = \u222b f(t) e^{-s t} dt | s = ${probeSigma.toFixed(2)} + j${probeOmega.toFixed(2)}`, [probeSigma, probeOmega]);
+
+    const handleCopyCrossSections = useCallback(async () => {
+        const payload = {
+            probe: { sigma: probeSigma, omega: probeOmega, magnitude: probe.magnitude, phase },
+            crossSections: {
+                omega: { domain: crossOmega.domain, values: crossOmega.values },
+                sigma: { domain: crossSigma.domain, values: crossSigma.values },
+            },
+        };
+        const text = JSON.stringify(payload, null, 2);
+        if (navigator?.clipboard?.writeText) {
+            await navigator.clipboard.writeText(text);
+        }
+    }, [crossOmega.domain, crossOmega.values, crossSigma.domain, crossSigma.values, phase, probe.imag, probe.magnitude, probe.real, probeOmega, probeSigma]);
 
     const energy = useMemo(() => {
         const sum = samples.values.reduce((acc, value) => acc + value * value, 0);
@@ -455,13 +570,23 @@ export function LaplaceTransformModule({ userEmail }: { userEmail: string | null
             const elapsed = (now - start) / 1000;
             const omegaSpan = omegaRange[1] - omegaRange[0];
             const sigmaSpan = sigmaRange[1] - sigmaRange[0];
-            setProbeOmega(omegaRange[0] + ((elapsed * 1.1) % omegaSpan));
-            setProbeSigma(sigmaRange[0] + ((elapsed * 0.45) % sigmaSpan));
+            setProbeOmega(omegaRange[0] + ((elapsed * 1.1 * sweepSpeed) % omegaSpan));
+            setProbeSigma(sigmaRange[0] + ((elapsed * 0.45 * sweepSpeed) % sigmaSpan));
             frame = requestAnimationFrame(tick);
         };
         frame = requestAnimationFrame(tick);
         return () => cancelAnimationFrame(frame);
-    }, [autoSweep]);
+    }, [autoSweep, sweepSpeed]);
+
+    useEffect(() => {
+        setProbeTrail((prev) => {
+            if (holdTrail) return prev;
+            const next: [number, number, number][] = [...prev, [probeSigma, probeHeight, probeOmega]];
+            const maxLen = 140;
+            if (next.length > maxLen) next.splice(0, next.length - maxLen);
+            return next;
+        });
+    }, [holdTrail, probeHeight, probeOmega, probeSigma]);
 
     return (
         <div className="space-y-6">
@@ -478,13 +603,18 @@ export function LaplaceTransformModule({ userEmail }: { userEmail: string | null
                                 surface={surface}
                                 probeSigma={probeSigma}
                                 probeOmega={probeOmega}
-                                probeMagnitude={probe.magnitude}
+                                probeHeight={probeHeight}
                                 wireframe={wireframe}
                                 autoRotate={autoRotate}
                                 poleSigma={poleSigma}
                                 poleOmega={poleOmega}
                                 samples={samples}
                                 showContours={showContours}
+                                probeTrail={probeTrail}
+                                showProbeTrail={showProbeTrail}
+                                showIsoPlane={showIsoPlane}
+                                isoHeight={isoHeight}
+                                showPeak={showPeak}
                             />
                             <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-background/5 to-transparent" />
                             <div className="absolute left-4 top-4 flex flex-wrap gap-2">
@@ -495,6 +625,8 @@ export function LaplaceTransformModule({ userEmail }: { userEmail: string | null
                                 <Badge variant="outline">pole at ({poleSigma.toFixed(2)}, {poleOmega.toFixed(1)})</Badge>
                                 <Badge variant="outline">|F(s)| {dbMagnitude.toFixed(1)} dB</Badge>
                                 <Badge variant="outline">dist to pole {poleDistance.toFixed(2)}</Badge>
+                                <Badge variant="secondary">Q {qFactor.toFixed(2)}</Badge>
+                                <Badge variant="outline">peak ({surface.peakSigma.toFixed(2)}, {surface.peakOmega.toFixed(1)})</Badge>
                             </div>
                         </div>
                         <div className="grid gap-3 sm:grid-cols-3">
@@ -578,6 +710,20 @@ export function LaplaceTransformModule({ userEmail }: { userEmail: string | null
                                 <Button variant="outline" onClick={() => { setProbeSigma(0.35); setProbeOmega(6.2); }}>Reset probe</Button>
                                 <Button variant={showContours ? "default" : "outline"} onClick={() => setShowContours((v) => !v)}>Contours</Button>
                                 <Button variant="outline" onClick={() => { setProbeSigma(poleSigma); setProbeOmega(poleOmega); }}>Snap to pole</Button>
+                                <Button variant={showProbeTrail ? "default" : "outline"} onClick={() => setShowProbeTrail((v) => !v)}>Probe trail</Button>
+                                <Button variant={showIsoPlane ? "default" : "outline"} onClick={() => setShowIsoPlane((v) => !v)}>Iso-height plane</Button>
+                                <Button variant={showPeak ? "default" : "outline"} onClick={() => setShowPeak((v) => !v)}>Dominant peak marker</Button>
+                                <Button variant="outline" onClick={() => { setProbeSigma(surface.peakSigma); setProbeOmega(surface.peakOmega); }}>Snap to peak</Button>
+                                <Button variant={showMiniMap ? "default" : "outline"} onClick={() => setShowMiniMap((v) => !v)}>Mini s-plane map</Button>
+                                <Button variant={holdTrail ? "default" : "outline"} onClick={() => setHoldTrail((v) => !v)}>Hold trail</Button>
+                                <Button variant="outline" onClick={() => setProbeTrail([])}>Clear trail</Button>
+                            </div>
+                            <div className="pt-2">
+                                <div className="mb-1 flex items-center justify-between text-xs font-semibold text-muted-foreground">
+                                    <span>Sweep speed</span>
+                                    <span>{sweepSpeed.toFixed(2)}x</span>
+                                </div>
+                                <Slider value={[sweepSpeed]} min={0.25} max={2} step={0.05} onValueChange={(value) => setSweepSpeed(value[0] ?? sweepSpeed)} />
                             </div>
                         </SectionCard>
 
@@ -603,8 +749,12 @@ export function LaplaceTransformModule({ userEmail }: { userEmail: string | null
                                     <Badge variant="outline">Real {probe.real.toFixed(3)}</Badge>
                                     <Badge variant="outline">Imag {probe.imag.toFixed(3)}</Badge>
                                     <Badge variant="outline">Phase {Math.atan2(probe.imag, probe.real).toFixed(2)} rad</Badge>
+                                    <Badge variant="outline">{formulaPreview}</Badge>
                                 </div>
                                 <p className="mt-2 text-xs text-muted-foreground">{"Try scanning sigma near zero to see how lightly damped signals spike. Increasing sigma flattens the response because e^{-sigma t} suppresses later energy."}</p>
+                                <div className="mt-3 flex flex-wrap gap-2">
+                                    <Button size="sm" variant="outline" onClick={handleCopyCrossSections}>Copy slices JSON</Button>
+                                </div>
                             </div>
                         </SectionCard>
 
@@ -625,6 +775,23 @@ export function LaplaceTransformModule({ userEmail }: { userEmail: string | null
                                 series={crossSigma}
                             />
                             <ColorRampLegend />
+                            {showMiniMap ? (
+                                <div className="rounded-lg border bg-muted/40 p-3">
+                                    <div className="mb-2 flex items-center justify-between text-xs text-muted-foreground">
+                                        <span>Top-down s-plane</span>
+                                        <span>Probe / pole / peak</span>
+                                    </div>
+                                    <MiniMap
+                                        probeSigma={probeSigma}
+                                        probeOmega={probeOmega}
+                                        poleSigma={poleSigma}
+                                        poleOmega={poleOmega}
+                                        peakSigma={surface.peakSigma}
+                                        peakOmega={surface.peakOmega}
+                                        showPeak={showPeak}
+                                    />
+                                </div>
+                            ) : null}
                         </SectionCard>
 
                         <SectionCard className="space-y-3">
