@@ -73,15 +73,13 @@ export function AtlasScene() {
     return (
         <>
             <PerspectiveCamera makeDefault position={[0, 5.2, 11]} fov={48} />
-            <color attach="background" args={["#050913"]} />
-            <fog attach="fog" args={["#050913", 14, 38]} />
 
             <ambientLight intensity={0.5} />
             <directionalLight position={[6, 10, 6]} intensity={1.4} color="#7dd3fc" castShadow shadow-mapSize={[1024, 1024]} />
             <pointLight position={[-8, 6, -6]} intensity={0.6} color="#a5b4fc" />
 
             <Stars radius={72} depth={32} count={5200} factor={3.1} saturation={0.8} fade speed={0.4} />
-            <Sparkles count={120} scale={[26, 12, 26]} size={1.4} speed={0.8} opacity={0.35} color="#93c5fd" />
+            <Sparkles count={90} scale={[26, 12, 26]} size={1.2} speed={0.8} opacity={0.25} color="#93c5fd" />
 
             <Float floatIntensity={0.35} speed={1.2} rotationIntensity={0.25}>
                 <LogoCore />

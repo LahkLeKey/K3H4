@@ -9,14 +9,17 @@ import path from "node:path";
 import { PrismaClient } from "@prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { registerAuthRoutes } from "./routes/auth";
+import { registerGeoRoutes } from "./routes/geo";
 import { registerBankRoutes } from "./routes/bank";
 import { registerProfileRoutes } from "./routes/profile";
 import { registerPersonaRoutes } from "./routes/persona";
+  geo: { name: "Geo", description: "Geospatial caches and lookups" },
 import { registerAssignmentRoutes } from "./routes/assignment";
 import { registerStaffingRoutes } from "./routes/staffing";
 import { registerFreightRoutes } from "./routes/freight";
 import { registerWarehouseRoutes } from "./routes/warehouse";
 import { registerPosRoutes } from "./routes/pos";
+  geo: swaggerTags.geo,
 import { registerAgricultureRoutes } from "./routes/agriculture";
 import { registerCulinaryRoutes } from "./routes/culinary";
 import { registerArcadeRoutes } from "./routes/arcade";
@@ -32,6 +35,7 @@ declare module "fastify" {
     user: {
       sub: string;
       email: string;
+registerGeoRoutes(server, prisma, recordTelemetry);
     };
     requestStartTime?: bigint;
   }

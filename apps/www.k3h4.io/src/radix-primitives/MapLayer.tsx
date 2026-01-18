@@ -15,9 +15,13 @@ export function MapLayer() {
             container: ref.current,
             style: STYLE_URL,
             center: [-122.3321, 47.6062],
-            zoom: 13,
-            pitch: 55,
+            zoom: 16,
+            pitch: 70,
             bearing: 24,
+            minZoom: 15.5,
+            maxZoom: 18.5,
+            minPitch: 60,
+            maxPitch: 82,
             attributionControl: false,
             dragRotate: true,
             pitchWithRotate: true,
@@ -38,6 +42,23 @@ export function MapLayer() {
         map.on("load", sync);
         map.on("move", sync);
         registerMap(map);
+
+        const locate = () => {
+            if (typeof navigator === "undefined" || !navigator.geolocation) return;
+            navigator.geolocation.getCurrentPosition(
+                (pos) => {
+                    const nextCenter = { lng: pos.coords.longitude, lat: pos.coords.latitude };
+                    map.flyTo({ center: [nextCenter.lng, nextCenter.lat], zoom: 14, essential: true });
+                },
+                () => {
+                    // ignore; fallback stays Seattle
+                },
+                { enableHighAccuracy: false, timeout: 4500 }
+            );
+        };
+
+        map.on("load", locate);
+        locate();
 
         return () => {
             registerMap(null);

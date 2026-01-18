@@ -1,20 +1,12 @@
-import { Float, Line, PerspectiveCamera, Stars } from "@react-three/drei";
+import { Line, PerspectiveCamera, Stars } from "@react-three/drei";
 import { useFrame } from "@react-three/fiber";
-import { useEffect, useMemo, useRef } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
 
 import { useAtlasState } from "../react-hooks/atlas";
-import type { AtlasContext } from "../react-hooks/data/atlas";
 import { useMapView } from "../react-hooks/useMapView";
 import { usePoiSearch } from "../react-hooks/usePoiSearch";
 import { useGeoRoute } from "../react-hooks/useGeoRoute";
-import { useFreightState } from "../react-hooks/freight";
-import { StatusBillboard } from "../r3f-primitives/StatusBillboard.tsx";
-
-type ContextPose = {
-    context: AtlasContext;
-    position: THREE.Vector3;
-};
 
 function CameraRig({ focus, bearing, pitch, zoom }: { focus: THREE.Vector3 | null; bearing: number; pitch: number; zoom: number }) {
     const targetRef = useRef<THREE.Vector3>(focus ? focus.clone() : new THREE.Vector3());
@@ -27,9 +19,9 @@ function CameraRig({ focus, bearing, pitch, zoom }: { focus: THREE.Vector3 | nul
     useFrame((state, delta) => {
         const bearingRad = THREE.MathUtils.degToRad(bearing);
         const pitchRad = THREE.MathUtils.degToRad(pitch);
-        const radius = THREE.MathUtils.clamp(26 - zoom * 1.3, 7, 32);
+        const radius = THREE.MathUtils.clamp(14 - zoom * 0.6, 4.5, 16);
         const horizontal = radius * Math.cos(pitchRad);
-        const height = Math.max(5, radius * Math.sin(pitchRad) + 4);
+        const height = Math.max(3.6, radius * Math.sin(pitchRad) + 2.8);
         const next = targetRef.current.clone().add(
             new THREE.Vector3(Math.sin(bearingRad) * horizontal, height, Math.cos(bearingRad) * horizontal)
         );
@@ -47,7 +39,15 @@ function Ground({ color }: { color: string }) {
     return (
         <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.02, 0]} receiveShadow>
             <planeGeometry args={[280, 280]} />
-            <meshStandardMaterial color={color} emissive={color} emissiveIntensity={0.25} roughness={0.6} metalness={0.1} />
+            <meshStandardMaterial
+                color={color}
+                emissive={color}
+                emissiveIntensity={0.08}
+                roughness={0.8}
+                metalness={0.05}
+                transparent
+                opacity={0.08}
+            />
         </mesh>
     );
 }
@@ -103,6 +103,37 @@ function WorldRoute({ points, color }: { points: THREE.Vector3[]; color: string 
     );
 }
 
+function NavArrows({ points, step, activeIndex, onSelect }: { points: THREE.Vector3[]; step: number; activeIndex: number; onSelect: (idx: number) => void }) {
+    if (points.length < 2) return null;
+
+    return (
+        <group>
+            {points.map((pt, idx) => {
+                if (idx % step !== 0 || idx >= points.length - 1) return null;
+                const next = points[idx + 1];
+                const dir = next.clone().sub(pt);
+                const angle = Math.atan2(dir.x, dir.z);
+                const active = Math.abs(activeIndex - idx) < step;
+                const emissive = active ? "#a5f3fc" : "#22d3ee";
+                return (
+                    <mesh
+                        key={`nav-${idx}`}
+                        position={[pt.x, 0.08, pt.z]}
+                        rotation={[0, angle, 0]}
+                        onPointerDown={(e) => {
+                            e.stopPropagation();
+                            onSelect(idx);
+                        }}
+                    >
+                        <cylinderGeometry args={[0, active ? 0.36 : 0.28, active ? 0.72 : 0.6, 16]} />
+                        <meshStandardMaterial color={emissive} emissive={emissive} emissiveIntensity={0.85} roughness={0.35} />
+                    </mesh>
+                );
+            })}
+        </group>
+    );
+}
+
 function UserOrigin({ point }: { point: THREE.Vector3 | undefined }) {
     if (!point) return null;
     return (
@@ -119,85 +150,51 @@ function UserOrigin({ point }: { point: THREE.Vector3 | undefined }) {
     );
 }
 
-function ContextWaypoint({ pose, active, onSelect }: { pose: ContextPose; active: boolean; onSelect: () => void }) {
-    const pulseRef = useRef<THREE.Mesh>(null);
-
-    useFrame(({ clock }) => {
-        const t = clock.getElapsedTime();
-        if (pulseRef.current) {
-            const scale = active ? 1.12 + Math.sin(t * 1.6) * 0.08 : 0.95 + Math.sin(t * 1.1) * 0.05;
-            pulseRef.current.scale.setScalar(scale);
-            pulseRef.current.rotation.y = t * 0.35;
-        }
-    });
-
-    return (
-        <group position={pose.position}>
-            <mesh ref={pulseRef} onClick={onSelect} castShadow>
-                <cylinderGeometry args={[0.7, 0.7, 0.35, 32, 1]} />
-                <meshStandardMaterial
-                    color={pose.context.accent}
-                    emissive={pose.context.accent}
-                    emissiveIntensity={active ? 0.9 : 0.45}
-                    roughness={0.35}
-                    metalness={0.4}
-                />
-            </mesh>
-            <Float floatIntensity={0.4} speed={1.05} rotationIntensity={0.25}>
-                <StatusBillboard
-                    label={pose.context.name}
-                    value={pose.context.summary}
-                    accent={pose.context.accent}
-                    position={[0, 1.1, 0]}
-                />
-            </Float>
-        </group>
-    );
-}
-
 export function AuthenticatedScene() {
-    const { contexts, activeContext, setActiveId, selectNext, autopilot } = useAtlasState();
-    const { loads } = useFreightState();
+    const { activeContext } = useAtlasState();
     const { view } = useMapView();
     const poi = usePoiSearch({ center: view.center });
-
-    useEffect(() => {
-        if (!autopilot || contexts.length < 2) return;
-        const id = window.setInterval(() => selectNext({ manual: false }), 7000);
-        return () => window.clearInterval(id);
-    }, [autopilot, contexts.length, selectNext]);
-
-    const destination = useMemo(() => {
-        const top = loads[0];
-        if (!top) return undefined;
-        return { lat: top.destinationLat, lng: top.destinationLng };
-    }, [loads]);
-
-    const geo = useGeoRoute(destination);
+    const geo = useGeoRoute();
     const routePoints = geo.points;
 
-    const contextPoses: ContextPose[] = useMemo(() => {
-        if (routePoints.length < 2) {
-            return contexts.map((ctx) => ({ context: ctx, position: new THREE.Vector3(...ctx.anchor) }));
-        }
-        return contexts.map((ctx, idx) => {
-            const slot = Math.min(routePoints.length - 1, Math.floor(((idx + 1) * routePoints.length) / (contexts.length + 1)));
-            const base = routePoints[slot]?.clone() ?? new THREE.Vector3(0, 0, 0);
-            base.y = 0.2 + (idx % 3) * 0.05;
-            return { context: ctx, position: base };
-        });
-    }, [contexts, routePoints]);
+    const navStep = useMemo(() => Math.max(6, Math.floor(routePoints.length / 24)), [routePoints.length]);
+    const [activeIdx, setActiveIdx] = useState(0);
 
-    const activePose = useMemo(() => contextPoses.find((p) => p.context.id === activeContext.id) ?? contextPoses[0], [contextPoses, activeContext.id]);
-    const focus = activePose?.position ?? routePoints[0] ?? null;
+    useEffect(() => {
+        setActiveIdx(0);
+    }, [routePoints.length]);
+
+    const moveAlongRoute = useCallback(
+        (delta: number) => {
+            if (!routePoints.length) return;
+            setActiveIdx((prev) => THREE.MathUtils.clamp(prev + delta * navStep, 0, routePoints.length - 1));
+        },
+        [navStep, routePoints.length]
+    );
+
+    useEffect(() => {
+        const handler = (event: KeyboardEvent) => {
+            if (!routePoints.length) return;
+            if (event.key === "ArrowRight" || event.key === "ArrowUp") {
+                event.preventDefault();
+                moveAlongRoute(1);
+            } else if (event.key === "ArrowLeft" || event.key === "ArrowDown") {
+                event.preventDefault();
+                moveAlongRoute(-1);
+            }
+        };
+
+        window.addEventListener("keydown", handler);
+        return () => window.removeEventListener("keydown", handler);
+    }, [moveAlongRoute, routePoints.length]);
+
+    const focus = routePoints[activeIdx] ?? routePoints[0] ?? null;
 
     const environment = activeContext.environment;
 
     return (
         <>
             <PerspectiveCamera makeDefault position={[0, 6, 12]} fov={48} />
-            <color attach="background" args={[environment.background]} />
-            <fog attach="fog" args={[environment.fog.color, environment.fog.near, environment.fog.far * 1.4]} />
 
             <ambientLight intensity={0.4} color={environment.lights.fill.color} />
             <directionalLight
@@ -209,19 +206,16 @@ export function AuthenticatedScene() {
             />
             <pointLight position={environment.lights.rim.position} intensity={environment.lights.rim.intensity} color={environment.lights.rim.color} />
 
-            <Stars radius={120} depth={50} count={5400} factor={2.6} saturation={0.9} fade speed={0.3} />
+            <Stars radius={120} depth={50} count={2400} factor={2.0} saturation={0.7} fade speed={0.25} />
 
             <Ground color={environment.background} />
             <CameraRig focus={focus} bearing={view.bearing} pitch={view.pitch} zoom={view.zoom} />
 
             {routePoints.length ? <WorldRoute points={routePoints} color="#22d3ee" /> : null}
-            <UserOrigin point={routePoints[0]} />
-
-            <group>
-                {contextPoses.map((pose) => (
-                    <ContextWaypoint key={pose.context.id} pose={pose} active={pose.context.id === activeContext.id} onSelect={() => setActiveId(pose.context.id)} />
-                ))}
-            </group>
+            {routePoints.length ? (
+                <NavArrows points={routePoints} step={navStep} activeIndex={activeIdx} onSelect={(idx) => setActiveIdx(idx)} />
+            ) : null}
+            <UserOrigin point={focus ?? routePoints[0]} />
 
             {poi.pois.length ? <PoiMarkers pois={poi.pois} /> : null}
         </>

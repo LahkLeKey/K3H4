@@ -1,5 +1,4 @@
 import { useEffect } from "react";
-import { Html } from "@react-three/drei";
 import { Canvas } from "@react-three/fiber";
 
 import { AtlasScene } from "../r3f-components/AtlasScene.tsx";
@@ -12,6 +11,7 @@ import { useAtlasState } from "../react-hooks/atlas";
 import { useAuthStore } from "../react-hooks/auth";
 import { useAuthOverlay } from "../react-hooks/useAuthOverlay";
 import { MapViewProvider } from "../react-hooks/useMapView";
+import { GeoRouteProvider } from "../react-hooks/useGeoRoute";
 
 export function AppShell() {
     const { session } = useAuthStore();
@@ -28,13 +28,21 @@ export function AppShell() {
 
     return (
         <MapViewProvider>
-            <div className="relative h-screen w-screen overflow-hidden bg-slate-950">
-                <MapLayer />
-                <Canvas shadows dpr={[1, 1.8]} className="absolute inset-0 h-full w-full" style={{ pointerEvents: "none" }}>
-                    {scene}
-                    <Html fullscreen>{overlay}</Html>
-                </Canvas>
-            </div>
+            <GeoRouteProvider>
+                <div className="relative h-screen w-screen overflow-hidden bg-slate-950">
+                    <MapLayer />
+                    <Canvas
+                        shadows
+                        dpr={[1, 1.8]}
+                        className="absolute inset-0 h-full w-full"
+                        gl={{ antialias: true, alpha: true }}
+                        onCreated={({ gl }) => gl.setClearColor(0x000000, 0)}
+                    >
+                        {scene}
+                    </Canvas>
+                    <div className="pointer-events-auto absolute inset-0 z-40">{overlay}</div>
+                </div>
+            </GeoRouteProvider>
         </MapViewProvider>
     );
 }

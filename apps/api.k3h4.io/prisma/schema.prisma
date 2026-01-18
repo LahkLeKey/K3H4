@@ -53,6 +53,8 @@ model User {
   arcadeSessions ArcadeSession[]
   arcadeRedemptions ArcadeRedemption[]
   providerGrants ProviderGrant[]
+  geoRouteCaches GeoRouteCache[]
+  geoPoiCaches   GeoPoiCache[]
   personaAttributes PersonaAttribute[]
   personaCompatibilities PersonaCompatibility[]
 
@@ -140,6 +142,42 @@ model ProviderGrant {
   createdAt  DateTime @default(now())
 
   @@unique([provider, providerId])
+}
+
+model GeoRouteCache {
+  id               String   @id @default(cuid())
+  userId           String?
+  user             User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  provider         String   @default("osrm")
+  signature        String   @unique
+  originLat        Decimal  @db.Decimal(11, 6)
+  originLng        Decimal  @db.Decimal(11, 6)
+  destinationLat   Decimal  @db.Decimal(11, 6)
+  destinationLng   Decimal  @db.Decimal(11, 6)
+  distanceKm       Decimal  @db.Decimal(14, 4)
+  durationMinutes  Int?
+  geojson          Json?
+  expiresAt        DateTime
+  createdAt        DateTime @default(now())
+
+  @@index([expiresAt])
+}
+
+model GeoPoiCache {
+  id          String   @id @default(cuid())
+  userId      String?
+  user        User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  signature   String   @unique
+  centerLat   Decimal  @db.Decimal(11, 6)
+  centerLng   Decimal  @db.Decimal(11, 6)
+  radiusM     Int
+  kinds       String
+  pois        Json
+  count       Int
+  expiresAt   DateTime
+  createdAt   DateTime @default(now())
+
+  @@index([expiresAt])
 }
 
 model UserPreference {
