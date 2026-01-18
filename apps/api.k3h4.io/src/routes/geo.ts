@@ -107,14 +107,23 @@ export function registerGeoRoutes(server: FastifyInstance, prisma: PrismaClient,
 
   server.get(
     "/geo/pois",
-    { preHandler: [server.authenticate] },
     async (request, reply) => {
-      const userId = (request.user as { sub: string }).sub;
       const query = request.query as any;
       const lat = Number(query.lat);
       const lng = Number(query.lng);
       const radiusM = Number(query.radiusM ?? 1800);
       const kinds = typeof query.kinds === "string" && query.kinds.trim().length > 0 ? query.kinds.split(",") : ["bank", "atm", "restaurant", "cafe", "fuel", "bus_station", "train_station"];
+
+      let userId: string | null = null;
+      const hasAuth = typeof request.headers.authorization === "string" && request.headers.authorization.trim().length > 0;
+      if (hasAuth) {
+        try {
+          await request.jwtVerify();
+          userId = (request.user as { sub?: string })?.sub ?? null;
+        } catch (err) {
+          request.log.debug({ err }, "geo pois optional auth failed");
+        }
+      }
 
       if (![lat, lng, radiusM].every((n) => Number.isFinite(n))) {
         return reply.status(400).send({ error: "lat, lng, radiusM are required" });
