@@ -5,6 +5,7 @@ import fastifySwaggerUi from "@fastify/swagger-ui";
 import fastifyJwt from "@fastify/jwt";
 import fastifyCors from "@fastify/cors";
 import fastifyRateLimit from "@fastify/rate-limit";
+import path from "node:path";
 import { PrismaClient } from "@prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { registerAuthRoutes } from "./routes/auth";
@@ -217,6 +218,8 @@ const openApiOptions: SwaggerOptions = {
 };
 
 await server.register(fastifySwagger, openApiOptions);
+const docsStaticDir = path.join(process.cwd(), "public", "docs", "static");
+
 await server.register(fastifySwaggerUi, {
   routePrefix: "/docs",
   uiHooks: {
@@ -234,7 +237,7 @@ await server.register(fastifySwaggerUi, {
   transformStaticCSP: (header) => header, // keep defaults
   staticCSP: true,
   index: "index.html",
-  baseDir: "public/docs/static",
+  baseDir: docsStaticDir,
 });
 await server.register(fastifyCors, {
   origin: process.env.CORS_ORIGIN?.split(",") ?? ["http://localhost:5173", "http://localhost:4173"],
