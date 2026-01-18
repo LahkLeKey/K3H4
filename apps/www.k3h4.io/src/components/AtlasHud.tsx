@@ -7,7 +7,7 @@ export type AtlasHudProps = {
 };
 
 export function AtlasHud({ onOpenMap, onToggleWorkspace }: AtlasHudProps) {
-    const { contexts, activeContext, setActiveId, selectNext, selectPrev, workspaceOpen } = useAtlasState();
+    const { contexts, activeContext, setActiveId, selectNext, selectPrev, workspaceOpen, autopilot, setAutopilot, heartbeat } = useAtlasState();
 
     return (
         <header className="fixed inset-x-0 top-0 z-20 px-3 pt-3 sm:px-6">
@@ -28,11 +28,14 @@ export function AtlasHud({ onOpenMap, onToggleWorkspace }: AtlasHudProps) {
                         className="w-[220px]"
                     />
                     <div className="hidden items-center gap-2 md:flex">
-                        <Button2D accent={activeContext.accent} onClick={selectPrev}>
+                        <Button2D accent={activeContext.accent} onClick={() => selectPrev()}>
                             Prev
                         </Button2D>
-                        <Button2D accent={activeContext.accent} onClick={selectNext}>
+                        <Button2D accent={activeContext.accent} onClick={() => selectNext()}>
                             Next
+                        </Button2D>
+                        <Button2D accent={autopilot ? "#6cf1d0" : "#f97316"} onClick={() => { setAutopilot(!autopilot); heartbeat(); }}>
+                            {autopilot ? "Autopilot" : "Manual"}
                         </Button2D>
                         <Button2D accent="#60a5fa" onClick={onOpenMap}>
                             Map

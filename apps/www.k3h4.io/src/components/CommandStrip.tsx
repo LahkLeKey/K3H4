@@ -7,7 +7,7 @@ export type CommandStripProps = {
 };
 
 export function CommandStrip({ onOpenMap, onToggleWorkspace }: CommandStripProps) {
-    const { activeContext, selectNext, selectPrev, workspaceOpen } = useAtlasState();
+    const { activeContext, selectNext, selectPrev, workspaceOpen, autopilot, setAutopilot, heartbeat } = useAtlasState();
 
     return (
         <div className="fixed inset-x-0 bottom-4 z-20 px-3 sm:px-6">
@@ -20,11 +20,14 @@ export function CommandStrip({ onOpenMap, onToggleWorkspace }: CommandStripProps
                     <Button2D accent="#60a5fa" onClick={onOpenMap}>
                         Map
                     </Button2D>
-                    <Button2D accent={activeContext.accent} onClick={selectPrev}>
+                    <Button2D accent={activeContext.accent} onClick={() => selectPrev()}>
                         Prev
                     </Button2D>
-                    <Button2D accent={activeContext.accent} onClick={selectNext}>
+                    <Button2D accent={activeContext.accent} onClick={() => selectNext()}>
                         Next
+                    </Button2D>
+                    <Button2D accent={autopilot ? "#6cf1d0" : "#f97316"} onClick={() => { setAutopilot(!autopilot); heartbeat(); }}>
+                        {autopilot ? "Autopilot" : "Manual"}
                     </Button2D>
                     <Button2D accent="#f4d35e" onClick={onToggleWorkspace}>
                         {workspaceOpen ? "Hide workspace" : "Show workspace"}

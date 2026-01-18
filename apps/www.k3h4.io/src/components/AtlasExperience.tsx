@@ -1,10 +1,9 @@
-import { AtlasScene } from "./AtlasScene";
 import { AtlasHud } from "./AtlasHud";
 import { AtlasMapDialog } from "./AtlasMapDialog";
 import { CommandStrip } from "./CommandStrip";
 import { WorkspacePanel } from "./WorkspacePanel";
 import { Badge2D, Card2D, StatChip2D } from "./ui/2d";
-import { AtlasProvider, useAtlasState } from "../state/atlas";
+import { useAtlasState } from "../state/atlas";
 
 function SignalBoard() {
     const { activeContext } = useAtlasState();
@@ -57,11 +56,6 @@ function AtlasShell() {
 
     return (
         <div className="relative min-h-screen overflow-hidden bg-slate-950 text-slate-50">
-            <div
-                className="pointer-events-none absolute inset-0 -z-20 bg-[radial-gradient(circle_at_18%_18%,rgba(124,252,238,0.12),transparent_32%),radial-gradient(circle_at_82%_16%,rgba(148,196,255,0.12),transparent_34%),radial-gradient(circle_at_46%_82%,rgba(251,191,36,0.12),transparent_36%)]"
-                aria-hidden
-            />
-            <AtlasScene />
             <AtlasHud onOpenMap={() => setMapOpen(true)} onToggleWorkspace={() => setWorkspaceOpen(!workspaceOpen)} />
 
             <main className="relative z-10 mx-auto grid w-full max-w-6xl gap-6 px-4 pb-28 pt-28 lg:grid-cols-[1.05fr_0.95fr]">
@@ -76,9 +70,5 @@ function AtlasShell() {
 }
 
 export function AtlasExperience() {
-    return (
-        <AtlasProvider>
-            <AtlasShell />
-        </AtlasProvider>
-    );
+    return <AtlasShell />;
 }
