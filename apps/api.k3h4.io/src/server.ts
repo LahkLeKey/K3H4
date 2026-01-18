@@ -13,13 +13,11 @@ import { registerGeoRoutes } from "./routes/geo";
 import { registerBankRoutes } from "./routes/bank";
 import { registerProfileRoutes } from "./routes/profile";
 import { registerPersonaRoutes } from "./routes/persona";
-  geo: { name: "Geo", description: "Geospatial caches and lookups" },
 import { registerAssignmentRoutes } from "./routes/assignment";
 import { registerStaffingRoutes } from "./routes/staffing";
 import { registerFreightRoutes } from "./routes/freight";
 import { registerWarehouseRoutes } from "./routes/warehouse";
 import { registerPosRoutes } from "./routes/pos";
-  geo: swaggerTags.geo,
 import { registerAgricultureRoutes } from "./routes/agriculture";
 import { registerCulinaryRoutes } from "./routes/culinary";
 import { registerArcadeRoutes } from "./routes/arcade";
@@ -35,7 +33,6 @@ declare module "fastify" {
     user: {
       sub: string;
       email: string;
-registerGeoRoutes(server, prisma, recordTelemetry);
     };
     requestStartTime?: bigint;
   }
@@ -77,6 +74,7 @@ const swaggerTags: Record<string, { name: string; description: string }> = {
   freight: { name: "Freight", description: "Freight and routing" },
   warehouse: { name: "Warehouse", description: "Inventory and storage" },
   pos: { name: "POS", description: "Point of sale" },
+  geo: { name: "Geo", description: "Geospatial caches and lookups" },
   agriculture: { name: "Agriculture", description: "Agriculture simulator" },
   culinary: { name: "Culinary", description: "Culinary simulator" },
   arcade: { name: "Arcade", description: "Arcade simulator" },
@@ -97,6 +95,7 @@ const swaggerTagMap: Record<string, { name: string; description: string }> = {
   freight: swaggerTags.freight,
   warehouse: swaggerTags.warehouse,
   pos: swaggerTags.pos,
+  geo: swaggerTags.geo,
   agriculture: swaggerTags.agriculture,
   culinary: swaggerTags.culinary,
   arcade: swaggerTags.arcade,

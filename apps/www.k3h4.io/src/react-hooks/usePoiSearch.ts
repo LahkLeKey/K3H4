@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
 
 export type Poi = {
@@ -50,10 +50,14 @@ const buildQuery = (lat: number, lng: number, radiusM: number, kinds: string[]) 
 
 export function usePoiSearch(options?: { center?: { lat: number; lng: number }; radiusM?: number; kinds?: string[] }): PoiResult {
     const centerOverride = options?.center;
-    const radiusM = options?.radiusM ?? 1800;
+    const radiusM = options?.radiusM ?? 1500;
     const kinds = options?.kinds ?? ["bank", "atm", "restaurant", "cafe", "fuel", "bus_station", "train_station"];
 
     const [state, setState] = useState<PoiResult>({ status: "loading", pois: [], center: centerOverride ?? DEFAULT_CENTER, nearestByKind: {} });
+    const lastSignature = useRef<string | null>(null);
+    const cooldownUntil = useRef<number>(0);
+    const pending = useRef<AbortController | null>(null);
+    const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     useEffect(() => {
         let cancelled = false;
@@ -70,30 +74,83 @@ export function usePoiSearch(options?: { center?: { lat: number; lng: number }; 
             });
         };
 
-        const fetchPois = async () => {
-            setState((prev) => ({ ...prev, status: "loading", message: undefined }));
+        const schedule = () => {
+            if (debounceTimer.current) clearTimeout(debounceTimer.current);
+            debounceTimer.current = setTimeout(run, 900);
+        };
+
+        const run = async () => {
+            if (cancelled) return;
+            const now = Date.now();
+            if (now < cooldownUntil.current) {
+                schedule();
+                return;
+            }
+
             const center = await resolveCenter();
+            const signature = `${center.lat.toFixed(5)}:${center.lng.toFixed(5)}:${radiusM}:${kinds.sort().join(",")}`;
+            if (signature === lastSignature.current) return;
+            lastSignature.current = signature;
+
+            pending.current?.abort();
+            const controller = new AbortController();
+            pending.current = controller;
+
+            setState((prev) => ({ ...prev, status: "loading", message: undefined, center }));
+
+            const doRequest = async () => {
+                try {
+                    // Prefer cached API; fallback to Overpass if unavailable/unauthorized.
+                    const apiUrl = `/geo/pois?lat=${center.lat}&lng=${center.lng}&radiusM=${radiusM}&kinds=${encodeURIComponent(kinds.join(","))}`;
+                    const res = await fetch(apiUrl, { signal: controller.signal, credentials: "include" });
+                    if (res.status === 429) {
+                        cooldownUntil.current = Date.now() + 5000;
+                        throw new Error("Rate limited, retrying soon");
+                    }
+                    if (res.status === 401 || res.status === 403) throw new Error("auth required");
+                    if (!res.ok) throw new Error(`API ${res.status}`);
+                    const data = await res.json();
+                    return (data?.pois ?? []) as Array<{ id: string; name: string; kind: string; lat: number; lng: number }>;
+                } catch (err) {
+                    if (err instanceof Error && err.message === "auth required") {
+                        // Fallback to direct Overpass with same throttling.
+                        const query = buildQuery(center.lat, center.lng, radiusM, kinds);
+                        const res = await fetch("https://overpass-api.de/api/interpreter", {
+                            method: "POST",
+                            headers: { "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8" },
+                            body: new URLSearchParams({ data: query }).toString(),
+                            signal: controller.signal,
+                        });
+                        if (res.status === 429) {
+                            cooldownUntil.current = Date.now() + 8000;
+                            throw new Error("Rate limited by Overpass");
+                        }
+                        if (!res.ok) throw new Error(`OSM ${res.status}`);
+                        const data = await res.json();
+                        return (data?.elements ?? []).map((feat: any) => ({
+                            id: `${feat.id}`,
+                            name: feat.tags?.name ?? feat.tags?.amenity ?? "poi",
+                            kind: feat.tags?.amenity,
+                            lat: feat.lat,
+                            lng: feat.lon,
+                        }));
+                    }
+                    throw err;
+                }
+            };
 
             try {
-                const query = buildQuery(center.lat, center.lng, radiusM, kinds);
-                const res = await fetch("https://overpass-api.de/api/interpreter", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8" },
-                    body: new URLSearchParams({ data: query }).toString(),
-                });
-                if (!res.ok) throw new Error(`OSM ${res.status}`);
-                const data = await res.json();
-                const features: any[] = data?.elements ?? [];
+                const features = await doRequest();
                 const pois: Poi[] = features
                     .map((feat) => {
                         const lat = feat.lat as number;
-                        const lng = feat.lon as number;
-                        const kind = feat.tags?.amenity as string;
-                        const name = feat.tags?.name ?? kind ?? "poi";
+                        const lng = feat.lng as number;
+                        const kind = feat.kind as string;
+                        const name = feat.name ?? kind ?? "poi";
                         if (!lat || !lng || !kind) return null;
                         const distanceM = haversine(center, { lat, lng });
                         return {
-                            id: `${feat.id}`,
+                            id: feat.id,
                             name,
                             kind,
                             lat,
@@ -109,18 +166,20 @@ export function usePoiSearch(options?: { center?: { lat: number; lng: number }; 
                     return acc;
                 }, {});
 
-                if (cancelled) return;
+                if (cancelled || controller.signal.aborted) return;
                 setState({ status: "ready", pois, center, nearestByKind });
             } catch (err) {
+                if (controller.signal.aborted || cancelled) return;
                 const message = err instanceof Error ? err.message : "POI lookup failed";
-                if (cancelled) return;
                 setState((prev) => ({ ...prev, status: "error", message }));
             }
         };
 
-        fetchPois();
+        schedule();
         return () => {
             cancelled = true;
+            if (debounceTimer.current) clearTimeout(debounceTimer.current);
+            pending.current?.abort();
         };
     }, [centerOverride?.lat, centerOverride?.lng, radiusM, kinds.join(",")]);
 
