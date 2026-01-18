@@ -16,7 +16,7 @@ type ExploreBarProps = {
 // Reusable explore bar primitive for overlay use across screens.
 export function ExploreBar({ docsHref, sourceHref, label = "Explore", links, className = "", floating = false }: ExploreBarProps) {
     const { apiBase } = useAuthStore();
-    const resolvedDocs = useMemo(() => docsHref || `${apiBase}/docs`, [docsHref, apiBase]);
+    const resolvedDocs = useMemo(() => docsHref || `${apiBase}/docs/static/index.html`, [docsHref, apiBase]);
     const resolvedSource = sourceHref || "https://github.com/LahkLeKey/K3H4";
 
     const items = useMemo<ExploreLink[]>(() => {
