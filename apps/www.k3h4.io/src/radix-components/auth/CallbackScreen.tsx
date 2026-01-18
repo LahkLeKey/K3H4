@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 
 import { useAuthStore, type Provider } from "../../react-hooks/auth";
+import { ExploreBar } from "../../radix-primitives/ExploreBar.tsx";
 
 export function CallbackScreen() {
     const { apiBase, finalizeCallback } = useAuthStore();
@@ -82,6 +83,10 @@ export function CallbackScreen() {
                         Retry sign-in
                     </button>
                 ) : null}
+
+                <div className="mt-6">
+                    <ExploreBar floating={false} className="pointer-events-auto justify-start flex-wrap gap-2" />
+                </div>
             </div>
         </div>
     );

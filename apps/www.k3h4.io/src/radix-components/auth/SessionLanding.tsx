@@ -1,6 +1,7 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 
 import { useAuthStore, type Session } from "../../react-hooks/auth";
+import { ExploreBar } from "../../radix-primitives/ExploreBar.tsx";
 
 type Decoded = {
     sub?: string;
@@ -25,8 +26,11 @@ const fmt = (value?: string) => (value ? new Date(value).toLocaleString() : "-")
 const truncate = (value?: string) => (value ? `${value.slice(0, 8)}…${value.slice(-6)}` : "-");
 
 export function SessionLanding({ session }: { session: Session }) {
-    const { signOut } = useAuthStore();
+    const { signOut, requestDelete, deleteStatus, deleteProgress, deleteMessage } = useAuthStore();
+    const [confirmText, setConfirmText] = useState<string>("");
     const decoded = useMemo(() => decodeJwt(session.accessToken), [session.accessToken]);
+    const phrase = "Delete-My-K3H4-Data";
+    const canDelete = confirmText === phrase && deleteStatus !== "running" && deleteStatus !== "queued";
 
     return (
         <div className="pointer-events-none absolute inset-0 flex items-center justify-center bg-gradient-to-b from-slate-950/65 via-slate-950/82 to-slate-950/94 text-slate-50">
@@ -62,6 +66,36 @@ export function SessionLanding({ session }: { session: Session }) {
                         </div>
                         <div className="mt-3 text-xs text-slate-400">Stored locally as k3h4.session. Delete to force re-auth.</div>
                     </div>
+                </div>
+
+                <div className="mt-6 rounded-2xl border border-rose-300/20 bg-rose-900/15 p-4">
+                    <div className="text-xs uppercase tracking-[0.25em] text-rose-200">Delete account</div>
+                    <p className="mt-2 text-sm text-rose-100">Type the confirmation phrase to delete all data. This cannot be undone.</p>
+                    <p className="mt-1 text-xs text-rose-200">Phrase: {phrase}</p>
+                    <input
+                        className="mt-3 w-full rounded-xl border border-rose-200/30 bg-rose-950/40 px-3 py-2 text-sm text-rose-50 placeholder:text-rose-300/60 focus:border-rose-200/70 focus:outline-none"
+                        placeholder="Type phrase exactly"
+                        value={confirmText}
+                        onChange={(e) => setConfirmText(e.target.value)}
+                    />
+                    <div className="mt-3 flex flex-col gap-2 text-xs text-rose-100">
+                        <div className="flex items-center justify-between">
+                            <span>Status: {deleteStatus}</span>
+                            <span>{deleteProgress}%</span>
+                        </div>
+                        {deleteMessage ? <div className="rounded-lg border border-rose-200/20 bg-rose-900/20 px-3 py-2 text-[13px]">{deleteMessage}</div> : null}
+                    </div>
+                    <button
+                        className="mt-3 w-full rounded-2xl border border-rose-200/40 bg-rose-500/30 px-4 py-2 text-sm font-semibold text-rose-50 transition hover:border-rose-200/70 hover:bg-rose-500/40 disabled:cursor-not-allowed disabled:border-rose-200/20 disabled:bg-rose-500/15 disabled:text-rose-200"
+                        disabled={!canDelete}
+                        onClick={() => requestDelete(confirmText)}
+                    >
+                        {deleteStatus === "running" || deleteStatus === "queued" ? "Deleting..." : "Delete my account"}
+                    </button>
+                </div>
+
+                <div className="mt-6">
+                    <ExploreBar floating={false} className="pointer-events-auto justify-start" />
                 </div>
             </div>
         </div>

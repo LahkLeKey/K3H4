@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 
 import { useAuthStore, type Provider } from "../../react-hooks/auth";
+import { ExploreBar } from "../../radix-primitives/ExploreBar.tsx";
 import { SignInProviderCard } from "./SignInProviderCard.tsx";
 
 export function LoginMenu() {
@@ -24,10 +25,6 @@ export function LoginMenu() {
                         </p>
                         <p className="mt-1 text-xs text-slate-500">API base: {apiBase}</p>
                     </div>
-                    <div className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-emerald-200">
-                        <span className="h-2 w-2 rounded-full bg-emerald-400" />
-                        Live auth gateway
-                    </div>
                 </div>
 
                 <div className="mt-6 grid gap-3 md:grid-cols-2">
@@ -49,13 +46,12 @@ export function LoginMenu() {
                     />
                 </div>
 
-                <div className="mt-4 flex flex-wrap items-center gap-3 text-xs text-slate-400">
-                    <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1">Build: portfolio login</span>
-                    <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1">Providers: GitHub + LinkedIn</span>
-                    <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1">Data control: self-delete</span>
+                <div className="mt-6">
+                    <ExploreBar floating={false} className="pointer-events-auto justify-start" />
                 </div>
 
                 {error ? <div className="mt-3 rounded-2xl border border-rose-400/30 bg-rose-900/40 px-4 py-2 text-sm text-rose-100">{error}</div> : null}
+
             </div>
         </div>
     );

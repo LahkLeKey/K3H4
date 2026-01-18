@@ -41,10 +41,15 @@ export type AuthState = {
     providerLoading: Provider | null;
     error: string | null;
     session: Session | null;
+    deleteJobId: string | null;
+    deleteStatus: "idle" | "queued" | "running" | "done" | "error";
+    deleteProgress: number;
+    deleteMessage: string | null;
     startOAuth: (provider: Provider, redirectUri?: string) => Promise<void>;
     finalizeCallback: (provider: Provider, code: string, redirectUri: string) => Promise<void>;
     clearError: () => void;
     signOut: () => void;
+    requestDelete: (confirmText: string) => Promise<void>;
 };
 
 export const useAuthStore = create<AuthState>((set, get) => ({
@@ -52,12 +57,16 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     providerLoading: null,
     error: null,
     session: loadSession(),
+    deleteJobId: null,
+    deleteStatus: "idle",
+    deleteProgress: 0,
+    deleteMessage: null,
 
     clearError: () => set({ error: null }),
 
     signOut: () => {
         persistSession(null);
-        set({ session: null, providerLoading: null, error: null });
+        set({ session: null, providerLoading: null, error: null, deleteJobId: null, deleteStatus: "idle", deleteProgress: 0, deleteMessage: null });
     },
 
     startOAuth: async (provider, redirectUri) => {
@@ -102,6 +111,64 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         } catch (err) {
             console.error(err);
             set({ error: "Unable to finish sign-in. Please retry.", providerLoading: null });
+        }
+    },
+
+    requestDelete: async (confirmText: string) => {
+        const apiBase = get().apiBase;
+        const session = get().session;
+        if (!session?.accessToken) {
+            set({ error: "No session present.", deleteStatus: "error" });
+            return;
+        }
+        set({ deleteStatus: "running", deleteMessage: "Queueing delete...", deleteProgress: 5 });
+        try {
+            const res = await fetch(`${apiBase}/auth/delete`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${session.accessToken}`,
+                },
+                credentials: "include",
+                body: JSON.stringify({ confirmText }),
+            });
+            const data = await res.json().catch(() => ({}));
+            if (!res.ok || !data.jobId) {
+                throw new Error(data.error || `Delete start failed (${res.status})`);
+            }
+            set({ deleteJobId: data.jobId, deleteStatus: "queued", deleteMessage: "Queued", deleteProgress: 10 });
+
+            const poll = async (jobId: string) => {
+                try {
+                    const statusRes = await fetch(`${apiBase}/auth/delete/status?jobId=${jobId}`, {
+                        method: "GET",
+                        headers: { Authorization: `Bearer ${session.accessToken}` },
+                        credentials: "include",
+                    });
+                    const statusData = await statusRes.json().catch(() => ({}));
+                    if (!statusRes.ok) throw new Error(statusData.error || "Status failed");
+
+                    const { status, progress, message } = statusData as { status?: AuthState["deleteStatus"]; progress?: number; message?: string };
+                    const nextStatus = status ?? "running";
+                    set({ deleteStatus: nextStatus, deleteProgress: progress ?? get().deleteProgress, deleteMessage: message ?? null });
+
+                    if (nextStatus === "done") {
+                        persistSession(null);
+                        set({ session: null, providerLoading: null, error: null, deleteJobId: jobId });
+                        return;
+                    }
+                    if (nextStatus === "error") return;
+                    setTimeout(() => poll(jobId), 1000);
+                } catch (err) {
+                    console.error(err);
+                    set({ deleteStatus: "error", deleteMessage: err instanceof Error ? err.message : "Delete check failed" });
+                }
+            };
+
+            poll(data.jobId as string);
+        } catch (err) {
+            console.error(err);
+            set({ deleteStatus: "error", deleteMessage: err instanceof Error ? err.message : "Delete request failed" });
         }
     },
 }));
