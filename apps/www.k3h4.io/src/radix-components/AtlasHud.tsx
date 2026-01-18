@@ -1,16 +1,60 @@
+import { useMemo } from "react";
+
 import { Badge, Button, Dropdown, StatChip } from "../radix-primitives";
 import { useAtlasState } from "../react-hooks/atlas";
+import { useAuthStore } from "../react-hooks/auth";
 
 export type AtlasHudProps = {
     onOpenMap: () => void;
     onToggleWorkspace: () => void;
 };
 
+const decodeJwt = (token?: string) => {
+    if (!token) return {} as { email?: string; sub?: string };
+    const parts = token.split(".");
+    if (parts.length !== 3) return {};
+    try {
+        return JSON.parse(atob(parts[1])) as { email?: string; sub?: string };
+    } catch (err) {
+        console.warn("decode failed", err);
+        return {};
+    }
+};
+
+function SessionControls() {
+    const { session, signOut, requestDelete, deleteStatus } = useAuthStore();
+    const decoded = useMemo(() => decodeJwt(session?.accessToken), [session?.accessToken]);
+    const phrase = "Delete-My-K3H4-Data";
+
+    if (!session) return null;
+
+    const handleDelete = () => {
+        const input = window.prompt(`Type "${phrase}" to delete your data.`);
+        if (input === phrase) {
+            void requestDelete(phrase);
+        }
+    };
+
+    const busy = deleteStatus === "running" || deleteStatus === "queued";
+
+    return (
+        <div className="flex flex-wrap items-center gap-2">
+            <Badge accent="#7dd3fc">{decoded.email || decoded.sub || "session"}</Badge>
+            <Button accent="#f97316" onClick={signOut}>
+                Sign out
+            </Button>
+            <Button accent="#f43f5e" onClick={handleDelete} disabled={busy}>
+                {busy ? "Deleting…" : "Delete data"}
+            </Button>
+        </div>
+    );
+}
+
 export function AtlasHud({ onOpenMap, onToggleWorkspace }: AtlasHudProps) {
     const { contexts, activeContext, setActiveId, selectNext, selectPrev, workspaceOpen, autopilot, setAutopilot, heartbeat } = useAtlasState();
 
     return (
-        <header className="fixed inset-x-0 top-0 z-20 px-3 pt-3 sm:px-6">
+        <header className="pointer-events-auto fixed inset-x-0 top-0 z-20 px-3 pt-3 sm:px-6">
             <div className="mx-auto flex w-full max-w-6xl flex-wrap items-center gap-3 rounded-2xl border border-white/10 bg-slate-950/75 px-4 py-3 shadow-[0_16px_60px_rgba(0,0,0,0.45)] backdrop-blur">
                 <div className="flex items-center gap-3">
                     <Badge accent={activeContext.accent}>K3H4 Atlas</Badge>
@@ -46,10 +90,13 @@ export function AtlasHud({ onOpenMap, onToggleWorkspace }: AtlasHudProps) {
                     </div>
                 </div>
 
-                <div className="hidden shrink-0 items-center gap-2 lg:flex">
-                    {activeContext.metrics.slice(0, 2).map((metric) => (
-                        <StatChip key={metric.label} label={metric.label} value={metric.value} accent={activeContext.accent} delta={metric.delta} />
-                    ))}
+                <div className="ml-auto flex flex-wrap items-center gap-3">
+                    <div className="hidden shrink-0 items-center gap-2 lg:flex">
+                        {activeContext.metrics.slice(0, 2).map((metric) => (
+                            <StatChip key={metric.label} label={metric.label} value={metric.value} accent={activeContext.accent} delta={metric.delta} />
+                        ))}
+                    </div>
+                    <SessionControls />
                 </div>
             </div>
         </header>

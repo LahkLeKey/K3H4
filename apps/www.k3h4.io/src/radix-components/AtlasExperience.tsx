@@ -55,10 +55,11 @@ function AtlasShell() {
     const { mapOpen, setMapOpen, setWorkspaceOpen, workspaceOpen } = useAtlasState();
 
     return (
-        <div className="relative min-h-screen overflow-hidden bg-slate-950 text-slate-50">
+        <div className="pointer-events-none relative min-h-screen overflow-hidden text-slate-50">
+            <div className="pointer-events-none absolute inset-0 -z-0 bg-gradient-to-b from-slate-950/70 via-slate-950/45 to-slate-950/75 backdrop-blur" aria-hidden />
             <AtlasHud onOpenMap={() => setMapOpen(true)} onToggleWorkspace={() => setWorkspaceOpen(!workspaceOpen)} />
 
-            <main className="relative z-10 mx-auto grid w-full max-w-6xl gap-6 px-4 pb-28 pt-28 lg:grid-cols-[1.05fr_0.95fr]">
+            <main className="pointer-events-auto relative z-10 mx-auto grid w-full max-w-6xl gap-6 rounded-[32px] border border-white/10 bg-slate-950/65 px-4 pb-28 pt-28 shadow-[0_24px_80px_rgba(0,0,0,0.45)] backdrop-blur lg:grid-cols-[1.05fr_0.95fr]">
                 <SignalBoard />
                 <WorkspacePanel />
             </main>
