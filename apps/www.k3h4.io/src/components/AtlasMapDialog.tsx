@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 
-import { Dialog2D } from "../radix-primitives";
+import { Dialog } from "../radix-primitives";
 import { useAtlasState } from "../react-hooks/atlas";
 
 export type AtlasMapDialogProps = {
@@ -24,7 +24,7 @@ export function AtlasMapDialog({ open, onClose }: AtlasMapDialogProps) {
     }, [contexts]);
 
     return (
-        <Dialog2D open={open} onClose={onClose} title="Atlas map" footer="Travel keeps the workspace mounted.">
+        <Dialog open={open} onClose={onClose} title="Atlas map" footer="Travel keeps the workspace mounted.">
             <div className="space-y-4">
                 <p className="text-sm text-slate-300">Tap any anchor to travel. Anchors are positioned relative to the live 3D space.</p>
                 <div className="relative aspect-[5/3] overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-br from-slate-950 via-slate-900/90 to-slate-950">
@@ -65,6 +65,6 @@ export function AtlasMapDialog({ open, onClose }: AtlasMapDialogProps) {
                     </div>
                 </div>
             </div>
-        </Dialog2D>
+        </Dialog>
     );
 }

@@ -1,4 +1,4 @@
-import { Badge2D, Button2D, Card2D, Panel2D, StatChip2D, Table2D, Tabs2D } from "../radix-primitives";
+import { Badge, Button, Card, Panel, StatChip, Table, Tabs } from "../radix-primitives";
 import { useAtlasState } from "../react-hooks/atlas";
 import type { AtlasAction, AtlasTimelineEvent, AtlasWorkItem, AtlasStream } from "../data/atlas";
 
@@ -11,12 +11,12 @@ const statusTone: Record<AtlasWorkItem["status"], string> = {
 function OverviewTab({ summary, metrics, accent }: { summary: string; metrics: { label: string; value: string; delta?: string }[]; accent: string }) {
     return (
         <div className="space-y-4">
-            <Card2D eyebrow="Workspace" title="Overview" actions={<Badge2D accent={accent}>Live</Badge2D>}>
+            <Card eyebrow="Workspace" title="Overview" actions={<Badge accent={accent}>Live</Badge>}>
                 <p className="text-sm text-slate-200/90">{summary}</p>
-            </Card2D>
+            </Card>
             <div className="grid gap-2 sm:grid-cols-2">
                 {metrics.map((metric) => (
-                    <StatChip2D key={metric.label} label={metric.label} value={metric.value} delta={metric.delta} accent={accent} />
+                    <StatChip key={metric.label} label={metric.label} value={metric.value} delta={metric.delta} accent={accent} />
                 ))}
             </div>
         </div>
@@ -25,7 +25,7 @@ function OverviewTab({ summary, metrics, accent }: { summary: string; metrics: {
 
 function StreamsTab({ streams }: { streams: AtlasStream[] }) {
     return (
-        <Table2D
+        <Table
             columns={[
                 { key: "label", label: "Stream" },
                 { key: "status", label: "Status" },
@@ -42,9 +42,9 @@ function ActionsTab({ actions }: { actions: AtlasAction[] }) {
     return (
         <div className="grid gap-3">
             {actions.map((action) => (
-                <Card2D key={action.label} eyebrow={action.tag?.toUpperCase()} title={action.label} actions={action.cta ? <Button2D accent="#6cf1d0">{action.cta}</Button2D> : null}>
+                <Card key={action.label} eyebrow={action.tag?.toUpperCase()} title={action.label} actions={action.cta ? <Button accent="#6cf1d0">{action.cta}</Button> : null}>
                     <p className="text-sm text-slate-200/90">{action.description}</p>
-                </Card2D>
+                </Card>
             ))}
         </div>
     );
@@ -60,9 +60,9 @@ function TimelineTab({ timeline }: { timeline: AtlasTimelineEvent[] }) {
                         <span className="font-semibold">{item.title}</span>
                         <span className="text-slate-300">{item.detail}</span>
                     </div>
-                    {item.tone === "positive" ? <Badge2D accent="#6cf1d0">Clear</Badge2D> : null}
-                    {item.tone === "warn" ? <Badge2D accent="#f59e0b">Watch</Badge2D> : null}
-                    {item.tone === "info" ? <Badge2D accent="#60a5fa">Info</Badge2D> : null}
+                    {item.tone === "positive" ? <Badge accent="#6cf1d0">Clear</Badge> : null}
+                    {item.tone === "warn" ? <Badge accent="#f59e0b">Watch</Badge> : null}
+                    {item.tone === "info" ? <Badge accent="#60a5fa">Info</Badge> : null}
                 </div>
             ))}
         </div>
@@ -71,7 +71,7 @@ function TimelineTab({ timeline }: { timeline: AtlasTimelineEvent[] }) {
 
 function WorkTab({ work }: { work: AtlasWorkItem[] }) {
     return (
-        <Table2D
+        <Table
             columns={[
                 { key: "title", label: "Item" },
                 { key: "owner", label: "Owner" },
@@ -122,18 +122,18 @@ export function WorkspacePanel() {
     if (!workspaceOpen) {
         return (
             <div className="sticky bottom-24 flex justify-end">
-                <Button2D accent={activeContext.accent} onClick={() => setWorkspaceOpen(true)}>
+                <Button accent={activeContext.accent} onClick={() => setWorkspaceOpen(true)}>
                     Open workspace
-                </Button2D>
+                </Button>
             </div>
         );
     }
 
     return (
         <div className="relative">
-            <Panel2D title={`${activeContext.glyph ? `${activeContext.glyph} ` : ""}${activeContext.name}`} accent={activeContext.accent} className="w-full rounded-3xl border border-white/10 bg-slate-950/90 shadow-2xl">
-                <Tabs2D tabs={tabs} />
-            </Panel2D>
+            <Panel title={`${activeContext.glyph ? `${activeContext.glyph} ` : ""}${activeContext.name}`} accent={activeContext.accent} className="w-full rounded-3xl border border-white/10 bg-slate-950/90 shadow-2xl">
+                <Tabs tabs={tabs} />
+            </Panel>
         </div>
     );
 }

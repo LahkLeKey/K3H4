@@ -2,24 +2,24 @@ import { AtlasHud } from "./AtlasHud";
 import { AtlasMapDialog } from "./AtlasMapDialog";
 import { CommandStrip } from "./CommandStrip";
 import { WorkspacePanel } from "./WorkspacePanel";
-import { Badge2D, Card2D, StatChip2D } from "../radix-primitives";
+import { Badge, Card, StatChip } from "../radix-primitives";
 import { useAtlasState } from "../react-hooks/atlas";
 
 function SignalBoard() {
     const { activeContext } = useAtlasState();
     return (
         <div className="space-y-3">
-            <Card2D eyebrow="Context" title={activeContext.name} actions={<Badge2D accent={activeContext.accent}>Live</Badge2D>}>
+            <Card eyebrow="Context" title={activeContext.name} actions={<Badge accent={activeContext.accent}>Live</Badge>}>
                 <p className="text-sm text-slate-200/90">{activeContext.summary}</p>
-            </Card2D>
+            </Card>
 
             <div className="grid gap-2 md:grid-cols-3">
                 {activeContext.metrics.map((metric) => (
-                    <StatChip2D key={metric.label} label={metric.label} value={metric.value} delta={metric.delta} accent={activeContext.accent} />
+                    <StatChip key={metric.label} label={metric.label} value={metric.value} delta={metric.delta} accent={activeContext.accent} />
                 ))}
             </div>
 
-            <Card2D eyebrow="Streams" title="Live feeds">
+            <Card eyebrow="Streams" title="Live feeds">
                 <div className="grid gap-2 sm:grid-cols-2">
                     {activeContext.streams.map((stream) => (
                         <div key={stream.label} className="rounded-2xl border border-white/10 bg-white/5 px-3 py-2">
@@ -32,9 +32,9 @@ function SignalBoard() {
                         </div>
                     ))}
                 </div>
-            </Card2D>
+            </Card>
 
-            <Card2D eyebrow="Pulse" title="Latest signals">
+            <Card eyebrow="Pulse" title="Latest signals">
                 <div className="flex flex-col gap-2">
                     {activeContext.timeline.map((item) => (
                         <div key={`${item.at}-${item.title}`} className="flex items-start gap-2 rounded-2xl border border-white/10 bg-white/5 px-3 py-2">
@@ -46,7 +46,7 @@ function SignalBoard() {
                         </div>
                     ))}
                 </div>
-            </Card2D>
+            </Card>
         </div>
     );
 }
