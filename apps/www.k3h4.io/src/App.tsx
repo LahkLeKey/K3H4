@@ -4,8 +4,8 @@ import { Html } from "@react-three/drei";
 import { Canvas } from "@react-three/fiber";
 
 import { AtlasScene } from "./r3f-components/AtlasScene";
-import { CallbackScreen } from "./components/auth/CallbackScreen";
-import { LoginMenu } from "./components/auth/LoginMenu";
+import { CallbackScreen } from "./radix-components/auth/CallbackScreen";
+import { LoginMenu } from "./radix-components/auth/LoginMenu";
 
 export default function App() {
     const isCallback = typeof window !== "undefined" && window.location.pathname.startsWith("/auth/callback");
