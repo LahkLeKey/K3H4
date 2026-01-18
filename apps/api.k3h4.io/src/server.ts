@@ -231,6 +231,10 @@ await server.register(fastifySwaggerUi, {
       }
     },
   },
+  transformStaticCSP: (header) => header, // keep defaults
+  staticCSP: true,
+  index: "index.html",
+  baseDir: "public/docs/static",
 });
 await server.register(fastifyCors, {
   origin: process.env.CORS_ORIGIN?.split(",") ?? ["http://localhost:5173", "http://localhost:4173"],
