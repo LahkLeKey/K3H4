@@ -1,22 +1,24 @@
 import { Compass, MapPin, X } from "lucide-react";
 import { useMemo } from "react";
 
-import type { IndustryModuleKey, WorldNode } from "./immersive-world";
+import type { ZoneDefinition, ZoneId } from "../../state/atlas/types";
 import { Button } from "../ui/button";
+
+type WorldMapNode = Pick<ZoneDefinition, "id" | "label" | "description" | "accent" | "glyph" | "anchor">;
 
 type WorldMapOverlayProps = {
     open: boolean;
-    nodes: WorldNode[];
-    activeKey: IndustryModuleKey;
-    onSelect: (key: IndustryModuleKey) => void;
+    nodes: WorldMapNode[];
+    activeKey: ZoneId;
+    onSelect: (key: ZoneId) => void;
     onClose: () => void;
 };
 
 export function WorldMapOverlay({ open, nodes, activeKey, onSelect, onClose }: WorldMapOverlayProps) {
     const bounds = useMemo(() => {
         if (!nodes.length) return { minX: -10, maxX: 10, minZ: -10, maxZ: 10 };
-        const xs = nodes.map((n) => n.position[0]);
-        const zs = nodes.map((n) => n.position[2]);
+        const xs = nodes.map((n) => n.anchor[0]);
+        const zs = nodes.map((n) => n.anchor[2]);
         const minX = Math.min(...xs);
         const maxX = Math.max(...xs);
         const minZ = Math.min(...zs);
@@ -57,17 +59,17 @@ export function WorldMapOverlay({ open, nodes, activeKey, onSelect, onClose }: W
                             </div>
                             <div className="relative isolate h-full w-full">
                                 {nodes.map((node) => {
-                                    const { position, accent, label, glyph, key, description } = node;
+                                    const { anchor, accent, label, glyph, id, description } = node;
                                     const xRange = Math.max(bounds.maxX - bounds.minX, 1);
                                     const zRange = Math.max(bounds.maxZ - bounds.minZ, 1);
-                                    const left = ((position[0] - bounds.minX) / xRange) * 100;
-                                    const top = ((position[2] - bounds.minZ) / zRange) * 100;
-                                    const active = key === activeKey;
+                                    const left = ((anchor[0] - bounds.minX) / xRange) * 100;
+                                    const top = ((anchor[2] - bounds.minZ) / zRange) * 100;
+                                    const active = id === activeKey;
                                     return (
                                         <button
-                                            key={key}
+                                            key={id}
                                             type="button"
-                                            onClick={() => onSelect(key)}
+                                            onClick={() => onSelect(id)}
                                             className="group absolute -translate-x-1/2 -translate-y-1/2 rounded-2xl border border-white/10 bg-slate-900/80 px-4 py-3 text-left text-xs text-slate-100 shadow-lg backdrop-blur transition hover:border-white/30"
                                             style={{ left: `${left}%`, top: `${top}%` }}
                                         >
@@ -91,9 +93,9 @@ export function WorldMapOverlay({ open, nodes, activeKey, onSelect, onClose }: W
                             <p className="text-slate-300">Select any zone to fly the camera there. The HUD and panel stay alive while the lighting and camera ease into the new area.</p>
                             <ul className="flex flex-col divide-y divide-white/5 rounded-2xl border border-white/10 bg-white/5">
                                 {nodes.map((node) => {
-                                    const active = node.key === activeKey;
+                                    const active = node.id === activeKey;
                                     return (
-                                        <li key={`${node.key}-legend`} className="flex items-center gap-3 px-4 py-3">
+                                        <li key={`${node.id}-legend`} className="flex items-center gap-3 px-4 py-3">
                                             <span className="h-2.5 w-2.5 rounded-full" style={{ background: node.accent }} />
                                             <div className="flex flex-col">
                                                 <span className="text-sm font-semibold text-white">{node.glyph ? `${node.glyph} ${node.label}` : node.label}</span>
