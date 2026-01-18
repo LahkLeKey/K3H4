@@ -46,7 +46,7 @@ export type AuthState = {
     deleteProgress: number;
     deleteMessage: string | null;
     startOAuth: (provider: Provider, redirectUri?: string) => Promise<void>;
-    finalizeCallback: (provider: Provider, code: string, redirectUri: string) => Promise<void>;
+    finalizeCallback: (provider: Provider, code: string, redirectUri: string, state?: string | null) => Promise<void>;
     clearError: () => void;
     signOut: () => void;
     requestDelete: (confirmText: string) => Promise<void>;
@@ -84,6 +84,13 @@ export const useAuthStore = create<AuthState>((set, get) => ({
             if (!res.ok || !(data.authorizeUrl || data.url || data.redirect)) {
                 throw new Error(data.error || `Auth init failed (${res.status})`);
             }
+            if (data.state) {
+                try {
+                    sessionStorage.setItem(`k3h4.oauth.state.${provider}`, String(data.state));
+                } catch (err) {
+                    console.warn("persist oauth state failed", err);
+                }
+            }
             const redirect = data.authorizeUrl || data.url || data.redirect || data.location || fallback;
             window.location.href = redirect;
         } catch (err) {
@@ -92,15 +99,23 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         }
     },
 
-    finalizeCallback: async (provider, code, redirectUri) => {
+    finalizeCallback: async (provider, code, redirectUri, state) => {
         const apiBase = get().apiBase;
         set({ providerLoading: provider, error: null });
         try {
+            const storedState = (() => {
+                try {
+                    return sessionStorage.getItem(`k3h4.oauth.state.${provider}`);
+                } catch {
+                    return null;
+                }
+            })();
+            const sendState = state ?? storedState ?? undefined;
             const res = await fetch(`${apiBase}/auth/${provider}/callback`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 credentials: "include",
-                body: JSON.stringify({ code, redirectUri }),
+                body: JSON.stringify({ code, redirectUri, state: sendState }),
             });
             const data = await res.json().catch(() => ({}));
             if (!res.ok) {

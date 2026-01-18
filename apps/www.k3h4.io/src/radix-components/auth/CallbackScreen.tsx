@@ -26,6 +26,7 @@ export function CallbackScreen() {
         if (typeof window === "undefined") return;
         const url = new URL(window.location.href);
         const code = url.searchParams.get("code");
+        const state = url.searchParams.get("state");
         const redirectUri = url.origin + url.pathname;
 
         if (!provider || !code) {
@@ -35,7 +36,7 @@ export function CallbackScreen() {
         }
 
         const run = async () => {
-            await finalizeCallback(provider, code, redirectUri);
+            await finalizeCallback(provider, code, redirectUri, state);
             const hasError = useAuthStore.getState().error;
             if (hasError) {
                 setStatus("error");
