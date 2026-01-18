@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
+import { enqueueOverpass } from "../lib/overpassQueue";
 
 export type Poi = {
     id: string;
@@ -115,18 +116,7 @@ export function usePoiSearch(options?: { center?: { lat: number; lng: number }; 
                     if (err instanceof Error && err.message === "auth required") {
                         // Fallback to direct Overpass with same throttling.
                         const query = buildQuery(center.lat, center.lng, radiusM, kinds);
-                        const res = await fetch("https://overpass-api.de/api/interpreter", {
-                            method: "POST",
-                            headers: { "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8" },
-                            body: new URLSearchParams({ data: query }).toString(),
-                            signal: controller.signal,
-                        });
-                        if (res.status === 429) {
-                            cooldownUntil.current = Date.now() + 8000;
-                            throw new Error("Rate limited by Overpass");
-                        }
-                        if (!res.ok) throw new Error(`OSM ${res.status}`);
-                        const data = await res.json();
+                        const data = await enqueueOverpass(query);
                         return (data?.elements ?? []).map((feat: any) => ({
                             id: `${feat.id}`,
                             name: feat.tags?.name ?? feat.tags?.amenity ?? "poi",

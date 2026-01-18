@@ -1,5 +1,6 @@
 import { Prisma, type PrismaClient } from "@prisma/client";
 import { type FastifyInstance } from "fastify";
+import { enqueueOverpass } from "../lib/overpass-queue";
 import { type RecordTelemetryFn } from "./types";
 
 const OSRM_BASE = process.env.OSRM_URL || "https://router.project-osrm.org";
@@ -31,16 +32,12 @@ async function fetchOsrmRoute(origin: { lat: number; lng: number }, dest: { lat:
   };
 }
 
-async function fetchOverpass(center: { lat: number; lng: number }, radiusM: number, kinds: string[]) {
-  const filters = kinds.map((k) => `node[amenity=${k}](around:${radiusM},${center.lat},${center.lng});`).join("\n");
+async function fetchOverpass(center: { lat: number; lng: number }, radiusM: number, kinds: string[], signature: string) {
+  const sortedKinds = [...kinds].sort();
+  const filters = sortedKinds.map((k) => `node[amenity=${k}](around:${radiusM},${center.lat},${center.lng});`).join("\n");
   const query = `[out:json][timeout:10];(${filters});out center 50;`;
-  const res = await fetch(OVERPASS_URL, {
-    method: "POST",
-    headers: { "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8" },
-    body: new URLSearchParams({ data: query }).toString(),
-  });
-  if (!res.ok) throw new Error(`Overpass ${res.status}`);
-  const data = await res.json();
+  const body = new URLSearchParams({ data: query }).toString();
+  const data = await enqueueOverpass(OVERPASS_URL, body, signature);
   return (data?.elements ?? []) as any[];
 }
 
@@ -133,7 +130,7 @@ export function registerGeoRoutes(server: FastifyInstance, prisma: PrismaClient,
       }
 
       try {
-        const elements = await fetchOverpass({ lat, lng }, radiusM, kinds);
+        const elements = await fetchOverpass({ lat, lng }, radiusM, kinds, signature);
         const pois = elements.map((feat) => ({
           id: `${feat.id}`,
           name: feat.tags?.name ?? feat.tags?.amenity ?? "poi",
@@ -167,6 +164,66 @@ export function registerGeoRoutes(server: FastifyInstance, prisma: PrismaClient,
         return { pois, count: pois.length, cached: false };
       } catch (err) {
         return reply.status(502).send({ error: err instanceof Error ? err.message : "Overpass unavailable" });
+      }
+    },
+  );
+
+  // Client geo/POI status logging for telemetry/loading bars
+  server.post(
+    "/geo/status",
+    async (request, reply) => {
+      const body = request.body as {
+        status?: string;
+        poiStatus?: string;
+        centerLat?: number;
+        centerLng?: number;
+        error?: string;
+      };
+
+      const status = body?.status?.trim();
+      if (!status) return reply.status(400).send({ error: "status is required" });
+
+      const centerLat = typeof body.centerLat === "number" && Number.isFinite(body.centerLat) ? body.centerLat : null;
+      const centerLng = typeof body.centerLng === "number" && Number.isFinite(body.centerLng) ? body.centerLng : null;
+
+      let userId: string | null = null;
+      const hasAuth = typeof request.headers.authorization === "string" && request.headers.authorization.length > 0;
+      if (hasAuth) {
+        try {
+          await request.jwtVerify();
+          userId = (request.user as { sub?: string })?.sub ?? null;
+        } catch (err) {
+          // ignore auth failures; status logging is allowed unauthenticated
+        }
+      }
+
+      try {
+        await prisma.geoStatusLog.create({
+          data: {
+            userId,
+            status,
+            poiStatus: body?.poiStatus?.trim() || null,
+            centerLat: centerLat !== null ? new Prisma.Decimal(centerLat.toFixed(6)) : null,
+            centerLng: centerLng !== null ? new Prisma.Decimal(centerLng.toFixed(6)) : null,
+            error: body?.error?.slice(0, 512) || null,
+            userAgent: request.headers["user-agent"]?.toString().slice(0, 512) ?? null,
+          },
+        });
+
+        await recordTelemetry(request, {
+          eventType: "geo.status",
+          source: "api",
+          payload: {
+            status,
+            poiStatus: body?.poiStatus,
+            hasCenter: Boolean(centerLat !== null && centerLng !== null),
+          },
+        });
+
+        return { ok: true };
+      } catch (err) {
+        request.log.error({ err }, "geo status log failed");
+        return reply.status(500).send({ error: "unable to log status" });
       }
     },
   );

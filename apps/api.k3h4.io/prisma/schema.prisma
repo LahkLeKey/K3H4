@@ -56,6 +56,7 @@ model User {
   geoRouteCaches GeoRouteCache[]
   geoPoiCaches   GeoPoiCache[]
   osrmCacheEntries OsrmCacheEntry[]
+  geoStatusLogs GeoStatusLog[]
   personaAttributes PersonaAttribute[]
   personaCompatibilities PersonaCompatibility[]
 
@@ -179,6 +180,21 @@ model GeoPoiCache {
   createdAt   DateTime @default(now())
 
   @@index([expiresAt])
+}
+
+model GeoStatusLog {
+  id         String   @id @default(cuid())
+  userId     String?
+  user       User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  status     String
+  poiStatus  String?
+  centerLat  Decimal? @db.Decimal(11, 6)
+  centerLng  Decimal? @db.Decimal(11, 6)
+  error      String?
+  userAgent  String?
+  createdAt  DateTime @default(now())
+
+  @@index([createdAt])
 }
 
 // OSRM upstream cache entries (1:1 pass-through)

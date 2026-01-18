@@ -2,23 +2,31 @@ import { useEffect, useRef } from "react";
 import maplibregl from "maplibre-gl";
 
 import { useMapView } from "../react-hooks/useMapView";
+import { useGeoState } from "../zustand-stores/geo";
 
 const STYLE_URL = "https://basemaps.cartocdn.com/gl/positron-gl-style/style.json";
 
 export function MapLayer() {
     const ref = useRef<HTMLDivElement>(null);
+    const mapRef = useRef<maplibregl.Map | null>(null);
     const { updateView, registerMap } = useMapView();
+    const { status, center, requestLocation, fetchNearbyPois } = useGeoState();
+
+    // One-time geolocation request on mount
+    useEffect(() => {
+        requestLocation();
+    }, [requestLocation]);
 
     useEffect(() => {
-        if (!ref.current) return;
+        if (!ref.current || !center || status !== "ready") return;
         const map = new maplibregl.Map({
             container: ref.current,
             style: STYLE_URL,
-            center: [-122.3321, 47.6062],
-            zoom: 12.5,
+            center: [center.lng, center.lat],
+            zoom: 14.5,
             pitch: 58,
             bearing: 24,
-            minZoom: 11,
+            minZoom: 5.5,
             maxZoom: 17.5,
             minPitch: 45,
             maxPitch: 75,
@@ -28,6 +36,7 @@ export function MapLayer() {
         });
 
         map.addControl(new maplibregl.NavigationControl({ visualizePitch: true }), "bottom-right");
+        mapRef.current = map;
 
         const sync = () => {
             const center = map.getCenter();
@@ -43,28 +52,45 @@ export function MapLayer() {
         map.on("move", sync);
         registerMap(map);
 
-        const locate = () => {
-            if (typeof navigator === "undefined" || !navigator.geolocation) return;
-            navigator.geolocation.getCurrentPosition(
-                (pos) => {
-                    const nextCenter = { lng: pos.coords.longitude, lat: pos.coords.latitude };
-                    map.flyTo({ center: [nextCenter.lng, nextCenter.lat], zoom: 12.5, bearing: 24, pitch: 58, essential: true });
-                },
-                () => {
-                    // ignore; fallback stays Seattle
-                },
-                { enableHighAccuracy: false, timeout: 4500 }
-            );
-        };
-
-        map.on("load", locate);
-        locate();
-
         return () => {
             registerMap(null);
+            mapRef.current = null;
             map.remove();
         };
-    }, [registerMap, updateView]);
+    }, [registerMap, updateView, userCenter]);
+    // Fetch nearby POIs once after location is ready
+    useEffect(() => {
+        if (status === "ready") {
+            void fetchNearbyPois();
+        }
+    }, [fetchNearbyPois, status]);
 
-    return <div ref={ref} className="absolute inset-0 z-0" />;
+    if (status === "blocked" || status === "error") {
+        return (
+            <div className="absolute inset-0 z-0 flex items-center justify-center bg-slate-900 text-sm font-semibold text-white/90">
+                enable-geo-location-to-see-map
+            </div>
+        );
+    }
+
+    if (status !== "ready" || !center) {
+        return (
+            <div className="absolute inset-0 z-0 flex items-center justify-center bg-slate-900 text-sm font-semibold text-white/80">
+                requesting-location...
+            </div>
+        );
+    }
+
+    return (
+        <>
+            <div ref={ref} className="absolute inset-0 z-0" />
+            <button
+                type="button"
+                onClick={requestLocation}
+                className="absolute right-3 top-3 z-10 rounded bg-white/90 px-3 py-2 text-xs font-semibold text-slate-800 shadow"
+            >
+                Locate me
+            </button>
+        </>
+    );
 }

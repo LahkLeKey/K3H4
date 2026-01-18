@@ -15,8 +15,10 @@ export type MapViewContextValue = {
     flyTo: (opts: { center: { lat: number; lng: number }; zoom?: number; bearing?: number; pitch?: number }) => void;
 };
 
-const DEFAULT_CENTER = { lat: 47.6062, lng: -122.3321 };
-const defaultState: MapViewState = { center: DEFAULT_CENTER, zoom: 13, bearing: 24, pitch: 55, ready: false };
+// Hastings, MN for city-level default
+const DEFAULT_CENTER = { lat: 44.7434, lng: -92.8512 };
+// Very close downtown view
+const defaultState: MapViewState = { center: DEFAULT_CENTER, zoom: 14.5, bearing: 24, pitch: 55, ready: false };
 
 const MapViewContext = createContext<MapViewContextValue | null>(null);
 
