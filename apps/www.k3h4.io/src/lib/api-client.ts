@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { useAuthStore } from "../react-hooks/auth";
 
 export type ApiError = Error & { status?: number; details?: unknown };
 
@@ -51,6 +52,13 @@ export async function apiFetch<T = unknown>(path: string, options: RequestOption
     const payload = isJson ? await response.json().catch(() => ({})) : null;
 
     if (!response.ok) {
+        if (response.status === 401 || response.status === 403) {
+            try {
+                useAuthStore.getState().kickToLogin?.("unauthorized");
+            } catch (err) {
+                console.warn("kickToLogin failed", err);
+            }
+        }
         const error = new Error(payload?.error || `Request failed (${response.status})`) as ApiError;
         error.status = response.status;
         error.details = payload;

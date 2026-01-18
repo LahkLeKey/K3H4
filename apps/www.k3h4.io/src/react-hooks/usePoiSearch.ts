@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
 import { enqueueOverpass } from "../lib/overpassQueue";
 import { apiUrl } from "../lib/apiBase";
+import { useAuthStore } from "./auth";
 
 export type Poi = {
     id: string;
@@ -104,28 +105,24 @@ export function usePoiSearch(options?: { center?: { lat: number; lng: number }; 
                 try {
                     // Prefer cached API; fallback to Overpass if unavailable/unauthorized.
                     const url = apiUrl(`/geo/pois?lat=${center.lat}&lng=${center.lng}&radiusM=${radiusM}&kinds=${encodeURIComponent(kinds.join(","))}`);
-                    const res = await fetch(url, { signal: controller.signal, credentials: "include" });
+                    const { session, kickToLogin } = useAuthStore.getState();
+                    const headers: Record<string, string> = {};
+                    if (session?.accessToken) headers.Authorization = `Bearer ${session.accessToken}`;
+
+                    const res = await fetch(url, { signal: controller.signal, credentials: "include", headers });
                     if (res.status === 429) {
                         cooldownUntil.current = Date.now() + 5000;
                         throw new Error("Rate limited, retrying soon");
                     }
-                    if (res.status === 401 || res.status === 403) throw new Error("auth required");
+                    if (res.status === 401 || res.status === 403) {
+                        kickToLogin?.("expired");
+                        throw new Error("auth required");
+                    }
                     if (!res.ok) throw new Error(`API ${res.status}`);
                     const data = await res.json();
                     return (data?.pois ?? []) as Array<{ id: string; name: string; kind: string; lat: number; lng: number }>;
                 } catch (err) {
-                    if (err instanceof Error && err.message === "auth required") {
-                        // Fallback to direct Overpass with same throttling.
-                        const query = buildQuery(center.lat, center.lng, radiusM, kinds);
-                        const data = await enqueueOverpass(query);
-                        return (data?.elements ?? []).map((feat: any) => ({
-                            id: `${feat.id}`,
-                            name: feat.tags?.name ?? feat.tags?.amenity ?? "poi",
-                            kind: feat.tags?.amenity,
-                            lat: feat.lat,
-                            lng: feat.lon,
-                        }));
-                    }
+                    if (err instanceof Error && err.message === "auth required") throw err;
                     throw err;
                 }
             };

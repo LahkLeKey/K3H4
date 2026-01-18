@@ -50,6 +50,7 @@ export type AuthState = {
     clearError: () => void;
     signOut: () => void;
     requestDelete: (confirmText: string) => Promise<void>;
+    kickToLogin: (reason?: string) => void;
 };
 
 export const useAuthStore = create<AuthState>((set, get) => ({
@@ -63,6 +64,21 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     deleteMessage: null,
 
     clearError: () => set({ error: null }),
+
+    kickToLogin: (reason) => {
+        persistSession(null);
+        set({ session: null, providerLoading: null, error: reason ?? null, deleteJobId: null, deleteStatus: "idle", deleteProgress: 0, deleteMessage: null });
+
+        if (typeof window !== "undefined") {
+            const current = `${window.location.pathname}${window.location.search}`;
+            const params = new URLSearchParams();
+            if (reason) params.set("reason", reason);
+            if (current && current !== "/") params.set("returnTo", current);
+            const qs = params.toString();
+            const target = qs ? `/auth/login?${qs}` : "/auth/login";
+            window.location.replace(target);
+        }
+    },
 
     signOut: () => {
         persistSession(null);
