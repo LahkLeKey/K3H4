@@ -55,6 +55,7 @@ model User {
   providerGrants ProviderGrant[]
   geoRouteCaches GeoRouteCache[]
   geoPoiCaches   GeoPoiCache[]
+  osrmCacheEntries OsrmCacheEntry[]
   personaAttributes PersonaAttribute[]
   personaCompatibilities PersonaCompatibility[]
 
@@ -177,6 +178,29 @@ model GeoPoiCache {
   expiresAt   DateTime
   createdAt   DateTime @default(now())
 
+  @@index([expiresAt])
+}
+
+// OSRM upstream cache entries (1:1 pass-through)
+model OsrmCacheEntry {
+  id          String   @id @default(cuid())
+  userId      String?
+  user        User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  service     String
+  profile     String
+  coordinates String?
+  params      Json?
+  paramsHash  String
+  signature   String   @unique
+  url         String
+  statusCode  Int?
+  payload     Json?
+  fetchedAt   DateTime @default(now())
+  expiresAt   DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([service, profile])
   @@index([expiresAt])
 }
 

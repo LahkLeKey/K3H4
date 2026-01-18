@@ -22,6 +22,7 @@ import { registerAgricultureRoutes } from "./routes/agriculture";
 import { registerCulinaryRoutes } from "./routes/culinary";
 import { registerArcadeRoutes } from "./routes/arcade";
 import { registerUsdaRoutes } from "./routes/usda";
+import { registerOsrmRoutes } from "./routes/osrm";
 
 dotenv.config();
 
@@ -79,6 +80,7 @@ const swaggerTags: Record<string, { name: string; description: string }> = {
   culinary: { name: "Culinary", description: "Culinary simulator" },
   arcade: { name: "Arcade", description: "Arcade simulator" },
   usda: { name: "USDA", description: "USDA data" },
+  osrm: { name: "OSRM", description: "OSRM routing proxy" },
   telemetry: { name: "Telemetry", description: "Telemetry intake" },
 };
 
@@ -100,6 +102,7 @@ const swaggerTagMap: Record<string, { name: string; description: string }> = {
   culinary: swaggerTags.culinary,
   arcade: swaggerTags.arcade,
   usda: swaggerTags.usda,
+  osrm: swaggerTags.osrm,
   telemetry: swaggerTags.telemetry,
 };
 
@@ -355,6 +358,7 @@ registerAgricultureRoutes(server, prisma, recordTelemetry);
 registerCulinaryRoutes(server, prisma, recordTelemetry);
 registerArcadeRoutes(server, prisma, recordTelemetry);
 registerUsdaRoutes(server, prisma, recordTelemetry);
+registerOsrmRoutes(server, prisma, recordTelemetry);
 
 const port = Number(process.env.PORT || 8080);
 const host = process.env.HOST || "0.0.0.0";
