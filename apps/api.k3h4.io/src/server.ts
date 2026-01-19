@@ -6,21 +6,11 @@ import fastifyJwt from "@fastify/jwt";
 import fastifyCors from "@fastify/cors";
 import fastifyRateLimit from "@fastify/rate-limit";
 import path from "node:path";
+import { existsSync } from "node:fs";
 import { PrismaClient } from "@prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
-import { registerAuthRoutes } from "./routes/auth";
-import { registerBankRoutes } from "./routes/bank";
-import { registerProfileRoutes } from "./routes/profile";
-import { registerPersonaRoutes } from "./routes/persona";
-import { registerAssignmentRoutes } from "./routes/assignment";
-import { registerStaffingRoutes } from "./routes/staffing";
-import { registerFreightRoutes } from "./routes/freight";
-import { registerWarehouseRoutes } from "./routes/warehouse";
-import { registerPosRoutes } from "./routes/pos";
-import { registerAgricultureRoutes } from "./routes/agriculture";
-import { registerCulinaryRoutes } from "./routes/culinary";
-import { registerArcadeRoutes } from "./routes/arcade";
-import { registerUsdaRoutes } from "./routes/usda";
+import { registerAllRoutes } from "./routes";
+import { scheduleDemCacheCleanup } from "./services/geo-dem-cache";
 
 dotenv.config();
 
@@ -49,7 +39,8 @@ const server = Fastify({
 });
 
 await server.register(fastifyRateLimit, {
-  max: Number(process.env.RATE_LIMIT_MAX || 120),
+  // Higher overall limits for internal DB-backed routes; per-route limits will throttle external APIs.
+  max: Number(process.env.RATE_LIMIT_MAX || 600),
   timeWindow: process.env.RATE_LIMIT_WINDOW || "1 minute",
   allowList: (request) => request.url?.startsWith("/telemetry") || false,
   errorResponseBuilder: () => ({ error: "Too many requests", code: 429, retryAfter: 60 }),
@@ -73,10 +64,13 @@ const swaggerTags: Record<string, { name: string; description: string }> = {
   freight: { name: "Freight", description: "Freight and routing" },
   warehouse: { name: "Warehouse", description: "Inventory and storage" },
   pos: { name: "POS", description: "Point of sale" },
+  geo: { name: "Geo", description: "Geospatial caches and lookups" },
+  maptiler: { name: "MapTiler", description: "MapTiler Cloud API proxy" },
   agriculture: { name: "Agriculture", description: "Agriculture simulator" },
   culinary: { name: "Culinary", description: "Culinary simulator" },
   arcade: { name: "Arcade", description: "Arcade simulator" },
   usda: { name: "USDA", description: "USDA data" },
+  osrm: { name: "OSRM", description: "OSRM routing proxy" },
   telemetry: { name: "Telemetry", description: "Telemetry intake" },
 };
 
@@ -93,10 +87,13 @@ const swaggerTagMap: Record<string, { name: string; description: string }> = {
   freight: swaggerTags.freight,
   warehouse: swaggerTags.warehouse,
   pos: swaggerTags.pos,
+  geo: swaggerTags.geo,
+  maptiler: swaggerTags.maptiler,
   agriculture: swaggerTags.agriculture,
   culinary: swaggerTags.culinary,
   arcade: swaggerTags.arcade,
   usda: swaggerTags.usda,
+  osrm: swaggerTags.osrm,
   telemetry: swaggerTags.telemetry,
 };
 
@@ -192,6 +189,9 @@ const prisma = new PrismaClient({
   adapter: new PrismaPg({ connectionString: databaseUrl }),
 });
 
+// Periodic DEM cache cleanup (expired tiles + size cap)
+const demCleanupHandle = scheduleDemCacheCleanup(prisma, server.log);
+
 // Basic OpenAPI definition for the service
 const openApiOptions: SwaggerOptions = {
   openapi: {
@@ -219,11 +219,10 @@ const openApiOptions: SwaggerOptions = {
 
 await server.register(fastifySwagger, openApiOptions);
 const docsStaticDir = path.join(process.cwd(), "public", "docs", "static");
-
-await server.register(fastifySwaggerUi, {
+const swaggerUiOpts = {
   routePrefix: "/docs",
   uiHooks: {
-    onRequest: async (request, reply) => {
+    onRequest: async (request: FastifyRequest, reply: FastifyReply) => {
       const auth = request.headers.authorization;
       if (!auth) return; // allow read-only docs without a token
       try {
@@ -234,11 +233,18 @@ await server.register(fastifySwaggerUi, {
       }
     },
   },
-  transformStaticCSP: (header) => header, // keep defaults
+  transformStaticCSP: (header: string) => header, // keep defaults
   staticCSP: true,
   index: "index.html",
-  baseDir: docsStaticDir,
-});
+} as const;
+
+if (existsSync(docsStaticDir)) {
+  (swaggerUiOpts as any).baseDir = docsStaticDir;
+} else {
+  server.log.warn({ docsStaticDir }, "swagger ui static dir missing; using built-in assets");
+}
+
+await server.register(fastifySwaggerUi, swaggerUiOpts as any);
 const corsOrigins = process.env.CORS_ORIGIN?.split(",") ?? ["http://localhost:5173", "http://localhost:4173", "https://www.k3h4.dev", "https://api.k3h4.dev"];
 
 await server.register(fastifyCors, {
@@ -339,19 +345,11 @@ server.post("/telemetry", async (request, reply) => {
   return { ok: true, recorded: normalizedEvents.length };
 });
 
-registerAuthRoutes(server, prisma, recordTelemetry);
-registerProfileRoutes(server, prisma, recordTelemetry);
-registerBankRoutes(server, prisma, recordTelemetry);
-registerPersonaRoutes(server, prisma, recordTelemetry);
-registerAssignmentRoutes(server, prisma, recordTelemetry);
-registerStaffingRoutes(server, prisma, recordTelemetry);
-registerFreightRoutes(server, prisma, recordTelemetry);
-registerWarehouseRoutes(server, prisma, recordTelemetry);
-registerPosRoutes(server, prisma, recordTelemetry);
-registerAgricultureRoutes(server, prisma, recordTelemetry);
-registerCulinaryRoutes(server, prisma, recordTelemetry);
-registerArcadeRoutes(server, prisma, recordTelemetry);
-registerUsdaRoutes(server, prisma, recordTelemetry);
+await registerAllRoutes(server, prisma, recordTelemetry);
+
+server.addHook("onClose", async () => {
+  clearInterval(demCleanupHandle);
+});
 
 const port = Number(process.env.PORT || 8080);
 const host = process.env.HOST || "0.0.0.0";

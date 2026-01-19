@@ -52,6 +52,9 @@ export const UserFindFirstOrThrowSelectSchema: z.ZodType<Prisma.UserSelect> = z.
     arcadeSessions: z.boolean().optional(),
     arcadeRedemptions: z.boolean().optional(),
     providerGrants: z.boolean().optional(),
+    geoRouteCaches: z.boolean().optional(),
+    geoPoiCaches: z.boolean().optional(),
+    osrmCacheEntries: z.boolean().optional(),
     personaAttributes: z.boolean().optional(),
     personaCompatibilities: z.boolean().optional(),
     _count: z.boolean().optional()
@@ -100,6 +103,9 @@ export const UserFindFirstOrThrowSelectZodSchema = z.object({
     arcadeSessions: z.boolean().optional(),
     arcadeRedemptions: z.boolean().optional(),
     providerGrants: z.boolean().optional(),
+    geoRouteCaches: z.boolean().optional(),
+    geoPoiCaches: z.boolean().optional(),
+    osrmCacheEntries: z.boolean().optional(),
     personaAttributes: z.boolean().optional(),
     personaCompatibilities: z.boolean().optional(),
     _count: z.boolean().optional()

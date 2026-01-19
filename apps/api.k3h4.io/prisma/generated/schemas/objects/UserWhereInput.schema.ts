@@ -38,6 +38,9 @@ import { ArcadePrizeListRelationFilterObjectSchema as ArcadePrizeListRelationFil
 import { ArcadeSessionListRelationFilterObjectSchema as ArcadeSessionListRelationFilterObjectSchema } from './ArcadeSessionListRelationFilter.schema';
 import { ArcadeRedemptionListRelationFilterObjectSchema as ArcadeRedemptionListRelationFilterObjectSchema } from './ArcadeRedemptionListRelationFilter.schema';
 import { ProviderGrantListRelationFilterObjectSchema as ProviderGrantListRelationFilterObjectSchema } from './ProviderGrantListRelationFilter.schema';
+import { GeoRouteCacheListRelationFilterObjectSchema as GeoRouteCacheListRelationFilterObjectSchema } from './GeoRouteCacheListRelationFilter.schema';
+import { GeoPoiCacheListRelationFilterObjectSchema as GeoPoiCacheListRelationFilterObjectSchema } from './GeoPoiCacheListRelationFilter.schema';
+import { OsrmCacheEntryListRelationFilterObjectSchema as OsrmCacheEntryListRelationFilterObjectSchema } from './OsrmCacheEntryListRelationFilter.schema';
 import { PersonaAttributeListRelationFilterObjectSchema as PersonaAttributeListRelationFilterObjectSchema } from './PersonaAttributeListRelationFilter.schema';
 import { PersonaCompatibilityListRelationFilterObjectSchema as PersonaCompatibilityListRelationFilterObjectSchema } from './PersonaCompatibilityListRelationFilter.schema'
 
@@ -95,6 +98,9 @@ const userwhereinputSchema = z.object({
   arcadeSessions: z.lazy(() => ArcadeSessionListRelationFilterObjectSchema).optional(),
   arcadeRedemptions: z.lazy(() => ArcadeRedemptionListRelationFilterObjectSchema).optional(),
   providerGrants: z.lazy(() => ProviderGrantListRelationFilterObjectSchema).optional(),
+  geoRouteCaches: z.lazy(() => GeoRouteCacheListRelationFilterObjectSchema).optional(),
+  geoPoiCaches: z.lazy(() => GeoPoiCacheListRelationFilterObjectSchema).optional(),
+  osrmCacheEntries: z.lazy(() => OsrmCacheEntryListRelationFilterObjectSchema).optional(),
   personaAttributes: z.lazy(() => PersonaAttributeListRelationFilterObjectSchema).optional(),
   personaCompatibilities: z.lazy(() => PersonaCompatibilityListRelationFilterObjectSchema).optional()
 }).strict();

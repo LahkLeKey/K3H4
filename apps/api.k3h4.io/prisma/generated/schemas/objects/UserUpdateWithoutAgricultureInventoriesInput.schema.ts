@@ -36,6 +36,9 @@ import { ArcadePrizeUpdateManyWithoutUserNestedInputObjectSchema as ArcadePrizeU
 import { ArcadeSessionUpdateManyWithoutUserNestedInputObjectSchema as ArcadeSessionUpdateManyWithoutUserNestedInputObjectSchema } from './ArcadeSessionUpdateManyWithoutUserNestedInput.schema';
 import { ArcadeRedemptionUpdateManyWithoutUserNestedInputObjectSchema as ArcadeRedemptionUpdateManyWithoutUserNestedInputObjectSchema } from './ArcadeRedemptionUpdateManyWithoutUserNestedInput.schema';
 import { ProviderGrantUpdateManyWithoutUserNestedInputObjectSchema as ProviderGrantUpdateManyWithoutUserNestedInputObjectSchema } from './ProviderGrantUpdateManyWithoutUserNestedInput.schema';
+import { GeoRouteCacheUpdateManyWithoutUserNestedInputObjectSchema as GeoRouteCacheUpdateManyWithoutUserNestedInputObjectSchema } from './GeoRouteCacheUpdateManyWithoutUserNestedInput.schema';
+import { GeoPoiCacheUpdateManyWithoutUserNestedInputObjectSchema as GeoPoiCacheUpdateManyWithoutUserNestedInputObjectSchema } from './GeoPoiCacheUpdateManyWithoutUserNestedInput.schema';
+import { OsrmCacheEntryUpdateManyWithoutUserNestedInputObjectSchema as OsrmCacheEntryUpdateManyWithoutUserNestedInputObjectSchema } from './OsrmCacheEntryUpdateManyWithoutUserNestedInput.schema';
 import { PersonaAttributeUpdateManyWithoutUserNestedInputObjectSchema as PersonaAttributeUpdateManyWithoutUserNestedInputObjectSchema } from './PersonaAttributeUpdateManyWithoutUserNestedInput.schema';
 import { PersonaCompatibilityUpdateManyWithoutUserNestedInputObjectSchema as PersonaCompatibilityUpdateManyWithoutUserNestedInputObjectSchema } from './PersonaCompatibilityUpdateManyWithoutUserNestedInput.schema'
 
@@ -89,6 +92,9 @@ const makeSchema = () => z.object({
   arcadeSessions: z.lazy(() => ArcadeSessionUpdateManyWithoutUserNestedInputObjectSchema).optional(),
   arcadeRedemptions: z.lazy(() => ArcadeRedemptionUpdateManyWithoutUserNestedInputObjectSchema).optional(),
   providerGrants: z.lazy(() => ProviderGrantUpdateManyWithoutUserNestedInputObjectSchema).optional(),
+  geoRouteCaches: z.lazy(() => GeoRouteCacheUpdateManyWithoutUserNestedInputObjectSchema).optional(),
+  geoPoiCaches: z.lazy(() => GeoPoiCacheUpdateManyWithoutUserNestedInputObjectSchema).optional(),
+  osrmCacheEntries: z.lazy(() => OsrmCacheEntryUpdateManyWithoutUserNestedInputObjectSchema).optional(),
   personaAttributes: z.lazy(() => PersonaAttributeUpdateManyWithoutUserNestedInputObjectSchema).optional(),
   personaCompatibilities: z.lazy(() => PersonaCompatibilityUpdateManyWithoutUserNestedInputObjectSchema).optional()
 }).strict();

@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 
 import { useAuthStore, type Session } from "../../react-hooks/auth";
+import { useGeoState } from "../../zustand-stores/geo";
 import { ExploreBar } from "../../radix-primitives/ExploreBar.tsx";
 
 type Decoded = {
@@ -25,8 +26,9 @@ const decodeJwt = (token?: string): Decoded => {
 const fmt = (value?: string) => (value ? new Date(value).toLocaleString() : "-");
 const truncate = (value?: string) => (value ? `${value.slice(0, 8)}…${value.slice(-6)}` : "-");
 
-export function SessionLanding({ session }: { session: Session }) {
+export function SessionLanding({ session, onClose }: { session: Session; onClose?: () => void }) {
     const { signOut, requestDelete, deleteStatus, deleteProgress, deleteMessage } = useAuthStore();
+    const { reset: resetGeo } = useGeoState();
     const [confirmText, setConfirmText] = useState<string>("");
     const decoded = useMemo(() => decodeJwt(session.accessToken), [session.accessToken]);
     const phrase = "Delete-My-K3H4-Data";
@@ -41,12 +43,27 @@ export function SessionLanding({ session }: { session: Session }) {
                         <div className="text-3xl font-bold text-white md:text-4xl">Welcome back</div>
                         <p className="mt-2 max-w-xl text-sm text-slate-300">You are signed in. Tokens stay client-side; reload to persist. Manage your data from the profile tools.</p>
                     </div>
-                    <button
-                        className="rounded-full border border-white/20 bg-white/10 px-4 py-2 text-sm font-medium text-slate-100 transition hover:border-white/40 hover:bg-white/20"
-                        onClick={signOut}
-                    >
-                        Sign out
-                    </button>
+                    <div className="flex items-center gap-2">
+                        <button
+                            className="rounded-full border border-white/20 bg-white/10 px-4 py-2 text-sm font-medium text-slate-100 transition hover:border-white/40 hover:bg-white/20"
+                            onClick={() => {
+                                resetGeo();
+                                void signOut();
+                                onClose?.();
+                            }}
+                        >
+                            Sign out
+                        </button>
+                        {onClose ? (
+                            <button
+                                className="rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-xs text-slate-200 transition hover:border-white/20 hover:bg-white/10"
+                                onClick={onClose}
+                                type="button"
+                            >
+                                Close
+                            </button>
+                        ) : null}
+                    </div>
                 </div>
 
                 <div className="mt-6 grid gap-3 md:grid-cols-2">
@@ -88,7 +105,11 @@ export function SessionLanding({ session }: { session: Session }) {
                     <button
                         className="mt-3 w-full rounded-2xl border border-rose-200/40 bg-rose-500/30 px-4 py-2 text-sm font-semibold text-rose-50 transition hover:border-rose-200/70 hover:bg-rose-500/40 disabled:cursor-not-allowed disabled:border-rose-200/20 disabled:bg-rose-500/15 disabled:text-rose-200"
                         disabled={!canDelete}
-                        onClick={() => requestDelete(confirmText)}
+                        onClick={async () => {
+                            await requestDelete(confirmText);
+                            resetGeo();
+                            onClose?.();
+                        }}
                     >
                         {deleteStatus === "running" || deleteStatus === "queued" ? "Deleting..." : "Delete my account"}
                     </button>

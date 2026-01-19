@@ -1,5 +1,16 @@
 import { Badge, Button, Card, Panel, StatChip, Table, Tabs } from "../radix-primitives";
 import { useAtlasState } from "../react-hooks/atlas";
+import { FreightBoard } from "./FreightBoard";
+import { PersonaBoard } from "./PersonaBoard";
+import { StaffingBoard } from "./StaffingBoard";
+import { AssignmentBoard } from "./AssignmentBoard";
+import { BankBoard } from "./BankBoard";
+import { AgricultureBoard } from "./AgricultureBoard";
+import { WarehouseBoard } from "./WarehouseBoard";
+import { PosBoard } from "./PosBoard";
+import { ArcadeBoard } from "./ArcadeBoard";
+import { CulinaryBoard } from "./CulinaryBoard";
+import { UsdaBoard } from "./UsdaBoard";
 import type { AtlasAction, AtlasTimelineEvent, AtlasWorkItem, AtlasStream } from "../react-hooks/data/atlas";
 
 const statusTone: Record<AtlasWorkItem["status"], string> = {
@@ -118,6 +129,91 @@ export function WorkspacePanel() {
             content: <WorkTab work={activeContext.work} />,
         },
     ];
+
+    if (activeContext.id === "bank") {
+        tabs.splice(1, 0, {
+            key: "bank",
+            label: "Ledger",
+            content: <BankBoard />,
+        });
+    }
+
+    if (activeContext.id === "freight") {
+        tabs.splice(1, 0, {
+            key: "freight",
+            label: "Freight",
+            content: <FreightBoard />,
+        });
+    }
+
+    if (activeContext.id === "agriculture") {
+        tabs.splice(1, 0, {
+            key: "agri",
+            label: "Agri Ops",
+            content: <AgricultureBoard />,
+        });
+    }
+
+    if (activeContext.id === "warehouse") {
+        tabs.splice(1, 0, {
+            key: "warehouse",
+            label: "Warehouse",
+            content: <WarehouseBoard />,
+        });
+    }
+
+    if (activeContext.id === "pos") {
+        tabs.splice(1, 0, {
+            key: "pos",
+            label: "POS",
+            content: <PosBoard />,
+        });
+    }
+
+    if (activeContext.id === "arcade") {
+        tabs.splice(1, 0, {
+            key: "arcade",
+            label: "Arcade",
+            content: <ArcadeBoard />,
+        });
+    }
+
+    if (activeContext.id === "persona") {
+        tabs.splice(1, 0, {
+            key: "persona",
+            label: "Personas",
+            content: <PersonaBoard />,
+        });
+    }
+
+    if (activeContext.id === "laplace") {
+        tabs.splice(1, 0, {
+            key: "staffing",
+            label: "Staffing",
+            content: <StaffingBoard />,
+        });
+        tabs.splice(2, 0, {
+            key: "assignments",
+            label: "Assignments",
+            content: <AssignmentBoard />,
+        });
+    }
+
+    if (activeContext.id === "culinary") {
+        tabs.splice(1, 0, {
+            key: "culinary",
+            label: "Culinary",
+            content: <CulinaryBoard />,
+        });
+    }
+
+    if (activeContext.id === "usda") {
+        tabs.splice(1, 0, {
+            key: "usda",
+            label: "USDA",
+            content: <UsdaBoard />,
+        });
+    }
 
     if (!workspaceOpen) {
         return (

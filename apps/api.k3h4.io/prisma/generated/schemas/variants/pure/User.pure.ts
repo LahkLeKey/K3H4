@@ -43,6 +43,9 @@ export const UserModelSchema = z.object({
     arcadeSessions: z.array(z.unknown()),
     arcadeRedemptions: z.array(z.unknown()),
     providerGrants: z.array(z.unknown()),
+    geoRouteCaches: z.array(z.unknown()),
+    geoPoiCaches: z.array(z.unknown()),
+    osrmCacheEntries: z.array(z.unknown()),
     personaAttributes: z.array(z.unknown()),
     personaCompatibilities: z.array(z.unknown())
 }).strict();

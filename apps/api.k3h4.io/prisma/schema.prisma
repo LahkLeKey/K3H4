@@ -53,6 +53,14 @@ model User {
   arcadeSessions ArcadeSession[]
   arcadeRedemptions ArcadeRedemption[]
   providerGrants ProviderGrant[]
+  geoRouteCaches GeoRouteCache[]
+  geoPoiCaches   GeoPoiCache[]
+  geoQueryCaches GeoQueryCache[]
+  maptilerQueries MaptilerQuery[]
+  maptilerCacheEntries MaptilerCacheEntry[]
+  osrmCacheEntries OsrmCacheEntry[]
+  geoStatusLogs GeoStatusLog[]
+  geoDemTileCaches GeoDemTileCache[]
   personaAttributes PersonaAttribute[]
   personaCompatibilities PersonaCompatibility[]
 
@@ -142,6 +150,169 @@ model ProviderGrant {
   @@unique([provider, providerId])
 }
 
+model GeoRouteCache {
+  id               String   @id @default(cuid())
+  userId           String?
+  user             User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  provider         String   @default("osrm")
+  signature        String   @unique
+  originLat        Decimal  @db.Decimal(11, 6)
+  originLng        Decimal  @db.Decimal(11, 6)
+  destinationLat   Decimal  @db.Decimal(11, 6)
+  destinationLng   Decimal  @db.Decimal(11, 6)
+  distanceKm       Decimal  @db.Decimal(14, 4)
+  durationMinutes  Int?
+  geojson          Json?
+  expiresAt        DateTime
+  createdAt        DateTime @default(now())
+
+  @@index([expiresAt])
+}
+
+model GeoPoiCache {
+  id          String   @id @default(cuid())
+  userId      String?
+  user        User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  signature   String   @unique
+  centerLat   Decimal  @db.Decimal(11, 6)
+  centerLng   Decimal  @db.Decimal(11, 6)
+  radiusM     Int
+  kinds       String
+  pois        Json
+  count       Int
+  expiresAt   DateTime
+  createdAt   DateTime @default(now())
+
+  @@index([expiresAt])
+}
+
+model GeoQueryCache {
+  id         String   @id @default(cuid())
+  userId     String?
+  user       User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  type       String
+  signature  String   @unique
+  params     Json
+  payload    Json
+  count      Int?
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+
+  @@index([type])
+  @@index([expiresAt])
+}
+
+model GeoStatusLog {
+  id         String   @id @default(cuid())
+  userId     String?
+  user       User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  status     String
+  poiStatus  String?
+  centerLat  Decimal? @db.Decimal(11, 6)
+  centerLng  Decimal? @db.Decimal(11, 6)
+  error      String?
+  userAgent  String?
+  createdAt  DateTime @default(now())
+
+  @@index([createdAt])
+}
+
+// DEM / terrain tile cache for reuse per user
+model GeoDemTileCache {
+  id            String   @id @default(cuid())
+  userId        String?
+  user          User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  provider      String   @default("maptiler")
+  source        String?  // dataset or variant name
+  signature     String   @unique // provider:z/x/y:format
+  z             Int
+  x             Int
+  y             Int
+  format        String   @default("png")
+  url           String?
+  data          Bytes?
+  byteLength    Int?
+  etag          String?
+  cacheControl  String?
+  expiresAt     DateTime?
+  fetchedAt     DateTime @default(now())
+  lastAccessed  DateTime @default(now())
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([provider, z, x, y])
+  @@index([expiresAt])
+}
+
+// MapTiler Cloud API queries and caches
+model MaptilerQuery {
+  id         String   @id @default(cuid())
+  userId     String?
+  user       User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  signature  String   @unique
+  kind       String
+  path       String
+  params     Json?
+  lastUsedAt DateTime @default(now())
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  cacheEntries MaptilerCacheEntry[]
+
+  @@index([userId, kind])
+}
+
+model MaptilerCacheEntry {
+  id           String   @id @default(cuid())
+  userId       String?
+  user         User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  queryId      String?
+  query        MaptilerQuery? @relation(fields: [queryId], references: [id], onDelete: SetNull)
+  kind         String
+  path         String
+  params       Json?
+  paramsHash   String
+  signature    String   @unique
+  method       String   @default("GET")
+  responseType String   @default("json")
+  url          String
+  statusCode   Int?
+  payload      Json?
+  data         Bytes?
+  contentType  String?
+  cacheControl String?
+  fetchedAt    DateTime @default(now())
+  expiresAt    DateTime?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([kind, path])
+  @@index([expiresAt])
+}
+
+// OSRM upstream cache entries (1:1 pass-through)
+model OsrmCacheEntry {
+  id          String   @id @default(cuid())
+  userId      String?
+  user        User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  service     String
+  profile     String
+  coordinates String?
+  params      Json?
+  paramsHash  String
+  signature   String   @unique
+  url         String
+  statusCode  Int?
+  payload     Json?
+  fetchedAt   DateTime @default(now())
+  expiresAt   DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([service, profile])
+  @@index([expiresAt])
+}
+
 model UserPreference {
   id             String   @id @default(cuid())
   userId         String   @unique
@@ -151,6 +322,23 @@ model UserPreference {
   timezone       String   @default("UTC")
   marketingOptIn Boolean  @default(false)
   note           String?
+  lastCenterLat  Decimal? @db.Decimal(11, 6)
+  lastCenterLng  Decimal? @db.Decimal(11, 6)
+  lastZoom       Float?
+  lastBearing    Float?
+  lastPitch      Float?
+  lastPoiSignature String?
+  lastPoiKinds     String?
+  lastPoiRadiusM   Int?
+  lastPoiCount     Int?
+  lastPoiFetchedAt DateTime?
+  maptilerStyle    String  @default("streets-v2")
+  maptilerLanguage String  @default("en")
+  maptilerLastPath String?
+  maptilerLastParams Json?
+  maptilerLastKind String?
+  maptilerLastSignature String?
+  maptilerLastFetchedAt DateTime?
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 }

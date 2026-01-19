@@ -10,7 +10,7 @@ export function CommandStrip({ onOpenMap, onToggleWorkspace }: CommandStripProps
     const { activeContext, selectNext, selectPrev, workspaceOpen, autopilot, setAutopilot, heartbeat } = useAtlasState();
 
     return (
-        <div className="fixed inset-x-0 bottom-4 z-20 px-3 sm:px-6">
+        <div className="pointer-events-auto fixed inset-x-0 bottom-4 z-20 px-3 sm:px-6">
             <div className="mx-auto flex w-full max-w-5xl flex-wrap items-center gap-3 rounded-2xl border border-white/10 bg-slate-950/75 px-4 py-3 text-sm text-slate-100 shadow-[0_14px_60px_rgba(0,0,0,0.4)] backdrop-blur">
                 <div className="flex items-center gap-2 text-xs uppercase tracking-[0.18em] text-slate-400">
                     <Badge accent={activeContext.accent}>Command strip</Badge>

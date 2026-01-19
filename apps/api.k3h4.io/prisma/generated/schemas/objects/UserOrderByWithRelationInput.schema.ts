@@ -35,6 +35,9 @@ import { ArcadePrizeOrderByRelationAggregateInputObjectSchema as ArcadePrizeOrde
 import { ArcadeSessionOrderByRelationAggregateInputObjectSchema as ArcadeSessionOrderByRelationAggregateInputObjectSchema } from './ArcadeSessionOrderByRelationAggregateInput.schema';
 import { ArcadeRedemptionOrderByRelationAggregateInputObjectSchema as ArcadeRedemptionOrderByRelationAggregateInputObjectSchema } from './ArcadeRedemptionOrderByRelationAggregateInput.schema';
 import { ProviderGrantOrderByRelationAggregateInputObjectSchema as ProviderGrantOrderByRelationAggregateInputObjectSchema } from './ProviderGrantOrderByRelationAggregateInput.schema';
+import { GeoRouteCacheOrderByRelationAggregateInputObjectSchema as GeoRouteCacheOrderByRelationAggregateInputObjectSchema } from './GeoRouteCacheOrderByRelationAggregateInput.schema';
+import { GeoPoiCacheOrderByRelationAggregateInputObjectSchema as GeoPoiCacheOrderByRelationAggregateInputObjectSchema } from './GeoPoiCacheOrderByRelationAggregateInput.schema';
+import { OsrmCacheEntryOrderByRelationAggregateInputObjectSchema as OsrmCacheEntryOrderByRelationAggregateInputObjectSchema } from './OsrmCacheEntryOrderByRelationAggregateInput.schema';
 import { PersonaAttributeOrderByRelationAggregateInputObjectSchema as PersonaAttributeOrderByRelationAggregateInputObjectSchema } from './PersonaAttributeOrderByRelationAggregateInput.schema';
 import { PersonaCompatibilityOrderByRelationAggregateInputObjectSchema as PersonaCompatibilityOrderByRelationAggregateInputObjectSchema } from './PersonaCompatibilityOrderByRelationAggregateInput.schema'
 
@@ -81,6 +84,9 @@ const makeSchema = () => z.object({
   arcadeSessions: z.lazy(() => ArcadeSessionOrderByRelationAggregateInputObjectSchema).optional(),
   arcadeRedemptions: z.lazy(() => ArcadeRedemptionOrderByRelationAggregateInputObjectSchema).optional(),
   providerGrants: z.lazy(() => ProviderGrantOrderByRelationAggregateInputObjectSchema).optional(),
+  geoRouteCaches: z.lazy(() => GeoRouteCacheOrderByRelationAggregateInputObjectSchema).optional(),
+  geoPoiCaches: z.lazy(() => GeoPoiCacheOrderByRelationAggregateInputObjectSchema).optional(),
+  osrmCacheEntries: z.lazy(() => OsrmCacheEntryOrderByRelationAggregateInputObjectSchema).optional(),
   personaAttributes: z.lazy(() => PersonaAttributeOrderByRelationAggregateInputObjectSchema).optional(),
   personaCompatibilities: z.lazy(() => PersonaCompatibilityOrderByRelationAggregateInputObjectSchema).optional()
 }).strict();
