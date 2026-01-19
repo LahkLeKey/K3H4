@@ -1,4 +1,4 @@
-import React, { useMemo, useRef } from "react";
+import { useMemo, useRef } from "react";
 import { shaderMaterial } from "@react-three/drei";
 import { extend, useFrame } from "@react-three/fiber";
 import * as THREE from "three";
@@ -86,12 +86,9 @@ const CampfireFlameMaterial = shaderMaterial(
 
 extend({ CampfireFlameMaterial });
 
-declare global {
-  // eslint-disable-next-line @typescript-eslint/no-namespace
-  namespace JSX {
-    interface IntrinsicElements {
-      campfireFlameMaterial: any;
-    }
+declare module "@react-three/fiber" {
+  interface ThreeElements {
+    campfireFlameMaterial: any;
   }
 }
 

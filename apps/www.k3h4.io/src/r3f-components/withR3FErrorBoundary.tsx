@@ -1,8 +1,8 @@
-import React from "react";
+import type { ComponentType, ReactElement } from "react";
 import { R3FErrorBoundary } from "./R3FErrorBoundary";
 
-export function withR3FErrorBoundary<TProps extends Record<string, unknown>>(Component: React.ComponentType<TProps>) {
-    return function WrappedWithBoundary(props: TProps): JSX.Element {
+export function withR3FErrorBoundary<TProps extends Record<string, unknown>>(Component: ComponentType<TProps>) {
+    return function WrappedWithBoundary(props: TProps): ReactElement {
         return (
             <R3FErrorBoundary>
                 <Component {...props} />

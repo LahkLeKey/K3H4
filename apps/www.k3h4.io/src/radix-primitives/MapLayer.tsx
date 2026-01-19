@@ -5,6 +5,8 @@ import { TerrainLayer, MVTLayer } from "@deck.gl/geo-layers";
 import { GeoJsonLayer } from "@deck.gl/layers";
 import { FillStyleExtension, PathStyleExtension } from "@deck.gl/extensions";
 
+type DeckMapboxOverlay = InstanceType<typeof MapboxOverlay>;
+
 import { useMapView } from "../react-hooks/useMapView";
 import { useGeoState } from "../zustand-stores/geo";
 import { LocationOverview } from "./LocationOverview";
@@ -55,7 +57,7 @@ export function MapLayer({ readonly }: { readonly?: boolean }) {
     const { status, center, requestLocation, fetchNearbyPois, pois, lastFetchCenter, lastFetchRadius, setCenterFromMap, poiStatus, poiRetryAt, poiError } = useGeoState();
     const { session, apiBase } = useAuthStore();
 
-    const overlayRef = useRef<MapboxOverlay | null>(null);
+    const overlayRef = useRef<DeckMapboxOverlay | null>(null);
 
     const refreshTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
