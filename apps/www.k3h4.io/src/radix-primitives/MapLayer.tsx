@@ -1,5 +1,9 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import maplibregl from "maplibre-gl";
+import { MapboxOverlay } from "@deck.gl/mapbox";
+import { TerrainLayer, MVTLayer } from "@deck.gl/geo-layers";
+import { GeoJsonLayer } from "@deck.gl/layers";
+import { FillStyleExtension, PathStyleExtension, _TerrainExtension as TerrainExtension } from "@deck.gl/extensions";
 
 import { useMapView } from "../react-hooks/useMapView";
 import { useGeoState } from "../zustand-stores/geo";
@@ -8,6 +12,36 @@ import { useAuthStore } from "../react-hooks/auth";
 import { MapPinsOverlay, type Poi } from "../r3f-components/MapPinsOverlay";
 
 const STYLE_URL = "https://basemaps.cartocdn.com/gl/positron-gl-style/style.json";
+const MAX_DEM_ERROR = 28;
+
+const patternAtlas = (() => {
+    if (typeof document === "undefined") return null;
+    const c = document.createElement("canvas");
+    c.width = 128;
+    c.height = 128;
+    const g = c.getContext("2d");
+    if (!g) return null;
+
+    g.fillStyle = "black";
+    g.fillRect(0, 0, 128, 128);
+    g.strokeStyle = "white";
+    g.lineWidth = 4;
+    for (let y = 0; y < 128; y += 22) {
+        for (let x = 0; x < 128; x += 22) {
+            g.beginPath();
+            g.moveTo(x, y);
+            g.lineTo(x + 11, y + 18);
+            g.lineTo(x + 22, y);
+            g.closePath();
+            g.stroke();
+        }
+    }
+
+    return {
+        atlas: c.toDataURL("image/png"),
+        mapping: { tri: { x: 0, y: 0, width: 128, height: 128, mask: true } },
+    } as const;
+})();
 
 export function MapLayer() {
     const ref = useRef<HTMLDivElement>(null);
@@ -18,9 +52,89 @@ export function MapLayer() {
     const { status, center, requestLocation, fetchNearbyPois, pois, lastFetchCenter, lastFetchRadius, setCenterFromMap } = useGeoState();
     const { session, apiBase } = useAuthStore();
 
+    const overlayRef = useRef<MapboxOverlay | null>(null);
+
     const refreshTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     const poiList = useMemo(() => (Array.isArray(pois) ? (pois as Poi[]) : []), [pois]);
+
+    const terrainUrl = useMemo(() => `${apiBase}/geo/dem/{z}/{x}/{y}.png`, [apiBase]);
+
+    const buildDeckLayers = useCallback(() => {
+        const layers = [] as any[];
+
+        layers.push(
+            new TerrainLayer({
+                id: "lowpoly-terrain",
+                elevationData: terrainUrl,
+                elevationDecoder: { rScaler: 6553.6, gScaler: 25.6, bScaler: 0.1, offset: -10000 },
+                meshMaxError: MAX_DEM_ERROR,
+                wireframe: true,
+                color: [190, 200, 210],
+                operation: "terrain+draw",
+            }),
+        );
+
+        layers.push(
+            new MVTLayer({
+                id: "mvt-stylized",
+                data: ["https://tiles-a.basemaps.cartocdn.com/vectortiles/carto.streets/v1/{z}/{x}/{y}.mvt"],
+                renderSubLayers: (props: any) =>
+                    new GeoJsonLayer(props, {
+                        id: `${props.id}-geo`,
+                        extensions: [
+                            new TerrainExtension(),
+                            new FillStyleExtension({ pattern: true }),
+                            new PathStyleExtension({ dash: true }),
+                        ],
+                        filled: true,
+                        fillPatternAtlas: patternAtlas?.atlas,
+                        fillPatternMapping: patternAtlas?.mapping,
+                        fillPatternMask: true,
+                        getFillPattern: (f: any) => {
+                            const ln = f.properties?.layerName;
+                            if (ln === "water") return "tri";
+                            if (ln === "building") return "tri";
+                            return null;
+                        },
+                        getFillColor: (f: any) => {
+                            const ln = f.properties?.layerName;
+                            if (ln === "water") return [90, 150, 210, 210];
+                            if (ln === "building") return [220, 220, 220, 220];
+                            return [0, 0, 0, 0];
+                        },
+                        stroked: true,
+                        lineWidthUnits: "pixels",
+                        getLineWidth: (f: any) => {
+                            const ln = f.properties?.layerName;
+                            const cls = f.properties?.class;
+                            if (ln === "waterway") return 2.5;
+                            if (ln === "transportation" && (cls === "motorway" || cls === "trunk")) return 5.5;
+                            if (ln === "transportation") return 2.0;
+                            return 0;
+                        },
+                        getLineColor: (f: any) => {
+                            const ln = f.properties?.layerName;
+                            const cls = f.properties?.class;
+                            if (ln === "waterway") return [90, 150, 210, 240];
+                            if (ln === "transportation" && (cls === "motorway" || cls === "trunk")) return [255, 210, 130, 255];
+                            if (ln === "transportation") return [160, 160, 160, 230];
+                            return [0, 0, 0, 0];
+                        },
+                        getDashArray: (f: any) => {
+                            const ln = f.properties?.layerName;
+                            const cls = f.properties?.class;
+                            if (ln === "waterway") return [2.2, 1.6];
+                            if (ln === "transportation" && (cls === "motorway" || cls === "trunk")) return [5.0, 2.0];
+                            if (ln === "transportation" && (cls === "path" || cls === "track")) return [0.6, 1.4];
+                            return [0, 0];
+                        },
+                    }),
+            }),
+        );
+
+        return layers;
+    }, [terrainUrl]);
 
     // One-time geolocation request on mount
     useEffect(() => {
@@ -55,7 +169,12 @@ export function MapLayer() {
         });
 
         map.addControl(new maplibregl.NavigationControl({ visualizePitch: true }), "bottom-right");
+        const overlay = new MapboxOverlay({ interleaved: true });
+        map.addControl(overlay as any);
+        overlayRef.current = overlay;
         mapRef.current = map;
+
+        const applyDeckLayers = () => overlay.setProps({ layers: buildDeckLayers() });
 
         const sync = () => {
             const c = map.getCenter();
@@ -85,6 +204,7 @@ export function MapLayer() {
         };
 
         map.on("load", () => {
+            applyDeckLayers();
             syncAndStoreCenter();
             bump();
         });
@@ -105,10 +225,12 @@ export function MapLayer() {
         return () => {
             if (raf !== null) cancelAnimationFrame(raf);
             registerMap(null);
+            overlayRef.current?.finalize();
+            overlayRef.current = null;
             mapRef.current = null;
             map.remove();
         };
-    }, [registerMap, updateView, status]);
+    }, [buildDeckLayers, registerMap, updateView, status]);
 
     // Fetch nearby POIs once after location is ready (force to refresh cache on first load)
     useEffect(() => {
@@ -173,6 +295,12 @@ export function MapLayer() {
 
         return () => clearTimeout(handle);
     }, [apiBase, session?.accessToken, view]);
+
+    // Refresh deck.gl layers when API base changes
+    useEffect(() => {
+        if (!overlayRef.current) return;
+        overlayRef.current.setProps({ layers: buildDeckLayers() });
+    }, [buildDeckLayers]);
 
     if (status === "blocked" || status === "error") {
         return (

@@ -58,6 +58,7 @@ model User {
   geoQueryCaches GeoQueryCache[]
   osrmCacheEntries OsrmCacheEntry[]
   geoStatusLogs GeoStatusLog[]
+  geoDemTileCaches GeoDemTileCache[]
   personaAttributes PersonaAttribute[]
   personaCompatibilities PersonaCompatibility[]
 
@@ -212,6 +213,33 @@ model GeoStatusLog {
   createdAt  DateTime @default(now())
 
   @@index([createdAt])
+}
+
+// DEM / terrain tile cache for reuse per user
+model GeoDemTileCache {
+  id            String   @id @default(cuid())
+  userId        String?
+  user          User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  provider      String   @default("maptiler")
+  source        String?  // dataset or variant name
+  signature     String   @unique // provider:z/x/y:format
+  z             Int
+  x             Int
+  y             Int
+  format        String   @default("png")
+  url           String?
+  data          Bytes?
+  byteLength    Int?
+  etag          String?
+  cacheControl  String?
+  expiresAt     DateTime?
+  fetchedAt     DateTime @default(now())
+  lastAccessed  DateTime @default(now())
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([provider, z, x, y])
+  @@index([expiresAt])
 }
 
 // OSRM upstream cache entries (1:1 pass-through)

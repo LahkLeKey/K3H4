@@ -10,6 +10,7 @@ import { existsSync } from "node:fs";
 import { PrismaClient } from "@prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { registerAllRoutes } from "./routes";
+import { scheduleDemCacheCleanup } from "./services/geo-dem-cache";
 
 dotenv.config();
 
@@ -185,6 +186,9 @@ const prisma = new PrismaClient({
   adapter: new PrismaPg({ connectionString: databaseUrl }),
 });
 
+// Periodic DEM cache cleanup (expired tiles + size cap)
+const demCleanupHandle = scheduleDemCacheCleanup(prisma, server.log);
+
 // Basic OpenAPI definition for the service
 const openApiOptions: SwaggerOptions = {
   openapi: {
@@ -339,6 +343,10 @@ server.post("/telemetry", async (request, reply) => {
 });
 
 await registerAllRoutes(server, prisma, recordTelemetry);
+
+server.addHook("onClose", async () => {
+  clearInterval(demCleanupHandle);
+});
 
 const port = Number(process.env.PORT || 8080);
 const host = process.env.HOST || "0.0.0.0";
