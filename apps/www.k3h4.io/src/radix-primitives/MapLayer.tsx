@@ -200,6 +200,28 @@ export function MapLayer() {
         };
 
         map.on("load", () => {
+            // Add DEM source and hillshade/terrain for more realistic relief (served via API cache)
+            if (!map.getSource("terrain-dem")) {
+                map.addSource("terrain-dem", {
+                    type: "raster-dem",
+                    tiles: [terrainUrl],
+                    tileSize: 256,
+                    maxzoom: 15,
+                    encoding: "mapbox",
+                } as any);
+                map.setTerrain({ source: "terrain-dem", exaggeration: 1.25 });
+                map.addLayer({
+                    id: "terrain-hillshade",
+                    type: "hillshade",
+                    source: "terrain-dem",
+                    paint: {
+                        "hillshade-exaggeration": 0.7,
+                        "hillshade-shadow-color": "#0f172a",
+                        "hillshade-highlight-color": "#e2e8f0",
+                    },
+                } as any);
+            }
+
             applyDeckLayers();
             syncAndStoreCenter();
             bump();
@@ -226,7 +248,7 @@ export function MapLayer() {
             mapRef.current = null;
             map.remove();
         };
-    }, [buildDeckLayers, registerMap, updateView, status]);
+    }, [buildDeckLayers, registerMap, terrainUrl, updateView, status]);
 
     // Fetch nearby POIs once after location is ready (force to refresh cache on first load)
     useEffect(() => {

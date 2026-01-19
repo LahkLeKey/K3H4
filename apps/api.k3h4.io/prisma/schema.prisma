@@ -56,6 +56,8 @@ model User {
   geoRouteCaches GeoRouteCache[]
   geoPoiCaches   GeoPoiCache[]
   geoQueryCaches GeoQueryCache[]
+  maptilerQueries MaptilerQuery[]
+  maptilerCacheEntries MaptilerCacheEntry[]
   osrmCacheEntries OsrmCacheEntry[]
   geoStatusLogs GeoStatusLog[]
   geoDemTileCaches GeoDemTileCache[]
@@ -242,6 +244,52 @@ model GeoDemTileCache {
   @@index([expiresAt])
 }
 
+// MapTiler Cloud API queries and caches
+model MaptilerQuery {
+  id         String   @id @default(cuid())
+  userId     String?
+  user       User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  signature  String   @unique
+  kind       String
+  path       String
+  params     Json?
+  lastUsedAt DateTime @default(now())
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  cacheEntries MaptilerCacheEntry[]
+
+  @@index([userId, kind])
+}
+
+model MaptilerCacheEntry {
+  id           String   @id @default(cuid())
+  userId       String?
+  user         User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  queryId      String?
+  query        MaptilerQuery? @relation(fields: [queryId], references: [id], onDelete: SetNull)
+  kind         String
+  path         String
+  params       Json?
+  paramsHash   String
+  signature    String   @unique
+  method       String   @default("GET")
+  responseType String   @default("json")
+  url          String
+  statusCode   Int?
+  payload      Json?
+  data         Bytes?
+  contentType  String?
+  cacheControl String?
+  fetchedAt    DateTime @default(now())
+  expiresAt    DateTime?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([kind, path])
+  @@index([expiresAt])
+}
+
 // OSRM upstream cache entries (1:1 pass-through)
 model OsrmCacheEntry {
   id          String   @id @default(cuid())
@@ -284,6 +332,13 @@ model UserPreference {
   lastPoiRadiusM   Int?
   lastPoiCount     Int?
   lastPoiFetchedAt DateTime?
+  maptilerStyle    String  @default("streets-v2")
+  maptilerLanguage String  @default("en")
+  maptilerLastPath String?
+  maptilerLastParams Json?
+  maptilerLastKind String?
+  maptilerLastSignature String?
+  maptilerLastFetchedAt DateTime?
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 }
