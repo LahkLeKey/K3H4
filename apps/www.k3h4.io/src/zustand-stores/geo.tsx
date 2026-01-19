@@ -25,6 +25,7 @@ type GeoState = {
 };
 
 const DEFAULT_KINDS = "bank,atm,restaurant,cafe,fuel,bus_station,train_station";
+const DEFAULT_CENTER = { lat: 44.7433, lng: -92.8524 }; // Hastings, MN
 
 const logStatus = async (payload: {
     status: GeoStatus;
@@ -165,6 +166,37 @@ export const useGeoStore = create<GeoState>((set, get) => ({
     reset: () => {
         coalesceMap.clear();
         set({ ...initialState });
+    },
+
+    // If unauthenticated and nothing cached, fall back to Hastings, MN
+    requestLocation: () => {
+        set({ status: "locating", requested: true, error: null });
+        if (typeof navigator === "undefined" || !navigator.geolocation) {
+            set({ status: "blocked", error: "geolocation unsupported" });
+            return;
+        }
+        navigator.geolocation.getCurrentPosition(
+            (pos) => {
+                set({
+                    status: "ready",
+                    center: { lat: pos.coords.latitude, lng: pos.coords.longitude },
+                    error: null,
+                });
+                void logStatus({ status: "ready", center: { lat: pos.coords.latitude, lng: pos.coords.longitude } });
+            },
+            (err) => {
+                // When denied and no center known, default to Hastings
+                const currentCenter = get().center;
+                if (!currentCenter) {
+                    set({ status: "ready", center: DEFAULT_CENTER, error: err?.message ?? "geolocation denied" });
+                    void logStatus({ status: "ready", center: DEFAULT_CENTER, error: err?.message ?? "geolocation denied" });
+                } else {
+                    set({ status: "blocked", error: err?.message ?? "geolocation denied" });
+                    void logStatus({ status: "blocked", error: err?.message ?? "geolocation denied" });
+                }
+            },
+            { enableHighAccuracy: true, timeout: 8000 }
+        );
     },
 
     requestLocation: () => {
