@@ -7,6 +7,8 @@ const OSRM_BASE = process.env.OSRM_URL || "https://router.project-osrm.org";
 const OVERPASS_URL = "https://overpass-api.de/api/interpreter";
 const ROUTE_TTL_MS = 1000 * 60 * 60 * 6; // 6 hours
 const POI_TTL_MS = 1000 * 60 * 60 * 12; // 12 hours
+const GEO_POI_RATE_LIMIT_MAX = Number(process.env.GEO_POI_RATE_LIMIT_MAX ?? 30);
+const GEO_POI_RATE_LIMIT_WINDOW = process.env.GEO_POI_RATE_LIMIT_WINDOW || "1 minute";
 
 const clampDecimals = (value: number, places = 5) => Number(value.toFixed(places));
 
@@ -151,6 +153,9 @@ export function registerGeoRoutes(server: FastifyInstance, prisma: PrismaClient,
 
   server.get(
     "/geo/pois",
+    {
+      rateLimit: { max: GEO_POI_RATE_LIMIT_MAX, timeWindow: GEO_POI_RATE_LIMIT_WINDOW },
+    },
     async (request, reply) => {
       const query = request.query as any;
       const lat = Number(query.lat);

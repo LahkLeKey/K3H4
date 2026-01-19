@@ -51,7 +51,7 @@ export function MapLayer() {
     const initialCenterRef = useRef<{ lat: number; lng: number } | null>(null);
     const [mapFrame, setMapFrame] = useState(0);
     const { updateView, registerMap, view } = useMapView();
-    const { status, center, requestLocation, fetchNearbyPois, pois, lastFetchCenter, lastFetchRadius, setCenterFromMap } = useGeoState();
+    const { status, center, requestLocation, fetchNearbyPois, pois, lastFetchCenter, lastFetchRadius, setCenterFromMap, poiStatus, poiRetryAt, poiError } = useGeoState();
     const { session, apiBase } = useAuthStore();
 
     const overlayRef = useRef<MapboxOverlay | null>(null);
@@ -59,6 +59,7 @@ export function MapLayer() {
     const refreshTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     const poiList = useMemo(() => (Array.isArray(pois) ? (pois as Poi[]) : []), [pois]);
+    const [retryCountdown, setRetryCountdown] = useState<number | null>(null);
 
     const terrainUrl = useMemo(() => `${apiBase}/geo/dem/{z}/{x}/{y}.png`, [apiBase]);
     const maptilerStyleUrl = useMemo(() => `${apiBase}/maptiler/json?path=${MAPTILER_STYLE_PATH}`, [apiBase]);
@@ -308,6 +309,32 @@ export function MapLayer() {
         }
     }, [fetchNearbyPois, status, session?.accessToken]);
 
+    // Show countdown when POI fetch hit rate limit / 500 with retryAfter guidance
+    useEffect(() => {
+        if (!poiRetryAt) {
+            setRetryCountdown(null);
+            return;
+        }
+
+        const update = () => {
+            const remainingMs = poiRetryAt - Date.now();
+            setRetryCountdown(Math.max(0, Math.ceil(remainingMs / 1000)));
+        };
+
+        update();
+        const id = setInterval(() => {
+            update();
+            const remainingMs = poiRetryAt - Date.now();
+            if (remainingMs <= 0) {
+                clearInterval(id);
+                // Auto retry once countdown hits zero
+                void fetchNearbyPois({ token: session?.accessToken, force: true });
+            }
+        }, 500);
+
+        return () => clearInterval(id);
+    }, [poiRetryAt, fetchNearbyPois, session?.accessToken]);
+
     const distanceMeters = (a: { lat: number; lng: number }, b: { lat: number; lng: number }) => {
         const R = 6371000; // meters
         const dLat = ((b.lat - a.lat) * Math.PI) / 180;
@@ -390,6 +417,12 @@ export function MapLayer() {
     return (
         <>
             <div ref={ref} className="absolute inset-0 z-0" />
+            {poiStatus === "error" ? (
+                <div className="pointer-events-none absolute left-1/2 top-4 z-10 -translate-x-1/2 rounded-full bg-slate-900/85 px-4 py-2 text-xs font-semibold text-white shadow-lg">
+                    api throttled {retryCountdown !== null ? `(retry in ${retryCountdown}s)` : ""}
+                    {poiError ? <span className="ml-2 text-[11px] font-normal text-amber-200/80">{poiError}</span> : null}
+                </div>
+            ) : null}
             <MapPinsOverlay map={mapRef.current} pois={poiList} frame={mapFrame} />
             <LocationOverview />
             <button

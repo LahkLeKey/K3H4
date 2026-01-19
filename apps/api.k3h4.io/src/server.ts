@@ -39,7 +39,8 @@ const server = Fastify({
 });
 
 await server.register(fastifyRateLimit, {
-  max: Number(process.env.RATE_LIMIT_MAX || 120),
+  // Higher overall limits for internal DB-backed routes; per-route limits will throttle external APIs.
+  max: Number(process.env.RATE_LIMIT_MAX || 600),
   timeWindow: process.env.RATE_LIMIT_WINDOW || "1 minute",
   allowList: (request) => request.url?.startsWith("/telemetry") || false,
   errorResponseBuilder: () => ({ error: "Too many requests", code: 429, retryAfter: 60 }),

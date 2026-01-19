@@ -65,8 +65,8 @@ export function AppShell() {
             <div className="relative h-screen w-screen overflow-hidden bg-slate-950">
                 <div className="pointer-events-auto absolute inset-x-0 top-0 z-30 flex items-center justify-between gap-3 bg-slate-950/85 px-4 py-3 text-sm font-semibold text-white shadow-[0_10px_30px_rgba(0,0,0,0.45)] backdrop-blur">
                     <div className="flex items-center gap-2">
-                        <div className="rounded bg-emerald-500/20 px-2 py-1 text-xs text-emerald-200">LIVE</div>
-                        <div className="text-base tracking-tight text-white">K3H4 Atlas</div>
+                        <div className="rounded bg-emerald-500/20 px-2 py-1 text-xs text-emerald-200">Portfolio</div>
+                        <div className="text-base tracking-tight text-white">Kyle Halek - Hastings, MN</div>
                     </div>
                     <button
                         type="button"

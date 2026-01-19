@@ -4,6 +4,8 @@ import { fetchMaptilerWithCache } from "../services/maptiler-cache";
 import { type RecordTelemetryFn } from "./types";
 
 const DEFAULT_MAX_AGE_MINUTES = 60 * 6; // 6 hours
+const MAPTILER_RATE_LIMIT_MAX = Number(process.env.MAPTILER_RATE_LIMIT_MAX ?? 60);
+const MAPTILER_RATE_LIMIT_WINDOW = process.env.MAPTILER_RATE_LIMIT_WINDOW || "1 minute";
 const allowedRoots = new Set([
   "geocoding",
   "search",
@@ -138,6 +140,7 @@ export function registerMaptilerRoutes(server: FastifyInstance, prisma: PrismaCl
     "/maptiler/json",
     {
       ...optionalAuth,
+      rateLimit: { max: MAPTILER_RATE_LIMIT_MAX, timeWindow: MAPTILER_RATE_LIMIT_WINDOW },
       schema: {
         summary: "Proxy MapTiler Cloud JSON endpoints with caching",
         tags: ["maptiler"],
@@ -150,6 +153,7 @@ export function registerMaptilerRoutes(server: FastifyInstance, prisma: PrismaCl
     "/maptiler/tiles",
     {
       ...optionalAuth,
+      rateLimit: { max: MAPTILER_RATE_LIMIT_MAX, timeWindow: MAPTILER_RATE_LIMIT_WINDOW },
       schema: {
         summary: "Proxy MapTiler Cloud binary endpoints (tiles/static) with caching",
         tags: ["maptiler"],

@@ -10,6 +10,8 @@ type GeoState = {
     pois: any[] | null;
     poisFetched: boolean;
     poiStatus: "idle" | "loading" | "ready" | "error";
+    poiRetryAt: number | null;
+    poiError?: string | null;
     requested: boolean;
     lastFetchCenter: { lat: number; lng: number } | null;
     lastFetchRadius: number | null;
@@ -94,7 +96,13 @@ const fetchWithBackoff = async (url: string, init: RequestInit, opts?: { retries
             const backoff = Math.min(maxDelayMs, baseDelayMs * 2 ** attempt) + jitter;
             const delay = retryAfterMs ?? backoff;
 
-            if (attempt >= retries) throw new Error(`poi ${status}`);
+            if (attempt >= retries) {
+                const error = new Error(`poi ${status}`) as Error & { retryAfterMs?: number; status?: number };
+                if (retryAfterMs) error.retryAfterMs = retryAfterMs;
+                error.status = status;
+                throw error;
+            }
+
             attempt += 1;
             await wait(delay);
             continue;
@@ -126,6 +134,8 @@ export const useGeoStore = create<GeoState>((set, get) => ({
     pois: null,
     poisFetched: false,
     poiStatus: "idle",
+    poiRetryAt: null,
+    poiError: null,
     requested: false,
     lastFetchCenter: null,
     lastFetchRadius: null,
@@ -173,7 +183,7 @@ export const useGeoStore = create<GeoState>((set, get) => ({
     fetchNearbyPois: async (opts) => {
         const { center, status } = get();
         if (!center || status !== "ready") return;
-        set({ poiStatus: "loading" });
+        set({ poiStatus: "loading", poiRetryAt: null, poiError: null });
         void logStatus({ status, poiStatus: "loading", center });
         const radiusM = opts?.radiusM ?? 1500;
         const kinds = toKindsString(opts?.kinds);
@@ -186,7 +196,7 @@ export const useGeoStore = create<GeoState>((set, get) => ({
                 return;
             } catch (err) {
                 const message = err instanceof Error ? err.message : "poi fetch failed";
-                set({ poiStatus: "error", poisFetched: true, error: message });
+                set({ poiStatus: "error", poisFetched: true, error: message, poiError: message });
                 void logStatus({ status, poiStatus: "error", center, error: message });
                 return;
             }
@@ -215,6 +225,8 @@ export const useGeoStore = create<GeoState>((set, get) => ({
                 pois: mergedPois,
                 poisFetched: true,
                 poiStatus: "ready",
+                poiRetryAt: null,
+                poiError: null,
                 lastFetchCenter: center,
                 lastFetchRadius: radiusM,
                 lastFetchKinds: kinds,
@@ -224,7 +236,9 @@ export const useGeoStore = create<GeoState>((set, get) => ({
         } catch (err) {
             // keep failure silent but mark attempted
             const message = err instanceof Error ? err.message : "poi fetch failed";
-            set({ poisFetched: true, error: message, poiStatus: "error" });
+            const retryAfterMs = err && typeof err === "object" ? (err as any).retryAfterMs : null;
+            const retryAt = retryAfterMs ? Date.now() + retryAfterMs : null;
+            set({ poisFetched: true, error: message, poiStatus: "error", poiRetryAt: retryAt, poiError: message });
             void logStatus({ status, poiStatus: "error", center, error: message });
         }
     },
