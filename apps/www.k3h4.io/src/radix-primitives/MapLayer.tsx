@@ -3,7 +3,7 @@ import maplibregl from "maplibre-gl";
 import { MapboxOverlay } from "@deck.gl/mapbox";
 import { TerrainLayer, MVTLayer } from "@deck.gl/geo-layers";
 import { GeoJsonLayer } from "@deck.gl/layers";
-import { FillStyleExtension, PathStyleExtension, _TerrainExtension as TerrainExtension } from "@deck.gl/extensions";
+import { FillStyleExtension, PathStyleExtension } from "@deck.gl/extensions";
 
 import { useMapView } from "../react-hooks/useMapView";
 import { useGeoState } from "../zustand-stores/geo";
@@ -82,11 +82,7 @@ export function MapLayer() {
                 renderSubLayers: (props: any) =>
                     new GeoJsonLayer(props, {
                         id: `${props.id}-geo`,
-                        extensions: [
-                            new TerrainExtension(),
-                            new FillStyleExtension({ pattern: true }),
-                            new PathStyleExtension({ dash: true }),
-                        ],
+                                extensions: [new FillStyleExtension({ pattern: true }), new PathStyleExtension({ dash: true })],
                         filled: true,
                         fillPatternAtlas: patternAtlas?.atlas,
                         fillPatternMapping: patternAtlas?.mapping,
