@@ -21,6 +21,7 @@ type GeoState = {
     fetchNearbyPois: (opts?: { radiusM?: number; kinds?: string[]; token?: string; force?: boolean }) => Promise<void>;
     hydrateFromPrefs: (opts: { center?: { lat: number; lng: number } | null; pois?: any[] | null }) => void;
     setCenterFromMap: (center: { lat: number; lng: number }) => void;
+    reset: () => void;
 };
 
 const DEFAULT_KINDS = "bank,atm,restaurant,cafe,fuel,bus_station,train_station";
@@ -50,6 +51,22 @@ const logStatus = async (payload: {
 };
 
 const coalesceMap = new Map<string, Promise<any>>();
+
+const initialState: Omit<GeoState, "requestLocation" | "fetchNearbyPois" | "hydrateFromPrefs" | "setCenterFromMap" | "reset"> = {
+    status: "idle",
+    center: null,
+    error: null,
+    pois: null,
+    poisFetched: false,
+    poiStatus: "idle",
+    poiRetryAt: null,
+    poiError: null,
+    requested: false,
+    lastFetchCenter: null,
+    lastFetchRadius: null,
+    lastFetchKinds: null,
+    lastSignature: null,
+};
 const toKindsString = (kinds?: string[] | string) => (Array.isArray(kinds) ? kinds.join(",") : kinds ?? DEFAULT_KINDS);
 const makeSignature = (center: { lat: number; lng: number }, radiusM: number, kinds: string) =>
     `${center.lat.toFixed(5)}:${center.lng.toFixed(5)}:${radiusM}:${kinds}`;
@@ -128,19 +145,7 @@ const mergePois = (current: any[] | null, incoming: any[] | null) => {
 };
 
 export const useGeoStore = create<GeoState>((set, get) => ({
-    status: "idle",
-    center: null,
-    error: null,
-    pois: null,
-    poisFetched: false,
-    poiStatus: "idle",
-    poiRetryAt: null,
-    poiError: null,
-    requested: false,
-    lastFetchCenter: null,
-    lastFetchRadius: null,
-    lastFetchKinds: null,
-    lastSignature: null,
+    ...initialState,
 
     hydrateFromPrefs: (opts) => {
         set((prev) => ({
@@ -155,6 +160,11 @@ export const useGeoStore = create<GeoState>((set, get) => ({
 
     setCenterFromMap: (center) => {
         set({ center, status: "ready" });
+    },
+
+    reset: () => {
+        coalesceMap.clear();
+        set({ ...initialState });
     },
 
     requestLocation: () => {

@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 
 import { MapLayer } from "./MapLayer";
 import { MapViewProvider } from "../react-hooks/useMapView";
@@ -9,6 +9,7 @@ import { LoginMenu } from "../radix-components/auth/LoginMenu";
 import { CallbackScreen } from "../radix-components/auth/CallbackScreen";
 import { useGeoState } from "../zustand-stores/geo";
 import { useMapView } from "../react-hooks/useMapView";
+import { SessionLanding } from "../radix-components/auth/SessionLanding";
 
 function GeoPrefsHydrator() {
     const { apiBase, session } = useAuthStore();
@@ -59,6 +60,15 @@ export function AppShell() {
     const { session, signOut } = useAuthStore();
     const authView = useAuthOverlay();
     const shouldShowAuth = !session || (typeof window !== "undefined" && window.location.pathname.startsWith("/auth"));
+    const { reset: resetGeo } = useGeoState();
+    const [showProfile, setShowProfile] = useState(false);
+
+    useEffect(() => {
+        if (!session) {
+            resetGeo();
+            setShowProfile(false);
+        }
+    }, [session, resetGeo]);
 
     return (
         <MapViewProvider>
@@ -68,19 +78,31 @@ export function AppShell() {
                         <div className="rounded bg-emerald-500/20 px-2 py-1 text-xs text-emerald-200">Portfolio</div>
                         <div className="text-base tracking-tight text-white">Kyle Halek - Hastings, MN</div>
                     </div>
-                    <button
-                        type="button"
-                        onClick={signOut}
-                        className="rounded-full border border-white/15 bg-white/10 px-3 py-1.5 text-xs font-semibold text-white transition hover:-translate-y-[1px] hover:border-white/30 hover:bg-white/15 active:translate-y-0"
-                        disabled={!session}
-                    >
-                        {session ? "Sign out" : "Not signed in"}
-                    </button>
+                    <div className="flex items-center gap-2">
+                        {session ? (
+                            <button
+                                type="button"
+                                onClick={() => setShowProfile(true)}
+                                className="rounded-full border border-white/15 bg-white/10 px-3 py-1.5 text-xs font-semibold text-white transition hover:-translate-y-[1px] hover:border-white/30 hover:bg-white/15 active:translate-y-0"
+                            >
+                                Profile
+                            </button>
+                        ) : null}
+                        <button
+                            type="button"
+                            onClick={signOut}
+                            className="rounded-full border border-white/15 bg-white/10 px-3 py-1.5 text-xs font-semibold text-white transition hover:-translate-y-[1px] hover:border-white/30 hover:bg-white/15 active:translate-y-0"
+                            disabled={!session}
+                        >
+                            {session ? "Sign out" : "Not signed in"}
+                        </button>
+                    </div>
                 </div>
                 <GeoPrefsHydrator />
                 <UiErrorBoundary>
-                    <MapLayer />
+                    <MapLayer readonly={shouldShowAuth} />
                 </UiErrorBoundary>
+                {session && showProfile ? <SessionLanding session={session} /> : null}
                 {shouldShowAuth ? (authView === "callback" ? <CallbackScreen /> : <LoginMenu />) : null}
             </div>
         </MapViewProvider>

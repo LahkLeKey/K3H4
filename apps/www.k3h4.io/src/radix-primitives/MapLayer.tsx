@@ -45,9 +45,10 @@ const patternAtlas = (() => {
     } as const;
 })();
 
-export function MapLayer() {
+export function MapLayer({ readonly }: { readonly?: boolean }) {
     const ref = useRef<HTMLDivElement>(null);
     const mapRef = useRef<maplibregl.Map | null>(null);
+    const navControlRef = useRef<maplibregl.NavigationControl | null>(null);
     const initialCenterRef = useRef<{ lat: number; lng: number } | null>(null);
     const [mapFrame, setMapFrame] = useState(0);
     const { updateView, registerMap, view } = useMapView();
@@ -179,12 +180,27 @@ export function MapLayer() {
             minPitch: 45,
             maxPitch: 75,
             attributionControl: false,
-            dragRotate: true,
-            pitchWithRotate: true,
+            interactive: !readonly,
+            dragRotate: !readonly,
+            pitchWithRotate: !readonly,
             transformRequest: proxiedMaptilerRequest,
         });
 
-        map.addControl(new maplibregl.NavigationControl({ visualizePitch: true }), "bottom-right");
+        if (readonly) {
+            map.boxZoom.disable();
+            map.dragPan.disable();
+            map.scrollZoom.disable();
+            map.keyboard.disable();
+            map.doubleClickZoom.disable();
+            map.touchZoomRotate.disable();
+            map.dragRotate.disable();
+        }
+
+        if (!readonly) {
+            const nav = new maplibregl.NavigationControl({ visualizePitch: true });
+            map.addControl(nav, "bottom-right");
+            navControlRef.current = nav;
+        }
         const overlay = new MapboxOverlay({ interleaved: true });
         map.addControl(overlay as any);
         overlayRef.current = overlay;
@@ -297,17 +313,60 @@ export function MapLayer() {
             registerMap(null);
             overlayRef.current?.finalize();
             overlayRef.current = null;
+            navControlRef.current = null;
             mapRef.current = null;
             map.remove();
         };
-    }, [buildDeckLayers, registerMap, terrainUrl, updateView, status, maptilerStyleUrl, proxiedMaptilerRequest]);
+    }, [buildDeckLayers, registerMap, terrainUrl, updateView, status, maptilerStyleUrl, proxiedMaptilerRequest, readonly]);
+
+    // Toggle interaction controls when switching between readonly/auth and normal views
+    useEffect(() => {
+        const map = mapRef.current;
+        if (!map) return;
+
+        const disableAll = () => {
+            map.scrollZoom.disable();
+            map.boxZoom.disable();
+            map.dragPan.disable();
+            map.dragRotate.disable();
+            map.keyboard.disable();
+            map.doubleClickZoom.disable();
+            map.touchZoomRotate.disable();
+            if (navControlRef.current) {
+                map.removeControl(navControlRef.current);
+                navControlRef.current = null;
+            }
+        };
+
+        const enableAll = () => {
+            map.scrollZoom.enable();
+            map.boxZoom.enable();
+            map.dragPan.enable();
+            map.dragRotate.enable();
+            map.keyboard.enable();
+            map.doubleClickZoom.enable();
+            map.touchZoomRotate.enable();
+            if (!navControlRef.current) {
+                const nav = new maplibregl.NavigationControl({ visualizePitch: true });
+                map.addControl(nav, "bottom-right");
+                navControlRef.current = nav;
+            }
+        };
+
+        if (readonly) {
+            disableAll();
+        } else {
+            enableAll();
+        }
+    }, [readonly]);
 
     // Fetch nearby POIs once after location is ready (force to refresh cache on first load)
     useEffect(() => {
+        if (readonly) return;
         if (status === "ready") {
             void fetchNearbyPois({ token: session?.accessToken, force: true });
         }
-    }, [fetchNearbyPois, status, session?.accessToken]);
+    }, [fetchNearbyPois, readonly, status, session?.accessToken]);
 
     // Show countdown when POI fetch hit rate limit / 500 with retryAfter guidance
     useEffect(() => {
@@ -417,21 +476,23 @@ export function MapLayer() {
     return (
         <>
             <div ref={ref} className="absolute inset-0 z-0" />
-            {poiStatus === "error" ? (
+            {poiStatus === "error" && !readonly ? (
                 <div className="pointer-events-none absolute left-1/2 top-4 z-10 -translate-x-1/2 rounded-full bg-slate-900/85 px-4 py-2 text-xs font-semibold text-white shadow-lg">
                     api throttled {retryCountdown !== null ? `(retry in ${retryCountdown}s)` : ""}
                     {poiError ? <span className="ml-2 text-[11px] font-normal text-amber-200/80">{poiError}</span> : null}
                 </div>
             ) : null}
-            <MapPinsOverlay map={mapRef.current} pois={poiList} frame={mapFrame} />
-            <LocationOverview />
-            <button
-                type="button"
-                onClick={requestLocation}
-                className="absolute right-3 top-3 z-10 rounded bg-white/90 px-3 py-2 text-xs font-semibold text-slate-800 shadow"
-            >
-                Locate me
-            </button>
+            {!readonly ? <MapPinsOverlay map={mapRef.current} pois={poiList} frame={mapFrame} /> : null}
+            {!readonly ? <LocationOverview /> : null}
+            {!readonly ? (
+                <button
+                    type="button"
+                    onClick={requestLocation}
+                    className="absolute right-3 top-3 z-10 rounded bg-white/90 px-3 py-2 text-xs font-semibold text-slate-800 shadow"
+                >
+                    Locate me
+                </button>
+            ) : null}
         </>
     );
 }
