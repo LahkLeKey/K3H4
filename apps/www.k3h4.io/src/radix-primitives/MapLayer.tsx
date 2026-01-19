@@ -275,27 +275,7 @@ export function MapLayer() {
                 );
             }
 
-            // Weather raster overlay (precipitation)
-            if (!map.getSource("weather-precip")) {
-                map.addSource("weather-precip", {
-                    type: "raster",
-                    tiles: [`${apiBase}/maptiler/tiles?path=${WEATHER_TILE_PATH}`],
-                    tileSize: 256,
-                    maxzoom: 14,
-                } as any);
-                map.addLayer(
-                    {
-                        id: "weather-precip",
-                        type: "raster",
-                        source: "weather-precip",
-                        paint: {
-                            "raster-opacity": 0.55,
-                            "raster-fade-duration": 300,
-                        },
-                    } as any,
-                    firstSymbolId,
-                );
-            }
+            // Weather overlay temporarily disabled (API is returning 500s)
         });
         map.on("move", () => {
             sync();
