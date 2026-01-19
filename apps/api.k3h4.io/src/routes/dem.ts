@@ -5,6 +5,11 @@ import { type RecordTelemetryFn } from "./types";
 
 const DEM_TILE_MAX_BYTES = Number(process.env.DEM_TILE_MAX_BYTES ?? 5_000_000); // 5 MB safety guard
 const MAX_ZOOM = 16;
+const EMPTY_TILE_PNG = Buffer.from(
+  // 1x1 transparent PNG; keeps MapLibre/Deck from thrashing on 502s
+  "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/wwAAn8B9oZ1sOgAAAAASUVORK5CYII=",
+  "base64",
+);
 
 const decodeUserId = async (server: FastifyInstance, request: any) => {
   let userId: string | null = null;
@@ -73,14 +78,23 @@ export function registerDemRoutes(server: FastifyInstance, prisma: PrismaClient,
       }
 
       const apiKey = process.env.MAPTILER_API_KEY;
-      if (!apiKey) return reply.status(500).send({ error: "MAPTILER_API_KEY missing" });
+      if (!apiKey) {
+        server.log.warn("dem request but MAPTILER_API_KEY missing; serving empty tile");
+        reply.header("Content-Type", `image/${fmt}`);
+        reply.header("Cache-Control", "public, max-age=600");
+        reply.header("X-Cache", "MISS-EMPTY");
+        return reply.send(EMPTY_TILE_PNG);
+      }
 
       const upstream = `https://api.maptiler.com/tiles/terrain-rgb/${z}/${x}/${y}.${fmt}?key=${apiKey}`;
 
       const upstreamRes = await fetch(upstream);
       if (!upstreamRes.ok) {
-        const status = upstreamRes.status === 404 ? 404 : 502;
-        return reply.status(status).send({ error: `terrain upstream ${upstreamRes.status}` });
+        server.log.warn({ upstream: upstreamRes.status, z, x, y }, "terrain upstream failure; serving empty tile");
+        reply.header("Content-Type", `image/${fmt}`);
+        reply.header("Cache-Control", "public, max-age=300");
+        reply.header("X-Cache", "UPSTREAM-EMPTY");
+        return reply.send(EMPTY_TILE_PNG);
       }
 
       const arrayBuf = await upstreamRes.arrayBuffer();

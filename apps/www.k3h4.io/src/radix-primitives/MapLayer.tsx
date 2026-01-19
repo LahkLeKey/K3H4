@@ -17,6 +17,8 @@ import { usePoiQuery, usePoiStore } from "../zustand-stores/poi";
 const MAX_DEM_ERROR = 28;
 const TERRAIN_EXAGGERATION = 1.6;
 const MAPTILER_STYLE_PATH = "/maps/hybrid/style.json"; // realistic satellite + labels
+const EMPTY_TILE_PNG =
+    "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR4nGP8z8BQDwAEsALp2UNzMgAAAABJRU5ErkJggg==";
 // Weather overlay disabled
 
 const patternAtlas = (() => {
@@ -84,7 +86,19 @@ export function MapLayer({ readonly }: { readonly?: boolean }) {
             : "idle";
     const poiError = poiQuery.error instanceof Error ? poiQuery.error.message : null;
 
-    const terrainUrl = useMemo(() => `${apiBase}/geo/dem/{z}/{x}/{y}.png`, [apiBase]);
+    const terrainUrl = useMemo(
+        // Primary DEM: self-hosted raster-dem
+        () => `${apiBase}/geo/dem/{z}/{x}/{y}.png`,
+        [apiBase],
+    );
+    const terrainMaptilerUrl = useMemo(
+        () => `${apiBase}/maptiler/tiles?path=/tiles/terrain-rgb/{z}/{x}/{y}.png`,
+        [apiBase],
+    );
+    const maptilerVectorTiles = useMemo(
+        () => `${apiBase}/maptiler/tiles?path=/tiles/v3/{z}/{x}/{y}.pbf`,
+        [apiBase],
+    );
     const maptilerStyleUrl = useMemo(() => `${apiBase}/maptiler/json?path=${MAPTILER_STYLE_PATH}`, [apiBase]);
 
     const proxiedMaptilerRequest = useCallback(
@@ -98,7 +112,8 @@ export function MapLayer({ readonly }: { readonly?: boolean }) {
                 type === "Tile" ||
                 type === "Image" ||
                 type === "SpriteImage" ||
-                type === "SpriteJSON";
+                type === "SpriteJSON" ||
+                type === "Glyphs";
             const endpoint = wantsBinary ? "tiles" : "json";
             const proxied = `${apiBase}/maptiler/${endpoint}?path=${u.pathname}${qs ? `&${qs}` : ""}`;
             return { url: proxied } as RequestParameters;
@@ -115,24 +130,48 @@ export function MapLayer({ readonly }: { readonly?: boolean }) {
                 elevationData: terrainUrl,
                 elevationDecoder: { rScaler: 6553.6, gScaler: 25.6, bScaler: 0.1, offset: -10000 },
                 meshMaxError: MAX_DEM_ERROR,
+                maxZoom: 14,
                 wireframe: true,
                 color: [190, 200, 210],
                 operation: "terrain+draw",
+                loadOptions: {
+                    // Swap in a transparent PNG if the DEM tile cannot be fetched or decoded
+                    fetch: async (url: string, options?: RequestInit) => {
+                        const res = await fetch(url, options);
+                        const contentType = res.headers.get("content-type") ?? "";
+                        if (res.ok && contentType.includes("image")) return res;
+
+                        // If self-hosted DEM fails, try MapTiler terrain-rgb for the same z/x/y
+                        const match = url.match(/geo\/dem\/(\d+)\/(\d+)\/(\d+)\.png/);
+                        if (match) {
+                            const [, z, x, y] = match;
+                            const altUrl = `${terrainMaptilerUrl.replace("{z}", z).replace("{x}", x).replace("{y}", y)}`;
+                            const alt = await fetch(altUrl, options);
+                            const altType = alt.headers.get("content-type") ?? "";
+                            if (alt.ok && altType.includes("image")) return alt;
+                        }
+
+                        return fetch(EMPTY_TILE_PNG);
+                    },
+                },
+                onTileError: () => null,
             }),
         );
 
         layers.push(
             new MVTLayer({
                 id: "mvt-stylized",
-                data: ["https://tiles-a.basemaps.cartocdn.com/vectortiles/carto.streets/v1/{z}/{x}/{y}.mvt"],
+                data: [maptilerVectorTiles],
                 renderSubLayers: (props: any) =>
                     new GeoJsonLayer(props, {
                         id: `${props.id}-geo`,
-                                extensions: [new FillStyleExtension({ pattern: true }), new PathStyleExtension({ dash: true })],
+                        extensions: [new FillStyleExtension({ pattern: true }), new PathStyleExtension({ dash: true })],
                         filled: true,
                         fillPatternAtlas: patternAtlas?.atlas,
                         fillPatternMapping: patternAtlas?.mapping,
                         fillPatternMask: true,
+                        getFillPatternScale: () => 1,
+                        getFillPatternOffset: () => [0, 0],
                         getFillPattern: (f: any) => {
                             const ln = f.properties?.layerName;
                             if (ln === "water") return "tri";
@@ -176,7 +215,7 @@ export function MapLayer({ readonly }: { readonly?: boolean }) {
         );
 
         return layers;
-    }, [terrainUrl]);
+    }, [apiBase, maptilerVectorTiles, terrainUrl, terrainMaptilerUrl]);
 
     // One-time geolocation request on mount
     useEffect(() => {
@@ -266,16 +305,29 @@ export function MapLayer({ readonly }: { readonly?: boolean }) {
             if (!map.getSource("terrain-dem")) {
                 map.addSource("terrain-dem", {
                     type: "raster-dem",
-                    tiles: [terrainUrl],
+                    tiles: [terrainUrl, terrainMaptilerUrl],
                     tileSize: 256,
-                    maxzoom: 15,
+                    maxzoom: 14,
                     encoding: "mapbox",
                 } as any);
                 map.setTerrain({ source: "terrain-dem", exaggeration: TERRAIN_EXAGGERATION });
+            }
+
+            // Separate DEM source for hillshade to avoid sharing the terrain source
+            if (!map.getSource("terrain-dem-hillshade")) {
+                map.addSource("terrain-dem-hillshade", {
+                    type: "raster-dem",
+                    tiles: [terrainUrl, terrainMaptilerUrl],
+                    tileSize: 256,
+                    maxzoom: 14,
+                    encoding: "mapbox",
+                } as any);
+            }
+            if (!map.getLayer("terrain-hillshade")) {
                 map.addLayer({
                     id: "terrain-hillshade",
                     type: "hillshade",
-                    source: "terrain-dem",
+                    source: "terrain-dem-hillshade",
                     paint: {
                         "hillshade-exaggeration": 0.7,
                         "hillshade-shadow-color": "#0f172a",
@@ -284,9 +336,32 @@ export function MapLayer({ readonly }: { readonly?: boolean }) {
                 } as any);
             }
 
+            // Guard against bad DEM tiles: swap to transparent PNG on decode errors
+            map.on("error", (ev) => {
+                const sid = ev?.sourceId;
+                if (sid === "terrain-dem" || sid === "terrain-dem-hillshade") {
+                    const src = map.getSource(sid) as any;
+                    if (src?.tiles && src.tiles[0] !== EMPTY_TILE_PNG) {
+                        src.tiles = [EMPTY_TILE_PNG];
+                        if (sid === "terrain-dem") map.setTerrain({ source: "terrain-dem", exaggeration: 0 });
+                        console.warn(`${sid} decode failed; using empty tile`);
+                    }
+                }
+            });
+
             applyDeckLayers();
             syncAndStoreCenter();
             bump();
+
+            // Ensure vector source exists for 3D buildings when style lacks "openmaptiles"
+            if (!map.getSource("openmaptiles")) {
+                map.addSource("openmaptiles", {
+                    type: "vector",
+                    tiles: [maptilerVectorTiles],
+                    minzoom: 0,
+                    maxzoom: 14,
+                } as any);
+            }
 
             // Add 3D buildings (extruded) atop MapTiler vector tiles
             const style = map.getStyle();
@@ -343,7 +418,18 @@ export function MapLayer({ readonly }: { readonly?: boolean }) {
             mapRef.current = null;
             map.remove();
         };
-    }, [buildDeckLayers, registerMap, terrainUrl, updateView, status, maptilerStyleUrl, proxiedMaptilerRequest, readonly]);
+    }, [
+        buildDeckLayers,
+        registerMap,
+        terrainUrl,
+        terrainMaptilerUrl,
+        updateView,
+        status,
+        maptilerStyleUrl,
+        maptilerVectorTiles,
+        proxiedMaptilerRequest,
+        readonly,
+    ]);
 
     // Toggle interaction controls when switching between readonly/auth and normal views
     useEffect(() => {
