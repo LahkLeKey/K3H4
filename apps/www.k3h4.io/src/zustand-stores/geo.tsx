@@ -52,6 +52,36 @@ const toKindsString = (kinds?: string[] | string) => (Array.isArray(kinds) ? kin
 const makeSignature = (center: { lat: number; lng: number }, radiusM: number, kinds: string) =>
     `${center.lat.toFixed(5)}:${center.lng.toFixed(5)}:${radiusM}:${kinds}`;
 
+const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+const fetchWithBackoff = async (url: string, init: RequestInit, opts?: { retries?: number; baseDelayMs?: number; maxDelayMs?: number }) => {
+    const retries = Math.max(0, opts?.retries ?? 3);
+    const baseDelayMs = opts?.baseDelayMs ?? 400;
+    const maxDelayMs = opts?.maxDelayMs ?? 4000;
+
+    let attempt = 0;
+    // Retry on transient failures (429/5xx/network)
+    while (true) {
+        try {
+            const res = await fetch(url, init);
+            if (res.ok) return res;
+
+            // Treat 4xx (other than 429) as permanent
+            if (res.status < 500 && res.status !== 429) {
+                throw new Error(`poi ${res.status}`);
+            }
+
+            throw new Error(`poi ${res.status}`);
+        } catch (err) {
+            if (attempt >= retries) throw err;
+            const jitter = Math.random() * 120;
+            const delay = Math.min(maxDelayMs, baseDelayMs * 2 ** attempt) + jitter;
+            attempt += 1;
+            await wait(delay);
+        }
+    }
+};
+
 const mergePois = (current: any[] | null, incoming: any[] | null) => {
     if (!incoming || incoming.length === 0) return current ?? null;
     if (!current || current.length === 0) return incoming;
@@ -146,11 +176,8 @@ export const useGeoStore = create<GeoState>((set, get) => ({
             const headers: Record<string, string> = {};
             if (opts?.token) headers.Authorization = `Bearer ${opts.token}`;
 
-            const promise = fetch(apiUrl(`/geo/pois?${qs}`), { credentials: "include", headers })
-                .then(async (res) => {
-                    if (!res.ok) throw new Error(`poi ${res.status}`);
-                    return await res.json();
-                })
+            const promise = fetchWithBackoff(apiUrl(`/geo/pois?${qs}`), { credentials: "include", headers }, { retries: 3, baseDelayMs: 400, maxDelayMs: 4500 })
+                .then(async (res) => await res.json())
                 .finally(() => {
                     coalesceMap.delete(signature);
                 });
