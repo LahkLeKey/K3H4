@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import maplibregl from "maplibre-gl";
+import maplibregl, { type RequestParameters, type ResourceType } from "maplibre-gl";
 import { MapboxOverlay } from "@deck.gl/mapbox";
 import { TerrainLayer, MVTLayer } from "@deck.gl/geo-layers";
 import { GeoJsonLayer } from "@deck.gl/layers";
@@ -11,8 +11,10 @@ import { LocationOverview } from "./LocationOverview";
 import { useAuthStore } from "../react-hooks/auth";
 import { MapPinsOverlay, type Poi } from "../r3f-components/MapPinsOverlay";
 
-const STYLE_URL = "https://basemaps.cartocdn.com/gl/positron-gl-style/style.json";
 const MAX_DEM_ERROR = 28;
+const TERRAIN_EXAGGERATION = 1.6;
+const MAPTILER_STYLE_PATH = "/maps/hybrid/style.json"; // realistic satellite + labels
+const WEATHER_TILE_PATH = "/weather/precipitation/{z}/{x}/{y}.png";
 
 const patternAtlas = (() => {
     if (typeof document === "undefined") return null;
@@ -59,6 +61,22 @@ export function MapLayer() {
     const poiList = useMemo(() => (Array.isArray(pois) ? (pois as Poi[]) : []), [pois]);
 
     const terrainUrl = useMemo(() => `${apiBase}/geo/dem/{z}/{x}/{y}.png`, [apiBase]);
+    const maptilerStyleUrl = useMemo(() => `${apiBase}/maptiler/json?path=${MAPTILER_STYLE_PATH}`, [apiBase]);
+
+    const proxiedMaptilerRequest = useCallback(
+        (url: string, type?: ResourceType): RequestParameters => {
+            if (!url.includes("api.maptiler.com")) return { url } as RequestParameters;
+
+            const u = new URL(url);
+            u.searchParams.delete("key");
+            const qs = u.searchParams.toString();
+            const wantsBinary = type === "Tile" || type === "Image" || type === "Sprite";
+            const endpoint = wantsBinary ? "tiles" : "json";
+            const proxied = `${apiBase}/maptiler/${endpoint}?path=${u.pathname}${qs ? `&${qs}` : ""}`;
+            return { url: proxied } as RequestParameters;
+        },
+        [apiBase],
+    );
 
     const buildDeckLayers = useCallback(() => {
         const layers = [] as any[];
@@ -150,7 +168,7 @@ export function MapLayer() {
         if (!ref.current || !initialCenter || status !== "ready") return;
         const map = new maplibregl.Map({
             container: ref.current,
-            style: STYLE_URL,
+            style: maptilerStyleUrl,
             center: [initialCenter.lng, initialCenter.lat],
             zoom: 14.5,
             pitch: 58,
@@ -162,6 +180,7 @@ export function MapLayer() {
             attributionControl: false,
             dragRotate: true,
             pitchWithRotate: true,
+            transformRequest: proxiedMaptilerRequest,
         });
 
         map.addControl(new maplibregl.NavigationControl({ visualizePitch: true }), "bottom-right");
@@ -209,7 +228,7 @@ export function MapLayer() {
                     maxzoom: 15,
                     encoding: "mapbox",
                 } as any);
-                map.setTerrain({ source: "terrain-dem", exaggeration: 1.25 });
+                map.setTerrain({ source: "terrain-dem", exaggeration: TERRAIN_EXAGGERATION });
                 map.addLayer({
                     id: "terrain-hillshade",
                     type: "hillshade",
@@ -225,6 +244,58 @@ export function MapLayer() {
             applyDeckLayers();
             syncAndStoreCenter();
             bump();
+
+            // Add 3D buildings (extruded) atop MapTiler vector tiles
+            const style = map.getStyle();
+            const firstSymbolId = style?.layers?.find((l) => l.type === "symbol")?.id;
+            if (!map.getLayer("3d-buildings")) {
+                map.addLayer(
+                    {
+                        id: "3d-buildings",
+                        source: "openmaptiles",
+                        "source-layer": "building",
+                        type: "fill-extrusion",
+                        minzoom: 12,
+                        paint: {
+                            "fill-extrusion-color": [
+                                "interpolate",
+                                ["linear"],
+                                ["get", "height"],
+                                0,
+                                "#d9dce3",
+                                120,
+                                "#c3ccd8",
+                            ],
+                            "fill-extrusion-height": ["coalesce", ["get", "height"], ["get", "render_height"], 20],
+                            "fill-extrusion-base": ["coalesce", ["get", "min_height"], ["get", "render_min_height"], 0],
+                            "fill-extrusion-opacity": 0.9,
+                        },
+                    } as any,
+                    firstSymbolId,
+                );
+            }
+
+            // Weather raster overlay (precipitation)
+            if (!map.getSource("weather-precip")) {
+                map.addSource("weather-precip", {
+                    type: "raster",
+                    tiles: [`${apiBase}/maptiler/tiles?path=${WEATHER_TILE_PATH}`],
+                    tileSize: 256,
+                    maxzoom: 14,
+                } as any);
+                map.addLayer(
+                    {
+                        id: "weather-precip",
+                        type: "raster",
+                        source: "weather-precip",
+                        paint: {
+                            "raster-opacity": 0.55,
+                            "raster-fade-duration": 300,
+                        },
+                    } as any,
+                    firstSymbolId,
+                );
+            }
         });
         map.on("move", () => {
             sync();
@@ -248,7 +319,7 @@ export function MapLayer() {
             mapRef.current = null;
             map.remove();
         };
-    }, [buildDeckLayers, registerMap, terrainUrl, updateView, status]);
+    }, [buildDeckLayers, registerMap, terrainUrl, updateView, status, maptilerStyleUrl, proxiedMaptilerRequest]);
 
     // Fetch nearby POIs once after location is ready (force to refresh cache on first load)
     useEffect(() => {
