@@ -47,7 +47,16 @@ const pickParams = (query: Record<string, any>) => {
 const parseMaxAge = (query: Record<string, any>) => coerceNumber(query.maxAgeMinutes ?? DEFAULT_MAX_AGE_MINUTES) ?? DEFAULT_MAX_AGE_MINUTES;
 
 export function registerMaptilerRoutes(server: FastifyInstance, prisma: PrismaClient, recordTelemetry: RecordTelemetryFn) {
-  const auth = { preHandler: [server.authenticate] };
+  // Map views should work even for anonymous users; we only verify JWT if present.
+  const optionalAuth = {
+    preHandler: [async (request: FastifyRequest) => {
+      try {
+        await request.jwtVerify();
+      } catch {
+        // ignore missing/invalid tokens
+      }
+    }],
+  };
 
   const handler = async (responseType: "json" | "arrayBuffer", request: FastifyRequest, reply: FastifyReply) => {
     const query = request.query as Record<string, any>;
@@ -128,7 +137,7 @@ export function registerMaptilerRoutes(server: FastifyInstance, prisma: PrismaCl
   server.get(
     "/maptiler/json",
     {
-      ...auth,
+      ...optionalAuth,
       schema: {
         summary: "Proxy MapTiler Cloud JSON endpoints with caching",
         tags: ["maptiler"],
@@ -140,7 +149,7 @@ export function registerMaptilerRoutes(server: FastifyInstance, prisma: PrismaCl
   server.get(
     "/maptiler/tiles",
     {
-      ...auth,
+      ...optionalAuth,
       schema: {
         summary: "Proxy MapTiler Cloud binary endpoints (tiles/static) with caching",
         tags: ["maptiler"],

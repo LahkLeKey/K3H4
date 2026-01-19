@@ -238,6 +238,14 @@ export function registerGeoRoutes(server: FastifyInstance, prisma: PrismaClient,
         await recordTelemetry(request, { eventType: "geo.poi.fetched", source: "api", payload: { signature, count: pois.length } });
         return { pois, count: pois.length, cached: false };
       } catch (err) {
+        // Fall back to the most recent cache (even if expired) so the UI degrades gracefully.
+        const stale = await db.geoPoiCache.findFirst({ where: { signature }, orderBy: { expiresAt: "desc" } });
+        if (stale) {
+          await recordTelemetry(request, { eventType: "geo.poi.stale", source: "api", payload: { signature, count: stale.count ?? 0 } });
+          return { pois: stale.pois, count: stale.count, cached: true, stale: true };
+        }
+
+        request.log.warn({ err, signature }, "geo pois fetch failed");
         return reply.status(502).send({ error: err instanceof Error ? err.message : "Overpass unavailable" });
       }
     },

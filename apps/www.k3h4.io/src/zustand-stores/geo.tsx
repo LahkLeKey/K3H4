@@ -60,18 +60,44 @@ const fetchWithBackoff = async (url: string, init: RequestInit, opts?: { retries
     const maxDelayMs = opts?.maxDelayMs ?? 4000;
 
     let attempt = 0;
-    // Retry on transient failures (429/5xx/network)
+    // Retry on transient failures (429/5xx/network). Respect retryAfter when present.
     while (true) {
         try {
             const res = await fetch(url, init);
             if (res.ok) return res;
 
-            // Treat 4xx (other than 429) as permanent
-            if (res.status < 500 && res.status !== 429) {
-                throw new Error(`poi ${res.status}`);
+            const status = res.status;
+
+            // Treat non-retriable 4xx as permanent
+            if (status < 500 && status !== 429) {
+                throw new Error(`poi ${status}`);
             }
 
-            throw new Error(`poi ${res.status}`);
+            let retryAfterMs: number | null = null;
+            if (status === 429) {
+                const headerVal = res.headers.get("retry-after");
+                const headerSeconds = headerVal ? Number(headerVal) : null;
+                if (headerSeconds && Number.isFinite(headerSeconds)) retryAfterMs = headerSeconds * 1000;
+
+                if (retryAfterMs === null) {
+                    try {
+                        const body = await res.clone().json();
+                        const retryAfter = (body as any)?.retryAfter;
+                        if (Number.isFinite(retryAfter)) retryAfterMs = Number(retryAfter) * 1000;
+                    } catch {
+                        // ignore parse errors
+                    }
+                }
+            }
+
+            const jitter = Math.random() * 120;
+            const backoff = Math.min(maxDelayMs, baseDelayMs * 2 ** attempt) + jitter;
+            const delay = retryAfterMs ?? backoff;
+
+            if (attempt >= retries) throw new Error(`poi ${status}`);
+            attempt += 1;
+            await wait(delay);
+            continue;
         } catch (err) {
             if (attempt >= retries) throw err;
             const jitter = Math.random() * 120;
