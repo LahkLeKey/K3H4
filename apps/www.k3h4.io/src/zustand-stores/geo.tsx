@@ -11,9 +11,14 @@ type GeoState = {
     poisFetched: boolean;
     poiStatus: "idle" | "loading" | "ready" | "error";
     requested: boolean;
+    lastFetchCenter: { lat: number; lng: number } | null;
+    lastFetchRadius: number | null;
+    lastFetchKinds: string | null;
+    lastSignature: string | null;
     requestLocation: () => void;
-    fetchNearbyPois: (opts?: { radiusM?: number; kinds?: string[]; token?: string }) => Promise<void>;
+    fetchNearbyPois: (opts?: { radiusM?: number; kinds?: string[]; token?: string; force?: boolean }) => Promise<void>;
     hydrateFromPrefs: (opts: { center?: { lat: number; lng: number } | null; pois?: any[] | null }) => void;
+    setCenterFromMap: (center: { lat: number; lng: number }) => void;
 };
 
 const DEFAULT_KINDS = "bank,atm,restaurant,cafe,fuel,bus_station,train_station";
@@ -47,6 +52,17 @@ const toKindsString = (kinds?: string[] | string) => (Array.isArray(kinds) ? kin
 const makeSignature = (center: { lat: number; lng: number }, radiusM: number, kinds: string) =>
     `${center.lat.toFixed(5)}:${center.lng.toFixed(5)}:${radiusM}:${kinds}`;
 
+const mergePois = (current: any[] | null, incoming: any[] | null) => {
+    if (!incoming || incoming.length === 0) return current ?? null;
+    if (!current || current.length === 0) return incoming;
+    const dedup = new Map<string, any>();
+    for (const poi of [...current, ...incoming]) {
+        const key = poi?.id ? String(poi.id) : `${poi?.lat ?? ""}:${poi?.lng ?? ""}:${poi?.name ?? ""}`;
+        if (!dedup.has(key)) dedup.set(key, poi);
+    }
+    return Array.from(dedup.values());
+};
+
 export const useGeoStore = create<GeoState>((set, get) => ({
     status: "idle",
     center: null,
@@ -55,15 +71,24 @@ export const useGeoStore = create<GeoState>((set, get) => ({
     poisFetched: false,
     poiStatus: "idle",
     requested: false,
+    lastFetchCenter: null,
+    lastFetchRadius: null,
+    lastFetchKinds: null,
+    lastSignature: null,
 
     hydrateFromPrefs: (opts) => {
         set((prev) => ({
             status: opts.center ? "ready" : prev.status,
             center: opts.center ?? prev.center,
             pois: opts.pois ?? prev.pois,
-            poisFetched: opts.pois ? true : prev.poisFetched,
+            // show hydrated pins but still trigger a refresh to update cache
+            poisFetched: opts.pois ? false : prev.poisFetched,
             poiStatus: opts.pois ? "ready" : prev.poiStatus,
         }));
+    },
+
+    setCenterFromMap: (center) => {
+        set({ center, status: "ready" });
     },
 
     requestLocation: () => {
@@ -90,17 +115,17 @@ export const useGeoStore = create<GeoState>((set, get) => ({
     },
 
     fetchNearbyPois: async (opts) => {
-        const { center, poisFetched, status } = get();
-        if (!center || poisFetched || status !== "ready") return;
+        const { center, status } = get();
+        if (!center || status !== "ready") return;
         set({ poiStatus: "loading" });
         void logStatus({ status, poiStatus: "loading", center });
         const radiusM = opts?.radiusM ?? 1500;
         const kinds = toKindsString(opts?.kinds);
         const signature = makeSignature(center, radiusM, kinds);
-        if (coalesceMap.has(signature)) {
+        if (!opts?.force && coalesceMap.has(signature)) {
             try {
                 await coalesceMap.get(signature);
-                set({ poiStatus: "ready", poisFetched: true });
+                set({ poiStatus: "ready", poisFetched: true, lastFetchCenter: center, lastFetchRadius: radiusM, lastFetchKinds: kinds, lastSignature: signature });
                 void logStatus({ status, poiStatus: "ready", center });
                 return;
             } catch (err) {
@@ -132,7 +157,16 @@ export const useGeoStore = create<GeoState>((set, get) => ({
 
             coalesceMap.set(signature, promise);
             const body = await promise;
-            set({ pois: body?.pois ?? null, poisFetched: true, poiStatus: "ready" });
+            const mergedPois = mergePois(get().pois, body?.pois ?? null);
+            set({
+                pois: mergedPois,
+                poisFetched: true,
+                poiStatus: "ready",
+                lastFetchCenter: center,
+                lastFetchRadius: radiusM,
+                lastFetchKinds: kinds,
+                lastSignature: signature,
+            });
             void logStatus({ status, poiStatus: "ready", center });
         } catch (err) {
             // keep failure silent but mark attempted

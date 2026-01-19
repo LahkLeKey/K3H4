@@ -3,6 +3,7 @@ import * as THREE from "three";
 import { enqueueOverpass } from "../lib/overpassQueue";
 import { apiUrl } from "../lib/apiBase";
 import { useAuthStore } from "./auth";
+import maplibregl from "maplibre-gl";
 
 export type Poi = {
     id: string;
@@ -12,6 +13,7 @@ export type Poi = {
     lng: number;
     distanceM: number;
     position: THREE.Vector3;
+    scale: number;
 };
 
 export type PoiResult = {
@@ -23,15 +25,6 @@ export type PoiResult = {
 };
 
 const DEFAULT_CENTER = { lat: 47.6062, lng: -122.3321 }; // Seattle
-const metersPerDegree = 111_320;
-const degToRad = Math.PI / 180;
-const scale = 1 / 12000; // Keep scene compact
-
-const project = (lat: number, lng: number, centerLat: number, centerLng: number) => {
-    const x = (lng - centerLng) * metersPerDegree * Math.cos(centerLat * degToRad) * scale;
-    const z = (lat - centerLat) * metersPerDegree * scale;
-    return new THREE.Vector3(x, 0.1, z);
-};
 
 const toRad = (deg: number) => deg * (Math.PI / 180);
 
@@ -51,10 +44,11 @@ const buildQuery = (lat: number, lng: number, radiusM: number, kinds: string[]) 
     return `[out:json][timeout:10];(${filters});out center 30;`;
 };
 
-export function usePoiSearch(options?: { center?: { lat: number; lng: number }; radiusM?: number; kinds?: string[] }): PoiResult {
+export function usePoiSearch(options?: { center?: { lat: number; lng: number }; radiusM?: number; kinds?: string[]; map?: maplibregl.Map | null }): PoiResult {
     const centerOverride = options?.center;
     const radiusM = options?.radiusM ?? 1500;
     const kinds = options?.kinds ?? ["bank", "atm", "restaurant", "cafe", "fuel", "bus_station", "train_station"];
+    const map = options?.map ?? null;
 
     const [state, setState] = useState<PoiResult>({ status: "loading", pois: [], center: centerOverride ?? DEFAULT_CENTER, nearestByKind: {} });
     const lastSignature = useRef<string | null>(null);
@@ -137,6 +131,29 @@ export function usePoiSearch(options?: { center?: { lat: number; lng: number }; 
                         const name = feat.name ?? kind ?? "poi";
                         if (!lat || !lng || !kind) return null;
                         const distanceM = haversine(center, { lat, lng });
+
+                        if (map) {
+                            const coord = maplibregl.MercatorCoordinate.fromLngLat({ lng, lat }, 0);
+                            // scale pins directly in mercator units (meters) to align with map zoom
+                            const scale = coord.meterInMercatorCoordinateUnits();
+                            return {
+                                id: feat.id,
+                                name,
+                                kind,
+                                lat,
+                                lng,
+                                distanceM,
+                                position: new THREE.Vector3(coord.x, coord.y, coord.z ?? 0),
+                                scale,
+                            } as Poi;
+                        }
+
+                        // Fallback projection if map not available
+                        const metersPerDegree = 111_320;
+                        const degToRad = Math.PI / 180;
+                        const localScale = 1 / 12000;
+                        const x = (lng - center.lng) * metersPerDegree * Math.cos(center.lat * degToRad) * localScale;
+                        const z = (lat - center.lat) * metersPerDegree * localScale;
                         return {
                             id: feat.id,
                             name,
@@ -144,7 +161,8 @@ export function usePoiSearch(options?: { center?: { lat: number; lng: number }; 
                             lat,
                             lng,
                             distanceM,
-                            position: project(lat, lng, center.lat, center.lng),
+                            position: new THREE.Vector3(x, 0.1, z),
+                            scale: 1,
                         } as Poi;
                     })
                     .filter(Boolean) as Poi[];
