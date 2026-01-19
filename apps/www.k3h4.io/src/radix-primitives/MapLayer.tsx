@@ -14,7 +14,7 @@ import { MapPinsOverlay, type Poi } from "../r3f-components/MapPinsOverlay";
 const MAX_DEM_ERROR = 28;
 const TERRAIN_EXAGGERATION = 1.6;
 const MAPTILER_STYLE_PATH = "/maps/hybrid/style.json"; // realistic satellite + labels
-const WEATHER_TILE_PATH = "/weather/precipitation/{z}/{x}/{y}.png";
+// Weather overlay disabled
 
 const patternAtlas = (() => {
     if (typeof document === "undefined") return null;
@@ -72,7 +72,11 @@ export function MapLayer({ readonly }: { readonly?: boolean }) {
             const u = new URL(url);
             u.searchParams.delete("key");
             const qs = u.searchParams.toString();
-            const wantsBinary = type === "Tile" || type === "Image" || type === "Sprite";
+            const wantsBinary =
+                type === "Tile" ||
+                type === "Image" ||
+                type === "SpriteImage" ||
+                type === "SpriteJSON";
             const endpoint = wantsBinary ? "tiles" : "json";
             const proxied = `${apiBase}/maptiler/${endpoint}?path=${u.pathname}${qs ? `&${qs}` : ""}`;
             return { url: proxied } as RequestParameters;

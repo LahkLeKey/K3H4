@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
-import { enqueueOverpass } from "../lib/overpassQueue";
 import { apiUrl } from "../lib/apiBase";
 import { useAuthStore } from "./auth";
 import maplibregl from "maplibre-gl";
@@ -37,11 +36,6 @@ const haversine = (a: { lat: number; lng: number }, b: { lat: number; lng: numbe
     const h =
         Math.sin(dLat / 2) * Math.sin(dLat / 2) + Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLng / 2) * Math.sin(dLng / 2);
     return 2 * R * Math.atan2(Math.sqrt(h), Math.sqrt(1 - h));
-};
-
-const buildQuery = (lat: number, lng: number, radiusM: number, kinds: string[]) => {
-    const filters = kinds.map((k) => `node[amenity=${k}](around:${radiusM},${lat},${lng});`).join("\n");
-    return `[out:json][timeout:10];(${filters});out center 30;`;
 };
 
 export function usePoiSearch(options?: { center?: { lat: number; lng: number }; radiusM?: number; kinds?: string[]; map?: maplibregl.Map | null }): PoiResult {

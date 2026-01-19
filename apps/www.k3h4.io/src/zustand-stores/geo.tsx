@@ -199,29 +199,6 @@ export const useGeoStore = create<GeoState>((set, get) => ({
         );
     },
 
-    requestLocation: () => {
-        set({ status: "locating", requested: true, error: null });
-        if (typeof navigator === "undefined" || !navigator.geolocation) {
-            set({ status: "blocked", error: "geolocation unsupported" });
-            return;
-        }
-        navigator.geolocation.getCurrentPosition(
-            (pos) => {
-                set({
-                    status: "ready",
-                    center: { lat: pos.coords.latitude, lng: pos.coords.longitude },
-                    error: null,
-                });
-                void logStatus({ status: "ready", center: { lat: pos.coords.latitude, lng: pos.coords.longitude } });
-            },
-            (err) => {
-                set({ status: "blocked", error: err?.message ?? "geolocation denied" });
-                void logStatus({ status: "blocked", error: err?.message ?? "geolocation denied" });
-            },
-            { enableHighAccuracy: true, timeout: 8000 }
-        );
-    },
-
     fetchNearbyPois: async (opts) => {
         const { center, status } = get();
         if (!center || status !== "ready") return;
