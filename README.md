@@ -1,3 +1,6 @@
+<img width="3829" height="1806" alt="image" src="https://github.com/user-attachments/assets/28182ae9-0bf7-4b93-8eb9-b73e24a85686" />
+
+
 # K3H4 Monorepo
 
 Bun/TypeScript workspace with a React/Three.js frontend and a Fastify + Prisma API backend. Docker compose is available for local stack spins.
