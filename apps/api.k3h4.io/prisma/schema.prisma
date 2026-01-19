@@ -217,6 +217,25 @@ model GeoStatusLog {
   @@index([createdAt])
 }
 
+model Poi {
+  id         String   @id @default(cuid())
+  osmType    String   @default("node")
+  osmId      BigInt
+  name       String?
+  category   String?
+  latitude   Decimal  @db.Decimal(11, 6)
+  longitude  Decimal  @db.Decimal(11, 6)
+  tags       Json?
+  source     String   @default("osm")
+  lastSeenAt DateTime @default(now())
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@unique([osmType, osmId], name: "poi_osm_composite")
+  @@index([latitude, longitude])
+  @@index([category])
+}
+
 // DEM / terrain tile cache for reuse per user
 model GeoDemTileCache {
   id            String   @id @default(cuid())
