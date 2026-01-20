@@ -73,6 +73,7 @@ export function MapLayer({ readonly }: { readonly?: boolean }) {
             } | null;
         }
     >(null);
+    const [poiAnchor, setPoiAnchor] = useState<{ x: number; y: number; lat: number; lng: number } | null>(null);
     const fetchingDetailRef = useRef<string | null>(null);
 
     const overlayRef = useRef<DeckMapboxOverlay | null>(null);
@@ -181,6 +182,8 @@ export function MapLayer({ readonly }: { readonly?: boolean }) {
             if (!detail) return;
             const building = detail.building ?? null;
             updateHighlight(building?.geometry ?? null);
+            const projected = map.project([nearest.lng, nearest.lat]);
+            setPoiAnchor({ x: projected.x, y: projected.y, lat: nearest.lat, lng: nearest.lng });
             setPoiDetail({
                 id: nearest.id,
                 name: detail.name ?? nearest.name ?? null,
@@ -561,6 +564,14 @@ export function MapLayer({ readonly }: { readonly?: boolean }) {
         pickPoiAndFetch,
     ]);
 
+    // Keep the popover anchored to the projected screen position as the map moves
+    useEffect(() => {
+        const map = mapRef.current;
+        if (!map || !poiAnchor) return;
+        const p = map.project([poiAnchor.lng, poiAnchor.lat]);
+        setPoiAnchor((prev) => (prev ? { ...prev, x: p.x, y: p.y } : prev));
+    }, [mapFrame, poiAnchor?.lat, poiAnchor?.lng]);
+
     // Toggle interaction controls when switching between readonly/auth and normal views
     useEffect(() => {
         const map = mapRef.current;
@@ -734,34 +745,54 @@ export function MapLayer({ readonly }: { readonly?: boolean }) {
                     </div>
                 </div>
             ) : null}
-            {poiDetail ? (
-                <div className="absolute left-3 bottom-3 z-10 max-w-xs rounded-lg bg-slate-900/90 px-3 py-3 text-xs text-white shadow-lg">
-                    <div className="text-sm font-semibold text-white">{poiDetail.name ?? "POI"}</div>
-                    <div className="mt-0.5 text-[11px] uppercase tracking-wide text-slate-300">{poiDetail.category ?? "unknown"}</div>
-                    {poiDetail.building ? (
-                        <div className="mt-2 space-y-0.5 text-[11px] text-slate-200">
-                            <div className="font-semibold text-slate-100">Building</div>
-                            {poiDetail.building.type ? <div>Type: {poiDetail.building.type}</div> : null}
-                            {poiDetail.building.osmId ? <div>OSM: {poiDetail.building.osmId}</div> : null}
-                            {(poiDetail.building.addressStreet || poiDetail.building.addressHouseNumber) ? (
-                                <div>
-                                    {poiDetail.building.addressHouseNumber ? `${poiDetail.building.addressHouseNumber} ` : ""}
-                                    {poiDetail.building.addressStreet ?? ""}
-                                </div>
-                            ) : null}
-                            {(poiDetail.building.addressCity || poiDetail.building.addressPostcode) ? (
-                                <div>
-                                    {poiDetail.building.addressCity ?? ""}
-                                    {poiDetail.building.addressCity && poiDetail.building.addressPostcode ? ", " : ""}
-                                    {poiDetail.building.addressPostcode ?? ""}
-                                </div>
-                            ) : null}
-                            {poiDetail.building.addressState ? <div>{poiDetail.building.addressState}</div> : null}
-                            {poiDetail.building.addressCountry ? <div>{poiDetail.building.addressCountry}</div> : null}
+            {poiDetail && poiAnchor ? (
+                <div
+                    className="pointer-events-none absolute z-20"
+                    style={{ left: poiAnchor.x, top: poiAnchor.y - 12, transform: "translate(-50%, -100%)" }}
+                >
+                    <div className="pointer-events-auto max-w-xs rounded-lg bg-slate-900/90 px-3 py-3 text-xs text-white shadow-lg backdrop-blur">
+                        <div className="flex items-start justify-between gap-3">
+                            <div>
+                                <div className="text-sm font-semibold text-white">{poiDetail.name ?? "POI"}</div>
+                                <div className="mt-0.5 text-[11px] uppercase tracking-wide text-slate-300">{poiDetail.category ?? "unknown"}</div>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    setPoiDetail(null);
+                                    setPoiAnchor(null);
+                                    updateHighlight(null);
+                                }}
+                                className="-mr-1 -mt-1 rounded p-1 text-[11px] font-semibold text-slate-200 hover:bg-white/10"
+                            >
+                                ×
+                            </button>
                         </div>
-                    ) : (
-                        <div className="mt-2 text-[11px] text-slate-300">No building linked</div>
-                    )}
+                        {poiDetail.building ? (
+                            <div className="mt-2 space-y-0.5 text-[11px] text-slate-200">
+                                <div className="font-semibold text-slate-100">Building</div>
+                                {poiDetail.building.type ? <div>Type: {poiDetail.building.type}</div> : null}
+                                {poiDetail.building.osmId ? <div>OSM: {poiDetail.building.osmId}</div> : null}
+                                {(poiDetail.building.addressStreet || poiDetail.building.addressHouseNumber) ? (
+                                    <div>
+                                        {poiDetail.building.addressHouseNumber ? `${poiDetail.building.addressHouseNumber} ` : ""}
+                                        {poiDetail.building.addressStreet ?? ""}
+                                    </div>
+                                ) : null}
+                                {(poiDetail.building.addressCity || poiDetail.building.addressPostcode) ? (
+                                    <div>
+                                        {poiDetail.building.addressCity ?? ""}
+                                        {poiDetail.building.addressCity && poiDetail.building.addressPostcode ? ", " : ""}
+                                        {poiDetail.building.addressPostcode ?? ""}
+                                    </div>
+                                ) : null}
+                                {poiDetail.building.addressState ? <div>{poiDetail.building.addressState}</div> : null}
+                                {poiDetail.building.addressCountry ? <div>{poiDetail.building.addressCountry}</div> : null}
+                            </div>
+                        ) : (
+                            <div className="mt-2 text-[11px] text-slate-300">No building linked</div>
+                        )}
+                    </div>
                 </div>
             ) : null}
             {poiStatus === "error" && !readonly ? (
