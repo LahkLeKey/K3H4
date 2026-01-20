@@ -88,8 +88,8 @@ export function MapLayer({ readonly }: { readonly?: boolean }) {
     const poiError = poiQuery.error instanceof Error ? poiQuery.error.message : null;
 
     const terrainUrl = useMemo(
-        // Primary DEM: self-hosted raster-dem
-        () => `${apiBase}/geo/dem/{z}/{x}/{y}.png`,
+        // Use MapTiler terrain-rgb via proxy to avoid local DEM decode failures
+        () => `${apiBase}/maptiler/tiles?path=/tiles/terrain-rgb-v2/{z}/{x}/{y}.png`,
         [apiBase],
     );
     const maptilerVectorTiles = useMemo(
