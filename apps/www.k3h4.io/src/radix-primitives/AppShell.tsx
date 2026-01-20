@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 
-import { MapLayer } from "./MapLayer";
+import { MapLayer } from "../radix-components/MapLayer";
 import { MapViewProvider } from "../react-hooks/useMapView";
 import { UiErrorBoundary } from "./UiErrorBoundary";
 import { useAuthStore } from "../react-hooks/auth";
