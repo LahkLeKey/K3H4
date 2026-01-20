@@ -397,10 +397,8 @@ export function MapLayer({ readonly }: { readonly?: boolean }) {
             <div ref={ref} className="absolute inset-0 z-0" />
             {!readonly ? (
                 <div className="pointer-events-none absolute right-3 top-20 z-40 flex flex-col items-end gap-3">
-                    <div className="pointer-events-auto w-80 max-w-[calc(100%-24px)]">
+                    <div className="pointer-events-auto w-80 max-w-[calc(100%-24px)] space-y-2">
                         <LocationOverview />
-                    </div>
-                    <div className="pointer-events-auto w-80 max-w-[calc(100%-24px)] space-y-1">
                         <MapSearchPanel
                             value={searchTerm}
                             status={searchStatus}
