@@ -338,11 +338,11 @@ export function MapLayer({ readonly }: { readonly?: boolean }) {
                 const sid = ev?.sourceId;
                 if (sid === "terrain-dem" || sid === "terrain-dem-hillshade") {
                     const src = map.getSource(sid) as any;
-                    if (src?.tiles && src.tiles[0] !== EMPTY_TILE_PNG) {
-                        src.tiles = [EMPTY_TILE_PNG];
-                        if (sid === "terrain-dem") map.setTerrain({ source: "terrain-dem", exaggeration: 0 });
-                        console.warn(`${sid} decode failed; using empty tile`);
-                    }
+                        if (src?.tiles && src.tiles[0] !== EMPTY_TILE_PNG) {
+                            // Swap in empty tile so rendering continues, but keep terrain exaggeration active
+                            src.tiles = [EMPTY_TILE_PNG];
+                            console.warn(`${sid} decode failed; using empty tile`);
+                        }
                 }
             });
 
