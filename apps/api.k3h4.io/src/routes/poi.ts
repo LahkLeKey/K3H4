@@ -22,6 +22,7 @@ const DEFAULT_KINDS = ["restaurant", "cafe", "bar", "fast_food", "fuel", "bus_st
 const DEFAULT_LIMIT = 1500;
 const MAX_FETCH = 5000;
 const MAX_CLUSTER_IDS = 25;
+const VIEW_STALE_MINUTES = 45;
 
 const clampZoom = (value: number | undefined) => {
   if (!Number.isFinite(value)) return 14;
@@ -114,6 +115,11 @@ const clusterize = (points: PoiMarker[], zoom: number) => {
 
 const parseIncludeGeometry = (value: unknown) => `${value}`.toLowerCase() === "true" || value === true;
 
+const viewSignature = (bounds: Bbox, zoom: number | null | undefined) => {
+  const z = Number.isFinite(zoom) ? Math.round(zoom as number) : 0;
+  return [bounds.minLat.toFixed(4), bounds.minLng.toFixed(4), bounds.maxLat.toFixed(4), bounds.maxLng.toFixed(4), z].join(":");
+};
+
 const serializeGeometry = (raw: unknown) => {
   if (!raw) return null;
   if (typeof raw === "string") {
@@ -141,6 +147,44 @@ const buildOverpassQuery = (bounds: Bbox, kinds: string[]) => {
 
   return { body, signature };
 };
+
+async function upsertOverpassElements(prisma: PrismaClient, elements: any[], runStarted: Date) {
+  for (const el of elements) {
+    const center = el.center ?? (Number.isFinite(el.lat) && Number.isFinite(el.lon) ? { lat: el.lat, lon: el.lon } : null);
+    if (!center) continue;
+
+    const osmType = typeof el.type === "string" && el.type.length > 0 ? el.type : "node";
+    const osmId = BigInt(el.id);
+    const category = el.tags?.amenity ?? el.tags?.shop ?? el.tags?.tourism ?? el.tags?.leisure ?? null;
+    const name = el.tags?.name ?? category ?? "poi";
+
+    const where: Prisma.PoiWhereUniqueInput = { poi_osm_composite: { osmType, osmId } };
+
+    await prisma.poi.upsert({
+      where,
+      update: {
+        name,
+        category,
+        latitude: new Prisma.Decimal(Number(center.lat).toFixed(6)),
+        longitude: new Prisma.Decimal(Number(center.lon).toFixed(6)),
+        tags: el.tags ?? {},
+        source: "osm",
+        lastSeenAt: runStarted,
+      },
+      create: {
+        osmType,
+        osmId,
+        name,
+        category,
+        latitude: new Prisma.Decimal(Number(center.lat).toFixed(6)),
+        longitude: new Prisma.Decimal(Number(center.lon).toFixed(6)),
+        tags: el.tags ?? {},
+        source: "osm",
+        lastSeenAt: runStarted,
+      },
+    });
+  }
+}
 
 export function registerPoiRoutes(server: FastifyInstance, prisma: PrismaClient, recordTelemetry: RecordTelemetryFn) {
   const listHandler = async (request: FastifyRequest, reply: FastifyReply) => {
@@ -185,6 +229,59 @@ export function registerPoiRoutes(server: FastifyInstance, prisma: PrismaClient,
 
     reply.header("ETag", etag);
     reply.header("Cache-Control", "public, max-age=120, stale-while-revalidate=900");
+
+    const userId = (request.user as { sub?: string } | undefined)?.sub ?? null;
+    if (userId) {
+      const now = new Date();
+      const sig = viewSignature(bounds, zoom);
+      const zoomBand = Math.round(zoom ?? 0);
+      const poiIds = items.filter((i) => !("cluster" in i && i.cluster)).map((i) => i.id).slice(0, 500);
+      const staleAfter = new Date(now.getTime() + VIEW_STALE_MINUTES * 60 * 1000);
+
+      const existingView = await prisma.geoViewHistory.findUnique({ where: { geo_view_user_signature: { userId, signature: sig } } });
+
+      await prisma.geoViewHistory.upsert({
+        where: { geo_view_user_signature: { userId, signature: sig } },
+        update: {
+          lastViewedAt: now,
+          viewCount: { increment: 1 },
+          lastPoiIds: poiIds,
+          lastPoiCount: items.length,
+          staleAfter,
+          zoomBand,
+        },
+        create: {
+          userId,
+          signature: sig,
+          zoomBand,
+          bboxMinLat: new Prisma.Decimal(bounds.minLat.toFixed(6)),
+          bboxMinLng: new Prisma.Decimal(bounds.minLng.toFixed(6)),
+          bboxMaxLat: new Prisma.Decimal(bounds.maxLat.toFixed(6)),
+          bboxMaxLng: new Prisma.Decimal(bounds.maxLng.toFixed(6)),
+          lastPoiIds: poiIds,
+          lastPoiCount: items.length,
+          firstViewedAt: now,
+          lastViewedAt: now,
+          staleAfter,
+          viewCount: 1,
+        },
+      });
+
+      const isStale = existingView?.staleAfter ? existingView.staleAfter < now : true;
+      if (isStale) {
+        void (async () => {
+          try {
+            const kinds = DEFAULT_KINDS;
+            const { body: overpassBody } = buildOverpassQuery(bounds, kinds);
+            const data = await enqueueOverpass(OVERPASS_URL, overpassBody, `pois:${sig}`);
+            const elements = Array.isArray(data?.elements) ? (data.elements as any[]) : [];
+            await upsertOverpassElements(prisma, elements, now);
+          } catch (err) {
+            request.log.debug({ err }, "stale poi refresh failed");
+          }
+        })();
+      }
+    }
 
     await recordTelemetry(request, {
       eventType: "poi.list",

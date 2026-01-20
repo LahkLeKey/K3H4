@@ -51,5 +51,6 @@ export const UserFindUniqueResultSchema = z.nullable(z.object({
   geoStatusLogs: z.array(z.unknown()),
   geoDemTileCaches: z.array(z.unknown()),
   personaAttributes: z.array(z.unknown()),
-  personaCompatibilities: z.array(z.unknown())
+  personaCompatibilities: z.array(z.unknown()),
+  geoViewHistories: z.array(z.unknown())
 }));

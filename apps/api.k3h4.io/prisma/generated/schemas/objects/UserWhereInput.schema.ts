@@ -47,7 +47,8 @@ import { OsrmCacheEntryListRelationFilterObjectSchema as OsrmCacheEntryListRelat
 import { GeoStatusLogListRelationFilterObjectSchema as GeoStatusLogListRelationFilterObjectSchema } from './GeoStatusLogListRelationFilter.schema';
 import { GeoDemTileCacheListRelationFilterObjectSchema as GeoDemTileCacheListRelationFilterObjectSchema } from './GeoDemTileCacheListRelationFilter.schema';
 import { PersonaAttributeListRelationFilterObjectSchema as PersonaAttributeListRelationFilterObjectSchema } from './PersonaAttributeListRelationFilter.schema';
-import { PersonaCompatibilityListRelationFilterObjectSchema as PersonaCompatibilityListRelationFilterObjectSchema } from './PersonaCompatibilityListRelationFilter.schema'
+import { PersonaCompatibilityListRelationFilterObjectSchema as PersonaCompatibilityListRelationFilterObjectSchema } from './PersonaCompatibilityListRelationFilter.schema';
+import { GeoViewHistoryListRelationFilterObjectSchema as GeoViewHistoryListRelationFilterObjectSchema } from './GeoViewHistoryListRelationFilter.schema'
 
 import { DecimalJSLikeSchema, isValidDecimalInput } from '../../helpers/decimal-helpers';
 const userwhereinputSchema = z.object({
@@ -112,7 +113,8 @@ const userwhereinputSchema = z.object({
   geoStatusLogs: z.lazy(() => GeoStatusLogListRelationFilterObjectSchema).optional(),
   geoDemTileCaches: z.lazy(() => GeoDemTileCacheListRelationFilterObjectSchema).optional(),
   personaAttributes: z.lazy(() => PersonaAttributeListRelationFilterObjectSchema).optional(),
-  personaCompatibilities: z.lazy(() => PersonaCompatibilityListRelationFilterObjectSchema).optional()
+  personaCompatibilities: z.lazy(() => PersonaCompatibilityListRelationFilterObjectSchema).optional(),
+  geoViewHistories: z.lazy(() => GeoViewHistoryListRelationFilterObjectSchema).optional()
 }).strict();
 export const UserWhereInputObjectSchema: z.ZodType<Prisma.UserWhereInput> = userwhereinputSchema as unknown as z.ZodType<Prisma.UserWhereInput>;
 export const UserWhereInputObjectZodSchema = userwhereinputSchema;

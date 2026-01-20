@@ -13,6 +13,7 @@ export { ProviderGrantModelSchema } from './ProviderGrant.pure';
 export { GeoRouteCacheModelSchema } from './GeoRouteCache.pure';
 export { GeoPoiCacheModelSchema } from './GeoPoiCache.pure';
 export { GeoQueryCacheModelSchema } from './GeoQueryCache.pure';
+export { GeoViewHistoryModelSchema } from './GeoViewHistory.pure';
 export { GeoStatusLogModelSchema } from './GeoStatusLog.pure';
 export { PoiModelSchema } from './Poi.pure';
 export { GeoDemTileCacheModelSchema } from './GeoDemTileCache.pure';

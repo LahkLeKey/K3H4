@@ -41,7 +41,8 @@ import { UserCountOutputTypeCountOsrmCacheEntriesArgsObjectSchema as UserCountOu
 import { UserCountOutputTypeCountGeoStatusLogsArgsObjectSchema as UserCountOutputTypeCountGeoStatusLogsArgsObjectSchema } from './UserCountOutputTypeCountGeoStatusLogsArgs.schema';
 import { UserCountOutputTypeCountGeoDemTileCachesArgsObjectSchema as UserCountOutputTypeCountGeoDemTileCachesArgsObjectSchema } from './UserCountOutputTypeCountGeoDemTileCachesArgs.schema';
 import { UserCountOutputTypeCountPersonaAttributesArgsObjectSchema as UserCountOutputTypeCountPersonaAttributesArgsObjectSchema } from './UserCountOutputTypeCountPersonaAttributesArgs.schema';
-import { UserCountOutputTypeCountPersonaCompatibilitiesArgsObjectSchema as UserCountOutputTypeCountPersonaCompatibilitiesArgsObjectSchema } from './UserCountOutputTypeCountPersonaCompatibilitiesArgs.schema'
+import { UserCountOutputTypeCountPersonaCompatibilitiesArgsObjectSchema as UserCountOutputTypeCountPersonaCompatibilitiesArgsObjectSchema } from './UserCountOutputTypeCountPersonaCompatibilitiesArgs.schema';
+import { UserCountOutputTypeCountGeoViewHistoriesArgsObjectSchema as UserCountOutputTypeCountGeoViewHistoriesArgsObjectSchema } from './UserCountOutputTypeCountGeoViewHistoriesArgs.schema'
 
 const makeSchema = () => z.object({
   refreshTokens: z.union([z.boolean(), z.lazy(() => UserCountOutputTypeCountRefreshTokensArgsObjectSchema)]).optional(),
@@ -85,7 +86,8 @@ const makeSchema = () => z.object({
   geoStatusLogs: z.union([z.boolean(), z.lazy(() => UserCountOutputTypeCountGeoStatusLogsArgsObjectSchema)]).optional(),
   geoDemTileCaches: z.union([z.boolean(), z.lazy(() => UserCountOutputTypeCountGeoDemTileCachesArgsObjectSchema)]).optional(),
   personaAttributes: z.union([z.boolean(), z.lazy(() => UserCountOutputTypeCountPersonaAttributesArgsObjectSchema)]).optional(),
-  personaCompatibilities: z.union([z.boolean(), z.lazy(() => UserCountOutputTypeCountPersonaCompatibilitiesArgsObjectSchema)]).optional()
+  personaCompatibilities: z.union([z.boolean(), z.lazy(() => UserCountOutputTypeCountPersonaCompatibilitiesArgsObjectSchema)]).optional(),
+  geoViewHistories: z.union([z.boolean(), z.lazy(() => UserCountOutputTypeCountGeoViewHistoriesArgsObjectSchema)]).optional()
 }).strict();
 export const UserCountOutputTypeSelectObjectSchema: z.ZodType<Prisma.UserCountOutputTypeSelect> = makeSchema() as unknown as z.ZodType<Prisma.UserCountOutputTypeSelect>;
 export const UserCountOutputTypeSelectObjectZodSchema = makeSchema();

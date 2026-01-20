@@ -41,7 +41,8 @@ import { MaptilerCacheEntryUncheckedCreateNestedManyWithoutUserInputObjectSchema
 import { OsrmCacheEntryUncheckedCreateNestedManyWithoutUserInputObjectSchema as OsrmCacheEntryUncheckedCreateNestedManyWithoutUserInputObjectSchema } from './OsrmCacheEntryUncheckedCreateNestedManyWithoutUserInput.schema';
 import { GeoStatusLogUncheckedCreateNestedManyWithoutUserInputObjectSchema as GeoStatusLogUncheckedCreateNestedManyWithoutUserInputObjectSchema } from './GeoStatusLogUncheckedCreateNestedManyWithoutUserInput.schema';
 import { GeoDemTileCacheUncheckedCreateNestedManyWithoutUserInputObjectSchema as GeoDemTileCacheUncheckedCreateNestedManyWithoutUserInputObjectSchema } from './GeoDemTileCacheUncheckedCreateNestedManyWithoutUserInput.schema';
-import { PersonaAttributeUncheckedCreateNestedManyWithoutUserInputObjectSchema as PersonaAttributeUncheckedCreateNestedManyWithoutUserInputObjectSchema } from './PersonaAttributeUncheckedCreateNestedManyWithoutUserInput.schema'
+import { PersonaAttributeUncheckedCreateNestedManyWithoutUserInputObjectSchema as PersonaAttributeUncheckedCreateNestedManyWithoutUserInputObjectSchema } from './PersonaAttributeUncheckedCreateNestedManyWithoutUserInput.schema';
+import { GeoViewHistoryUncheckedCreateNestedManyWithoutUserInputObjectSchema as GeoViewHistoryUncheckedCreateNestedManyWithoutUserInputObjectSchema } from './GeoViewHistoryUncheckedCreateNestedManyWithoutUserInput.schema'
 
 import { DecimalJSLikeSchema, isValidDecimalInput } from '../../helpers/decimal-helpers';
 const makeSchema = () => z.object({
@@ -102,7 +103,8 @@ const makeSchema = () => z.object({
   osrmCacheEntries: z.lazy(() => OsrmCacheEntryUncheckedCreateNestedManyWithoutUserInputObjectSchema).optional(),
   geoStatusLogs: z.lazy(() => GeoStatusLogUncheckedCreateNestedManyWithoutUserInputObjectSchema).optional(),
   geoDemTileCaches: z.lazy(() => GeoDemTileCacheUncheckedCreateNestedManyWithoutUserInputObjectSchema).optional(),
-  personaAttributes: z.lazy(() => PersonaAttributeUncheckedCreateNestedManyWithoutUserInputObjectSchema).optional()
+  personaAttributes: z.lazy(() => PersonaAttributeUncheckedCreateNestedManyWithoutUserInputObjectSchema).optional(),
+  geoViewHistories: z.lazy(() => GeoViewHistoryUncheckedCreateNestedManyWithoutUserInputObjectSchema).optional()
 }).strict();
 export const UserUncheckedCreateWithoutPersonaCompatibilitiesInputObjectSchema: z.ZodType<Prisma.UserUncheckedCreateWithoutPersonaCompatibilitiesInput> = makeSchema() as unknown as z.ZodType<Prisma.UserUncheckedCreateWithoutPersonaCompatibilitiesInput>;
 export const UserUncheckedCreateWithoutPersonaCompatibilitiesInputObjectZodSchema = makeSchema();

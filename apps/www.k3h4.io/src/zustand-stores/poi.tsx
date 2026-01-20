@@ -55,6 +55,11 @@ export function usePoiQuery(opts?: { enabled?: boolean }) {
 
     const enabled = Boolean(opts?.enabled ?? true) && Boolean(bbox) && Number.isFinite(zoom);
 
+    const signature = bbox
+        ? [bbox.minLat.toFixed(4), bbox.minLng.toFixed(4), bbox.maxLat.toFixed(4), bbox.maxLng.toFixed(4), Math.round(zoom ?? 0)]
+            .join(":")
+        : null;
+
     return useQuery<z.infer<typeof PoiResponseSchema>>({
         queryKey: ["pois", bbox?.minLat, bbox?.minLng, bbox?.maxLat, bbox?.maxLng, Math.round(zoom ?? 0), kinds.join(",")],
         enabled,
@@ -62,6 +67,38 @@ export function usePoiQuery(opts?: { enabled?: boolean }) {
         gcTime: 5 * 60_000,
         queryFn: async () => {
             if (!bbox || !Number.isFinite(zoom)) return { items: [], total: 0 } as z.infer<typeof PoiResponseSchema>;
+
+            // Try to reuse cached history if authed
+            if (isAuthed && signature) {
+                try {
+                    const history = await apiFetch<{ id: string; signature: string; staleAfter?: string | Date | null; pois: Array<{ id: string; name?: string | null; category?: string | null; lat: number; lng: number }> }[]>(
+                        "/geo/history?limit=80",
+                        {
+                            token: session?.accessToken,
+                            baseUrl: apiBase,
+                        },
+                    );
+
+                    const match = history.find((h) => h.signature === signature);
+                    if (match) {
+                        const staleAt = match.staleAfter ? new Date(match.staleAfter) : null;
+                        const isStale = staleAt ? staleAt.getTime() < Date.now() : false;
+                        if (!isStale && match.pois?.length) {
+                            return {
+                                items: match.pois.map((p) => ({ id: p.id, lat: p.lat, lng: p.lng, name: p.name ?? null, category: p.category ?? null })),
+                                total: match.pois.length,
+                                returned: match.pois.length,
+                                clustered: false,
+                                bbox,
+                                zoom: zoom ?? undefined,
+                            } as z.infer<typeof PoiResponseSchema>;
+                        }
+                    }
+                } catch (err) {
+                    // ignore history fetch errors
+                }
+            }
+
             const bboxParam = `${bbox.minLng},${bbox.minLat},${bbox.maxLng},${bbox.maxLat}`;
             const qs = new URLSearchParams({ bbox: bboxParam, zoom: String(Math.round(zoom ?? 0)), kinds: kinds.join(",") }).toString();
             const path = isAuthed ? `/api/pois?${qs}` : `/pois?${qs}`;

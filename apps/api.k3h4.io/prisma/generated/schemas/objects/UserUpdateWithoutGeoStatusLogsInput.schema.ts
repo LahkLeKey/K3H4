@@ -45,7 +45,8 @@ import { MaptilerCacheEntryUpdateManyWithoutUserNestedInputObjectSchema as Mapti
 import { OsrmCacheEntryUpdateManyWithoutUserNestedInputObjectSchema as OsrmCacheEntryUpdateManyWithoutUserNestedInputObjectSchema } from './OsrmCacheEntryUpdateManyWithoutUserNestedInput.schema';
 import { GeoDemTileCacheUpdateManyWithoutUserNestedInputObjectSchema as GeoDemTileCacheUpdateManyWithoutUserNestedInputObjectSchema } from './GeoDemTileCacheUpdateManyWithoutUserNestedInput.schema';
 import { PersonaAttributeUpdateManyWithoutUserNestedInputObjectSchema as PersonaAttributeUpdateManyWithoutUserNestedInputObjectSchema } from './PersonaAttributeUpdateManyWithoutUserNestedInput.schema';
-import { PersonaCompatibilityUpdateManyWithoutUserNestedInputObjectSchema as PersonaCompatibilityUpdateManyWithoutUserNestedInputObjectSchema } from './PersonaCompatibilityUpdateManyWithoutUserNestedInput.schema'
+import { PersonaCompatibilityUpdateManyWithoutUserNestedInputObjectSchema as PersonaCompatibilityUpdateManyWithoutUserNestedInputObjectSchema } from './PersonaCompatibilityUpdateManyWithoutUserNestedInput.schema';
+import { GeoViewHistoryUpdateManyWithoutUserNestedInputObjectSchema as GeoViewHistoryUpdateManyWithoutUserNestedInputObjectSchema } from './GeoViewHistoryUpdateManyWithoutUserNestedInput.schema'
 
 import { DecimalJSLikeSchema, isValidDecimalInput } from '../../helpers/decimal-helpers';
 const makeSchema = () => z.object({
@@ -106,7 +107,8 @@ const makeSchema = () => z.object({
   osrmCacheEntries: z.lazy(() => OsrmCacheEntryUpdateManyWithoutUserNestedInputObjectSchema).optional(),
   geoDemTileCaches: z.lazy(() => GeoDemTileCacheUpdateManyWithoutUserNestedInputObjectSchema).optional(),
   personaAttributes: z.lazy(() => PersonaAttributeUpdateManyWithoutUserNestedInputObjectSchema).optional(),
-  personaCompatibilities: z.lazy(() => PersonaCompatibilityUpdateManyWithoutUserNestedInputObjectSchema).optional()
+  personaCompatibilities: z.lazy(() => PersonaCompatibilityUpdateManyWithoutUserNestedInputObjectSchema).optional(),
+  geoViewHistories: z.lazy(() => GeoViewHistoryUpdateManyWithoutUserNestedInputObjectSchema).optional()
 }).strict();
 export const UserUpdateWithoutGeoStatusLogsInputObjectSchema: z.ZodType<Prisma.UserUpdateWithoutGeoStatusLogsInput> = makeSchema() as unknown as z.ZodType<Prisma.UserUpdateWithoutGeoStatusLogsInput>;
 export const UserUpdateWithoutGeoStatusLogsInputObjectZodSchema = makeSchema();

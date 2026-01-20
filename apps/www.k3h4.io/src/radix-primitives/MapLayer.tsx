@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import maplibregl, { type RequestParameters, type ResourceType } from "maplibre-gl";
 import { MapboxOverlay } from "@deck.gl/mapbox";
 import { TerrainLayer } from "@deck.gl/geo-layers";
+import { ColumnLayer } from "@deck.gl/layers";
 import { setLoaderOptions } from "@loaders.gl/core";
 
 type DeckMapboxOverlay = InstanceType<typeof MapboxOverlay>;
@@ -77,9 +78,10 @@ export function MapLayer({ readonly }: { readonly?: boolean }) {
 
     const overlayRef = useRef<DeckMapboxOverlay | null>(null);
 
-    const poiList = useMemo(() => {
-        const items = poiQuery.data?.items ?? [];
-        return items
+    const poiItems = useMemo(() => poiQuery.data?.items ?? [], [poiQuery.data]);
+
+    const poiPins = useMemo(() => {
+        return poiItems
             .filter((item) => !item.cluster)
             .map((item) => ({
                 id: item.id,
@@ -88,7 +90,18 @@ export function MapLayer({ readonly }: { readonly?: boolean }) {
                 kind: item.category ?? undefined,
                 name: item.name ?? undefined,
             })) as Poi[];
-    }, [poiQuery.data]);
+    }, [poiItems]);
+
+    // Visual pins include clusters so the map isn’t empty at lower zooms
+    const poiPinsVisual = useMemo(() => {
+        return poiItems.map((item) => ({
+            id: item.id,
+            lat: item.lat,
+            lng: item.lng,
+            kind: item.cluster ? "cluster" : item.category ?? undefined,
+            name: item.name ?? undefined,
+        })) as Poi[];
+    }, [poiItems]);
 
     const poiStatus: "idle" | "loading" | "ready" | "error" = poiQuery.isFetching
         ? "loading"
@@ -147,11 +160,11 @@ export function MapLayer({ readonly }: { readonly?: boolean }) {
     const pickPoiAndFetch = useCallback(
         async (lngLat: { lng: number; lat: number }) => {
             const map = mapRef.current;
-            if (!map || !poiList.length) return;
+            if (!map || !poiPins.length) return;
             const clickPoint = map.project(lngLat);
             let nearest: Poi | null = null;
             let minDist = Infinity;
-            for (const p of poiList) {
+            for (const p of poiPins) {
                 const pt = map.project([p.lng, p.lat]);
                 const dx = pt.x - clickPoint.x;
                 const dy = pt.y - clickPoint.y;
@@ -191,7 +204,7 @@ export function MapLayer({ readonly }: { readonly?: boolean }) {
                     : null,
             });
         },
-        [fetchPoiDetail, poiList, poiDetail?.id, updateHighlight],
+        [fetchPoiDetail, poiPins, poiDetail?.id, updateHighlight],
     );
 
     const debouncedHoverPick = useMemo(() => debounce((lng: number, lat: number) => pickPoiAndFetch({ lng, lat }), 260), [pickPoiAndFetch]);
@@ -300,10 +313,39 @@ export function MapLayer({ readonly }: { readonly?: boolean }) {
             }),
         );
 
+        // 3D pins for POIs (column markers for quick visibility)
+        if (poiItems.length > 0) {
+            layers.push(
+                new ColumnLayer({
+                    id: "poi-columns",
+                    data: poiItems,
+                    pickable: false,
+                    diskResolution: 10,
+                    radiusMinPixels: 8,
+                    radiusMaxPixels: 20,
+                    extruded: true,
+                    elevationScale: 80,
+                    getElevation: (d: any) => (d.cluster ? Math.max(4, Math.min(40, (d.count ?? 1) / 2)) : 8),
+                    getPosition: (d: any) => [d.lng, d.lat, 0],
+                    getFillColor: (d: any) => {
+                        const kind = d.category ?? d.kind ?? "";
+                        if (d.cluster) return [148, 163, 184, 210];
+                        if (kind.includes("restaurant") || kind.includes("food")) return [249, 115, 22, 220];
+                        if (kind.includes("cafe")) return [168, 85, 247, 220];
+                        if (kind.includes("fuel") || kind.includes("gas")) return [245, 158, 11, 220];
+                        if (kind.includes("bank") || kind.includes("atm")) return [34, 197, 94, 220];
+                        if (kind.includes("bus") || kind.includes("train")) return [14, 165, 233, 220];
+                        return [226, 232, 240, 210];
+                    },
+                    material: { ambient: 0.4, diffuse: 0.6, shininess: 16, specularColor: [255, 255, 255] },
+                }),
+            );
+        }
+
         // Vector overlay disabled to stop MapTiler 400 spam; rely on base style tiles only
 
         return layers;
-    }, [apiBase, maptilerVectorTiles, terrainUrl]);
+    }, [apiBase, maptilerVectorTiles, poiItems, terrainUrl]);
 
     // One-time geolocation request on mount
     useEffect(() => {
@@ -479,6 +521,17 @@ export function MapLayer({ readonly }: { readonly?: boolean }) {
 
             applyDeckLayers();
             syncAndStoreCenter();
+            // Seed POI viewport immediately on load
+            const b = map.getBounds();
+            setViewport(
+                {
+                    minLat: b.getSouth(),
+                    minLng: b.getWest(),
+                    maxLat: b.getNorth(),
+                    maxLng: b.getEast(),
+                },
+                map.getZoom(),
+            );
             bump();
 
             // Ensure vector source exists for 3D buildings when style lacks "openmaptiles"
@@ -747,7 +800,7 @@ export function MapLayer({ readonly }: { readonly?: boolean }) {
                     {poiError ? <span className="ml-2 text-[11px] font-normal text-amber-200/80">{poiError}</span> : null}
                 </div>
             ) : null}
-            {!readonly ? <MapPinsOverlay map={mapRef.current} pois={poiList} frame={mapFrame} /> : null}
+            {!readonly ? <MapPinsOverlay map={mapRef.current} pois={poiPinsVisual} frame={mapFrame} /> : null}
             {/* LocationOverview now rendered inside the top-right overlay with the search box */}
             {!readonly ? (
                 <button

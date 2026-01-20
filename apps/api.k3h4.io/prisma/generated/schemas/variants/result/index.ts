@@ -13,6 +13,7 @@ export { ProviderGrantResultSchema } from './ProviderGrant.result';
 export { GeoRouteCacheResultSchema } from './GeoRouteCache.result';
 export { GeoPoiCacheResultSchema } from './GeoPoiCache.result';
 export { GeoQueryCacheResultSchema } from './GeoQueryCache.result';
+export { GeoViewHistoryResultSchema } from './GeoViewHistory.result';
 export { GeoStatusLogResultSchema } from './GeoStatusLog.result';
 export { PoiResultSchema } from './Poi.result';
 export { GeoDemTileCacheResultSchema } from './GeoDemTileCache.result';
