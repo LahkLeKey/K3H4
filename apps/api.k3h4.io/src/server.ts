@@ -70,6 +70,7 @@ const swaggerTags: Record<string, { name: string; description: string }> = {
   culinary: { name: "Culinary", description: "Culinary simulator" },
   arcade: { name: "Arcade", description: "Arcade simulator" },
   usda: { name: "USDA", description: "USDA data" },
+  wikidata: { name: "Wikidata", description: "Wikidata REST cache" },
   osrm: { name: "OSRM", description: "OSRM routing proxy" },
   telemetry: { name: "Telemetry", description: "Telemetry intake" },
 };
@@ -93,6 +94,7 @@ const swaggerTagMap: Record<string, { name: string; description: string }> = {
   culinary: swaggerTags.culinary,
   arcade: swaggerTags.arcade,
   usda: swaggerTags.usda,
+  wikidata: swaggerTags.wikidata,
   osrm: swaggerTags.osrm,
   telemetry: swaggerTags.telemetry,
 };

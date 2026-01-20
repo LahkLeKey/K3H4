@@ -1122,3 +1122,24 @@ model UsdaSyncState {
 
   @@unique([dataset, scope])
 }
+
+// Wikidata REST API cache entries
+model WikidataCacheEntry {
+  id                  String   @id @default(cuid())
+  resource            String
+  endpoint            String
+  params              Json?
+  paramsHash          String
+  url                 String
+  statusCode          Int
+  payload             Json?
+  fetchedAt           DateTime @default(now())
+  expiresAt           DateTime?
+  cacheControlSeconds Int?
+  etag                String?
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  @@unique([resource, endpoint, paramsHash])
+  @@index([resource, fetchedAt])
+}
