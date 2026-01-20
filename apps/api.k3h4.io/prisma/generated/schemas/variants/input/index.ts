@@ -62,3 +62,4 @@ export { UsdaUnitInputSchema } from './UsdaUnit.input';
 export { UsdaReleaseInputSchema } from './UsdaRelease.input';
 export { UsdaCacheEntryInputSchema } from './UsdaCacheEntry.input';
 export { UsdaSyncStateInputSchema } from './UsdaSyncState.input';
+export { WikidataCacheEntryInputSchema } from './WikidataCacheEntry.input';

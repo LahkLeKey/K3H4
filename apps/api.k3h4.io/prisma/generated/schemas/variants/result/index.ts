@@ -62,3 +62,4 @@ export { UsdaUnitResultSchema } from './UsdaUnit.result';
 export { UsdaReleaseResultSchema } from './UsdaRelease.result';
 export { UsdaCacheEntryResultSchema } from './UsdaCacheEntry.result';
 export { UsdaSyncStateResultSchema } from './UsdaSyncState.result';
+export { WikidataCacheEntryResultSchema } from './WikidataCacheEntry.result';

@@ -62,3 +62,4 @@ export { UsdaUnitModelSchema } from './UsdaUnit.pure';
 export { UsdaReleaseModelSchema } from './UsdaRelease.pure';
 export { UsdaCacheEntryModelSchema } from './UsdaCacheEntry.pure';
 export { UsdaSyncStateModelSchema } from './UsdaSyncState.pure';
+export { WikidataCacheEntryModelSchema } from './WikidataCacheEntry.pure';

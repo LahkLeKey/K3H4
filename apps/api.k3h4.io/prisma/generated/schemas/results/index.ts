@@ -765,3 +765,16 @@ export { UsdaSyncStateDeleteManyResultSchema } from './UsdaSyncStateDeleteManyRe
 export { UsdaSyncStateAggregateResultSchema } from './UsdaSyncStateAggregateResult.schema';
 export { UsdaSyncStateGroupByResultSchema } from './UsdaSyncStateGroupByResult.schema';
 export { UsdaSyncStateCountResultSchema } from './UsdaSyncStateCountResult.schema';
+export { WikidataCacheEntryFindUniqueResultSchema } from './WikidataCacheEntryFindUniqueResult.schema';
+export { WikidataCacheEntryFindFirstResultSchema } from './WikidataCacheEntryFindFirstResult.schema';
+export { WikidataCacheEntryFindManyResultSchema } from './WikidataCacheEntryFindManyResult.schema';
+export { WikidataCacheEntryCreateResultSchema } from './WikidataCacheEntryCreateResult.schema';
+export { WikidataCacheEntryCreateManyResultSchema } from './WikidataCacheEntryCreateManyResult.schema';
+export { WikidataCacheEntryUpdateResultSchema } from './WikidataCacheEntryUpdateResult.schema';
+export { WikidataCacheEntryUpdateManyResultSchema } from './WikidataCacheEntryUpdateManyResult.schema';
+export { WikidataCacheEntryUpsertResultSchema } from './WikidataCacheEntryUpsertResult.schema';
+export { WikidataCacheEntryDeleteResultSchema } from './WikidataCacheEntryDeleteResult.schema';
+export { WikidataCacheEntryDeleteManyResultSchema } from './WikidataCacheEntryDeleteManyResult.schema';
+export { WikidataCacheEntryAggregateResultSchema } from './WikidataCacheEntryAggregateResult.schema';
+export { WikidataCacheEntryGroupByResultSchema } from './WikidataCacheEntryGroupByResult.schema';
+export { WikidataCacheEntryCountResultSchema } from './WikidataCacheEntryCountResult.schema';
