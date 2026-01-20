@@ -40,7 +40,12 @@ import { ArcadeRedemptionListRelationFilterObjectSchema as ArcadeRedemptionListR
 import { ProviderGrantListRelationFilterObjectSchema as ProviderGrantListRelationFilterObjectSchema } from './ProviderGrantListRelationFilter.schema';
 import { GeoRouteCacheListRelationFilterObjectSchema as GeoRouteCacheListRelationFilterObjectSchema } from './GeoRouteCacheListRelationFilter.schema';
 import { GeoPoiCacheListRelationFilterObjectSchema as GeoPoiCacheListRelationFilterObjectSchema } from './GeoPoiCacheListRelationFilter.schema';
+import { GeoQueryCacheListRelationFilterObjectSchema as GeoQueryCacheListRelationFilterObjectSchema } from './GeoQueryCacheListRelationFilter.schema';
+import { MaptilerQueryListRelationFilterObjectSchema as MaptilerQueryListRelationFilterObjectSchema } from './MaptilerQueryListRelationFilter.schema';
+import { MaptilerCacheEntryListRelationFilterObjectSchema as MaptilerCacheEntryListRelationFilterObjectSchema } from './MaptilerCacheEntryListRelationFilter.schema';
 import { OsrmCacheEntryListRelationFilterObjectSchema as OsrmCacheEntryListRelationFilterObjectSchema } from './OsrmCacheEntryListRelationFilter.schema';
+import { GeoStatusLogListRelationFilterObjectSchema as GeoStatusLogListRelationFilterObjectSchema } from './GeoStatusLogListRelationFilter.schema';
+import { GeoDemTileCacheListRelationFilterObjectSchema as GeoDemTileCacheListRelationFilterObjectSchema } from './GeoDemTileCacheListRelationFilter.schema';
 import { PersonaAttributeListRelationFilterObjectSchema as PersonaAttributeListRelationFilterObjectSchema } from './PersonaAttributeListRelationFilter.schema';
 import { PersonaCompatibilityListRelationFilterObjectSchema as PersonaCompatibilityListRelationFilterObjectSchema } from './PersonaCompatibilityListRelationFilter.schema'
 
@@ -100,7 +105,12 @@ const userwhereinputSchema = z.object({
   providerGrants: z.lazy(() => ProviderGrantListRelationFilterObjectSchema).optional(),
   geoRouteCaches: z.lazy(() => GeoRouteCacheListRelationFilterObjectSchema).optional(),
   geoPoiCaches: z.lazy(() => GeoPoiCacheListRelationFilterObjectSchema).optional(),
+  geoQueryCaches: z.lazy(() => GeoQueryCacheListRelationFilterObjectSchema).optional(),
+  maptilerQueries: z.lazy(() => MaptilerQueryListRelationFilterObjectSchema).optional(),
+  maptilerCacheEntries: z.lazy(() => MaptilerCacheEntryListRelationFilterObjectSchema).optional(),
   osrmCacheEntries: z.lazy(() => OsrmCacheEntryListRelationFilterObjectSchema).optional(),
+  geoStatusLogs: z.lazy(() => GeoStatusLogListRelationFilterObjectSchema).optional(),
+  geoDemTileCaches: z.lazy(() => GeoDemTileCacheListRelationFilterObjectSchema).optional(),
   personaAttributes: z.lazy(() => PersonaAttributeListRelationFilterObjectSchema).optional(),
   personaCompatibilities: z.lazy(() => PersonaCompatibilityListRelationFilterObjectSchema).optional()
 }).strict();

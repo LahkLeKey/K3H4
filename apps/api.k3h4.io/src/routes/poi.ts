@@ -112,6 +112,20 @@ const clusterize = (points: PoiMarker[], zoom: number) => {
   return { items: clustered, clustered: true } as const;
 };
 
+const parseIncludeGeometry = (value: unknown) => `${value}`.toLowerCase() === "true" || value === true;
+
+const serializeGeometry = (raw: unknown) => {
+  if (!raw) return null;
+  if (typeof raw === "string") {
+    try {
+      return JSON.parse(raw);
+    } catch {
+      return null;
+    }
+  }
+  return raw as any;
+};
+
 const buildOverpassQuery = (bounds: Bbox, kinds: string[]) => {
   const bboxClause = `${bounds.minLat},${bounds.minLng},${bounds.maxLat},${bounds.maxLng}`;
   const filters = kinds
@@ -315,13 +329,77 @@ export function registerPoiRoutes(server: FastifyInstance, prisma: PrismaClient,
 
   const authOpts = { preHandler: [server.authenticate] } as const;
 
+  const detailHandler = async (request: FastifyRequest, reply: FastifyReply) => {
+    const params = request.params as { id?: string } | undefined;
+    const id = params?.id;
+    const includeGeometry = parseIncludeGeometry((request.query as Record<string, unknown>).includeGeometry);
+    if (!id) return reply.status(400).send({ error: "id is required" });
+
+    const poi = await prisma.poi.findUnique({
+      where: { id },
+      include: {
+        building: {
+          select: {
+            id: true,
+            osmId: true,
+            type: true,
+            addressHouseNumber: true,
+            addressStreet: true,
+            addressCity: true,
+            addressPostcode: true,
+            addressState: true,
+            addressCountry: true,
+            geometry: true,
+          },
+        },
+      },
+    });
+
+    if (!poi) return reply.status(404).send({ error: "poi not found" });
+
+    const geometry = includeGeometry && poi.building?.geometry ? serializeGeometry(poi.building.geometry) : undefined;
+
+    const building = poi.building
+      ? {
+          id: poi.building.id,
+          osmId: poi.building.osmId !== null && poi.building.osmId !== undefined ? Number(poi.building.osmId) : null,
+          type: poi.building.type,
+          addressHouseNumber: poi.building.addressHouseNumber,
+          addressStreet: poi.building.addressStreet,
+          addressCity: poi.building.addressCity,
+          addressPostcode: poi.building.addressPostcode,
+          addressState: poi.building.addressState,
+          addressCountry: poi.building.addressCountry,
+          geometry: includeGeometry ? geometry ?? null : undefined,
+        }
+      : null;
+
+    return {
+      id: poi.id,
+      osmId: poi.osmId.toString(),
+      osmType: poi.osmType,
+      name: poi.name,
+      category: poi.category,
+      latitude: Number(poi.latitude),
+      longitude: Number(poi.longitude),
+      tags: poi.tags,
+      source: poi.source,
+      lastSeenAt: poi.lastSeenAt,
+      createdAt: poi.createdAt,
+      updatedAt: poi.updatedAt,
+      building,
+    };
+  };
+
   // Public variants (keep compatibility with current unauthenticated map probes)
   server.get("/pois", listHandler);
   server.get("/pois/metadata", metadataHandler);
   server.post("/pois/sync", authOpts, syncHandler);
+  server.get("/pois/:id", detailHandler);
 
   // Authenticated variants for the signed-in map experience
   server.get("/api/pois", authOpts, listHandler);
   server.get("/api/pois/metadata", authOpts, metadataHandler);
   server.post("/api/pois/sync", authOpts, syncHandler);
+  server.get("/api/pois/:id", authOpts, detailHandler);
 }

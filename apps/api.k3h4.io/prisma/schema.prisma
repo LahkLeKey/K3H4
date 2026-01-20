@@ -10,6 +10,27 @@ datasource db {
   provider = "postgresql"
 }
 
+enum BuildingType {
+  RESIDENTIAL
+  COMMERCIAL
+  INDUSTRIAL
+}
+
+model Building {
+  id                 Int          @id @default(autoincrement())
+  osmId              BigInt?      @unique
+  type               BuildingType
+  addressHouseNumber String?
+  addressStreet      String?
+  addressCity        String?
+  addressPostcode    String?
+  addressState       String?
+  addressCountry     String?
+  geometry           Json?
+
+  POIs Poi[]
+}
+
 model User {
   id             String          @id @default(cuid())
   email          String          @unique
@@ -231,9 +252,13 @@ model Poi {
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 
+  buildingId Int?
+  building   Building? @relation(fields: [buildingId], references: [id])
+
   @@unique([osmType, osmId], name: "poi_osm_composite")
   @@index([latitude, longitude])
   @@index([category])
+  @@index([buildingId])
 }
 
 // DEM / terrain tile cache for reuse per user

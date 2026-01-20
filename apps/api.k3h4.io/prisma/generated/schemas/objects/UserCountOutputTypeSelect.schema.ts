@@ -34,7 +34,12 @@ import { UserCountOutputTypeCountArcadeRedemptionsArgsObjectSchema as UserCountO
 import { UserCountOutputTypeCountProviderGrantsArgsObjectSchema as UserCountOutputTypeCountProviderGrantsArgsObjectSchema } from './UserCountOutputTypeCountProviderGrantsArgs.schema';
 import { UserCountOutputTypeCountGeoRouteCachesArgsObjectSchema as UserCountOutputTypeCountGeoRouteCachesArgsObjectSchema } from './UserCountOutputTypeCountGeoRouteCachesArgs.schema';
 import { UserCountOutputTypeCountGeoPoiCachesArgsObjectSchema as UserCountOutputTypeCountGeoPoiCachesArgsObjectSchema } from './UserCountOutputTypeCountGeoPoiCachesArgs.schema';
+import { UserCountOutputTypeCountGeoQueryCachesArgsObjectSchema as UserCountOutputTypeCountGeoQueryCachesArgsObjectSchema } from './UserCountOutputTypeCountGeoQueryCachesArgs.schema';
+import { UserCountOutputTypeCountMaptilerQueriesArgsObjectSchema as UserCountOutputTypeCountMaptilerQueriesArgsObjectSchema } from './UserCountOutputTypeCountMaptilerQueriesArgs.schema';
+import { UserCountOutputTypeCountMaptilerCacheEntriesArgsObjectSchema as UserCountOutputTypeCountMaptilerCacheEntriesArgsObjectSchema } from './UserCountOutputTypeCountMaptilerCacheEntriesArgs.schema';
 import { UserCountOutputTypeCountOsrmCacheEntriesArgsObjectSchema as UserCountOutputTypeCountOsrmCacheEntriesArgsObjectSchema } from './UserCountOutputTypeCountOsrmCacheEntriesArgs.schema';
+import { UserCountOutputTypeCountGeoStatusLogsArgsObjectSchema as UserCountOutputTypeCountGeoStatusLogsArgsObjectSchema } from './UserCountOutputTypeCountGeoStatusLogsArgs.schema';
+import { UserCountOutputTypeCountGeoDemTileCachesArgsObjectSchema as UserCountOutputTypeCountGeoDemTileCachesArgsObjectSchema } from './UserCountOutputTypeCountGeoDemTileCachesArgs.schema';
 import { UserCountOutputTypeCountPersonaAttributesArgsObjectSchema as UserCountOutputTypeCountPersonaAttributesArgsObjectSchema } from './UserCountOutputTypeCountPersonaAttributesArgs.schema';
 import { UserCountOutputTypeCountPersonaCompatibilitiesArgsObjectSchema as UserCountOutputTypeCountPersonaCompatibilitiesArgsObjectSchema } from './UserCountOutputTypeCountPersonaCompatibilitiesArgs.schema'
 
@@ -73,7 +78,12 @@ const makeSchema = () => z.object({
   providerGrants: z.union([z.boolean(), z.lazy(() => UserCountOutputTypeCountProviderGrantsArgsObjectSchema)]).optional(),
   geoRouteCaches: z.union([z.boolean(), z.lazy(() => UserCountOutputTypeCountGeoRouteCachesArgsObjectSchema)]).optional(),
   geoPoiCaches: z.union([z.boolean(), z.lazy(() => UserCountOutputTypeCountGeoPoiCachesArgsObjectSchema)]).optional(),
+  geoQueryCaches: z.union([z.boolean(), z.lazy(() => UserCountOutputTypeCountGeoQueryCachesArgsObjectSchema)]).optional(),
+  maptilerQueries: z.union([z.boolean(), z.lazy(() => UserCountOutputTypeCountMaptilerQueriesArgsObjectSchema)]).optional(),
+  maptilerCacheEntries: z.union([z.boolean(), z.lazy(() => UserCountOutputTypeCountMaptilerCacheEntriesArgsObjectSchema)]).optional(),
   osrmCacheEntries: z.union([z.boolean(), z.lazy(() => UserCountOutputTypeCountOsrmCacheEntriesArgsObjectSchema)]).optional(),
+  geoStatusLogs: z.union([z.boolean(), z.lazy(() => UserCountOutputTypeCountGeoStatusLogsArgsObjectSchema)]).optional(),
+  geoDemTileCaches: z.union([z.boolean(), z.lazy(() => UserCountOutputTypeCountGeoDemTileCachesArgsObjectSchema)]).optional(),
   personaAttributes: z.union([z.boolean(), z.lazy(() => UserCountOutputTypeCountPersonaAttributesArgsObjectSchema)]).optional(),
   personaCompatibilities: z.union([z.boolean(), z.lazy(() => UserCountOutputTypeCountPersonaCompatibilitiesArgsObjectSchema)]).optional()
 }).strict();

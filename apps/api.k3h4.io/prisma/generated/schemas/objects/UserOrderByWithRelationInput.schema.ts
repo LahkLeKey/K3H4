@@ -37,7 +37,12 @@ import { ArcadeRedemptionOrderByRelationAggregateInputObjectSchema as ArcadeRede
 import { ProviderGrantOrderByRelationAggregateInputObjectSchema as ProviderGrantOrderByRelationAggregateInputObjectSchema } from './ProviderGrantOrderByRelationAggregateInput.schema';
 import { GeoRouteCacheOrderByRelationAggregateInputObjectSchema as GeoRouteCacheOrderByRelationAggregateInputObjectSchema } from './GeoRouteCacheOrderByRelationAggregateInput.schema';
 import { GeoPoiCacheOrderByRelationAggregateInputObjectSchema as GeoPoiCacheOrderByRelationAggregateInputObjectSchema } from './GeoPoiCacheOrderByRelationAggregateInput.schema';
+import { GeoQueryCacheOrderByRelationAggregateInputObjectSchema as GeoQueryCacheOrderByRelationAggregateInputObjectSchema } from './GeoQueryCacheOrderByRelationAggregateInput.schema';
+import { MaptilerQueryOrderByRelationAggregateInputObjectSchema as MaptilerQueryOrderByRelationAggregateInputObjectSchema } from './MaptilerQueryOrderByRelationAggregateInput.schema';
+import { MaptilerCacheEntryOrderByRelationAggregateInputObjectSchema as MaptilerCacheEntryOrderByRelationAggregateInputObjectSchema } from './MaptilerCacheEntryOrderByRelationAggregateInput.schema';
 import { OsrmCacheEntryOrderByRelationAggregateInputObjectSchema as OsrmCacheEntryOrderByRelationAggregateInputObjectSchema } from './OsrmCacheEntryOrderByRelationAggregateInput.schema';
+import { GeoStatusLogOrderByRelationAggregateInputObjectSchema as GeoStatusLogOrderByRelationAggregateInputObjectSchema } from './GeoStatusLogOrderByRelationAggregateInput.schema';
+import { GeoDemTileCacheOrderByRelationAggregateInputObjectSchema as GeoDemTileCacheOrderByRelationAggregateInputObjectSchema } from './GeoDemTileCacheOrderByRelationAggregateInput.schema';
 import { PersonaAttributeOrderByRelationAggregateInputObjectSchema as PersonaAttributeOrderByRelationAggregateInputObjectSchema } from './PersonaAttributeOrderByRelationAggregateInput.schema';
 import { PersonaCompatibilityOrderByRelationAggregateInputObjectSchema as PersonaCompatibilityOrderByRelationAggregateInputObjectSchema } from './PersonaCompatibilityOrderByRelationAggregateInput.schema'
 
@@ -86,7 +91,12 @@ const makeSchema = () => z.object({
   providerGrants: z.lazy(() => ProviderGrantOrderByRelationAggregateInputObjectSchema).optional(),
   geoRouteCaches: z.lazy(() => GeoRouteCacheOrderByRelationAggregateInputObjectSchema).optional(),
   geoPoiCaches: z.lazy(() => GeoPoiCacheOrderByRelationAggregateInputObjectSchema).optional(),
+  geoQueryCaches: z.lazy(() => GeoQueryCacheOrderByRelationAggregateInputObjectSchema).optional(),
+  maptilerQueries: z.lazy(() => MaptilerQueryOrderByRelationAggregateInputObjectSchema).optional(),
+  maptilerCacheEntries: z.lazy(() => MaptilerCacheEntryOrderByRelationAggregateInputObjectSchema).optional(),
   osrmCacheEntries: z.lazy(() => OsrmCacheEntryOrderByRelationAggregateInputObjectSchema).optional(),
+  geoStatusLogs: z.lazy(() => GeoStatusLogOrderByRelationAggregateInputObjectSchema).optional(),
+  geoDemTileCaches: z.lazy(() => GeoDemTileCacheOrderByRelationAggregateInputObjectSchema).optional(),
   personaAttributes: z.lazy(() => PersonaAttributeOrderByRelationAggregateInputObjectSchema).optional(),
   personaCompatibilities: z.lazy(() => PersonaCompatibilityOrderByRelationAggregateInputObjectSchema).optional()
 }).strict();
