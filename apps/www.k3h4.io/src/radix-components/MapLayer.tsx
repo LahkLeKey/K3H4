@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import maplibregl, { type RequestParameters, type ResourceType } from "maplibre-gl";
+import maplibregl, { type MapSourceDataEvent, type RequestParameters, type ResourceType } from "maplibre-gl";
 import { MapboxOverlay } from "@deck.gl/mapbox";
 import { TerrainLayer } from "@deck.gl/geo-layers";
 import { setLoaderOptions } from "@loaders.gl/core";
@@ -31,7 +31,19 @@ export function MapLayer({ readonly }: { readonly?: boolean }) {
     const navControlRef = useRef<maplibregl.NavigationControl | null>(null);
     const initialCenterRef = useRef<{ lat: number; lng: number } | null>(null);
     const overlayRef = useRef<DeckMapboxOverlay | null>(null);
+    const mapFrameRaf = useRef<number | null>(null);
     const [mapFrame, setMapFrame] = useState(0);
+    const [mapLoaded, setMapLoaded] = useState(false);
+    const [mapGateTimerDone, setMapGateTimerDone] = useState(false);
+    const [demReady, setDemReady] = useState(false);
+    const [meshReady, setMeshReady] = useState(false);
+    const terrainReady = demReady && meshReady;
+
+    useEffect(() => {
+        return () => {
+            if (mapFrameRaf.current !== null) cancelAnimationFrame(mapFrameRaf.current);
+        };
+    }, []);
 
     const { updateView, registerMap, view } = useMapView();
     const { status, center, requestLocation, setCenterFromMap } = useGeoState();
@@ -49,6 +61,8 @@ export function MapLayer({ readonly }: { readonly?: boolean }) {
                 lng: item.lng,
                 kind: item.category ?? undefined,
                 name: item.name ?? undefined,
+                osmId: item.osmId,
+                osmType: item.osmType,
             })) as Poi[];
     }, [poiItems]);
 
@@ -59,6 +73,8 @@ export function MapLayer({ readonly }: { readonly?: boolean }) {
             lng: item.lng,
             kind: item.cluster ? "cluster" : item.category ?? undefined,
             name: item.name ?? undefined,
+            osmId: item.osmId,
+            osmType: item.osmType,
         })) as Poi[];
     }, [poiItems]);
 
@@ -80,6 +96,62 @@ export function MapLayer({ readonly }: { readonly?: boolean }) {
         [apiBase],
     );
     const maptilerStyleUrl = useMemo(() => `${apiBase}/maptiler/json?path=${MAPTILER_STYLE_PATH}`, [apiBase]);
+
+    useEffect(() => {
+        setMapGateTimerDone(false);
+    }, [terrainUrl]);
+
+    const rebuildTerrainSources = useCallback(
+        (map: maplibregl.Map) => {
+            map.setTerrain(null);
+
+            if (map.getLayer("terrain-hillshade")) map.removeLayer("terrain-hillshade");
+            if (map.getSource("terrain-dem-hillshade")) map.removeSource("terrain-dem-hillshade");
+            if (map.getSource("terrain-dem")) map.removeSource("terrain-dem");
+
+            map.addSource("terrain-dem", {
+                type: "raster-dem",
+                tiles: [terrainUrl],
+                tileSize: 256,
+                maxzoom: 14,
+                encoding: "mapbox",
+            } as any);
+            map.setTerrain({ source: "terrain-dem", exaggeration: TERRAIN_EXAGGERATION });
+
+            map.addSource("terrain-dem-hillshade", {
+                type: "raster-dem",
+                tiles: [terrainUrl],
+                tileSize: 256,
+                maxzoom: 14,
+                encoding: "mapbox",
+            } as any);
+
+            map.addLayer({
+                id: "terrain-hillshade",
+                type: "hillshade",
+                source: "terrain-dem-hillshade",
+                paint: {
+                    "hillshade-exaggeration": 0.7,
+                    "hillshade-shadow-color": "#0f172a",
+                    "hillshade-highlight-color": "#e2e8f0",
+                },
+            } as any);
+        },
+        [terrainUrl],
+    );
+
+    useEffect(() => {
+        setDemReady(false);
+        setMeshReady(false);
+        setMapLoaded(false);
+        setMapGateTimerDone(false);
+
+        const map = mapRef.current;
+        if (!map || !map.isStyleLoaded()) return;
+
+        rebuildTerrainSources(map);
+        map.once("idle", () => setMapLoaded(true));
+    }, [rebuildTerrainSources]);
 
     const {
         searchTerm,
@@ -119,6 +191,7 @@ export function MapLayer({ readonly }: { readonly?: boolean }) {
         [apiBase],
     );
 
+
     const buildDeckLayers = useCallback(() => {
         const layers = [] as any[];
 
@@ -142,12 +215,19 @@ export function MapLayer({ readonly }: { readonly?: boolean }) {
                         return fetch(EMPTY_TILE_PNG);
                     },
                 },
+                onTileLoad: () => setMeshReady(true),
                 onTileError: () => null,
             }),
         );
 
         return layers;
     }, [terrainUrl]);
+
+    useEffect(() => {
+        if (meshReady) return;
+        const timeout = setTimeout(() => setMeshReady(true), 2000);
+        return () => clearTimeout(timeout);
+    }, [meshReady, terrainUrl]);
 
     const requestedLocationRef = useRef(false);
 
@@ -230,16 +310,12 @@ export function MapLayer({ readonly }: { readonly?: boolean }) {
             sync();
         };
 
-        let raf: number | null = null;
         const bump = () => {
-            if (raf !== null) return;
-            raf = requestAnimationFrame(() => {
-                setMapFrame((n) => n + 1);
-                raf = null;
-            });
+            setMapFrame((n) => n + 1);
         };
 
         map.on("load", () => {
+            setMapLoaded(true);
             if (!map.getSource("building-highlight")) {
                 map.addSource("building-highlight", {
                     type: "geojson",
@@ -266,38 +342,7 @@ export function MapLayer({ readonly }: { readonly?: boolean }) {
                 );
             }
 
-            if (!map.getSource("terrain-dem")) {
-                map.addSource("terrain-dem", {
-                    type: "raster-dem",
-                    tiles: [terrainUrl],
-                    tileSize: 256,
-                    maxzoom: 14,
-                    encoding: "mapbox",
-                } as any);
-                map.setTerrain({ source: "terrain-dem", exaggeration: TERRAIN_EXAGGERATION });
-            }
-
-            if (!map.getSource("terrain-dem-hillshade")) {
-                map.addSource("terrain-dem-hillshade", {
-                    type: "raster-dem",
-                    tiles: [terrainUrl],
-                    tileSize: 256,
-                    maxzoom: 14,
-                    encoding: "mapbox",
-                } as any);
-            }
-            if (!map.getLayer("terrain-hillshade")) {
-                map.addLayer({
-                    id: "terrain-hillshade",
-                    type: "hillshade",
-                    source: "terrain-dem-hillshade",
-                    paint: {
-                        "hillshade-exaggeration": 0.7,
-                        "hillshade-shadow-color": "#0f172a",
-                        "hillshade-highlight-color": "#e2e8f0",
-                    },
-                } as any);
-            }
+            rebuildTerrainSources(map);
 
             map.on("error", (ev) => {
                 const sid = typeof ev === "object" && ev && "sourceId" in ev ? (ev as { sourceId?: string }).sourceId : undefined;
@@ -341,7 +386,6 @@ export function MapLayer({ readonly }: { readonly?: boolean }) {
         registerMap(map);
 
         return () => {
-            if (raf !== null) cancelAnimationFrame(raf);
             registerMap(null);
             overlayRef.current?.finalize();
             overlayRef.current = null;
@@ -358,12 +402,59 @@ export function MapLayer({ readonly }: { readonly?: boolean }) {
         proxiedMaptilerRequest,
         readonly,
         registerMap,
+        rebuildTerrainSources,
         setCenterFromMap,
         setViewport,
         status,
         terrainUrl,
         updateView,
     ]);
+
+    useEffect(() => {
+        const map = mapRef.current;
+        if (!map || !map.isStyleLoaded()) return;
+
+        const checkReady = () => {
+            const dem = map.getSource("terrain-dem") as any;
+            const shade = map.getSource("terrain-dem-hillshade") as any;
+            if (dem?.loaded?.() && shade?.loaded?.()) {
+                setDemReady(true);
+                return;
+            }
+            if (map.isSourceLoaded("terrain-dem") && map.isSourceLoaded("terrain-dem-hillshade")) {
+                setDemReady(true);
+            }
+        };
+
+        const handleSourceData = (ev: MapSourceDataEvent) => {
+            if (ev.sourceId === "terrain-dem" || ev.sourceId === "terrain-dem-hillshade") {
+                checkReady();
+            }
+        };
+
+        const handleData = (ev: maplibregl.EventData & { sourceId?: string }) => {
+            const sid = ev.sourceId;
+            if (sid === "terrain-dem" || sid === "terrain-dem-hillshade") {
+                checkReady();
+            }
+        };
+
+        checkReady();
+        map.on("sourcedata", handleSourceData);
+        map.on("data", handleData);
+        map.once("idle", checkReady);
+
+        return () => {
+            map.off("sourcedata", handleSourceData);
+            map.off("data", handleData);
+        };
+    }, [mapLoaded, terrainUrl]);
+
+    useEffect(() => {
+        if (demReady) return;
+        const fallback = setTimeout(() => setDemReady(true), 2500);
+        return () => clearTimeout(fallback);
+    }, [demReady, terrainUrl]);
 
     useMapInteractionToggle(mapRef, navControlRef, readonly);
     usePoiViewportSync(mapRef, Boolean(readonly), setViewport);
@@ -384,6 +475,23 @@ export function MapLayer({ readonly }: { readonly?: boolean }) {
         [commitSearchSelection],
     );
 
+    const loadSteps = [
+        { key: "map", label: "Map style", done: mapLoaded },
+        { key: "dem", label: "Terrain DEM", done: demReady },
+        { key: "mesh", label: "3D surface", done: meshReady },
+    ];
+    const readyProgress = Math.round((loadSteps.filter((step) => step.done).length / loadSteps.length) * 100);
+    const mapReady = mapLoaded && (terrainReady || mapGateTimerDone);
+
+    useEffect(() => {
+        if (!mapLoaded) {
+            setMapGateTimerDone(false);
+            return;
+        }
+        const gate = setTimeout(() => setMapGateTimerDone(true), 1500);
+        return () => clearTimeout(gate);
+    }, [mapLoaded, terrainReady]);
+
     if (status === "blocked" || status === "error") {
         return <MapStatusOverlay state="blocked" />;
     }
@@ -395,6 +503,34 @@ export function MapLayer({ readonly }: { readonly?: boolean }) {
     return (
         <>
             <div ref={ref} className="absolute inset-0 z-0" />
+            {!mapReady ? (
+                <div className="absolute inset-0 z-50 flex items-center justify-center bg-slate-950/85 backdrop-blur-sm">
+                    <div className="w-80 max-w-[calc(100%-48px)] space-y-3 rounded-xl border border-white/10 bg-slate-900/80 p-4 text-white shadow-2xl">
+                        <div className="flex items-center justify-between text-xs uppercase tracking-[0.08em] text-white/60">
+                            <span>Preparing terrain</span>
+                            <span>{readyProgress}%</span>
+                        </div>
+                        <div className="space-y-2">
+                            {loadSteps.map((step) => (
+                                <div key={step.key} className="space-y-1">
+                                    <div className="flex items-center justify-between text-xs text-white/70">
+                                        <span>{step.label}</span>
+                                        <span className={step.done ? "text-emerald-300" : "text-white/60"}>
+                                            {step.done ? "ready" : "loading"}
+                                        </span>
+                                    </div>
+                                    <div className="h-1.5 w-full overflow-hidden rounded-full bg-white/10">
+                                        <div
+                                            className={`${step.done ? "bg-emerald-400" : "bg-sky-400"} h-full rounded-full transition-all duration-500 ${step.done ? "" : "animate-pulse"}`}
+                                            style={{ width: step.done ? "100%" : "32%" }}
+                                        />
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+            ) : null}
             {!readonly ? (
                 <div className="pointer-events-none absolute right-3 top-20 z-40 flex flex-col items-end gap-3">
                     <div className="pointer-events-auto w-80 max-w-[calc(100%-24px)] space-y-2">
@@ -412,7 +548,14 @@ export function MapLayer({ readonly }: { readonly?: boolean }) {
             ) : null}
             {poiDetail && poiAnchor ? <PoiDetailCard detail={poiDetail} anchor={poiAnchor} onClose={clearPoi} /> : null}
             {!readonly ? <PoiErrorBanner status={poiStatus} error={poiError} /> : null}
-            {!readonly ? <MapPinsOverlay map={mapRef.current} pois={poiPinsVisual} frame={mapFrame} /> : null}
+            {!readonly ? (
+                <MapPinsOverlay
+                    map={mapRef.current}
+                    pois={poiPinsVisual}
+                    frame={mapFrame}
+                    loading={poiStatus === "loading"}
+                />
+            ) : null}
             {!readonly ? <MapLocateButton onClick={() => requestLocation({ force: true })} /> : null}
         </>
     );

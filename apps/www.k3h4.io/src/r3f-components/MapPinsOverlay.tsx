@@ -1,9 +1,9 @@
 import { Canvas, useFrame } from "@react-three/fiber";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import type maplibregl from "maplibre-gl";
 import * as THREE from "three";
 
-export type Poi = { id: string; lat: number; lng: number; kind?: string; name?: string };
+export type Poi = { id: string; lat: number; lng: number; kind?: string; name?: string; osmId?: string; osmType?: string };
 
 const PIN_COLORS: Record<string, string> = {
     restaurant: "#f97316",
@@ -42,11 +42,24 @@ function PinMesh({ color, phase }: { color: string; phase: number }) {
     );
 }
 
-export function MapPinsOverlay({ map, pois, frame }: { map: maplibregl.Map | null; pois: Poi[]; frame: number }) {
+function Spinner() {
+    const ref = useRef<THREE.Mesh>(null);
+    useFrame((_, delta) => {
+        if (ref.current) ref.current.rotation.z += delta * 2.2;
+    });
+    return (
+        <mesh ref={ref}>
+            <torusGeometry args={[12, 3, 16, 32]} />
+            <meshStandardMaterial color="#38bdf8" emissive="#38bdf8" emissiveIntensity={0.7} roughness={0.25} metalness={0.2} />
+        </mesh>
+    );
+}
+
+export function MapPinsOverlay({ map, pois, frame, loading }: { map: maplibregl.Map | null; pois: Poi[]; frame: number; loading?: boolean }) {
     const [size, setSize] = useState<{ w: number; h: number }>({ w: 0, h: 0 });
     const phaseCache = useRef<Record<string, number>>({});
 
-    useEffect(() => {
+    useLayoutEffect(() => {
         if (!map) return;
         const container = map.getContainer();
         const update = () => setSize({ w: container.clientWidth, h: container.clientHeight });
@@ -70,7 +83,30 @@ export function MapPinsOverlay({ map, pois, frame }: { map: maplibregl.Map | nul
             .filter((p) => p.x >= -64 && p.x <= size.w + 64 && p.y >= -64 && p.y <= size.h + 64);
     }, [frame, map, pois, size.h, size.w]);
 
-    if (!map || !size.w || !size.h || projected.length === 0) return null;
+    const showSpinner = loading && (!map || !size.w || !size.h || projected.length === 0);
+    if (!map || !size.w || !size.h) {
+        return showSpinner ? (
+            <div className="pointer-events-none absolute inset-0 z-20 flex items-center justify-center">
+                <Canvas orthographic camera={{ position: [0, 0, 200], zoom: 4, left: -50, right: 50, top: 50, bottom: -50, near: -200, far: 200 }} dpr={1} events={undefined}>
+                    <ambientLight intensity={0.6} />
+                    <directionalLight position={[60, 60, 80]} intensity={0.8} />
+                    <Spinner />
+                </Canvas>
+            </div>
+        ) : null;
+    }
+
+    if (projected.length === 0) {
+        return showSpinner ? (
+            <div className="pointer-events-none absolute inset-0 z-20 flex items-center justify-center">
+                <Canvas orthographic camera={{ position: [0, 0, 200], zoom: 4, left: -50, right: 50, top: 50, bottom: -50, near: -200, far: 200 }} dpr={1} events={undefined}>
+                    <ambientLight intensity={0.6} />
+                    <directionalLight position={[60, 60, 80]} intensity={0.8} />
+                    <Spinner />
+                </Canvas>
+            </div>
+        ) : null;
+    }
 
     const left = -size.w / 2;
     const right = size.w / 2;
@@ -80,10 +116,11 @@ export function MapPinsOverlay({ map, pois, frame }: { map: maplibregl.Map | nul
     return (
         <div className="pointer-events-none absolute inset-0 z-10">
             <Canvas
+                key={`${size.w}x${size.h}`}
                 className="pointer-events-none"
                 orthographic
                 camera={{ position: [0, 0, 400], zoom: 1, left, right, top, bottom, near: -500, far: 500 }}
-                style={{ pointerEvents: "none" }}
+                style={{ pointerEvents: "none", width: "100%", height: "100%" }}
                 dpr={1}
                 events={undefined}
             >

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type maplibregl from "maplibre-gl";
 import type { Poi } from "../r3f-components/MapPinsOverlay";
+import type { Polygon, MultiPolygon } from "geojson";
 import { useDebouncedCallback } from "./useDebouncedCallback";
 
 export type PoiDetail = {
@@ -9,17 +10,26 @@ export type PoiDetail = {
     category?: string | null;
     lat: number;
     lng: number;
+    address?: {
+        label?: string | null;
+        house_number?: string | null;
+        road?: string | null;
+        neighborhood?: string | null;
+        city?: string | null;
+        postcode?: string | null;
+        country?: string | null;
+    } | null;
+    contact?: { phone?: string | null; website?: string | null } | null;
+    openingHours?: string | null;
+    fuelTypes?: string[] | null;
+    accessibility?: { wheelchair?: string | null } | null;
+    description?: string | null;
+    photos?: Array<{ url: string; caption?: string | null }> | null;
     building?: {
-        id: number | null;
-        osmId: number | null;
         type?: string | null;
-        addressHouseNumber?: string | null;
-        addressStreet?: string | null;
-        addressCity?: string | null;
-        addressPostcode?: string | null;
-        addressState?: string | null;
-        addressCountry?: string | null;
-        geometry?: any;
+        subtype?: string | null;
+        levels?: number | null;
+        footprint?: Polygon | MultiPolygon | null;
     } | null;
 } | null;
 
@@ -52,21 +62,47 @@ export function usePoiDetailInteraction({ mapRef, apiBase, accessToken, signOut,
     }, [mapRef]);
 
     const fetchPoiDetail = useCallback(
-        async (id: string) => {
+        async (poi: Poi) => {
+            const authed = Boolean(accessToken);
+            const { id } = poi;
             if (fetchingDetailRef.current === id) return null;
             fetchingDetailRef.current = id;
             try {
-                const authed = Boolean(accessToken);
-                const url = `${apiBase}${authed ? "/api/pois" : "/pois"}/${id}?includeGeometry=true`;
-                const headers = authed && accessToken ? { Authorization: `Bearer ${accessToken}` } : undefined;
-                const res = await fetch(url, { headers: headers as any, credentials: "include" });
-                if (res.status === 401 && authed) {
+                const include = [
+                    "address",
+                    "contact",
+                    "openingHours",
+                    "fuel",
+                    "accessibility",
+                    "building",
+                    "photos",
+                    "description",
+                ].join(",");
+
+                const osmId = poi.osmId && poi.osmType ? `${poi.osmType}/${poi.osmId}` : null;
+                const headers = accessToken ? { Authorization: `Bearer ${accessToken}` } : undefined;
+
+                // Try enrichment first if we have an OSM identifier
+                if (osmId) {
+                    const enrichUrl = `${apiBase}/api/poi/${osmId}/enrich?include=${encodeURIComponent(include)}`;
+                    const res = await fetch(enrichUrl, { headers: headers as any, credentials: "include" });
+                    if (res.status === 401 && authed) {
+                        signOut();
+                        return null;
+                    }
+                    if (res.ok) return (await res.json()) as any;
+                    if (res.status !== 404) throw new Error(`poi detail ${res.status}`);
+                    // fall through to legacy if 404
+                }
+
+                const legacyUrl = `${apiBase}${authed ? "/api/pois" : "/pois"}/${id}?includeGeometry=true`;
+                const legacyRes = await fetch(legacyUrl, { headers: headers as any, credentials: "include" });
+                if (legacyRes.status === 401 && authed) {
                     signOut();
                     return null;
                 }
-                if (!res.ok) throw new Error(`poi detail ${res.status}`);
-                const body = (await res.json()) as any;
-                return body as any;
+                if (!legacyRes.ok) throw new Error(`poi detail ${legacyRes.status}`);
+                return (await legacyRes.json()) as any;
             } finally {
                 fetchingDetailRef.current = null;
             }
@@ -98,10 +134,11 @@ export function usePoiDetailInteraction({ mapRef, apiBase, accessToken, signOut,
             if (!nearest || minDist > 28) return;
             if (currentPoiDetailIdRef.current === nearest.id) return;
 
-            const detail = await fetchPoiDetail(nearest.id);
+            const detail = await fetchPoiDetail(nearest);
             if (!detail) return;
             const building = detail.building ?? null;
-            updateHighlight(building?.geometry ?? null);
+            const footprint = building?.footprint ?? (building as any)?.geometry ?? null;
+            updateHighlight(footprint);
             const projected = map.project([nearest.lng, nearest.lat]);
             setPoiAnchor({ x: projected.x, y: projected.y, lat: nearest.lat, lng: nearest.lng });
             setPoiDetail({
@@ -110,18 +147,19 @@ export function usePoiDetailInteraction({ mapRef, apiBase, accessToken, signOut,
                 category: detail.category ?? nearest.kind ?? null,
                 lat: nearest.lat,
                 lng: nearest.lng,
+                address: detail.address ?? null,
+                contact: detail.contact ?? null,
+                openingHours: detail.openingHours ?? null,
+                fuelTypes: detail.fuelTypes ?? null,
+                accessibility: detail.accessibility ?? null,
+                description: detail.description ?? null,
+                photos: detail.photos ?? null,
                 building: building
                     ? {
-                        id: building.id ?? null,
-                        osmId: building.osmId ?? null,
                         type: building.type ?? null,
-                        addressHouseNumber: building.addressHouseNumber ?? null,
-                        addressStreet: building.addressStreet ?? null,
-                        addressCity: building.addressCity ?? null,
-                        addressPostcode: building.addressPostcode ?? null,
-                        addressState: building.addressState ?? null,
-                        addressCountry: building.addressCountry ?? null,
-                        geometry: building.geometry ?? null,
+                        subtype: building.subtype ?? null,
+                        levels: building.levels ?? null,
+                        footprint: footprint ?? null,
                     }
                     : null,
             });

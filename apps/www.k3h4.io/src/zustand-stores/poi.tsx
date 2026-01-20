@@ -17,6 +17,8 @@ const PoiItemSchema = z.object({
     category: z.string().nullable().optional(),
     sampleCategories: z.array(z.string()).optional(),
     sampleIds: z.array(z.string()).optional(),
+    osmId: z.string().optional(),
+    osmType: z.string().optional(),
 });
 
 const PoiResponseSchema = z.object({

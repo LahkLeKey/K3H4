@@ -7,17 +7,22 @@ type Props = {
 };
 
 const formatAddress = (detail: NonNullable<PoiDetail>) => {
-    const b = detail.building;
-    if (!b) return null;
-    const parts = [b.addressHouseNumber, b.addressStreet].filter(Boolean).join(" ");
-    const cityLine = [b.addressCity, b.addressState, b.addressPostcode].filter(Boolean).join(" ");
-    const country = b.addressCountry ?? null;
-    const lines = [parts || null, cityLine || null, country].filter(Boolean) as string[];
-    return lines.length ? lines.join(" · ") : null;
+    const a = detail.address;
+    if (!a) return null;
+    if (a.label) return a.label;
+    const line1 = [a.house_number, a.road].filter(Boolean).join(" ");
+    const line2 = [a.city, a.postcode].filter(Boolean).join(" ");
+    return [line1 || null, line2 || null, a.country ?? null].filter(Boolean).join(" · ");
 };
 
 export function PoiDetailCard({ detail, anchor, onClose }: Props) {
     const address = formatAddress(detail);
+    const phone = detail.contact?.phone ?? null;
+    const website = detail.contact?.website ?? null;
+    const wheelchair = detail.accessibility?.wheelchair ?? null;
+    const fuels = detail.fuelTypes?.length ? detail.fuelTypes.join(", ") : null;
+    const desc = detail.description ?? null;
+    const photo = detail.photos?.[0]?.url ?? null;
     const top = Math.max(12, anchor.y - 12);
     const left = anchor.x + 16;
 
@@ -40,12 +45,30 @@ export function PoiDetailCard({ detail, anchor, onClose }: Props) {
                 </button>
             </div>
             <div className="space-y-1 text-xs text-slate-200">
+                {address ? <div className="text-amber-100/90">{address}</div> : null}
+                {detail.openingHours ? <div>Hours: {detail.openingHours}</div> : null}
+                {phone ? <div>Phone: {phone}</div> : null}
+                {website ? (
+                    <div>
+                        <a href={website} target="_blank" rel="noreferrer" className="text-amber-200 underline">
+                            Website
+                        </a>
+                    </div>
+                ) : null}
+                {fuels ? <div>Fuel: {fuels}</div> : null}
+                {wheelchair ? <div>Wheelchair: {wheelchair}</div> : null}
+                {detail.building?.type ? <div>Building: {detail.building.type}</div> : null}
+                {detail.building?.subtype ? <div>Subtype: {detail.building.subtype}</div> : null}
+                {detail.building?.levels ? <div>Levels: {detail.building.levels}</div> : null}
                 <div>
                     Lat/Lng: {detail.lat.toFixed(5)}, {detail.lng.toFixed(5)}
                 </div>
-                {address ? <div className="text-amber-100/90">{address}</div> : null}
-                {detail.building?.osmId ? <div>OSM: {detail.building.osmId}</div> : null}
-                {detail.building?.type ? <div>Type: {detail.building.type}</div> : null}
+                {desc ? <div className="pt-1 text-slate-300">{desc.slice(0, 220)}{desc.length > 220 ? "…" : ""}</div> : null}
+                {photo ? (
+                    <div className="pt-2">
+                        <img src={photo} alt={detail.name ?? "POI photo"} className="h-32 w-full rounded-md object-cover" />
+                    </div>
+                ) : null}
             </div>
         </div>
     );

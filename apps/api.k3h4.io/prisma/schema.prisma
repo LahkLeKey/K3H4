@@ -380,6 +380,18 @@ model OsrmCacheEntry {
   @@index([expiresAt])
 }
 
+// Composite POI enrichment cache (assembled response by include hash)
+model PoiEnrichmentCache {
+  id          String   // format: "node/123456"
+  includeHash String
+  payload     Json
+  fetchedAt   DateTime @default(now())
+  expiresAt   DateTime
+
+  @@id([id, includeHash])
+  @@index([expiresAt])
+}
+
 model UserPreference {
   id             String   @id @default(cuid())
   userId         String   @unique
