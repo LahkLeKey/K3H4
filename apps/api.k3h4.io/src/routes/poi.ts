@@ -198,16 +198,36 @@ export function registerPoiRoutes(server: FastifyInstance, prisma: PrismaClient,
       longitude: { gte: bounds.minLng, lte: bounds.maxLng },
     };
 
-    const total = await prisma.poi.count({ where });
-    const limit = Number((request.query as Record<string, unknown>).limit);
-    const normalizedLimit = Number.isFinite(limit) ? Math.trunc(limit) : DEFAULT_LIMIT;
-    const take = total === 0 ? 0 : Math.max(1, Math.min(normalizedLimit, MAX_FETCH, total));
-    const pois = await prisma.poi.findMany({
-      where,
-      orderBy: { updatedAt: "desc" },
-      take,
-      select: { id: true, osmId: true, osmType: true, name: true, category: true, latitude: true, longitude: true, updatedAt: true },
-    });
+    const loadPois = async () => {
+      const total = await prisma.poi.count({ where });
+      const limit = Number((request.query as Record<string, unknown>).limit);
+      const normalizedLimit = Number.isFinite(limit) ? Math.trunc(limit) : DEFAULT_LIMIT;
+      const take = total === 0 ? 0 : Math.max(1, Math.min(normalizedLimit, MAX_FETCH, total));
+      const pois = await prisma.poi.findMany({
+        where,
+        orderBy: { updatedAt: "desc" },
+        take,
+        select: { id: true, osmId: true, osmType: true, name: true, category: true, latitude: true, longitude: true, updatedAt: true },
+      });
+      return { total, pois } as const;
+    };
+
+    let { total, pois } = await loadPois();
+
+    if (total === 0) {
+      try {
+        const kinds = DEFAULT_KINDS;
+        const { body: overpassBody, signature: overpassSig } = buildOverpassQuery(bounds, kinds);
+        const data = await enqueueOverpass(OVERPASS_URL, overpassBody, overpassSig);
+        const elements = Array.isArray((data as any)?.elements) ? ((data as any).elements as any[]) : [];
+        if (elements.length > 0) {
+          await upsertOverpassElements(prisma, elements, new Date());
+          ({ total, pois } = await loadPois());
+        }
+      } catch (err) {
+        request.log.warn({ err }, "overpass sync after empty poi result failed");
+      }
+    }
 
     const markers: PoiMarker[] = pois.map((poi) => ({
       id: poi.id,

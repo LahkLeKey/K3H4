@@ -2,7 +2,6 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import maplibregl, { type RequestParameters, type ResourceType } from "maplibre-gl";
 import { MapboxOverlay } from "@deck.gl/mapbox";
 import { TerrainLayer } from "@deck.gl/geo-layers";
-import { ColumnLayer } from "@deck.gl/layers";
 import { setLoaderOptions } from "@loaders.gl/core";
 
 type DeckMapboxOverlay = InstanceType<typeof MapboxOverlay>;
@@ -312,35 +311,6 @@ export function MapLayer({ readonly }: { readonly?: boolean }) {
                 onTileError: () => null,
             }),
         );
-
-        // 3D pins for POIs (column markers for quick visibility)
-        if (poiItems.length > 0) {
-            layers.push(
-                new ColumnLayer({
-                    id: "poi-columns",
-                    data: poiItems,
-                    pickable: false,
-                    diskResolution: 10,
-                    radiusMinPixels: 8,
-                    radiusMaxPixels: 20,
-                    extruded: true,
-                    elevationScale: 80,
-                    getElevation: (d: any) => (d.cluster ? Math.max(4, Math.min(40, (d.count ?? 1) / 2)) : 8),
-                    getPosition: (d: any) => [d.lng, d.lat, 0],
-                    getFillColor: (d: any) => {
-                        const kind = d.category ?? d.kind ?? "";
-                        if (d.cluster) return [148, 163, 184, 210];
-                        if (kind.includes("restaurant") || kind.includes("food")) return [249, 115, 22, 220];
-                        if (kind.includes("cafe")) return [168, 85, 247, 220];
-                        if (kind.includes("fuel") || kind.includes("gas")) return [245, 158, 11, 220];
-                        if (kind.includes("bank") || kind.includes("atm")) return [34, 197, 94, 220];
-                        if (kind.includes("bus") || kind.includes("train")) return [14, 165, 233, 220];
-                        return [226, 232, 240, 210];
-                    },
-                    material: { ambient: 0.4, diffuse: 0.6, shininess: 16, specularColor: [255, 255, 255] },
-                }),
-            );
-        }
 
         // Vector overlay disabled to stop MapTiler 400 spam; rely on base style tiles only
 
