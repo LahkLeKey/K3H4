@@ -4,6 +4,7 @@ import { MapboxOverlay } from "@deck.gl/mapbox";
 import { TerrainLayer, MVTLayer } from "@deck.gl/geo-layers";
 import { GeoJsonLayer } from "@deck.gl/layers";
 import { FillStyleExtension, PathStyleExtension } from "@deck.gl/extensions";
+import { setLoaderOptions } from "@loaders.gl/core";
 
 type DeckMapboxOverlay = InstanceType<typeof MapboxOverlay>;
 
@@ -131,6 +132,8 @@ export function MapLayer({ readonly }: { readonly?: boolean }) {
                 color: [190, 200, 210],
                 operation: "terrain+draw",
                 loadOptions: {
+                    worker: false, // avoid loaders.gl worker parse errors in-browser
+                    _workerType: "none",
                     // Swap in a transparent PNG if the DEM tile cannot be fetched or decoded
                     fetch: async (url: string, options?: RequestInit) => {
                         const res = await fetch(url, options);
@@ -143,73 +146,7 @@ export function MapLayer({ readonly }: { readonly?: boolean }) {
             }),
         );
 
-        layers.push(
-            new MVTLayer({
-                id: "mvt-stylized",
-                data: [maptilerVectorTiles],
-                loadOptions: {
-                    fetch: async (url: string, options?: RequestInit) => {
-                        const res = await fetch(url, options);
-                        if (res.ok) return res;
-                        // Fall back to an empty tile so deck.gl continues without spamming errors
-                        return new Response(new Uint8Array(), { status: 200, statusText: "empty" });
-                    },
-                },
-                renderSubLayers: (props: any) =>
-                    new GeoJsonLayer(props, {
-                        id: `${props.id}-geo`,
-                        extensions: [new FillStyleExtension({ pattern: true }), new PathStyleExtension({ dash: true })],
-                        filled: true,
-                        fillPatternAtlas: patternAtlas?.atlas,
-                        fillPatternMapping: patternAtlas?.mapping,
-                        fillPatternMask: true,
-                        getFillPatternScale: () => 1,
-                        getFillPatternOffset: () => [0, 0],
-                        getFillPattern: (f: any) => {
-                            const ln = f.properties?.layerName;
-                            // Disable water patterns to avoid distant tiling artifacts
-                            if (ln === "water") return null;
-                            // Disable building patterns entirely to avoid distant white boxes
-                            return null;
-                        },
-                        getFillColor: (f: any) => {
-                            const ln = f.properties?.layerName;
-                            if (ln === "water") return [0, 0, 0, 0];
-                            if (ln === "building") return [0, 0, 0, 0];
-                            return [0, 0, 0, 0];
-                        },
-                        stroked: true,
-                        lineWidthUnits: "pixels",
-                        getLineWidth: (f: any) => {
-                            const ln = f.properties?.layerName;
-                            const cls = f.properties?.class;
-                            if (ln === "waterway") return 2.5;
-                            if (ln === "transportation" && (cls === "motorway" || cls === "trunk")) return 5.5;
-                            if (ln === "transportation") return 2.0;
-                            if (ln === "building") return 0;
-                            return 0;
-                        },
-                        getLineColor: (f: any) => {
-                            const ln = f.properties?.layerName;
-                            const cls = f.properties?.class;
-                            if (ln === "waterway") return [90, 150, 210, 240];
-                            if (ln === "transportation" && (cls === "motorway" || cls === "trunk")) return [255, 210, 130, 255];
-                            if (ln === "transportation") return [160, 160, 160, 230];
-                            if (ln === "building") return [0, 0, 0, 0];
-                            return [0, 0, 0, 0];
-                        },
-                        getDashArray: (f: any) => {
-                            const ln = f.properties?.layerName;
-                            const cls = f.properties?.class;
-                            if (ln === "waterway") return [2.2, 1.6];
-                            if (ln === "transportation" && (cls === "motorway" || cls === "trunk")) return [5.0, 2.0];
-                            if (ln === "transportation" && (cls === "path" || cls === "track")) return [0.6, 1.4];
-                            if (ln === "building") return [0, 0];
-                            return [0, 0];
-                        },
-                    }),
-            }),
-        );
+        // Vector overlay disabled to stop MapTiler 400 spam; rely on base style tiles only
 
         return layers;
     }, [apiBase, maptilerVectorTiles, terrainUrl]);
@@ -249,6 +186,9 @@ export function MapLayer({ readonly }: { readonly?: boolean }) {
         });
 
         if (readonly) {
+        setLoaderOptions({ worker: false });
+
+
             map.boxZoom.disable();
             map.dragPan.disable();
             map.scrollZoom.disable();
