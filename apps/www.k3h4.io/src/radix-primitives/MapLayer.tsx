@@ -45,6 +45,11 @@ export function MapLayer({ readonly }: { readonly?: boolean }) {
     const { session, apiBase, signOut } = useAuthStore();
     const { setViewport } = usePoiStore();
     const poiQuery = usePoiQuery({ enabled: !readonly });
+    type SearchResult = { id: string; label: string; lat: number; lng: number; zoom?: number };
+    const [searchTerm, setSearchTerm] = useState("");
+    const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
+    const [searchStatus, setSearchStatus] = useState<"idle" | "loading" | "ready" | "error">("idle");
+    const [searchError, setSearchError] = useState<string | null>(null);
 
     const [poiDetail, setPoiDetail] = useState<
         | null
@@ -118,15 +123,14 @@ export function MapLayer({ readonly }: { readonly?: boolean }) {
 
     const fetchPoiDetail = useCallback(
         async (id: string) => {
-            if (!session?.accessToken) return null;
             if (fetchingDetailRef.current === id) return null;
             fetchingDetailRef.current = id;
             try {
-                const res = await fetch(`${apiBase}/api/pois/${id}?includeGeometry=true`, {
-                    headers: { Authorization: `Bearer ${session.accessToken}` },
-                    credentials: "include",
-                });
-                if (res.status === 401) {
+                const authed = Boolean(session?.accessToken);
+                const url = `${apiBase}${authed ? "/api/pois" : "/pois"}/${id}?includeGeometry=true`;
+                const headers = authed && session?.accessToken ? { Authorization: `Bearer ${session.accessToken}` } : undefined;
+                const res = await fetch(url, { headers: headers as any, credentials: "include" });
+                if (res.status === 401 && authed) {
                     signOut();
                     return null;
                 }
@@ -192,11 +196,61 @@ export function MapLayer({ readonly }: { readonly?: boolean }) {
 
     const debouncedHoverPick = useMemo(() => debounce((lng: number, lat: number) => pickPoiAndFetch({ lng, lat }), 260), [pickPoiAndFetch]);
 
+    const debouncedSearch = useMemo(
+        () =>
+            debounce(async (term: string) => {
+                const q = term.trim();
+                if (q.length < 3) {
+                    setSearchResults([]);
+                    setSearchStatus("idle");
+                    setSearchError(null);
+                    return;
+                }
+                setSearchStatus("loading");
+                setSearchError(null);
+                try {
+                    const authed = Boolean(session?.accessToken);
+                    const pathParam = `/geocoding/${q}.json`;
+                    const url = `${apiBase}/maptiler/json?path=${encodeURIComponent(pathParam)}&autocomplete=true&limit=5`;
+                    const headers = authed && session?.accessToken ? { Authorization: `Bearer ${session.accessToken}` } : undefined;
+                    const res = await fetch(url, { headers: headers as any, credentials: "include" });
+                    if (!res.ok) throw new Error(`geocode ${res.status}`);
+                    const body = await res.json();
+                    const feats = Array.isArray(body?.features) ? body.features : [];
+                    const parsed = feats
+                        .map((f: any) => {
+                            const center = Array.isArray(f?.center) ? f.center : Array.isArray(f?.geometry?.coordinates) ? f.geometry.coordinates : null;
+                            const [lng, lat] = Array.isArray(center) && center.length >= 2 ? center : [null, null];
+                            const label = f?.place_name ?? f?.properties?.label ?? f?.text ?? f?.properties?.name ?? q;
+                            const zoom = f?.properties?.accuracy === "point" ? 16 : 14;
+                            if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
+                            return { id: f?.id ?? `${label}:${lng}:${lat}`, label, lat, lng, zoom } as SearchResult;
+                        })
+                        .filter(Boolean) as SearchResult[];
+                    setSearchResults(parsed);
+                    setSearchStatus("ready");
+                } catch (err) {
+                    setSearchStatus("error");
+                    setSearchError(err instanceof Error ? err.message : "search failed");
+                }
+            }, 320),
+        [apiBase, session?.accessToken],
+    );
+
     useEffect(() => {
         return () => {
             debouncedHoverPick.cancel();
+            debouncedSearch.cancel();
         };
-    }, [debouncedHoverPick]);
+    }, [debouncedHoverPick, debouncedSearch]);
+
+    const handleSelectSearch = useCallback((result: SearchResult) => {
+        const map = mapRef.current;
+        if (!map) return;
+        setSearchTerm(result.label);
+        setSearchResults([]);
+        map.flyTo({ center: [result.lng, result.lat], zoom: result.zoom ?? 15, essential: true });
+    }, []);
 
     const proxiedMaptilerRequest = useCallback(
         (url: string, type?: ResourceType): RequestParameters => {
@@ -614,6 +668,49 @@ export function MapLayer({ readonly }: { readonly?: boolean }) {
     return (
         <>
             <div ref={ref} className="absolute inset-0 z-0" />
+            {!readonly ? (
+                <div className="pointer-events-none absolute right-3 top-20 z-40 flex flex-col items-end gap-3">
+                    <div className="pointer-events-auto w-80 max-w-[calc(100%-24px)]">
+                        <LocationOverview />
+                    </div>
+                    <div className="pointer-events-auto w-80 max-w-[calc(100%-24px)] space-y-1">
+                        <div className="rounded-lg bg-white/90 px-3 py-2 shadow">
+                            <input
+                                type="text"
+                                value={searchTerm}
+                                onChange={(e) => {
+                                    const val = e.target.value;
+                                    setSearchTerm(val);
+                                    debouncedSearch(val);
+                                }}
+                                placeholder="Search address or place"
+                                className="w-full rounded border border-slate-200 bg-white px-2 py-1 text-sm text-slate-800 outline-none focus:border-sky-400"
+                            />
+                            {searchStatus === "error" && searchError ? (
+                                <div className="mt-1 text-[11px] text-amber-600">{searchError}</div>
+                            ) : null}
+                            {searchStatus === "loading" ? (
+                                <div className="mt-1 text-[11px] text-slate-500">Searching…</div>
+                            ) : null}
+                            {searchResults.length > 0 ? (
+                                <div className="mt-2 max-h-52 space-y-1 overflow-y-auto text-sm text-slate-800">
+                                    {searchResults.map((r) => (
+                                        <button
+                                            key={r.id}
+                                            type="button"
+                                            className="block w-full rounded px-2 py-1 text-left hover:bg-slate-100"
+                                            onClick={() => handleSelectSearch(r)}
+                                        >
+                                            <div className="text-[13px] font-semibold text-slate-900">{r.label}</div>
+                                            <div className="text-[11px] text-slate-500">{r.lat.toFixed(4)}, {r.lng.toFixed(4)}</div>
+                                        </button>
+                                    ))}
+                                </div>
+                            ) : null}
+                        </div>
+                    </div>
+                </div>
+            ) : null}
             {poiDetail ? (
                 <div className="absolute left-3 bottom-3 z-10 max-w-xs rounded-lg bg-slate-900/90 px-3 py-3 text-xs text-white shadow-lg">
                     <div className="text-sm font-semibold text-white">{poiDetail.name ?? "POI"}</div>
@@ -651,7 +748,7 @@ export function MapLayer({ readonly }: { readonly?: boolean }) {
                 </div>
             ) : null}
             {!readonly ? <MapPinsOverlay map={mapRef.current} pois={poiList} frame={mapFrame} /> : null}
-            {!readonly ? <LocationOverview /> : null}
+            {/* LocationOverview now rendered inside the top-right overlay with the search box */}
             {!readonly ? (
                 <button
                     type="button"

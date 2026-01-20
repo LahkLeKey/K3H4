@@ -51,8 +51,9 @@ export const usePoiStore = create<PoiState>((set) => ({
 export function usePoiQuery(opts?: { enabled?: boolean }) {
     const { bbox, zoom, kinds } = usePoiStore();
     const { session, apiBase } = useAuthStore();
+    const isAuthed = Boolean(session?.accessToken);
 
-    const enabled = Boolean(opts?.enabled ?? true) && Boolean(bbox) && Number.isFinite(zoom) && Boolean(session?.accessToken);
+    const enabled = Boolean(opts?.enabled ?? true) && Boolean(bbox) && Number.isFinite(zoom);
 
     return useQuery<z.infer<typeof PoiResponseSchema>>({
         queryKey: ["pois", bbox?.minLat, bbox?.minLng, bbox?.maxLat, bbox?.maxLng, Math.round(zoom ?? 0), kinds.join(",")],
@@ -60,11 +61,12 @@ export function usePoiQuery(opts?: { enabled?: boolean }) {
         staleTime: 60_000,
         gcTime: 5 * 60_000,
         queryFn: async () => {
-            if (!bbox || !Number.isFinite(zoom) || !session?.accessToken) return { items: [], total: 0 } as z.infer<typeof PoiResponseSchema>;
+            if (!bbox || !Number.isFinite(zoom)) return { items: [], total: 0 } as z.infer<typeof PoiResponseSchema>;
             const bboxParam = `${bbox.minLng},${bbox.minLat},${bbox.maxLng},${bbox.maxLat}`;
             const qs = new URLSearchParams({ bbox: bboxParam, zoom: String(Math.round(zoom ?? 0)), kinds: kinds.join(",") }).toString();
-            return apiFetch(`/api/pois?${qs}`, {
-                token: session.accessToken,
+            const path = isAuthed ? `/api/pois?${qs}` : `/pois?${qs}`;
+            return apiFetch(path, {
+                token: isAuthed ? session?.accessToken : undefined,
                 baseUrl: apiBase,
                 schema: PoiResponseSchema,
             });
