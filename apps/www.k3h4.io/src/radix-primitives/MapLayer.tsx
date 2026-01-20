@@ -75,6 +75,7 @@ export function MapLayer({ readonly }: { readonly?: boolean }) {
     >(null);
     const [poiAnchor, setPoiAnchor] = useState<{ x: number; y: number; lat: number; lng: number } | null>(null);
     const fetchingDetailRef = useRef<string | null>(null);
+    const currentPoiDetailIdRef = useRef<string | null>(null);
 
     const overlayRef = useRef<DeckMapboxOverlay | null>(null);
 
@@ -157,6 +158,10 @@ export function MapLayer({ readonly }: { readonly?: boolean }) {
         [apiBase, session?.accessToken, signOut],
     );
 
+    useEffect(() => {
+        currentPoiDetailIdRef.current = poiDetail?.id ?? null;
+    }, [poiDetail?.id]);
+
     const pickPoiAndFetch = useCallback(
         async (lngLat: { lng: number; lat: number }) => {
             const map = mapRef.current;
@@ -176,7 +181,7 @@ export function MapLayer({ readonly }: { readonly?: boolean }) {
             }
             if (!nearest || minDist > 28) return; // ignore distant clicks/hovers
 
-            if (poiDetail?.id === nearest.id) return;
+            if (currentPoiDetailIdRef.current === nearest.id) return;
 
             const detail = await fetchPoiDetail(nearest.id);
             if (!detail) return;
@@ -206,7 +211,7 @@ export function MapLayer({ readonly }: { readonly?: boolean }) {
                     : null,
             });
         },
-        [fetchPoiDetail, poiPins, poiDetail?.id, updateHighlight],
+        [fetchPoiDetail, poiPins, updateHighlight],
     );
 
     const debouncedHoverPick = useMemo(() => debounce((lng: number, lat: number) => pickPoiAndFetch({ lng, lat }), 260), [pickPoiAndFetch]);
@@ -320,10 +325,16 @@ export function MapLayer({ readonly }: { readonly?: boolean }) {
         return layers;
     }, [apiBase, maptilerVectorTiles, poiItems, terrainUrl]);
 
-    // One-time geolocation request on mount
+    // One-time geolocation request on mount (only if we don't already have a center)
+    const requestedLocationRef = useRef(false);
+
     useEffect(() => {
-        requestLocation();
-    }, [requestLocation]);
+        if (requestedLocationRef.current) return;
+        if (!center) {
+            requestedLocationRef.current = true;
+            requestLocation({ force: false });
+        }
+    }, [center, requestLocation]);
 
     // Capture first known center to initialize the map only once
     useEffect(() => {
@@ -806,7 +817,7 @@ export function MapLayer({ readonly }: { readonly?: boolean }) {
             {!readonly ? (
                 <button
                     type="button"
-                    onClick={requestLocation}
+                    onClick={() => requestLocation({ force: true })}
                     className="absolute right-3 top-3 z-10 rounded bg-white/90 px-3 py-2 text-xs font-semibold text-slate-800 shadow"
                 >
                     Locate me
