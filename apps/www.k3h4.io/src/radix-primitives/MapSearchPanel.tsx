@@ -20,27 +20,27 @@ export function MapSearchPanel({ value, status, error, results, onChange, onSele
     }, [error, results.length, status, value]);
 
     return (
-        <div className="rounded-xl border border-slate-200/70 bg-white/95 shadow-lg shadow-slate-900/5 backdrop-blur">
+        <div className="rounded-xl border border-slate-800/80 bg-slate-950 shadow-[0_10px_30px_rgba(0,0,0,0.55)]">
             <div className="flex items-center gap-2 px-3 py-2">
                 <input
                     value={value}
                     onChange={(e) => onChange(e.target.value)}
                     placeholder="Search for a place"
-                    className="w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 shadow-inner focus:border-sky-500 focus:outline-none"
+                    className="w-full rounded-md border border-slate-800 bg-slate-900 px-3 py-2 text-sm text-slate-100 shadow-inner focus:border-amber-300 focus:outline-none"
                 />
-                <span className="text-[11px] font-medium uppercase tracking-wide text-slate-400">{status}</span>
+                <span className="text-[11px] font-semibold uppercase tracking-wide text-amber-200">{status}</span>
             </div>
-            {hint ? <div className="px-3 pb-3 text-xs text-slate-500">{hint}</div> : null}
+            {hint ? <div className="px-3 pb-3 text-xs text-amber-200/90">{hint}</div> : null}
             {results.length > 0 ? (
-                <ul className="max-h-64 overflow-y-auto border-t border-slate-100">
+                <ul className="max-h-64 overflow-y-auto border-t border-slate-800">
                     {results.map((result) => (
                         <li key={result.id}>
                             <button
                                 type="button"
-                                className="flex w-full items-start gap-2 px-3 py-2 text-left text-sm text-slate-900 hover:bg-slate-50"
+                                className="flex w-full items-start gap-2 px-3 py-2 text-left text-sm text-amber-50 hover:bg-slate-900"
                                 onClick={() => onSelect(result)}
                             >
-                                <span className="mt-0.5 h-2 w-2 rounded-full bg-sky-500" aria-hidden />
+                                <span className="mt-0.5 h-2 w-2 rounded-full bg-amber-300" aria-hidden />
                                 <span className="leading-tight">{result.label}</span>
                             </button>
                         </li>

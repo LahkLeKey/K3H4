@@ -33,17 +33,17 @@ export function LocationOverview() {
     const poiLabel = poiStatus === "loading" ? "POIs loading" : poiStatus === "ready" ? "POIs ready" : poiStatus === "error" ? "POIs failed" : null;
 
     return (
-        <div className="pointer-events-auto w-full rounded-lg border border-slate-900/80 bg-slate-950/95 px-3 py-2 text-xs text-white shadow-[0_10px_30px_rgba(0,0,0,0.55)] backdrop-blur-md">
+        <div className="pointer-events-auto w-full rounded-xl border border-slate-800/80 bg-slate-950 px-3 py-3 text-xs text-white shadow-[0_20px_40px_rgba(0,0,0,0.55)]">
             <div className="flex items-center justify-between gap-2">
                 <div className="font-semibold text-amber-100">My Location</div>
                 <div className="rounded-full bg-slate-800 px-2 py-[2px] text-[11px] text-amber-200">{label}</div>
             </div>
-            <div className="mt-1 flex items-center justify-between gap-3 text-[11px] text-amber-50">
+            <div className="mt-2 flex items-center justify-between gap-3 text-[11px] text-amber-50">
                 <span className="truncate">{centerText}</span>
                 <button
                     type="button"
                     onClick={handleRecenter}
-                    className="rounded bg-amber-300 px-2 py-[2px] text-[11px] font-semibold text-slate-900 shadow hover:bg-amber-200"
+                    className="rounded-md border border-amber-500 bg-amber-500 px-2 py-[4px] text-[11px] font-semibold text-white shadow hover:bg-amber-400"
                     disabled={!center}
                 >
                     Recenter
@@ -55,7 +55,7 @@ export function LocationOverview() {
                 <button
                     type="button"
                     onClick={handleRetry}
-                    className="rounded bg-slate-800 px-2 py-[2px] font-semibold text-white shadow hover:bg-slate-700"
+                    className="rounded-md border border-slate-700 bg-slate-900 px-2 py-[4px] font-semibold text-white shadow hover:bg-slate-800"
                 >
                     Retry locate
                 </button>
