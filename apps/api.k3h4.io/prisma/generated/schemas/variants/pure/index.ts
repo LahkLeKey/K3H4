@@ -3,6 +3,7 @@
  * Auto-generated - do not edit manually
  */
 
+export { BuildingModelSchema } from './Building.pure';
 export { UserModelSchema } from './User.pure';
 export { PersonaModelSchema } from './Persona.pure';
 export { PersonaAttributeModelSchema } from './PersonaAttribute.pure';
@@ -11,6 +12,13 @@ export { RefreshTokenModelSchema } from './RefreshToken.pure';
 export { ProviderGrantModelSchema } from './ProviderGrant.pure';
 export { GeoRouteCacheModelSchema } from './GeoRouteCache.pure';
 export { GeoPoiCacheModelSchema } from './GeoPoiCache.pure';
+export { GeoQueryCacheModelSchema } from './GeoQueryCache.pure';
+export { GeoViewHistoryModelSchema } from './GeoViewHistory.pure';
+export { GeoStatusLogModelSchema } from './GeoStatusLog.pure';
+export { PoiModelSchema } from './Poi.pure';
+export { GeoDemTileCacheModelSchema } from './GeoDemTileCache.pure';
+export { MaptilerQueryModelSchema } from './MaptilerQuery.pure';
+export { MaptilerCacheEntryModelSchema } from './MaptilerCacheEntry.pure';
 export { OsrmCacheEntryModelSchema } from './OsrmCacheEntry.pure';
 export { UserPreferenceModelSchema } from './UserPreference.pure';
 export { TelemetryEventModelSchema } from './TelemetryEvent.pure';

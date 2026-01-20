@@ -54,9 +54,15 @@ export const UserFindFirstOrThrowSelectSchema: z.ZodType<Prisma.UserSelect> = z.
     providerGrants: z.boolean().optional(),
     geoRouteCaches: z.boolean().optional(),
     geoPoiCaches: z.boolean().optional(),
+    geoQueryCaches: z.boolean().optional(),
+    maptilerQueries: z.boolean().optional(),
+    maptilerCacheEntries: z.boolean().optional(),
     osrmCacheEntries: z.boolean().optional(),
+    geoStatusLogs: z.boolean().optional(),
+    geoDemTileCaches: z.boolean().optional(),
     personaAttributes: z.boolean().optional(),
     personaCompatibilities: z.boolean().optional(),
+    geoViewHistories: z.boolean().optional(),
     _count: z.boolean().optional()
   }).strict() as unknown as z.ZodType<Prisma.UserSelect>;
 
@@ -105,9 +111,15 @@ export const UserFindFirstOrThrowSelectZodSchema = z.object({
     providerGrants: z.boolean().optional(),
     geoRouteCaches: z.boolean().optional(),
     geoPoiCaches: z.boolean().optional(),
+    geoQueryCaches: z.boolean().optional(),
+    maptilerQueries: z.boolean().optional(),
+    maptilerCacheEntries: z.boolean().optional(),
     osrmCacheEntries: z.boolean().optional(),
+    geoStatusLogs: z.boolean().optional(),
+    geoDemTileCaches: z.boolean().optional(),
     personaAttributes: z.boolean().optional(),
     personaCompatibilities: z.boolean().optional(),
+    geoViewHistories: z.boolean().optional(),
     _count: z.boolean().optional()
   }).strict();
 

@@ -257,6 +257,59 @@ export function registerGeoRoutes(server: FastifyInstance, prisma: PrismaClient,
   );
 
   server.get(
+    "/geo/history",
+    { preHandler: [server.authenticate] },
+    async (request, reply) => {
+      const userId = (request.user as { sub: string }).sub;
+      const limitParam = Number((request.query as any)?.limit ?? 40);
+      const take = Number.isFinite(limitParam) ? Math.min(Math.max(1, Math.trunc(limitParam)), 200) : 40;
+
+      const rows = await prisma.geoViewHistory.findMany({
+        where: { userId },
+        orderBy: { lastViewedAt: "desc" },
+        take,
+      });
+
+      const allPoiIds = Array.from(new Set(rows.flatMap((r) => (Array.isArray(r.lastPoiIds) ? (r.lastPoiIds as string[]) : []) )));
+      const pois = allPoiIds.length
+        ? await prisma.poi.findMany({
+            where: { id: { in: allPoiIds } },
+            select: { id: true, name: true, category: true, latitude: true, longitude: true },
+          })
+        : [];
+      const poiMap = new Map(pois.map((p) => [p.id, p]));
+
+      return rows.map((row) => ({
+        id: row.id,
+        signature: row.signature,
+        zoomBand: row.zoomBand,
+        bbox: {
+          minLat: Number(row.bboxMinLat),
+          minLng: Number(row.bboxMinLng),
+          maxLat: Number(row.bboxMaxLat),
+          maxLng: Number(row.bboxMaxLng),
+        },
+        lastPoiIds: row.lastPoiIds ?? [],
+        lastPoiCount: row.lastPoiCount ?? 0,
+        pois: (Array.isArray(row.lastPoiIds) ? (row.lastPoiIds as string[]) : [])
+          .map((id) => poiMap.get(id))
+          .filter(Boolean)
+          .map((p) => ({
+            id: p!.id,
+            name: p!.name,
+            category: p!.category,
+            lat: Number(p!.latitude),
+            lng: Number(p!.longitude),
+          })),
+        firstViewedAt: row.firstViewedAt,
+        lastViewedAt: row.lastViewedAt,
+        viewCount: row.viewCount,
+        staleAfter: row.staleAfter,
+      }));
+    },
+  );
+
+  server.get(
     "/geo/prefs",
     { preHandler: [server.authenticate] },
     async (request, reply) => {

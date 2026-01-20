@@ -35,9 +35,15 @@ import { ArcadeRedemptionFindManySchema as ArcadeRedemptionFindManySchema } from
 import { ProviderGrantFindManySchema as ProviderGrantFindManySchema } from '../findManyProviderGrant.schema';
 import { GeoRouteCacheFindManySchema as GeoRouteCacheFindManySchema } from '../findManyGeoRouteCache.schema';
 import { GeoPoiCacheFindManySchema as GeoPoiCacheFindManySchema } from '../findManyGeoPoiCache.schema';
+import { GeoQueryCacheFindManySchema as GeoQueryCacheFindManySchema } from '../findManyGeoQueryCache.schema';
+import { MaptilerQueryFindManySchema as MaptilerQueryFindManySchema } from '../findManyMaptilerQuery.schema';
+import { MaptilerCacheEntryFindManySchema as MaptilerCacheEntryFindManySchema } from '../findManyMaptilerCacheEntry.schema';
 import { OsrmCacheEntryFindManySchema as OsrmCacheEntryFindManySchema } from '../findManyOsrmCacheEntry.schema';
+import { GeoStatusLogFindManySchema as GeoStatusLogFindManySchema } from '../findManyGeoStatusLog.schema';
+import { GeoDemTileCacheFindManySchema as GeoDemTileCacheFindManySchema } from '../findManyGeoDemTileCache.schema';
 import { PersonaAttributeFindManySchema as PersonaAttributeFindManySchema } from '../findManyPersonaAttribute.schema';
 import { PersonaCompatibilityFindManySchema as PersonaCompatibilityFindManySchema } from '../findManyPersonaCompatibility.schema';
+import { GeoViewHistoryFindManySchema as GeoViewHistoryFindManySchema } from '../findManyGeoViewHistory.schema';
 import { UserCountOutputTypeArgsObjectSchema as UserCountOutputTypeArgsObjectSchema } from './UserCountOutputTypeArgs.schema'
 
 const makeSchema = () => z.object({
@@ -76,9 +82,15 @@ const makeSchema = () => z.object({
   providerGrants: z.union([z.boolean(), z.lazy(() => ProviderGrantFindManySchema)]).optional(),
   geoRouteCaches: z.union([z.boolean(), z.lazy(() => GeoRouteCacheFindManySchema)]).optional(),
   geoPoiCaches: z.union([z.boolean(), z.lazy(() => GeoPoiCacheFindManySchema)]).optional(),
+  geoQueryCaches: z.union([z.boolean(), z.lazy(() => GeoQueryCacheFindManySchema)]).optional(),
+  maptilerQueries: z.union([z.boolean(), z.lazy(() => MaptilerQueryFindManySchema)]).optional(),
+  maptilerCacheEntries: z.union([z.boolean(), z.lazy(() => MaptilerCacheEntryFindManySchema)]).optional(),
   osrmCacheEntries: z.union([z.boolean(), z.lazy(() => OsrmCacheEntryFindManySchema)]).optional(),
+  geoStatusLogs: z.union([z.boolean(), z.lazy(() => GeoStatusLogFindManySchema)]).optional(),
+  geoDemTileCaches: z.union([z.boolean(), z.lazy(() => GeoDemTileCacheFindManySchema)]).optional(),
   personaAttributes: z.union([z.boolean(), z.lazy(() => PersonaAttributeFindManySchema)]).optional(),
   personaCompatibilities: z.union([z.boolean(), z.lazy(() => PersonaCompatibilityFindManySchema)]).optional(),
+  geoViewHistories: z.union([z.boolean(), z.lazy(() => GeoViewHistoryFindManySchema)]).optional(),
   _count: z.union([z.boolean(), z.lazy(() => UserCountOutputTypeArgsObjectSchema)]).optional()
 }).strict();
 export const UserIncludeObjectSchema: z.ZodType<Prisma.UserInclude> = makeSchema() as unknown as z.ZodType<Prisma.UserInclude>;

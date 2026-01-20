@@ -3,6 +3,7 @@
  * Auto-generated - do not edit manually
  */
 
+export { BuildingInputSchema } from './Building.input';
 export { UserInputSchema } from './User.input';
 export { PersonaInputSchema } from './Persona.input';
 export { PersonaAttributeInputSchema } from './PersonaAttribute.input';
@@ -11,6 +12,13 @@ export { RefreshTokenInputSchema } from './RefreshToken.input';
 export { ProviderGrantInputSchema } from './ProviderGrant.input';
 export { GeoRouteCacheInputSchema } from './GeoRouteCache.input';
 export { GeoPoiCacheInputSchema } from './GeoPoiCache.input';
+export { GeoQueryCacheInputSchema } from './GeoQueryCache.input';
+export { GeoViewHistoryInputSchema } from './GeoViewHistory.input';
+export { GeoStatusLogInputSchema } from './GeoStatusLog.input';
+export { PoiInputSchema } from './Poi.input';
+export { GeoDemTileCacheInputSchema } from './GeoDemTileCache.input';
+export { MaptilerQueryInputSchema } from './MaptilerQuery.input';
+export { MaptilerCacheEntryInputSchema } from './MaptilerCacheEntry.input';
 export { OsrmCacheEntryInputSchema } from './OsrmCacheEntry.input';
 export { UserPreferenceInputSchema } from './UserPreference.input';
 export { TelemetryEventInputSchema } from './TelemetryEvent.input';

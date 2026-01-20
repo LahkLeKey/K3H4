@@ -26,7 +26,7 @@ export function LocationOverview() {
     };
 
     const handleRetry = () => {
-        requestLocation();
+        requestLocation({ force: true });
     };
 
     const label = statusLabels[status] ?? status;

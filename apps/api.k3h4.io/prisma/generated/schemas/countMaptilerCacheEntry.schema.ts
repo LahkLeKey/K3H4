@@ -1,0 +1,10 @@
+import type { Prisma } from '@prisma/client';
+import * as z from 'zod';
+import { MaptilerCacheEntryOrderByWithRelationInputObjectSchema as MaptilerCacheEntryOrderByWithRelationInputObjectSchema } from './objects/MaptilerCacheEntryOrderByWithRelationInput.schema';
+import { MaptilerCacheEntryWhereInputObjectSchema as MaptilerCacheEntryWhereInputObjectSchema } from './objects/MaptilerCacheEntryWhereInput.schema';
+import { MaptilerCacheEntryWhereUniqueInputObjectSchema as MaptilerCacheEntryWhereUniqueInputObjectSchema } from './objects/MaptilerCacheEntryWhereUniqueInput.schema';
+import { MaptilerCacheEntryCountAggregateInputObjectSchema as MaptilerCacheEntryCountAggregateInputObjectSchema } from './objects/MaptilerCacheEntryCountAggregateInput.schema';
+
+export const MaptilerCacheEntryCountSchema: z.ZodType<Prisma.MaptilerCacheEntryCountArgs> = z.object({ orderBy: z.union([MaptilerCacheEntryOrderByWithRelationInputObjectSchema, MaptilerCacheEntryOrderByWithRelationInputObjectSchema.array()]).optional(), where: MaptilerCacheEntryWhereInputObjectSchema.optional(), cursor: MaptilerCacheEntryWhereUniqueInputObjectSchema.optional(), take: z.number().optional(), skip: z.number().optional(), select: z.union([ z.literal(true), MaptilerCacheEntryCountAggregateInputObjectSchema ]).optional() }).strict() as unknown as z.ZodType<Prisma.MaptilerCacheEntryCountArgs>;
+
+export const MaptilerCacheEntryCountZodSchema = z.object({ orderBy: z.union([MaptilerCacheEntryOrderByWithRelationInputObjectSchema, MaptilerCacheEntryOrderByWithRelationInputObjectSchema.array()]).optional(), where: MaptilerCacheEntryWhereInputObjectSchema.optional(), cursor: MaptilerCacheEntryWhereUniqueInputObjectSchema.optional(), take: z.number().optional(), skip: z.number().optional(), select: z.union([ z.literal(true), MaptilerCacheEntryCountAggregateInputObjectSchema ]).optional() }).strict();

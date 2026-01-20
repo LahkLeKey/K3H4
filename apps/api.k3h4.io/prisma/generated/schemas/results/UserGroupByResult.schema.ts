@@ -54,9 +54,15 @@ export const UserGroupByResultSchema = z.array(z.object({
     providerGrants: z.number(),
     geoRouteCaches: z.number(),
     geoPoiCaches: z.number(),
+    geoQueryCaches: z.number(),
+    maptilerQueries: z.number(),
+    maptilerCacheEntries: z.number(),
     osrmCacheEntries: z.number(),
+    geoStatusLogs: z.number(),
+    geoDemTileCaches: z.number(),
     personaAttributes: z.number(),
-    personaCompatibilities: z.number()
+    personaCompatibilities: z.number(),
+    geoViewHistories: z.number()
   }).optional(),
   _sum: z.object({
     k3h4CoinBalance: z.number().nullable()

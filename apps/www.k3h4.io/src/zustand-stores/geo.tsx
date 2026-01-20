@@ -17,7 +17,7 @@ type GeoState = {
     lastFetchRadius: number | null;
     lastFetchKinds: string | null;
     lastSignature: string | null;
-    requestLocation: () => void;
+    requestLocation: (opts?: { force?: boolean }) => void;
     fetchNearbyPois: (opts?: { radiusM?: number; kinds?: string[]; token?: string; force?: boolean }) => Promise<void>;
     hydrateFromPrefs: (opts: { center?: { lat: number; lng: number } | null; pois?: any[] | null }) => void;
     setCenterFromMap: (center: { lat: number; lng: number }) => void;
@@ -169,7 +169,15 @@ export const useGeoStore = create<GeoState>((set, get) => ({
     },
 
     // If unauthenticated and nothing cached, fall back to Hastings, MN
-    requestLocation: () => {
+    requestLocation: (opts) => {
+        const force = opts?.force ?? false;
+        const { center, status, requested } = get();
+        // If we already have a center and are ready (or previously requested), avoid re-centering unless forced
+        if (!force) {
+            if (center && status === "ready") return;
+            if (requested && center) return;
+        }
+
         set({ status: "locating", requested: true, error: null });
         if (typeof navigator === "undefined" || !navigator.geolocation) {
             set({ status: "blocked", error: "geolocation unsupported" });
@@ -177,12 +185,15 @@ export const useGeoStore = create<GeoState>((set, get) => ({
         }
         navigator.geolocation.getCurrentPosition(
             (pos) => {
+                const currentCenter = get().center;
+                const nextCenter = { lat: pos.coords.latitude, lng: pos.coords.longitude };
                 set({
                     status: "ready",
-                    center: { lat: pos.coords.latitude, lng: pos.coords.longitude },
+                    center: currentCenter ?? nextCenter,
                     error: null,
                 });
-                void logStatus({ status: "ready", center: { lat: pos.coords.latitude, lng: pos.coords.longitude } });
+                // Only log/update with the new coordinates if we didn't already have a center
+                void logStatus({ status: "ready", center: currentCenter ?? nextCenter });
             },
             (err) => {
                 // When denied and no center known, default to Hastings

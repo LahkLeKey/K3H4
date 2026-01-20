@@ -10,6 +10,27 @@ datasource db {
   provider = "postgresql"
 }
 
+enum BuildingType {
+  RESIDENTIAL
+  COMMERCIAL
+  INDUSTRIAL
+}
+
+model Building {
+  id                 Int          @id @default(autoincrement())
+  osmId              BigInt?      @unique
+  type               BuildingType
+  addressHouseNumber String?
+  addressStreet      String?
+  addressCity        String?
+  addressPostcode    String?
+  addressState       String?
+  addressCountry     String?
+  geometry           Json?
+
+  POIs Poi[]
+}
+
 model User {
   id             String          @id @default(cuid())
   email          String          @unique
@@ -63,6 +84,7 @@ model User {
   geoDemTileCaches GeoDemTileCache[]
   personaAttributes PersonaAttribute[]
   personaCompatibilities PersonaCompatibility[]
+  geoViewHistories GeoViewHistory[]
 
   @@unique([provider, providerId])
 }
@@ -202,6 +224,28 @@ model GeoQueryCache {
   @@index([expiresAt])
 }
 
+// Tracks user map view tiles and the POIs seen for reuse/offline
+model GeoViewHistory {
+  id            String   @id @default(cuid())
+  userId        String
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  signature     String
+  zoomBand      Int
+  bboxMinLat    Decimal  @db.Decimal(11, 6)
+  bboxMinLng    Decimal  @db.Decimal(11, 6)
+  bboxMaxLat    Decimal  @db.Decimal(11, 6)
+  bboxMaxLng    Decimal  @db.Decimal(11, 6)
+  lastPoiIds    Json?
+  lastPoiCount  Int?
+  firstViewedAt DateTime @default(now())
+  lastViewedAt  DateTime @default(now())
+  viewCount     Int      @default(1)
+  staleAfter    DateTime?
+
+  @@unique([userId, signature], name: "geo_view_user_signature")
+  @@index([userId, lastViewedAt])
+}
+
 model GeoStatusLog {
   id         String   @id @default(cuid())
   userId     String?
@@ -215,6 +259,29 @@ model GeoStatusLog {
   createdAt  DateTime @default(now())
 
   @@index([createdAt])
+}
+
+model Poi {
+  id         String   @id @default(cuid())
+  osmType    String   @default("node")
+  osmId      BigInt
+  name       String?
+  category   String?
+  latitude   Decimal  @db.Decimal(11, 6)
+  longitude  Decimal  @db.Decimal(11, 6)
+  tags       Json?
+  source     String   @default("osm")
+  lastSeenAt DateTime @default(now())
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  buildingId Int?
+  building   Building? @relation(fields: [buildingId], references: [id])
+
+  @@unique([osmType, osmId], name: "poi_osm_composite")
+  @@index([latitude, longitude])
+  @@index([category])
+  @@index([buildingId])
 }
 
 // DEM / terrain tile cache for reuse per user

@@ -45,9 +45,15 @@ export const UserResultSchema = z.object({
     providerGrants: z.array(z.unknown()),
     geoRouteCaches: z.array(z.unknown()),
     geoPoiCaches: z.array(z.unknown()),
+    geoQueryCaches: z.array(z.unknown()),
+    maptilerQueries: z.array(z.unknown()),
+    maptilerCacheEntries: z.array(z.unknown()),
     osrmCacheEntries: z.array(z.unknown()),
+    geoStatusLogs: z.array(z.unknown()),
+    geoDemTileCaches: z.array(z.unknown()),
     personaAttributes: z.array(z.unknown()),
-    personaCompatibilities: z.array(z.unknown())
+    personaCompatibilities: z.array(z.unknown()),
+    geoViewHistories: z.array(z.unknown())
 }).strict();
 
 export type UserResultType = z.infer<typeof UserResultSchema>;

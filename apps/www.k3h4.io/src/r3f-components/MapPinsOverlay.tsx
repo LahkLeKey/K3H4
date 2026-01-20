@@ -57,13 +57,15 @@ export function MapPinsOverlay({ map, pois, frame }: { map: maplibregl.Map | nul
     }, [map]);
 
     const projected = useMemo(() => {
-        if (!map || !size.w || !size.h) return [] as Array<{ poi: Poi; x: number; y: number; color: string; phase: number }>;
+        if (!map || !size.w || !size.h)
+            return [] as Array<{ poi: Poi; x: number; y: number; color: string; phase: number; isCluster: boolean }>;
         return pois
             .map((poi) => {
                 const p = map.project([poi.lng, poi.lat]);
                 const color = PIN_COLORS[poi.kind ?? ""] ?? "#e2e8f0";
+                const isCluster = poi.kind === "cluster" || poi.id.startsWith("cluster:");
                 if (!phaseCache.current[poi.id]) phaseCache.current[poi.id] = Math.random() * Math.PI * 2;
-                return { poi, x: p.x, y: p.y, color, phase: phaseCache.current[poi.id] };
+                return { poi, x: p.x, y: p.y, color, phase: phaseCache.current[poi.id], isCluster };
             })
             .filter((p) => p.x >= -64 && p.x <= size.w + 64 && p.y >= -64 && p.y <= size.h + 64);
     }, [frame, map, pois, size.h, size.w]);
@@ -95,6 +97,20 @@ export function MapPinsOverlay({ map, pois, frame }: { map: maplibregl.Map | nul
                     ))}
                 </group>
             </Canvas>
+
+            <div className="pointer-events-none absolute inset-0 z-20 select-none" style={{ fontFamily: "'Inter', system-ui, -apple-system, sans-serif" }}>
+                {projected
+                    .filter((p) => p.poi.name && !p.isCluster)
+                    .map((p) => (
+                        <div
+                            key={`${p.poi.id}-label`}
+                            className="absolute text-xs font-semibold text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.75)] whitespace-nowrap"
+                            style={{ left: p.x, top: p.y - 26, transform: "translate(-50%, -50%)" }}
+                        >
+                            {p.poi.name}
+                        </div>
+                    ))}
+            </div>
         </div>
     );
 }

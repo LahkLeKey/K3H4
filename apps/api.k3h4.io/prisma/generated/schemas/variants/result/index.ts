@@ -3,6 +3,7 @@
  * Auto-generated - do not edit manually
  */
 
+export { BuildingResultSchema } from './Building.result';
 export { UserResultSchema } from './User.result';
 export { PersonaResultSchema } from './Persona.result';
 export { PersonaAttributeResultSchema } from './PersonaAttribute.result';
@@ -11,6 +12,13 @@ export { RefreshTokenResultSchema } from './RefreshToken.result';
 export { ProviderGrantResultSchema } from './ProviderGrant.result';
 export { GeoRouteCacheResultSchema } from './GeoRouteCache.result';
 export { GeoPoiCacheResultSchema } from './GeoPoiCache.result';
+export { GeoQueryCacheResultSchema } from './GeoQueryCache.result';
+export { GeoViewHistoryResultSchema } from './GeoViewHistory.result';
+export { GeoStatusLogResultSchema } from './GeoStatusLog.result';
+export { PoiResultSchema } from './Poi.result';
+export { GeoDemTileCacheResultSchema } from './GeoDemTileCache.result';
+export { MaptilerQueryResultSchema } from './MaptilerQuery.result';
+export { MaptilerCacheEntryResultSchema } from './MaptilerCacheEntry.result';
 export { OsrmCacheEntryResultSchema } from './OsrmCacheEntry.result';
 export { UserPreferenceResultSchema } from './UserPreference.result';
 export { TelemetryEventResultSchema } from './TelemetryEvent.result';

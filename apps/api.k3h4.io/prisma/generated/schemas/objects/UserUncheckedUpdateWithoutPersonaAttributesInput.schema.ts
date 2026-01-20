@@ -39,8 +39,14 @@ import { ArcadeRedemptionUncheckedUpdateManyWithoutUserNestedInputObjectSchema a
 import { ProviderGrantUncheckedUpdateManyWithoutUserNestedInputObjectSchema as ProviderGrantUncheckedUpdateManyWithoutUserNestedInputObjectSchema } from './ProviderGrantUncheckedUpdateManyWithoutUserNestedInput.schema';
 import { GeoRouteCacheUncheckedUpdateManyWithoutUserNestedInputObjectSchema as GeoRouteCacheUncheckedUpdateManyWithoutUserNestedInputObjectSchema } from './GeoRouteCacheUncheckedUpdateManyWithoutUserNestedInput.schema';
 import { GeoPoiCacheUncheckedUpdateManyWithoutUserNestedInputObjectSchema as GeoPoiCacheUncheckedUpdateManyWithoutUserNestedInputObjectSchema } from './GeoPoiCacheUncheckedUpdateManyWithoutUserNestedInput.schema';
+import { GeoQueryCacheUncheckedUpdateManyWithoutUserNestedInputObjectSchema as GeoQueryCacheUncheckedUpdateManyWithoutUserNestedInputObjectSchema } from './GeoQueryCacheUncheckedUpdateManyWithoutUserNestedInput.schema';
+import { MaptilerQueryUncheckedUpdateManyWithoutUserNestedInputObjectSchema as MaptilerQueryUncheckedUpdateManyWithoutUserNestedInputObjectSchema } from './MaptilerQueryUncheckedUpdateManyWithoutUserNestedInput.schema';
+import { MaptilerCacheEntryUncheckedUpdateManyWithoutUserNestedInputObjectSchema as MaptilerCacheEntryUncheckedUpdateManyWithoutUserNestedInputObjectSchema } from './MaptilerCacheEntryUncheckedUpdateManyWithoutUserNestedInput.schema';
 import { OsrmCacheEntryUncheckedUpdateManyWithoutUserNestedInputObjectSchema as OsrmCacheEntryUncheckedUpdateManyWithoutUserNestedInputObjectSchema } from './OsrmCacheEntryUncheckedUpdateManyWithoutUserNestedInput.schema';
-import { PersonaCompatibilityUncheckedUpdateManyWithoutUserNestedInputObjectSchema as PersonaCompatibilityUncheckedUpdateManyWithoutUserNestedInputObjectSchema } from './PersonaCompatibilityUncheckedUpdateManyWithoutUserNestedInput.schema'
+import { GeoStatusLogUncheckedUpdateManyWithoutUserNestedInputObjectSchema as GeoStatusLogUncheckedUpdateManyWithoutUserNestedInputObjectSchema } from './GeoStatusLogUncheckedUpdateManyWithoutUserNestedInput.schema';
+import { GeoDemTileCacheUncheckedUpdateManyWithoutUserNestedInputObjectSchema as GeoDemTileCacheUncheckedUpdateManyWithoutUserNestedInputObjectSchema } from './GeoDemTileCacheUncheckedUpdateManyWithoutUserNestedInput.schema';
+import { PersonaCompatibilityUncheckedUpdateManyWithoutUserNestedInputObjectSchema as PersonaCompatibilityUncheckedUpdateManyWithoutUserNestedInputObjectSchema } from './PersonaCompatibilityUncheckedUpdateManyWithoutUserNestedInput.schema';
+import { GeoViewHistoryUncheckedUpdateManyWithoutUserNestedInputObjectSchema as GeoViewHistoryUncheckedUpdateManyWithoutUserNestedInputObjectSchema } from './GeoViewHistoryUncheckedUpdateManyWithoutUserNestedInput.schema'
 
 import { DecimalJSLikeSchema, isValidDecimalInput } from '../../helpers/decimal-helpers';
 const makeSchema = () => z.object({
@@ -95,8 +101,14 @@ const makeSchema = () => z.object({
   providerGrants: z.lazy(() => ProviderGrantUncheckedUpdateManyWithoutUserNestedInputObjectSchema).optional(),
   geoRouteCaches: z.lazy(() => GeoRouteCacheUncheckedUpdateManyWithoutUserNestedInputObjectSchema).optional(),
   geoPoiCaches: z.lazy(() => GeoPoiCacheUncheckedUpdateManyWithoutUserNestedInputObjectSchema).optional(),
+  geoQueryCaches: z.lazy(() => GeoQueryCacheUncheckedUpdateManyWithoutUserNestedInputObjectSchema).optional(),
+  maptilerQueries: z.lazy(() => MaptilerQueryUncheckedUpdateManyWithoutUserNestedInputObjectSchema).optional(),
+  maptilerCacheEntries: z.lazy(() => MaptilerCacheEntryUncheckedUpdateManyWithoutUserNestedInputObjectSchema).optional(),
   osrmCacheEntries: z.lazy(() => OsrmCacheEntryUncheckedUpdateManyWithoutUserNestedInputObjectSchema).optional(),
-  personaCompatibilities: z.lazy(() => PersonaCompatibilityUncheckedUpdateManyWithoutUserNestedInputObjectSchema).optional()
+  geoStatusLogs: z.lazy(() => GeoStatusLogUncheckedUpdateManyWithoutUserNestedInputObjectSchema).optional(),
+  geoDemTileCaches: z.lazy(() => GeoDemTileCacheUncheckedUpdateManyWithoutUserNestedInputObjectSchema).optional(),
+  personaCompatibilities: z.lazy(() => PersonaCompatibilityUncheckedUpdateManyWithoutUserNestedInputObjectSchema).optional(),
+  geoViewHistories: z.lazy(() => GeoViewHistoryUncheckedUpdateManyWithoutUserNestedInputObjectSchema).optional()
 }).strict();
 export const UserUncheckedUpdateWithoutPersonaAttributesInputObjectSchema: z.ZodType<Prisma.UserUncheckedUpdateWithoutPersonaAttributesInput> = makeSchema() as unknown as z.ZodType<Prisma.UserUncheckedUpdateWithoutPersonaAttributesInput>;
 export const UserUncheckedUpdateWithoutPersonaAttributesInputObjectZodSchema = makeSchema();

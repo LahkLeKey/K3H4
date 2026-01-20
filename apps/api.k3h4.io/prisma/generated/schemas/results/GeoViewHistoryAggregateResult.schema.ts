@@ -1,0 +1,66 @@
+import * as z from 'zod';
+export const GeoViewHistoryAggregateResultSchema = z.object({  _count: z.object({
+    id: z.number(),
+    userId: z.number(),
+    user: z.number(),
+    signature: z.number(),
+    zoomBand: z.number(),
+    bboxMinLat: z.number(),
+    bboxMinLng: z.number(),
+    bboxMaxLat: z.number(),
+    bboxMaxLng: z.number(),
+    lastPoiIds: z.number(),
+    lastPoiCount: z.number(),
+    firstViewedAt: z.number(),
+    lastViewedAt: z.number(),
+    viewCount: z.number(),
+    staleAfter: z.number()
+  }).optional(),
+  _sum: z.object({
+    zoomBand: z.number().nullable(),
+    bboxMinLat: z.number().nullable(),
+    bboxMinLng: z.number().nullable(),
+    bboxMaxLat: z.number().nullable(),
+    bboxMaxLng: z.number().nullable(),
+    lastPoiCount: z.number().nullable(),
+    viewCount: z.number().nullable()
+  }).nullable().optional(),
+  _avg: z.object({
+    zoomBand: z.number().nullable(),
+    bboxMinLat: z.number().nullable(),
+    bboxMinLng: z.number().nullable(),
+    bboxMaxLat: z.number().nullable(),
+    bboxMaxLng: z.number().nullable(),
+    lastPoiCount: z.number().nullable(),
+    viewCount: z.number().nullable()
+  }).nullable().optional(),
+  _min: z.object({
+    id: z.string().nullable(),
+    userId: z.string().nullable(),
+    signature: z.string().nullable(),
+    zoomBand: z.number().int().nullable(),
+    bboxMinLat: z.number().nullable(),
+    bboxMinLng: z.number().nullable(),
+    bboxMaxLat: z.number().nullable(),
+    bboxMaxLng: z.number().nullable(),
+    lastPoiCount: z.number().int().nullable(),
+    firstViewedAt: z.date().nullable(),
+    lastViewedAt: z.date().nullable(),
+    viewCount: z.number().int().nullable(),
+    staleAfter: z.date().nullable()
+  }).nullable().optional(),
+  _max: z.object({
+    id: z.string().nullable(),
+    userId: z.string().nullable(),
+    signature: z.string().nullable(),
+    zoomBand: z.number().int().nullable(),
+    bboxMinLat: z.number().nullable(),
+    bboxMinLng: z.number().nullable(),
+    bboxMaxLat: z.number().nullable(),
+    bboxMaxLng: z.number().nullable(),
+    lastPoiCount: z.number().int().nullable(),
+    firstViewedAt: z.date().nullable(),
+    lastViewedAt: z.date().nullable(),
+    viewCount: z.number().int().nullable(),
+    staleAfter: z.date().nullable()
+  }).nullable().optional()});
