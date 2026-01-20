@@ -12,7 +12,7 @@ import { useMapView } from "../react-hooks/useMapView";
 import { SessionLanding } from "../radix-components/auth/SessionLanding";
 
 function GeoPrefsHydrator() {
-    const { apiBase, session } = useAuthStore();
+    const { apiBase, session, signOut } = useAuthStore();
     const { hydrateFromPrefs } = useGeoState();
     const { updateView } = useMapView();
 
@@ -27,6 +27,10 @@ function GeoPrefsHydrator() {
                     headers: { Authorization: `Bearer ${session.accessToken}` },
                     credentials: "include",
                 });
+                if (res.status === 401) {
+                    signOut();
+                    return;
+                }
                 if (!res.ok) return;
                 const data = await res.json();
                 if (aborted) return;
@@ -51,7 +55,7 @@ function GeoPrefsHydrator() {
         return () => {
             aborted = true;
         };
-    }, [apiBase, session?.accessToken, hydrateFromPrefs, updateView]);
+    }, [apiBase, session?.accessToken, hydrateFromPrefs, updateView, signOut]);
 
     return null;
 }

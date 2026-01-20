@@ -58,7 +58,7 @@ export function MapLayer({ readonly }: { readonly?: boolean }) {
     const [mapFrame, setMapFrame] = useState(0);
     const { updateView, registerMap, view } = useMapView();
     const { status, center, requestLocation, setCenterFromMap } = useGeoState();
-    const { session, apiBase } = useAuthStore();
+    const { session, apiBase, signOut } = useAuthStore();
     const { setViewport } = usePoiStore();
     const poiQuery = usePoiQuery({ enabled: !readonly });
 
@@ -89,10 +89,6 @@ export function MapLayer({ readonly }: { readonly?: boolean }) {
     const terrainUrl = useMemo(
         // Primary DEM: self-hosted raster-dem
         () => `${apiBase}/geo/dem/{z}/{x}/{y}.png`,
-        [apiBase],
-    );
-    const terrainMaptilerUrl = useMemo(
-        () => `${apiBase}/maptiler/tiles?path=/tiles/terrain-rgb/{z}/{x}/{y}.png`,
         [apiBase],
     );
     const maptilerVectorTiles = useMemo(
@@ -140,17 +136,6 @@ export function MapLayer({ readonly }: { readonly?: boolean }) {
                         const res = await fetch(url, options);
                         const contentType = res.headers.get("content-type") ?? "";
                         if (res.ok && contentType.includes("image")) return res;
-
-                        // If self-hosted DEM fails, try MapTiler terrain-rgb for the same z/x/y
-                        const match = url.match(/geo\/dem\/(\d+)\/(\d+)\/(\d+)\.png/);
-                        if (match) {
-                            const [, z, x, y] = match;
-                            const altUrl = `${terrainMaptilerUrl.replace("{z}", z).replace("{x}", x).replace("{y}", y)}`;
-                            const alt = await fetch(altUrl, options);
-                            const altType = alt.headers.get("content-type") ?? "";
-                            if (alt.ok && altType.includes("image")) return alt;
-                        }
-
                         return fetch(EMPTY_TILE_PNG);
                     },
                 },
@@ -162,6 +147,14 @@ export function MapLayer({ readonly }: { readonly?: boolean }) {
             new MVTLayer({
                 id: "mvt-stylized",
                 data: [maptilerVectorTiles],
+                loadOptions: {
+                    fetch: async (url: string, options?: RequestInit) => {
+                        const res = await fetch(url, options);
+                        if (res.ok) return res;
+                        // Fall back to an empty tile so deck.gl continues without spamming errors
+                        return new Response(new Uint8Array(), { status: 200, statusText: "empty" });
+                    },
+                },
                 renderSubLayers: (props: any) =>
                     new GeoJsonLayer(props, {
                         id: `${props.id}-geo`,
@@ -174,14 +167,15 @@ export function MapLayer({ readonly }: { readonly?: boolean }) {
                         getFillPatternOffset: () => [0, 0],
                         getFillPattern: (f: any) => {
                             const ln = f.properties?.layerName;
-                            if (ln === "water") return "tri";
-                            if (ln === "building") return "tri";
+                            // Disable water patterns to avoid distant tiling artifacts
+                            if (ln === "water") return null;
+                            // Disable building patterns entirely to avoid distant white boxes
                             return null;
                         },
                         getFillColor: (f: any) => {
                             const ln = f.properties?.layerName;
-                            if (ln === "water") return [90, 150, 210, 210];
-                            if (ln === "building") return [220, 220, 220, 220];
+                            if (ln === "water") return [0, 0, 0, 0];
+                            if (ln === "building") return [0, 0, 0, 0];
                             return [0, 0, 0, 0];
                         },
                         stroked: true,
@@ -192,6 +186,7 @@ export function MapLayer({ readonly }: { readonly?: boolean }) {
                             if (ln === "waterway") return 2.5;
                             if (ln === "transportation" && (cls === "motorway" || cls === "trunk")) return 5.5;
                             if (ln === "transportation") return 2.0;
+                            if (ln === "building") return 0;
                             return 0;
                         },
                         getLineColor: (f: any) => {
@@ -200,6 +195,7 @@ export function MapLayer({ readonly }: { readonly?: boolean }) {
                             if (ln === "waterway") return [90, 150, 210, 240];
                             if (ln === "transportation" && (cls === "motorway" || cls === "trunk")) return [255, 210, 130, 255];
                             if (ln === "transportation") return [160, 160, 160, 230];
+                            if (ln === "building") return [0, 0, 0, 0];
                             return [0, 0, 0, 0];
                         },
                         getDashArray: (f: any) => {
@@ -208,6 +204,7 @@ export function MapLayer({ readonly }: { readonly?: boolean }) {
                             if (ln === "waterway") return [2.2, 1.6];
                             if (ln === "transportation" && (cls === "motorway" || cls === "trunk")) return [5.0, 2.0];
                             if (ln === "transportation" && (cls === "path" || cls === "track")) return [0.6, 1.4];
+                            if (ln === "building") return [0, 0];
                             return [0, 0];
                         },
                     }),
@@ -215,7 +212,7 @@ export function MapLayer({ readonly }: { readonly?: boolean }) {
         );
 
         return layers;
-    }, [apiBase, maptilerVectorTiles, terrainUrl, terrainMaptilerUrl]);
+    }, [apiBase, maptilerVectorTiles, terrainUrl]);
 
     // One-time geolocation request on mount
     useEffect(() => {
@@ -305,7 +302,7 @@ export function MapLayer({ readonly }: { readonly?: boolean }) {
             if (!map.getSource("terrain-dem")) {
                 map.addSource("terrain-dem", {
                     type: "raster-dem",
-                    tiles: [terrainUrl, terrainMaptilerUrl],
+                    tiles: [terrainUrl],
                     tileSize: 256,
                     maxzoom: 14,
                     encoding: "mapbox",
@@ -317,7 +314,7 @@ export function MapLayer({ readonly }: { readonly?: boolean }) {
             if (!map.getSource("terrain-dem-hillshade")) {
                 map.addSource("terrain-dem-hillshade", {
                     type: "raster-dem",
-                    tiles: [terrainUrl, terrainMaptilerUrl],
+                    tiles: [terrainUrl],
                     tileSize: 256,
                     maxzoom: 14,
                     encoding: "mapbox",
@@ -363,35 +360,7 @@ export function MapLayer({ readonly }: { readonly?: boolean }) {
                 } as any);
             }
 
-            // Add 3D buildings (extruded) atop MapTiler vector tiles
-            const style = map.getStyle();
-            const firstSymbolId = style?.layers?.find((l) => l.type === "symbol")?.id;
-            if (!map.getLayer("3d-buildings")) {
-                map.addLayer(
-                    {
-                        id: "3d-buildings",
-                        source: "openmaptiles",
-                        "source-layer": "building",
-                        type: "fill-extrusion",
-                        minzoom: 12,
-                        paint: {
-                            "fill-extrusion-color": [
-                                "interpolate",
-                                ["linear"],
-                                ["get", "height"],
-                                0,
-                                "#d9dce3",
-                                120,
-                                "#c3ccd8",
-                            ],
-                            "fill-extrusion-height": ["coalesce", ["get", "height"], ["get", "render_height"], 20],
-                            "fill-extrusion-base": ["coalesce", ["get", "min_height"], ["get", "render_min_height"], 0],
-                            "fill-extrusion-opacity": 0.9,
-                        },
-                    } as any,
-                    firstSymbolId,
-                );
-            }
+            // Building layer disabled per request; map remains base style only
 
             // Weather overlay temporarily disabled (API is returning 500s)
         });
@@ -422,7 +391,6 @@ export function MapLayer({ readonly }: { readonly?: boolean }) {
         buildDeckLayers,
         registerMap,
         terrainUrl,
-        terrainMaptilerUrl,
         updateView,
         status,
         maptilerStyleUrl,
@@ -522,11 +490,19 @@ export function MapLayer({ readonly }: { readonly?: boolean }) {
                     center: view.center,
                     view: { zoom: view.zoom, bearing: view.bearing, pitch: view.pitch },
                 }),
-            }).catch((err) => console.warn("geo prefs persist failed", err));
+            })
+                .then((res) => {
+                    if (res && res.status === 401) {
+                        signOut();
+                    } else if (!res?.ok) {
+                        console.warn("geo prefs persist failed", res?.status);
+                    }
+                })
+                .catch((err) => console.warn("geo prefs persist failed", err));
         }, 450);
 
         return () => clearTimeout(handle);
-    }, [apiBase, session?.accessToken, view]);
+    }, [apiBase, session?.accessToken, view, signOut]);
 
     // Refresh deck.gl layers when API base changes
     useEffect(() => {
