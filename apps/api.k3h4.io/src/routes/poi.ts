@@ -219,8 +219,8 @@ export function registerPoiRoutes(server: FastifyInstance, prisma: PrismaClient,
     const categories = await prisma.poi.groupBy({
       by: ["category"],
       where: { ...where, category: { not: null } },
-      _count: { _all: true },
-      orderBy: { _count: { _all: "desc" } },
+      _count: { category: true },
+      orderBy: { _count: { category: "desc" } },
       take: 12,
     });
 
@@ -234,7 +234,7 @@ export function registerPoiRoutes(server: FastifyInstance, prisma: PrismaClient,
     return {
       total,
       updatedAt: newest?.updatedAt ?? null,
-      categories: categories.map((c) => ({ category: c.category ?? "unknown", count: c._count._all })),
+      categories: categories.map((c) => ({ category: c.category ?? "unknown", count: c._count?.category ?? 0 })),
       bbox: bounds,
     };
   };
@@ -264,7 +264,7 @@ export function registerPoiRoutes(server: FastifyInstance, prisma: PrismaClient,
         const category = el.tags?.amenity ?? el.tags?.shop ?? el.tags?.tourism ?? el.tags?.leisure ?? null;
         const name = el.tags?.name ?? category ?? "poi";
 
-        const where = { osmType_osmId: { osmType, osmId } } as const;
+        const where: Prisma.PoiWhereUniqueInput = { poi_osm_composite: { osmType, osmId } };
         const existing = await prisma.poi.findUnique({ where });
 
         if (existing) updated += 1;
@@ -327,7 +327,7 @@ export function registerPoiRoutes(server: FastifyInstance, prisma: PrismaClient,
     }
   };
 
-  const authOpts = { preHandler: [server.authenticate] } as const;
+  const authOpts = { preHandler: server.authenticate };
 
   const detailHandler = async (request: FastifyRequest, reply: FastifyReply) => {
     const params = request.params as { id?: string } | undefined;

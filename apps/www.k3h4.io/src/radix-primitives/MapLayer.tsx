@@ -1,9 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import maplibregl, { type RequestParameters, type ResourceType } from "maplibre-gl";
 import { MapboxOverlay } from "@deck.gl/mapbox";
-import { TerrainLayer, MVTLayer } from "@deck.gl/geo-layers";
-import { GeoJsonLayer } from "@deck.gl/layers";
-import { FillStyleExtension, PathStyleExtension } from "@deck.gl/extensions";
+import { TerrainLayer } from "@deck.gl/geo-layers";
 import { setLoaderOptions } from "@loaders.gl/core";
 
 type DeckMapboxOverlay = InstanceType<typeof MapboxOverlay>;
@@ -22,34 +20,19 @@ const EMPTY_TILE_PNG =
     "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR4nGP8z8BQDwAEsALp2UNzMgAAAABJRU5ErkJggg==";
 // Weather overlay disabled
 
-const patternAtlas = (() => {
-    if (typeof document === "undefined") return null;
-    const c = document.createElement("canvas");
-    c.width = 128;
-    c.height = 128;
-    const g = c.getContext("2d");
-    if (!g) return null;
-
-    g.fillStyle = "black";
-    g.fillRect(0, 0, 128, 128);
-    g.strokeStyle = "white";
-    g.lineWidth = 4;
-    for (let y = 0; y < 128; y += 22) {
-        for (let x = 0; x < 128; x += 22) {
-            g.beginPath();
-            g.moveTo(x, y);
-            g.lineTo(x + 11, y + 18);
-            g.lineTo(x + 22, y);
-            g.closePath();
-            g.stroke();
-        }
-    }
-
-    return {
-        atlas: c.toDataURL("image/png"),
-        mapping: { tri: { x: 0, y: 0, width: 128, height: 128, mask: true } },
-    } as const;
-})();
+// Lightweight debounce to avoid pulling in lodash-es
+const debounce = <T extends (...args: any[]) => void>(fn: T, wait: number) => {
+    let timer: ReturnType<typeof setTimeout> | null = null;
+    const debounced = (...args: Parameters<T>) => {
+        if (timer) clearTimeout(timer);
+        timer = setTimeout(() => fn(...args), wait);
+    };
+    debounced.cancel = () => {
+        if (timer) clearTimeout(timer);
+        timer = null;
+    };
+    return debounced as T & { cancel: () => void };
+};
 
 export function MapLayer({ readonly }: { readonly?: boolean }) {
     const ref = useRef<HTMLDivElement>(null);
@@ -62,6 +45,30 @@ export function MapLayer({ readonly }: { readonly?: boolean }) {
     const { session, apiBase, signOut } = useAuthStore();
     const { setViewport } = usePoiStore();
     const poiQuery = usePoiQuery({ enabled: !readonly });
+
+    const [poiDetail, setPoiDetail] = useState<
+        | null
+        | {
+            id: string;
+            name?: string | null;
+            category?: string | null;
+            lat: number;
+            lng: number;
+            building?: {
+                id: number | null;
+                osmId: number | null;
+                type?: string | null;
+                addressHouseNumber?: string | null;
+                addressStreet?: string | null;
+                addressCity?: string | null;
+                addressPostcode?: string | null;
+                addressState?: string | null;
+                addressCountry?: string | null;
+                geometry?: any;
+            } | null;
+        }
+    >(null);
+    const fetchingDetailRef = useRef<string | null>(null);
 
     const overlayRef = useRef<DeckMapboxOverlay | null>(null);
 
@@ -81,10 +88,10 @@ export function MapLayer({ readonly }: { readonly?: boolean }) {
     const poiStatus: "idle" | "loading" | "ready" | "error" = poiQuery.isFetching
         ? "loading"
         : poiQuery.isError
-          ? "error"
-          : poiQuery.data
-            ? "ready"
-            : "idle";
+            ? "error"
+            : poiQuery.data
+                ? "ready"
+                : "idle";
     const poiError = poiQuery.error instanceof Error ? poiQuery.error.message : null;
 
     const terrainUrl = useMemo(
@@ -97,6 +104,99 @@ export function MapLayer({ readonly }: { readonly?: boolean }) {
         [apiBase],
     );
     const maptilerStyleUrl = useMemo(() => `${apiBase}/maptiler/json?path=${MAPTILER_STYLE_PATH}`, [apiBase]);
+
+    const updateHighlight = useCallback((geometry: any | null) => {
+        const map = mapRef.current;
+        if (!map) return;
+        const src = map.getSource("building-highlight") as maplibregl.GeoJSONSource | undefined;
+        if (!src) return;
+        const data = geometry
+            ? { type: "FeatureCollection", features: [{ type: "Feature", geometry, properties: {} }] }
+            : { type: "FeatureCollection", features: [] };
+        src.setData(data as any);
+    }, []);
+
+    const fetchPoiDetail = useCallback(
+        async (id: string) => {
+            if (!session?.accessToken) return null;
+            if (fetchingDetailRef.current === id) return null;
+            fetchingDetailRef.current = id;
+            try {
+                const res = await fetch(`${apiBase}/api/pois/${id}?includeGeometry=true`, {
+                    headers: { Authorization: `Bearer ${session.accessToken}` },
+                    credentials: "include",
+                });
+                if (res.status === 401) {
+                    signOut();
+                    return null;
+                }
+                if (!res.ok) throw new Error(`poi detail ${res.status}`);
+                const body = (await res.json()) as any;
+                return body as any;
+            } finally {
+                fetchingDetailRef.current = null;
+            }
+        },
+        [apiBase, session?.accessToken, signOut],
+    );
+
+    const pickPoiAndFetch = useCallback(
+        async (lngLat: { lng: number; lat: number }) => {
+            const map = mapRef.current;
+            if (!map || !poiList.length) return;
+            const clickPoint = map.project(lngLat);
+            let nearest: Poi | null = null;
+            let minDist = Infinity;
+            for (const p of poiList) {
+                const pt = map.project([p.lng, p.lat]);
+                const dx = pt.x - clickPoint.x;
+                const dy = pt.y - clickPoint.y;
+                const d = Math.sqrt(dx * dx + dy * dy);
+                if (d < minDist) {
+                    minDist = d;
+                    nearest = p;
+                }
+            }
+            if (!nearest || minDist > 28) return; // ignore distant clicks/hovers
+
+            if (poiDetail?.id === nearest.id) return;
+
+            const detail = await fetchPoiDetail(nearest.id);
+            if (!detail) return;
+            const building = detail.building ?? null;
+            updateHighlight(building?.geometry ?? null);
+            setPoiDetail({
+                id: nearest.id,
+                name: detail.name ?? nearest.name ?? null,
+                category: detail.category ?? nearest.kind ?? null,
+                lat: nearest.lat,
+                lng: nearest.lng,
+                building: building
+                    ? {
+                        id: building.id ?? null,
+                        osmId: building.osmId ?? null,
+                        type: building.type ?? null,
+                        addressHouseNumber: building.addressHouseNumber ?? null,
+                        addressStreet: building.addressStreet ?? null,
+                        addressCity: building.addressCity ?? null,
+                        addressPostcode: building.addressPostcode ?? null,
+                        addressState: building.addressState ?? null,
+                        addressCountry: building.addressCountry ?? null,
+                        geometry: building.geometry ?? null,
+                    }
+                    : null,
+            });
+        },
+        [fetchPoiDetail, poiList, poiDetail?.id, updateHighlight],
+    );
+
+    const debouncedHoverPick = useMemo(() => debounce((lng: number, lat: number) => pickPoiAndFetch({ lng, lat }), 260), [pickPoiAndFetch]);
+
+    useEffect(() => {
+        return () => {
+            debouncedHoverPick.cancel();
+        };
+    }, [debouncedHoverPick]);
 
     const proxiedMaptilerRequest = useCallback(
         (url: string, type?: ResourceType): RequestParameters => {
@@ -186,7 +286,7 @@ export function MapLayer({ readonly }: { readonly?: boolean }) {
         });
 
         if (readonly) {
-        setLoaderOptions({ worker: false });
+            setLoaderOptions({ worker: false });
 
 
             map.boxZoom.disable();
@@ -238,6 +338,40 @@ export function MapLayer({ readonly }: { readonly?: boolean }) {
         };
 
         map.on("load", () => {
+            // Highlight source/layers for building outlines
+            if (!map.getSource("building-highlight")) {
+                map.addSource("building-highlight", {
+                    type: "geojson",
+                    data: { type: "FeatureCollection", features: [] },
+                } as any);
+                const firstSymbolId = map.getStyle()?.layers?.find((l) => l.type === "symbol")?.id;
+                map.addLayer(
+                    {
+                        id: "building-highlight-fill",
+                        type: "fill",
+                        source: "building-highlight",
+                        paint: {
+                            "fill-color": "#38bdf8",
+                            "fill-opacity": 0.18,
+                        },
+                    } as any,
+                    firstSymbolId,
+                );
+                map.addLayer(
+                    {
+                        id: "building-highlight-line",
+                        type: "line",
+                        source: "building-highlight",
+                        paint: {
+                            "line-color": "#0ea5e9",
+                            "line-width": 2,
+                            "line-opacity": 0.9,
+                        },
+                    } as any,
+                    firstSymbolId,
+                );
+            }
+
             // Add DEM source and hillshade/terrain for more realistic relief (served via API cache)
             if (!map.getSource("terrain-dem")) {
                 map.addSource("terrain-dem", {
@@ -275,14 +409,17 @@ export function MapLayer({ readonly }: { readonly?: boolean }) {
 
             // Guard against bad DEM tiles: swap to transparent PNG on decode errors
             map.on("error", (ev) => {
-                const sid = ev?.sourceId;
+                const sid =
+                    typeof ev === "object" && ev && "sourceId" in ev
+                        ? (ev as { sourceId?: string }).sourceId
+                        : undefined;
                 if (sid === "terrain-dem" || sid === "terrain-dem-hillshade") {
                     const src = map.getSource(sid) as any;
-                        if (src?.tiles && src.tiles[0] !== EMPTY_TILE_PNG) {
-                            // Swap in empty tile so rendering continues, but keep terrain exaggeration active
-                            src.tiles = [EMPTY_TILE_PNG];
-                            console.warn(`${sid} decode failed; using empty tile`);
-                        }
+                    if (src?.tiles && src.tiles[0] !== EMPTY_TILE_PNG) {
+                        // Swap in empty tile so rendering continues, but keep terrain exaggeration active
+                        src.tiles = [EMPTY_TILE_PNG];
+                        console.warn(`${sid} decode failed; using empty tile`);
+                    }
                 }
             });
 
@@ -303,6 +440,12 @@ export function MapLayer({ readonly }: { readonly?: boolean }) {
             // Building layer disabled per request; map remains base style only
 
             // Weather overlay temporarily disabled (API is returning 500s)
+        });
+        map.on("click", (ev) => {
+            void pickPoiAndFetch(ev.lngLat);
+        });
+        map.on("mousemove", (ev) => {
+            debouncedHoverPick(ev.lngLat.lng, ev.lngLat.lat);
         });
         map.on("move", () => {
             sync();
@@ -329,6 +472,7 @@ export function MapLayer({ readonly }: { readonly?: boolean }) {
         };
     }, [
         buildDeckLayers,
+        debouncedHoverPick,
         registerMap,
         terrainUrl,
         updateView,
@@ -337,6 +481,7 @@ export function MapLayer({ readonly }: { readonly?: boolean }) {
         maptilerVectorTiles,
         proxiedMaptilerRequest,
         readonly,
+        pickPoiAndFetch,
     ]);
 
     // Toggle interaction controls when switching between readonly/auth and normal views
@@ -469,6 +614,36 @@ export function MapLayer({ readonly }: { readonly?: boolean }) {
     return (
         <>
             <div ref={ref} className="absolute inset-0 z-0" />
+            {poiDetail ? (
+                <div className="absolute left-3 bottom-3 z-10 max-w-xs rounded-lg bg-slate-900/90 px-3 py-3 text-xs text-white shadow-lg">
+                    <div className="text-sm font-semibold text-white">{poiDetail.name ?? "POI"}</div>
+                    <div className="mt-0.5 text-[11px] uppercase tracking-wide text-slate-300">{poiDetail.category ?? "unknown"}</div>
+                    {poiDetail.building ? (
+                        <div className="mt-2 space-y-0.5 text-[11px] text-slate-200">
+                            <div className="font-semibold text-slate-100">Building</div>
+                            {poiDetail.building.type ? <div>Type: {poiDetail.building.type}</div> : null}
+                            {poiDetail.building.osmId ? <div>OSM: {poiDetail.building.osmId}</div> : null}
+                            {(poiDetail.building.addressStreet || poiDetail.building.addressHouseNumber) ? (
+                                <div>
+                                    {poiDetail.building.addressHouseNumber ? `${poiDetail.building.addressHouseNumber} ` : ""}
+                                    {poiDetail.building.addressStreet ?? ""}
+                                </div>
+                            ) : null}
+                            {(poiDetail.building.addressCity || poiDetail.building.addressPostcode) ? (
+                                <div>
+                                    {poiDetail.building.addressCity ?? ""}
+                                    {poiDetail.building.addressCity && poiDetail.building.addressPostcode ? ", " : ""}
+                                    {poiDetail.building.addressPostcode ?? ""}
+                                </div>
+                            ) : null}
+                            {poiDetail.building.addressState ? <div>{poiDetail.building.addressState}</div> : null}
+                            {poiDetail.building.addressCountry ? <div>{poiDetail.building.addressCountry}</div> : null}
+                        </div>
+                    ) : (
+                        <div className="mt-2 text-[11px] text-slate-300">No building linked</div>
+                    )}
+                </div>
+            ) : null}
             {poiStatus === "error" && !readonly ? (
                 <div className="pointer-events-none absolute left-1/2 top-4 z-10 -translate-x-1/2 rounded-full bg-slate-900/85 px-4 py-2 text-xs font-semibold text-white shadow-lg">
                     poi fetch failed
