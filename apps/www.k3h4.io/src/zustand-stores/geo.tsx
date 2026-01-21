@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { apiUrl } from "../lib/apiBase";
+import { apiUrl } from "../react-hooks/lib/apiBase";
 
 type GeoStatus = "idle" | "locating" | "ready" | "blocked" | "error";
 

@@ -4,7 +4,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { MapLayer } from "../radix-components/MapLayer";
 import { MapViewProvider } from "../react-hooks/useMapView";
 import { UiErrorBoundary } from "./UiErrorBoundary";
-import { PageHeader } from "../r3f-primitives/PageHeader";
+import { PageHeader } from "../radix-components/PageHeader";
 import { useAuthStore } from "../react-hooks/auth";
 import { useAuthOverlay } from "../react-hooks/useAuthOverlay";
 import { LoginMenu } from "../radix-components/auth/LoginMenu";

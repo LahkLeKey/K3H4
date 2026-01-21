@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { useAuthStore } from "../react-hooks/auth";
+import { useAuthStore } from "../auth";
 
 export type ApiError = Error & { status?: number; details?: unknown };
 

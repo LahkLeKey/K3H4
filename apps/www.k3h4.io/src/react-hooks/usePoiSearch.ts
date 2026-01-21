@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
-import { apiUrl } from "../lib/apiBase";
+import { apiUrl } from "./lib/apiBase";
 import { useAuthStore } from "./auth";
 import maplibregl from "maplibre-gl";
 
