@@ -8,7 +8,6 @@ import { Badge, Button, Card, Input, StatChip, Table, Textarea } from "../radix-
 import { useAuthStore } from "../react-hooks/auth";
 import {
     usePersonaState,
-    type Persona,
     type PersonaCompatibility,
     type PersonaConfusionResult,
 } from "../react-hooks/persona";
@@ -458,7 +457,7 @@ export function PersonaPage() {
                                     </button>
                                 </div>
                                 <div className="space-y-2">
-                                    {pairRows.map((row, idx) => (
+                                    {pairRows.map((row) => (
                                         <div key={row.id} className="grid grid-cols-5 items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-2 py-2 text-sm text-white">
                                             <select
                                                 value={row.sourceId || ""}
