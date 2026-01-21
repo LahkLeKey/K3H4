@@ -105,6 +105,12 @@ export type StaffingState = {
     placements: StaffingPlacement[];
     metrics: StaffingMetrics | null;
     fetchDashboard: () => Promise<void>;
+    createEngagement: (input: { name: string; client?: string | null }) => Promise<void>;
+    createRole: (input: { engagementId?: string | null; title: string; location?: string | null; priority?: string | null; status?: string | null; openings?: number | null; rateMin?: string | null; rateMax?: string | null }) => Promise<void>;
+    createCandidate: (input: { fullName: string; roleId?: string | null; desiredRate?: string | null; stage?: string | null }) => Promise<void>;
+    advanceCandidateStage: (candidateId: string, stage: string) => Promise<void>;
+    createShift: (input: { title: string; roleId?: string | null; startsAt?: string | null; endsAt?: string | null; location?: string | null; status?: string | null }) => Promise<void>;
+    createPlacement: (input: { candidateId?: string | null; roleId?: string | null; engagementId?: string | null; billRate?: string | null; payRate?: string | null; status?: string | null }) => Promise<void>;
 };
 
 export const useStaffingStore = create<StaffingState>((set) => ({
@@ -142,6 +148,132 @@ export const useStaffingStore = create<StaffingState>((set) => ({
             });
         } catch (err) {
             const message = err instanceof Error ? err.message : "Unable to fetch staffing";
+            set({ status: "error", error: message });
+        }
+    },
+
+    createEngagement: async (input) => {
+        const { session, apiBase } = useAuthStore.getState();
+        if (!session?.accessToken) {
+            set({ status: "error", error: "Sign in to create engagements." });
+            return;
+        }
+        set({ status: "loading", error: null });
+        try {
+            await apiFetch("/staffing/engagements", {
+                method: "POST",
+                token: session.accessToken,
+                baseUrl: apiBase,
+                body: input,
+            });
+            await useStaffingStore.getState().fetchDashboard();
+        } catch (err) {
+            const message = err instanceof Error ? err.message : "Unable to create engagement";
+            set({ status: "error", error: message });
+        }
+    },
+
+    createRole: async (input) => {
+        const { session, apiBase } = useAuthStore.getState();
+        if (!session?.accessToken) {
+            set({ status: "error", error: "Sign in to create roles." });
+            return;
+        }
+        set({ status: "loading", error: null });
+        try {
+            await apiFetch("/staffing/roles", {
+                method: "POST",
+                token: session.accessToken,
+                baseUrl: apiBase,
+                body: input,
+            });
+            await useStaffingStore.getState().fetchDashboard();
+        } catch (err) {
+            const message = err instanceof Error ? err.message : "Unable to create role";
+            set({ status: "error", error: message });
+        }
+    },
+
+    createCandidate: async (input) => {
+        const { session, apiBase } = useAuthStore.getState();
+        if (!session?.accessToken) {
+            set({ status: "error", error: "Sign in to create candidates." });
+            return;
+        }
+        set({ status: "loading", error: null });
+        try {
+            await apiFetch("/staffing/candidates", {
+                method: "POST",
+                token: session.accessToken,
+                baseUrl: apiBase,
+                body: input,
+            });
+            await useStaffingStore.getState().fetchDashboard();
+        } catch (err) {
+            const message = err instanceof Error ? err.message : "Unable to create candidate";
+            set({ status: "error", error: message });
+        }
+    },
+
+    advanceCandidateStage: async (candidateId, stage) => {
+        const { session, apiBase } = useAuthStore.getState();
+        if (!session?.accessToken) {
+            set({ status: "error", error: "Sign in to advance candidates." });
+            return;
+        }
+        set({ status: "loading", error: null });
+        try {
+            await apiFetch(`/staffing/candidates/${candidateId}/stage`, {
+                method: "POST",
+                token: session.accessToken,
+                baseUrl: apiBase,
+                body: { stage },
+            });
+            await useStaffingStore.getState().fetchDashboard();
+        } catch (err) {
+            const message = err instanceof Error ? err.message : "Unable to advance candidate";
+            set({ status: "error", error: message });
+        }
+    },
+
+    createShift: async (input) => {
+        const { session, apiBase } = useAuthStore.getState();
+        if (!session?.accessToken) {
+            set({ status: "error", error: "Sign in to create shifts." });
+            return;
+        }
+        set({ status: "loading", error: null });
+        try {
+            await apiFetch("/staffing/shifts", {
+                method: "POST",
+                token: session.accessToken,
+                baseUrl: apiBase,
+                body: input,
+            });
+            await useStaffingStore.getState().fetchDashboard();
+        } catch (err) {
+            const message = err instanceof Error ? err.message : "Unable to create shift";
+            set({ status: "error", error: message });
+        }
+    },
+
+    createPlacement: async (input) => {
+        const { session, apiBase } = useAuthStore.getState();
+        if (!session?.accessToken) {
+            set({ status: "error", error: "Sign in to create placements." });
+            return;
+        }
+        set({ status: "loading", error: null });
+        try {
+            await apiFetch("/staffing/placements", {
+                method: "POST",
+                token: session.accessToken,
+                baseUrl: apiBase,
+                body: input,
+            });
+            await useStaffingStore.getState().fetchDashboard();
+        } catch (err) {
+            const message = err instanceof Error ? err.message : "Unable to create placement";
             set({ status: "error", error: message });
         }
     },
