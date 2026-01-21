@@ -11,6 +11,7 @@ const makeSchema = () => z.object({
   source: z.boolean().optional(),
   path: z.boolean().optional(),
   payload: z.boolean().optional(),
+  durationMs: z.boolean().optional(),
   createdAt: z.boolean().optional()
 }).strict();
 export const TelemetryEventSelectObjectSchema: z.ZodType<Prisma.TelemetryEventSelect> = makeSchema() as unknown as z.ZodType<Prisma.TelemetryEventSelect>;

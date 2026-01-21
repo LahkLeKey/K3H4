@@ -106,13 +106,29 @@ const getSessionId = (request: FastifyRequest) => {
   return request.id;
 };
 
+const coerceDurationMs = (val: unknown) => {
+  const n = typeof val === "string" ? Number(val) : typeof val === "number" ? val : NaN;
+  if (!Number.isFinite(n)) return undefined;
+  const clamped = Math.max(0, Math.min(1_000_000, n));
+  return Math.round(clamped);
+};
+
 const recordTelemetry = async (
   request: FastifyRequest,
-  params: { eventType: string; source: string; payload?: unknown; sessionId?: string; path?: string; userId?: string },
+  params: {
+    eventType: string;
+    source: string;
+    payload?: unknown;
+    sessionId?: string;
+    path?: string;
+    userId?: string;
+    durationMs?: number;
+  },
 ) => {
   try {
     const sessionId = params.sessionId ?? getSessionId(request);
     const userId = params.userId ?? (request.user as { sub?: string } | undefined)?.sub;
+    const durationMs = coerceDurationMs(params.durationMs);
     await prisma.telemetryEvent.create({
       data: {
         sessionId,
@@ -121,6 +137,7 @@ const recordTelemetry = async (
         source: params.source,
         path: params.path ?? request.url,
         payload: params.payload ? (params.payload as any) : undefined,
+        durationMs: durationMs ?? undefined,
       },
     });
   } catch (err) {
@@ -285,13 +302,22 @@ server.get("/health", async () => ({ status: "ok" }));
 server.post("/telemetry", async (request, reply) => {
   const body = request.body as
     | {
-        events?: Array<{ eventType?: string; source?: string; sessionId?: string; path?: string; payload?: unknown; userId?: string }>;
+        events?: Array<{
+          eventType?: string;
+          source?: string;
+          sessionId?: string;
+          path?: string;
+          payload?: unknown;
+          userId?: string;
+          durationMs?: number;
+        }>;
         eventType?: string;
         source?: string;
         sessionId?: string;
         path?: string;
         payload?: unknown;
         userId?: string;
+        durationMs?: number;
       }
     | undefined;
 
@@ -307,6 +333,7 @@ server.post("/telemetry", async (request, reply) => {
       path: evt.path,
       payload: evt.payload,
       userId: evt.userId,
+      durationMs: coerceDurationMs(evt.durationMs),
     }))
     .filter((evt) => evt.eventType && evt.source) as Array<{
     eventType: string;
@@ -315,6 +342,7 @@ server.post("/telemetry", async (request, reply) => {
     path?: string;
     payload?: unknown;
     userId?: string;
+    durationMs?: number;
   }>;
 
   if (normalizedEvents.length === 0) {
@@ -340,11 +368,86 @@ server.post("/telemetry", async (request, reply) => {
         path: evt.path,
         payload: evt.payload,
         userId: evt.userId,
+        durationMs: evt.durationMs,
       }),
     ),
   );
 
   return { ok: true, recorded: normalizedEvents.length };
+});
+
+// Telemetry query endpoint with lightweight filters
+server.get("/telemetry", async (request, reply) => {
+  const query = request.query as {
+    eventType?: string | string[];
+    source?: string | string[];
+    sessionId?: string;
+    userId?: string;
+    since?: string;
+    limit?: string;
+    cursorTs?: string;
+    cursorId?: string;
+  };
+
+  const limit = Math.min(500, Math.max(1, Number(query.limit ?? 200)));
+  const since = query.since ? new Date(query.since) : null;
+  const cursorTs = query.cursorTs ? new Date(query.cursorTs) : null;
+  const cursorId = typeof query.cursorId === "string" && query.cursorId.length > 0 ? query.cursorId : null;
+  const hasCursor = cursorTs && !Number.isNaN(cursorTs.getTime()) && cursorId;
+
+  const eventTypes = Array.isArray(query.eventType)
+    ? query.eventType.filter(Boolean)
+    : query.eventType?.split(",").map((s) => s.trim()).filter(Boolean);
+  const sources = Array.isArray(query.source)
+    ? query.source.filter(Boolean)
+    : query.source?.split(",").map((s) => s.trim()).filter(Boolean);
+
+  const where: any = {};
+  if (eventTypes?.length) where.eventType = { in: eventTypes };
+  if (sources?.length) where.source = { in: sources };
+  if (query.sessionId) where.sessionId = query.sessionId;
+  if (query.userId) where.userId = query.userId;
+  if (since && !Number.isNaN(since.getTime())) where.createdAt = { gte: since };
+
+  const cursorClause = hasCursor
+    ? {
+        OR: [
+          { createdAt: { lt: cursorTs } },
+          { createdAt: cursorTs, id: { lt: cursorId } },
+        ],
+      }
+    : null;
+
+  const finalWhere = cursorClause ? { AND: [where, cursorClause] } : where;
+
+  const events = await prisma.telemetryEvent.findMany({
+    where: finalWhere,
+    orderBy: [
+      { createdAt: "desc" },
+      { id: "desc" },
+    ],
+    take: limit,
+  });
+
+  const summary = {
+    total: events.length,
+    byEventType: events.reduce<Record<string, number>>((acc, evt) => {
+      acc[evt.eventType] = (acc[evt.eventType] ?? 0) + 1;
+      return acc;
+    }, {}),
+    bySource: events.reduce<Record<string, number>>((acc, evt) => {
+      acc[evt.source] = (acc[evt.source] ?? 0) + 1;
+      return acc;
+    }, {}),
+    newestTs: events[0]?.createdAt ?? null,
+    oldestTs: events[events.length - 1]?.createdAt ?? null,
+  };
+
+  const nextCursor = events.length === limit
+    ? { cursorTs: events[events.length - 1].createdAt, cursorId: events[events.length - 1].id }
+    : null;
+
+  return { events, summary, nextCursor };
 });
 
 await registerAllRoutes(server, prisma, recordTelemetry);

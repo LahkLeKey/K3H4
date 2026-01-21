@@ -8,8 +8,15 @@ export const TelemetryEventAggregateResultSchema = z.object({  _count: z.object(
     source: z.number(),
     path: z.number(),
     payload: z.number(),
+    durationMs: z.number(),
     createdAt: z.number()
   }).optional(),
+  _sum: z.object({
+    durationMs: z.number().nullable()
+  }).nullable().optional(),
+  _avg: z.object({
+    durationMs: z.number().nullable()
+  }).nullable().optional(),
   _min: z.object({
     id: z.string().nullable(),
     userId: z.string().nullable(),
@@ -17,6 +24,7 @@ export const TelemetryEventAggregateResultSchema = z.object({  _count: z.object(
     eventType: z.string().nullable(),
     source: z.string().nullable(),
     path: z.string().nullable(),
+    durationMs: z.number().int().nullable(),
     createdAt: z.date().nullable()
   }).nullable().optional(),
   _max: z.object({
@@ -26,5 +34,6 @@ export const TelemetryEventAggregateResultSchema = z.object({  _count: z.object(
     eventType: z.string().nullable(),
     source: z.string().nullable(),
     path: z.string().nullable(),
+    durationMs: z.number().int().nullable(),
     createdAt: z.date().nullable()
   }).nullable().optional()});

@@ -1,7 +1,7 @@
 {
   "version": "1.0",
   "generatorVersion": "0.0.1",
-  "generatedAt": "2026-01-21T00:13:41.227Z",
+  "generatedAt": "2026-01-21T01:58:01.376Z",
   "outputPath": "C:\\Github\\K3H4\\apps\\api.k3h4.io\\prisma\\generated",
   "files": [
     "schemas\\enums\\TransactionIsolationLevel.schema.ts",
@@ -1029,8 +1029,10 @@
     "schemas\\objects\\BoolWithAggregatesFilter.schema.ts",
     "schemas\\objects\\FloatNullableWithAggregatesFilter.schema.ts",
     "schemas\\objects\\TelemetryEventCountOrderByAggregateInput.schema.ts",
+    "schemas\\objects\\TelemetryEventAvgOrderByAggregateInput.schema.ts",
     "schemas\\objects\\TelemetryEventMaxOrderByAggregateInput.schema.ts",
     "schemas\\objects\\TelemetryEventMinOrderByAggregateInput.schema.ts",
+    "schemas\\objects\\TelemetryEventSumOrderByAggregateInput.schema.ts",
     "schemas\\objects\\BankTransactionCountOrderByAggregateInput.schema.ts",
     "schemas\\objects\\BankTransactionAvgOrderByAggregateInput.schema.ts",
     "schemas\\objects\\BankTransactionMaxOrderByAggregateInput.schema.ts",
@@ -3385,6 +3387,8 @@
     "schemas\\objects\\UserPreferenceMinAggregateInput.schema.ts",
     "schemas\\objects\\UserPreferenceMaxAggregateInput.schema.ts",
     "schemas\\objects\\TelemetryEventCountAggregateInput.schema.ts",
+    "schemas\\objects\\TelemetryEventAvgAggregateInput.schema.ts",
+    "schemas\\objects\\TelemetryEventSumAggregateInput.schema.ts",
     "schemas\\objects\\TelemetryEventMinAggregateInput.schema.ts",
     "schemas\\objects\\TelemetryEventMaxAggregateInput.schema.ts",
     "schemas\\objects\\BankTransactionCountAggregateInput.schema.ts",

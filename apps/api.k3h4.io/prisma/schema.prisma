@@ -431,11 +431,13 @@ model TelemetryEvent {
   source    String
   path      String?
   payload   Json?
+  durationMs Int?
   createdAt DateTime @default(now())
 
   @@index([userId])
   @@index([sessionId])
   @@index([eventType])
+  @@index([createdAt, id])
 }
 
 model BankTransaction {

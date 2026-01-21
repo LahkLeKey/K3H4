@@ -7,6 +7,7 @@ export const TelemetryEventGroupByResultSchema = z.array(z.object({
   source: z.string(),
   path: z.string(),
   payload: z.unknown(),
+  durationMs: z.number().int(),
   createdAt: z.date(),
   _count: z.object({
     id: z.number(),
@@ -17,8 +18,15 @@ export const TelemetryEventGroupByResultSchema = z.array(z.object({
     source: z.number(),
     path: z.number(),
     payload: z.number(),
+    durationMs: z.number(),
     createdAt: z.number()
   }).optional(),
+  _sum: z.object({
+    durationMs: z.number().nullable()
+  }).nullable().optional(),
+  _avg: z.object({
+    durationMs: z.number().nullable()
+  }).nullable().optional(),
   _min: z.object({
     id: z.string().nullable(),
     userId: z.string().nullable(),
@@ -26,6 +34,7 @@ export const TelemetryEventGroupByResultSchema = z.array(z.object({
     eventType: z.string().nullable(),
     source: z.string().nullable(),
     path: z.string().nullable(),
+    durationMs: z.number().int().nullable(),
     createdAt: z.date().nullable()
   }).nullable().optional(),
   _max: z.object({
@@ -35,6 +44,7 @@ export const TelemetryEventGroupByResultSchema = z.array(z.object({
     eventType: z.string().nullable(),
     source: z.string().nullable(),
     path: z.string().nullable(),
+    durationMs: z.number().int().nullable(),
     createdAt: z.date().nullable()
   }).nullable().optional()
 }));

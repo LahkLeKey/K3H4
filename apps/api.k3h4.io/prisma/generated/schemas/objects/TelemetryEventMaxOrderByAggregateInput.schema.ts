@@ -9,6 +9,7 @@ const makeSchema = () => z.object({
   eventType: SortOrderSchema.optional(),
   source: SortOrderSchema.optional(),
   path: SortOrderSchema.optional(),
+  durationMs: SortOrderSchema.optional(),
   createdAt: SortOrderSchema.optional()
 }).strict();
 export const TelemetryEventMaxOrderByAggregateInputObjectSchema: z.ZodType<Prisma.TelemetryEventMaxOrderByAggregateInput> = makeSchema() as unknown as z.ZodType<Prisma.TelemetryEventMaxOrderByAggregateInput>;

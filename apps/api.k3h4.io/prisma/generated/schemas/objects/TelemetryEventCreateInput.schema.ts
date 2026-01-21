@@ -12,6 +12,7 @@ const makeSchema = () => z.object({
   source: z.string(),
   path: z.string().optional().nullable(),
   payload: z.union([NullableJsonNullValueInputSchema, jsonSchema]).optional(),
+  durationMs: z.number().int().optional().nullable(),
   createdAt: z.coerce.date().optional(),
   user: z.lazy(() => UserCreateNestedOneWithoutTelemetryInputObjectSchema).optional()
 }).strict();

@@ -11,6 +11,7 @@ const makeSchema = () => z.object({
   source: z.string(),
   path: z.string().optional().nullable(),
   payload: z.union([NullableJsonNullValueInputSchema, jsonSchema]).optional(),
+  durationMs: z.number().int().optional().nullable(),
   createdAt: z.coerce.date().optional()
 }).strict();
 export const TelemetryEventCreateManyUserInputObjectSchema: z.ZodType<Prisma.TelemetryEventCreateManyUserInput> = makeSchema() as unknown as z.ZodType<Prisma.TelemetryEventCreateManyUserInput>;
