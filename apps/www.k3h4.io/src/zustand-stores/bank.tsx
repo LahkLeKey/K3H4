@@ -4,7 +4,6 @@ import { z } from "zod";
 import { apiFetch } from "../lib/api-client";
 import { useAuthStore } from "./auth";
 
-const BalanceSchema = z.object({ balance: z.string() });
 const TransactionSchema = z.object({
     id: z.string(),
     amount: z.string(),
@@ -15,6 +14,8 @@ const TransactionSchema = z.object({
     createdAt: z.string(),
 });
 const TransactionsSchema = z.object({ transactions: z.array(TransactionSchema), total: z.number() });
+const BalanceSchema = z.object({ balance: z.string() });
+const BalanceUpdateSchema = z.object({ balance: z.string(), transaction: TransactionSchema.optional() });
 
 export type BankTransaction = z.infer<typeof TransactionSchema>;
 
@@ -25,6 +26,7 @@ export type BankState = {
     error: string | null;
     fetchBalance: () => Promise<void>;
     fetchTransactions: () => Promise<void>;
+    updateBalance: (delta: number, reason?: string) => Promise<void>;
 };
 
 export const useBankStore = create<BankState>((set) => ({
@@ -60,6 +62,33 @@ export const useBankStore = create<BankState>((set) => ({
             set({ transactions: res.transactions, status: "ready", error: null });
         } catch (err) {
             const message = err instanceof Error ? err.message : "Unable to fetch transactions";
+            set({ status: "error", error: message });
+        }
+    },
+
+    updateBalance: async (delta: number, reason?: string) => {
+        const { session, apiBase } = useAuthStore.getState();
+        if (!session?.accessToken) {
+            set({ status: "error", error: "Sign in to update balance." });
+            return;
+        }
+        set({ status: "loading", error: null });
+        try {
+            const res = await apiFetch("/bank/balance", {
+                method: "POST",
+                body: { delta, reason },
+                token: session.accessToken,
+                baseUrl: apiBase,
+                schema: BalanceUpdateSchema,
+            });
+            set((prev) => ({
+                balance: res.balance,
+                transactions: res.transaction ? [res.transaction, ...prev.transactions] : prev.transactions,
+                status: "ready",
+                error: null,
+            }));
+        } catch (err) {
+            const message = err instanceof Error ? err.message : "Unable to update balance";
             set({ status: "error", error: message });
         }
     },
