@@ -17,6 +17,8 @@ const PoiItemSchema = z.object({
     category: z.string().nullable().optional(),
     sampleCategories: z.array(z.string()).optional(),
     sampleIds: z.array(z.string()).optional(),
+    osmId: z.string().optional(),
+    osmType: z.string().optional(),
 });
 
 const PoiResponseSchema = z.object({
@@ -39,6 +41,47 @@ export type PoiState = {
 };
 
 const DEFAULT_KINDS = ["restaurant", "cafe", "bar", "fast_food", "fuel", "bank", "atm", "bus_station", "train_station"];
+
+type HistoryEntry = {
+    id: string;
+    signature: string;
+    staleAfter?: string | Date | null;
+    pois: Array<{ id: string; name?: string | null; category?: string | null; lat: number; lng: number }>;
+};
+
+const HISTORY_LIMIT = 80;
+const HISTORY_TTL_MS = 5 * 60_000;
+const historyCache = new Map<string, { expiresAt: number; value?: HistoryEntry[]; promise?: Promise<HistoryEntry[]> }>();
+
+export const primeHistoryCache = (token: string | null | undefined, rows: HistoryEntry[] | null | undefined) => {
+    if (!token || !rows || rows.length === 0) return;
+    historyCache.set(`${token}:${HISTORY_LIMIT}`, { value: rows, expiresAt: Date.now() + HISTORY_TTL_MS });
+};
+
+const fetchHistoryOnce = async (token: string | null | undefined, baseUrl: string | undefined) => {
+    if (!token) return null;
+    const cacheKey = `${token ?? "anon"}:${HISTORY_LIMIT}`;
+    const cached = historyCache.get(cacheKey);
+    const now = Date.now();
+    if (cached?.value && cached.expiresAt > now) return cached.value;
+    if (cached?.promise) return await cached.promise;
+
+    const promise = apiFetch<HistoryEntry[]>("/geo/history?limit=" + HISTORY_LIMIT, {
+        token,
+        baseUrl,
+    })
+        .then((rows) => {
+            historyCache.set(cacheKey, { value: rows, expiresAt: Date.now() + HISTORY_TTL_MS });
+            return rows;
+        })
+        .catch((err) => {
+            historyCache.delete(cacheKey);
+            throw err;
+        });
+
+    historyCache.set(cacheKey, { promise, expiresAt: now + HISTORY_TTL_MS });
+    return await promise;
+};
 
 export const usePoiStore = create<PoiState>((set) => ({
     bbox: null,
@@ -68,18 +111,11 @@ export function usePoiQuery(opts?: { enabled?: boolean }) {
         queryFn: async () => {
             if (!bbox || !Number.isFinite(zoom)) return { items: [], total: 0 } as z.infer<typeof PoiResponseSchema>;
 
-            // Try to reuse cached history if authed
+            // Try to reuse cached history once per token/signature to avoid duplicate network calls
             if (isAuthed && signature) {
                 try {
-                    const history = await apiFetch<{ id: string; signature: string; staleAfter?: string | Date | null; pois: Array<{ id: string; name?: string | null; category?: string | null; lat: number; lng: number }> }[]>(
-                        "/geo/history?limit=80",
-                        {
-                            token: session?.accessToken,
-                            baseUrl: apiBase,
-                        },
-                    );
-
-                    const match = history.find((h) => h.signature === signature);
+                    const history = await fetchHistoryOnce(session?.accessToken, apiBase);
+                    const match = history?.find((h) => h.signature === signature);
                     if (match) {
                         const staleAt = match.staleAfter ? new Date(match.staleAfter) : null;
                         const isStale = staleAt ? staleAt.getTime() < Date.now() : false;
@@ -94,7 +130,7 @@ export function usePoiQuery(opts?: { enabled?: boolean }) {
                             } as z.infer<typeof PoiResponseSchema>;
                         }
                     }
-                } catch (err) {
+                } catch {
                     // ignore history fetch errors
                 }
             }

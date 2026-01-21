@@ -1,0 +1,10 @@
+import type { Prisma } from '@prisma/client';
+import * as z from 'zod';
+import { PoiEnrichmentCacheOrderByWithRelationInputObjectSchema as PoiEnrichmentCacheOrderByWithRelationInputObjectSchema } from './objects/PoiEnrichmentCacheOrderByWithRelationInput.schema';
+import { PoiEnrichmentCacheWhereInputObjectSchema as PoiEnrichmentCacheWhereInputObjectSchema } from './objects/PoiEnrichmentCacheWhereInput.schema';
+import { PoiEnrichmentCacheWhereUniqueInputObjectSchema as PoiEnrichmentCacheWhereUniqueInputObjectSchema } from './objects/PoiEnrichmentCacheWhereUniqueInput.schema';
+import { PoiEnrichmentCacheCountAggregateInputObjectSchema as PoiEnrichmentCacheCountAggregateInputObjectSchema } from './objects/PoiEnrichmentCacheCountAggregateInput.schema';
+
+export const PoiEnrichmentCacheCountSchema: z.ZodType<Prisma.PoiEnrichmentCacheCountArgs> = z.object({ orderBy: z.union([PoiEnrichmentCacheOrderByWithRelationInputObjectSchema, PoiEnrichmentCacheOrderByWithRelationInputObjectSchema.array()]).optional(), where: PoiEnrichmentCacheWhereInputObjectSchema.optional(), cursor: PoiEnrichmentCacheWhereUniqueInputObjectSchema.optional(), take: z.number().optional(), skip: z.number().optional(), select: z.union([ z.literal(true), PoiEnrichmentCacheCountAggregateInputObjectSchema ]).optional() }).strict() as unknown as z.ZodType<Prisma.PoiEnrichmentCacheCountArgs>;
+
+export const PoiEnrichmentCacheCountZodSchema = z.object({ orderBy: z.union([PoiEnrichmentCacheOrderByWithRelationInputObjectSchema, PoiEnrichmentCacheOrderByWithRelationInputObjectSchema.array()]).optional(), where: PoiEnrichmentCacheWhereInputObjectSchema.optional(), cursor: PoiEnrichmentCacheWhereUniqueInputObjectSchema.optional(), take: z.number().optional(), skip: z.number().optional(), select: z.union([ z.literal(true), PoiEnrichmentCacheCountAggregateInputObjectSchema ]).optional() }).strict();

@@ -9,7 +9,7 @@
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
     "skipLibCheck": true,
-    "types": ["bun-types", "vitest/globals"],
+    "types": ["bun-types", "node", "vitest/globals"],
     "outDir": "dist"
   },
   "include": ["src"]
