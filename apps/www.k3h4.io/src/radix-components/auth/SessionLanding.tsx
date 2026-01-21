@@ -1,3 +1,4 @@
+import { useMemo, useState } from "react";
 import { Canvas } from "@react-three/fiber";
 import { Float, OrbitControls, Stars } from "@react-three/drei";
 

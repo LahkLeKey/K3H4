@@ -1,4 +1,4 @@
-import { useInfiniteQuery, useQuery, type InfiniteData } from "@tanstack/react-query";
+import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 
 import { useAuthStore } from "./auth";
 
@@ -97,15 +97,16 @@ export function useTelemetryInfiniteQuery(filters: TelemetryFilters, enabled = t
     const { cursorTs: _ignoreCursorTs, cursorId: _ignoreCursorId, ...baseFilters } = filters;
     const baseQs = buildQueryString(baseFilters);
 
-    return useInfiniteQuery<TelemetryResponse, Error, InfiniteData<TelemetryResponse>>(
+    return useInfiniteQuery<TelemetryResponse, Error>(
         {
             queryKey: ["telemetry-infinite", baseQs],
             enabled,
             staleTime: 5_000,
             refetchInterval: 5_000,
+            initialPageParam: undefined,
             getNextPageParam: (lastPage) => lastPage.nextCursor ?? undefined,
             queryFn: async ({ pageParam }) => {
-                const cursor = pageParam as TelemetryCursor | undefined;
+                const cursor = (pageParam ?? undefined) as TelemetryCursor | undefined;
                 const qs = buildQueryString({ ...baseFilters, ...(cursor ? { cursorTs: cursor.cursorTs, cursorId: cursor.cursorId } : {}) });
                 const url = qs ? `${apiBase}/telemetry?${qs}` : `${apiBase}/telemetry`;
                 const res = await fetch(url, {
