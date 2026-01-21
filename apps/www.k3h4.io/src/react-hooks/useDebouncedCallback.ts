@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useRef } from "react";
 
-type Debounced<T extends (...args: any[]) => void> = T & { cancel: () => void };
+type Debounced<T extends (...args: any[]) => any> = ((...args: Parameters<T>) => void) & { cancel: () => void };
 
 // Lightweight debounce helper to avoid external deps
-export function useDebouncedCallback<T extends (...args: any[]) => void>(fn: T, wait: number): Debounced<T> {
+export function useDebouncedCallback<T extends (...args: any[]) => any>(fn: T, wait: number): Debounced<T> {
     const fnRef = useRef(fn);
     useEffect(() => {
         fnRef.current = fn;

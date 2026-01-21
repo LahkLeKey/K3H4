@@ -434,7 +434,7 @@ export function MapLayer({ readonly }: { readonly?: boolean }) {
             }
         };
 
-        const handleData = (ev: maplibregl.EventData & { sourceId?: string }) => {
+        const handleData = (ev: maplibregl.MapDataEvent & { sourceId?: string }) => {
             const sid = ev.sourceId;
             if (sid === "terrain-dem" || sid === "terrain-dem-hillshade") {
                 checkReady();
