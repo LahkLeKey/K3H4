@@ -171,6 +171,7 @@ export function MapLayer({ readonly }: { readonly?: boolean }) {
         signOut,
         poiPins,
         frame: mapFrame,
+        origin: center ?? null,
     });
 
     const proxiedMaptilerRequest = useCallback(
