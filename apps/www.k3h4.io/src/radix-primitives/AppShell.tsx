@@ -206,7 +206,7 @@ export function AppShell({ showNav = true, background, foreground }: AppShellPro
                     <div className="absolute inset-0">{background ?? <MapLayer readonly={shouldShowAuth} />}</div>
                 </UiErrorBoundary>
 
-                <div className="relative z-10 h-full">
+                <div className={`relative z-10 h-full ${foreground ? "" : "pointer-events-none"}`}>
                     {foreground}
                 </div>
 

@@ -15,7 +15,8 @@ import {
 
 import { PageHeader } from "../components/PageHeader";
 import { R3FErrorBoundary } from "../r3f-components/R3FErrorBoundary";
-import { useTelemetryQuery } from "../react-hooks/telemetry";
+import type { TelemetryEvent } from "../react-hooks/telemetry";
+import { useTelemetryInfiniteQuery } from "../react-hooks/telemetry";
 
 type TelemetrySample = {
     ts: number;
@@ -89,11 +90,26 @@ export function TelemetryPage() {
         return () => window.removeEventListener("resize", handle);
     }, []);
 
-    const [filters] = useState({ limit: 200 });
-    const { data, isLoading, error } = useTelemetryQuery(filters);
+    const sinceIso = useMemo(() => new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(), []);
+    const [filters] = useState({ limit: 200, since: sinceIso });
+    const { data, isLoading, error, fetchNextPage, hasNextPage, isFetchingNextPage, refetch } = useTelemetryInfiniteQuery(filters);
+
+    const events = useMemo(() => {
+        const pages = data?.pages ?? [];
+        const seen = new Set<string>();
+        const merged: TelemetryEvent[] = [];
+        for (const page of pages) {
+            for (const evt of page.events) {
+                if (seen.has(evt.id)) continue;
+                seen.add(evt.id);
+                merged.push(evt);
+            }
+        }
+        return merged;
+    }, [data]);
 
     const samples = useMemo<TelemetrySample[]>(() => {
-        const events = (data?.events ?? []).slice().sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+        const sorted = events.slice().sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
         const buckets = new Map<
             number,
             {
@@ -119,13 +135,13 @@ export function TelemetryPage() {
         };
 
         let lastRefreshTs: number | null = null;
-        for (const evt of events) {
+        for (const evt of sorted) {
             const ts = new Date(evt.createdAt).getTime();
             if (Number.isNaN(ts)) continue;
             const bucket = ensureBucket(ts);
             bucket.total += 1;
 
-            const latency = extractLatencyMs(evt.payload);
+            const latency = evt.durationMs ?? extractLatencyMs(evt.payload);
             if (latency !== null) bucket.latencies.push(latency);
 
             if (isErrorEvent(evt.eventType, evt.payload)) bucket.errorCount += 1;
@@ -156,7 +172,7 @@ export function TelemetryPage() {
                     refresh,
                 };
             });
-    }, [data]);
+    }, [events]);
 
     const summary = useMemo(() => {
         const latest = samples[samples.length - 1];
@@ -171,8 +187,6 @@ export function TelemetryPage() {
             lastUpdated: new Date(latest.ts).toLocaleTimeString(),
         };
     }, [samples]);
-
-    const events = data?.events ?? [];
 
     const pageSize = 25;
     const [page, setPage] = useState(0);
@@ -340,9 +354,26 @@ export function TelemetryPage() {
                         <div className="flex items-center justify-between gap-3">
                             <div>
                                 <div className="text-sm font-semibold text-white">Event stream</div>
-                                <div className="text-xs text-slate-400">Latest {events.length} events (filtered)</div>
+                                <div className="text-xs text-slate-400">Latest {events.length} events (server-paged)</div>
                             </div>
                             {error ? <div className="text-[11px] text-rose-300">{error.message}</div> : null}
+                        </div>
+                        <div className="mt-2 flex items-center gap-2 text-[11px] text-slate-300">
+                            <button
+                                type="button"
+                                className="rounded border border-white/15 px-2 py-1 text-xs text-white transition disabled:opacity-40"
+                                disabled={!hasNextPage || isFetchingNextPage}
+                                onClick={() => fetchNextPage()}
+                            >
+                                {isFetchingNextPage ? "Loading older…" : hasNextPage ? "Load older" : "All loaded"}
+                            </button>
+                            <button
+                                type="button"
+                                className="rounded border border-white/15 px-2 py-1 text-xs text-white transition disabled:opacity-40"
+                                onClick={() => refetch()}
+                            >
+                                Refresh
+                            </button>
                         </div>
                         <div className="mt-3 overflow-hidden rounded-xl border border-white/10 bg-slate-950/60">
                             <div className="max-h-[420px] overflow-auto">

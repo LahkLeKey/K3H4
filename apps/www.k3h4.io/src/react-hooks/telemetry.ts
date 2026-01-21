@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useInfiniteQuery, useQuery, type InfiniteData } from "@tanstack/react-query";
 
 import { useAuthStore } from "./auth";
 
@@ -9,6 +9,8 @@ export type TelemetryFilters = {
     userId?: string;
     since?: string;
     limit?: number;
+    cursorTs?: string;
+    cursorId?: string;
 };
 
 export type TelemetryEvent = {
@@ -19,7 +21,13 @@ export type TelemetryEvent = {
     source: string;
     path?: string | null;
     payload?: unknown;
+    durationMs?: number | null;
     createdAt: string;
+};
+
+export type TelemetryCursor = {
+    cursorTs: string;
+    cursorId: string;
 };
 
 export type TelemetrySummary = {
@@ -33,6 +41,7 @@ export type TelemetrySummary = {
 export type TelemetryResponse = {
     events: TelemetryEvent[];
     summary: TelemetrySummary;
+    nextCursor: TelemetryCursor | null;
 };
 
 const buildQueryString = (filters: TelemetryFilters) => {
@@ -43,6 +52,8 @@ const buildQueryString = (filters: TelemetryFilters) => {
     if (filters.userId) params.set("userId", filters.userId);
     if (filters.since) params.set("since", filters.since);
     if (filters.limit) params.set("limit", String(filters.limit));
+    if (filters.cursorTs) params.set("cursorTs", filters.cursorTs);
+    if (filters.cursorId) params.set("cursorId", filters.cursorId);
     return params.toString();
 };
 
@@ -79,4 +90,45 @@ export function useTelemetryQuery(filters: TelemetryFilters, enabled = true) {
             return (await res.json()) as TelemetryResponse;
         },
     });
+}
+
+export function useTelemetryInfiniteQuery(filters: TelemetryFilters, enabled = true) {
+    const { apiBase, session, kickToLogin } = useAuthStore();
+    const { cursorTs: _ignoreCursorTs, cursorId: _ignoreCursorId, ...baseFilters } = filters;
+    const baseQs = buildQueryString(baseFilters);
+
+    return useInfiniteQuery<TelemetryResponse, Error, InfiniteData<TelemetryResponse>>(
+        {
+            queryKey: ["telemetry-infinite", baseQs],
+            enabled,
+            staleTime: 5_000,
+            refetchInterval: 5_000,
+            getNextPageParam: (lastPage) => lastPage.nextCursor ?? undefined,
+            queryFn: async ({ pageParam }) => {
+                const cursor = pageParam as TelemetryCursor | undefined;
+                const qs = buildQueryString({ ...baseFilters, ...(cursor ? { cursorTs: cursor.cursorTs, cursorId: cursor.cursorId } : {}) });
+                const url = qs ? `${apiBase}/telemetry?${qs}` : `${apiBase}/telemetry`;
+                const res = await fetch(url, {
+                    method: "GET",
+                    headers: {
+                        Accept: "application/json",
+                        ...(session?.accessToken ? { Authorization: `Bearer ${session.accessToken}` } : {}),
+                    },
+                    credentials: "include",
+                });
+
+                if (res.status === 401) {
+                    kickToLogin("session-expired");
+                    throw new Error("Unauthorized");
+                }
+
+                if (!res.ok) {
+                    const text = await res.text().catch(() => "");
+                    throw new Error(text || `Telemetry fetch failed (${res.status})`);
+                }
+
+                return (await res.json()) as TelemetryResponse;
+            },
+        },
+    );
 }
