@@ -1,16 +1,17 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 
 import { MapLayer } from "../radix-components/MapLayer";
 import { MapViewProvider } from "../react-hooks/useMapView";
 import { UiErrorBoundary } from "./UiErrorBoundary";
+import { PageHeader } from "../components/PageHeader";
 import { useAuthStore } from "../react-hooks/auth";
 import { useAuthOverlay } from "../react-hooks/useAuthOverlay";
 import { LoginMenu } from "../radix-components/auth/LoginMenu";
 import { CallbackScreen } from "../radix-components/auth/CallbackScreen";
 import { useGeoState } from "../zustand-stores/geo";
 import { useMapView } from "../react-hooks/useMapView";
-import { SessionLanding } from "../radix-components/auth/SessionLanding";
+import { SessionPanel } from "../components/SessionPanel";
 import { primeHistoryCache, usePoiStore } from "../zustand-stores/poi";
 
 const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));
@@ -154,7 +155,13 @@ function GeoPrefsHydrator() {
     return null;
 }
 
-export function AppShell() {
+type AppShellProps = {
+    showNav?: boolean;
+    background?: ReactNode;
+    foreground?: ReactNode;
+};
+
+export function AppShell({ showNav = true, background, foreground }: AppShellProps) {
     const { session, signOut } = useAuthStore();
     const authView = useAuthOverlay();
     const shouldShowAuth = !session || (typeof window !== "undefined" && window.location.pathname.startsWith("/auth"));
@@ -171,36 +178,41 @@ export function AppShell() {
     return (
         <MapViewProvider>
             <div className="relative h-screen w-screen overflow-hidden bg-slate-950">
-                <div className="pointer-events-auto absolute inset-x-0 top-0 z-30 flex items-center justify-between gap-3 bg-slate-950/85 px-4 py-3 text-sm font-semibold text-white shadow-[0_10px_30px_rgba(0,0,0,0.45)] backdrop-blur">
-                    <div className="flex items-center gap-2">
-                        <div className="rounded bg-emerald-500/20 px-2 py-1 text-xs text-emerald-200">Portfolio</div>
-                        <div className="text-base tracking-tight text-white">Kyle Halek - Hastings, MN</div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                        {session ? (
-                            <button
-                                type="button"
-                                onClick={() => setShowProfile(true)}
-                                className="rounded-full border border-white/15 bg-white/10 px-3 py-1.5 text-xs font-semibold text-white transition hover:-translate-y-[1px] hover:border-white/30 hover:bg-white/15 active:translate-y-0"
-                            >
-                                Profile
-                            </button>
-                        ) : null}
-                        <button
-                            type="button"
-                            onClick={signOut}
-                            className="rounded-full border border-white/15 bg-white/10 px-3 py-1.5 text-xs font-semibold text-white transition hover:-translate-y-[1px] hover:border-white/30 hover:bg-white/15 active:translate-y-0"
-                            disabled={!session}
-                        >
-                            {session ? "Sign out" : "Not signed in"}
-                        </button>
-                    </div>
-                </div>
+                {showNav && session ? (
+                    <PageHeader
+                        className="absolute inset-x-0 top-0 z-30"
+                        rightSlot={(
+                            <>
+                                <button
+                                    type="button"
+                                    onClick={() => setShowProfile(true)}
+                                    className="rounded-full border border-white/15 bg-white/10 px-3 py-1.5 text-xs font-semibold text-white transition hover:-translate-y-[1px] hover:border-white/30 hover:bg-white/15 active:translate-y-0"
+                                >
+                                    Profile
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={signOut}
+                                    className="rounded-full border border-white/15 bg-white/10 px-3 py-1.5 text-xs font-semibold text-white transition hover:-translate-y-[1px] hover:border-white/30 hover:bg-white/15 active:translate-y-0"
+                                >
+                                    Sign out
+                                </button>
+                            </>
+                        )}
+                    />
+                ) : null}
                 <GeoPrefsHydrator />
                 <UiErrorBoundary>
-                    <MapLayer readonly={shouldShowAuth} />
+                    <div className="absolute inset-0">{background ?? <MapLayer readonly={shouldShowAuth} />}</div>
                 </UiErrorBoundary>
-                {session && showProfile ? <SessionLanding session={session} /> : null}
+
+                <div className="relative z-10 h-full">
+                    {foreground}
+                </div>
+
+                {session && showProfile ? (
+                    <SessionPanel session={session} variant="overlay" onClose={() => setShowProfile(false)} />
+                ) : null}
                 {shouldShowAuth ? (authView === "callback" ? <CallbackScreen /> : <LoginMenu />) : null}
             </div>
         </MapViewProvider>
