@@ -47,6 +47,8 @@ const fingerprint = (request: MaptilerRequestWithKind, responseType: "json" | "a
   );
 };
 
+export const computeMaptilerSignature = (request: MaptilerRequestWithKind, responseType: "json" | "arrayBuffer") => fingerprint(request, responseType);
+
 const deriveKind = (path: string, fallback: string | undefined) => {
   const clean = path.startsWith("/") ? path.slice(1) : path;
   const first = clean.split("/").filter(Boolean)[0];
@@ -75,6 +77,41 @@ export type MaptilerCacheResult = {
   kind: string;
   queryId?: string | null;
 };
+
+export async function fetchMaptilerCacheOnly(
+  prisma: PrismaWithMaptiler,
+  request: MaptilerRequestWithKind,
+  options?: CacheOptions,
+): Promise<MaptilerCacheResult | null> {
+  const responseType: "json" | "arrayBuffer" = request.responseType ?? "json";
+  const signature = fingerprint(request, responseType);
+  const maxAgeMs = options?.maxAgeMinutes ? options.maxAgeMinutes * 60 * 1000 : undefined;
+  const now = Date.now();
+
+  const existing = await prisma.maptilerCacheEntry.findUnique({ where: { signature } });
+  if (!existing) return null;
+
+  const freshByAge = maxAgeMs ? now - existing.fetchedAt.getTime() <= maxAgeMs : false;
+  const notExpired = existing.expiresAt ? existing.expiresAt.getTime() > now : false;
+  if (!freshByAge && !notExpired) return null;
+
+  const cachedResponse: MaptilerResponse = {
+    status: existing.statusCode ?? 200,
+    ok: (existing.statusCode ?? 200) < 400,
+    url: existing.url,
+    headers: {},
+    contentType: existing.contentType ?? undefined,
+    cacheControl: existing.cacheControl ?? undefined,
+  };
+
+  if (existing.responseType === "arrayBuffer") {
+    cachedResponse.data = existing.data ? Buffer.from(existing.data) : undefined;
+  } else {
+    cachedResponse.body = existing.payload;
+  }
+
+  return { cached: true, response: cachedResponse, signature, kind: existing.kind, queryId: existing.queryId };
+}
 
 export async function fetchMaptilerWithCache(
   prisma: PrismaWithMaptiler,

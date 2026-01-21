@@ -18,12 +18,22 @@ import { usePoiDetailInteraction } from "../react-hooks/usePoiDetailInteraction"
 import { useMapInteractionToggle } from "../react-hooks/useMapInteractionToggle";
 import { usePoiViewportSync } from "../react-hooks/usePoiViewportSync";
 import { usePersistMapView } from "../react-hooks/usePersistMapView";
+import { useDebouncedCallback } from "../react-hooks/useDebouncedCallback";
 
 const MAX_DEM_ERROR = 28;
 const TERRAIN_EXAGGERATION = 1.6;
 const MAPTILER_STYLE_PATH = "/maps/hybrid/style.json";
 const EMPTY_TILE_PNG =
     "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR4nGP8z8BQDwAEsALp2UNzMgAAAABJRU5ErkJggg==";
+
+const tileXY = (lng: number, lat: number, zoom: number) => {
+    const z = Math.round(zoom);
+    const n = 2 ** z;
+    const x = Math.floor(((lng + 180) / 360) * n);
+    const latRad = (lat * Math.PI) / 180;
+    const y = Math.floor(((1 - Math.log(Math.tan(latRad) + 1 / Math.cos(latRad)) / Math.PI) / 2) * n);
+    return { x, y, z };
+};
 
 export function MapLayer({ readonly }: { readonly?: boolean }) {
     const ref = useRef<HTMLDivElement>(null);
@@ -106,7 +116,6 @@ export function MapLayer({ readonly }: { readonly?: boolean }) {
             map.setTerrain(null);
 
             if (map.getLayer("terrain-hillshade")) map.removeLayer("terrain-hillshade");
-            if (map.getSource("terrain-dem-hillshade")) map.removeSource("terrain-dem-hillshade");
             if (map.getSource("terrain-dem")) map.removeSource("terrain-dem");
 
             map.addSource("terrain-dem", {
@@ -116,20 +125,13 @@ export function MapLayer({ readonly }: { readonly?: boolean }) {
                 maxzoom: 14,
                 encoding: "mapbox",
             } as any);
-            map.setTerrain({ source: "terrain-dem", exaggeration: TERRAIN_EXAGGERATION });
 
-            map.addSource("terrain-dem-hillshade", {
-                type: "raster-dem",
-                tiles: [terrainUrl],
-                tileSize: 256,
-                maxzoom: 14,
-                encoding: "mapbox",
-            } as any);
+            map.setTerrain({ source: "terrain-dem", exaggeration: TERRAIN_EXAGGERATION });
 
             map.addLayer({
                 id: "terrain-hillshade",
                 type: "hillshade",
-                source: "terrain-dem-hillshade",
+                source: "terrain-dem",
                 paint: {
                     "hillshade-exaggeration": 0.7,
                     "hillshade-shadow-color": "#0f172a",
@@ -483,6 +485,64 @@ export function MapLayer({ readonly }: { readonly?: boolean }) {
     const readyProgress = Math.round((loadSteps.filter((step) => step.done).length / loadSteps.length) * 100);
     const mapReady = mapLoaded && (terrainReady || mapGateTimerDone);
 
+    const prewarmedRef = useRef<Record<string, boolean>>({});
+    const prewarmTiles = useDebouncedCallback(async () => {
+        if (!mapRef.current || !session?.accessToken) return;
+        const map = mapRef.current;
+        const z = Math.max(0, Math.floor(map.getZoom()));
+        const center = map.getCenter();
+        const layers = [
+            { path: "/tiles/v3/{z}/{x}/{y}.pbf", zoom: Math.max(0, z - 1) },
+            { path: "/tiles/terrain-rgb-v2/{z}/{x}/{y}.png", zoom: Math.max(0, z - 1) },
+            { path: "/tiles/satellite-v2/{z}/{x}/{y}.jpg", zoom: z },
+        ];
+
+        const ops: any[] = [];
+
+        for (const layer of layers) {
+            const { x, y, z: layerZ } = tileXY(center.lng, center.lat, layer.zoom);
+            const key = `${layer.path}:${layerZ}:${x}:${y}`;
+            if (prewarmedRef.current[key]) continue;
+            prewarmedRef.current[key] = true;
+
+            for (let dx = -1; dx <= 1; dx += 1) {
+                for (let dy = -1; dy <= 1; dy += 1) {
+                    const tx = x + dx;
+                    const ty = y + dy;
+                    if (tx < 0 || ty < 0) continue;
+                    ops.push({
+                        id: `${layer.path}:${layerZ}:${tx}:${ty}`,
+                        op: "maptiler.tile",
+                        path: layer.path.replace("{z}", String(layerZ)).replace("{x}", String(tx)).replace("{y}", String(ty)),
+                        maxAgeMinutes: 720,
+                    });
+                }
+            }
+        }
+
+        // Add common font glyphs once
+        if (!prewarmedRef.current["font:NotoSans0-255"]) {
+            prewarmedRef.current["font:NotoSans0-255"] = true;
+            ops.push({ id: "font:NotoSans0-255", op: "maptiler.tile", path: "/fonts/Noto Sans Regular/0-255.pbf", maxAgeMinutes: 1440 });
+        }
+
+        if (!ops.length) return;
+
+        try {
+            await fetch(`${apiBase}/api/batch`, {
+                method: "POST",
+                headers: {
+                    Authorization: `Bearer ${session.accessToken}`,
+                    "Content-Type": "application/json",
+                },
+                credentials: "include",
+                body: JSON.stringify({ ops }),
+            });
+        } catch {
+            // ignore prewarm errors
+        }
+    }, 1500);
+
     useEffect(() => {
         if (!mapLoaded) {
             setMapGateTimerDone(false);
@@ -491,6 +551,11 @@ export function MapLayer({ readonly }: { readonly?: boolean }) {
         const gate = setTimeout(() => setMapGateTimerDone(true), 1500);
         return () => clearTimeout(gate);
     }, [mapLoaded, terrainReady]);
+
+    useEffect(() => {
+        if (!mapReady) return;
+        prewarmTiles();
+    }, [mapReady, prewarmTiles]);
 
     if (status === "blocked" || status === "error") {
         return <MapStatusOverlay state="blocked" />;

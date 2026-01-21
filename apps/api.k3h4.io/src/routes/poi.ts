@@ -2,6 +2,7 @@ import { createHash } from "node:crypto";
 import { Prisma, type PrismaClient } from "@prisma/client";
 import { type FastifyInstance, type FastifyReply, type FastifyRequest } from "fastify";
 import { enqueueOverpass } from "../lib/overpass-queue";
+import { enrichPoi } from "../modules/poi-enrich/enrich";
 import { type RecordTelemetryFn } from "./types";
 
 type Bbox = { minLat: number; minLng: number; maxLat: number; maxLng: number };
@@ -187,6 +188,15 @@ async function upsertOverpassElements(prisma: PrismaClient, elements: any[], run
 }
 
 export function registerPoiRoutes(server: FastifyInstance, prisma: PrismaClient, recordTelemetry: RecordTelemetryFn) {
+  const inflight = new Map<string, Promise<any>>();
+  const coalesce = async <T>(key: string, fn: () => Promise<T>): Promise<T> => {
+    const existing = inflight.get(key) as Promise<T> | undefined;
+    if (existing) return existing;
+    const p = fn().finally(() => inflight.delete(key));
+    inflight.set(key, p);
+    return p;
+  };
+
   const listHandler = async (request: FastifyRequest, reply: FastifyReply) => {
     const bounds = parseBbox(request.query as Record<string, unknown>);
     if (!bounds) return reply.status(400).send({ error: "bbox is required as minLon,minLat,maxLon,maxLat" });
@@ -519,4 +529,67 @@ export function registerPoiRoutes(server: FastifyInstance, prisma: PrismaClient,
   server.get("/api/pois/metadata", authOpts, metadataHandler);
   server.post("/api/pois/sync", authOpts, syncHandler);
   server.get("/api/pois/:id", authOpts, detailHandler);
+
+  // Batch enrich POIs by ids
+  server.post(
+    "/api/pois/batch",
+    authOpts,
+    async (request, reply) => {
+      const body = request.body as {
+        ids?: Array<{ type?: string; id?: string | number }>;
+        include?: Record<string, boolean>;
+      };
+
+      const ids = Array.isArray(body?.ids)
+        ? body.ids
+            .map((p) => {
+              const idNum = typeof p.id === "string" ? Number(p.id) : p.id;
+              if (!Number.isFinite(idNum)) return null;
+              const type = typeof p.type === "string" && p.type.trim().length > 0 ? p.type.trim() : "node";
+              return { type, id: Number(idNum) } as { type: string; id: number };
+            })
+            .filter((p): p is { type: string; id: number } => Boolean(p))
+        : [];
+
+      if (!ids.length) return reply.status(400).send({ error: "ids required" });
+      if (ids.length > 50) return reply.status(400).send({ error: "max 50 ids" });
+
+      const includeFlags = {
+        address: Boolean(body?.include?.address),
+        contact: Boolean(body?.include?.contact),
+        openingHours: Boolean(body?.include?.openingHours),
+        fuel: Boolean(body?.include?.fuel),
+        accessibility: Boolean(body?.include?.accessibility),
+        building: Boolean(body?.include?.building ?? body?.include?.geometry),
+        route: Boolean(body?.include?.route),
+        routeGeometry: Boolean(body?.include?.routeGeometry),
+        photos: Boolean(body?.include?.photos),
+        description: Boolean(body?.include?.description),
+      } as const;
+
+      const includeHash = Object.entries(includeFlags)
+        .filter(([, v]) => v)
+        .map(([k]) => k)
+        .sort()
+        .join(",");
+
+      const results: Record<string, any> = {};
+
+      // coalesce per id+hash
+      await Promise.all(
+        ids.map(async (poi) => {
+          const key = `${poi.type}/${poi.id}:${includeHash}`;
+          const enriched = await coalesce(key, async () => {
+            // Try enrichment cache helper
+            const enriched = await enrichPoi(prisma, { type: poi.type as any, id: poi.id }, includeFlags, null, "driving");
+            return enriched;
+          });
+          results[`${poi.type}/${poi.id}`] = enriched;
+        }),
+      );
+
+      await recordTelemetry(request, { eventType: "poi.batch", source: "api", payload: { count: ids.length, include: includeHash } });
+      return { items: results };
+    },
+  );
 }

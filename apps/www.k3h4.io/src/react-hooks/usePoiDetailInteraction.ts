@@ -44,6 +44,20 @@ type Options = {
     frame: number;
 };
 
+const DETAIL_INCLUDE = [
+    "address",
+    "contact",
+    "openingHours",
+    "fuel",
+    "accessibility",
+    "building",
+    "photos",
+    "description",
+].join(",");
+
+const DETAIL_TTL_MS = 5 * 60_000;
+const detailCache = new Map<string, { expiresAt: number; value?: PoiDetail; promise?: Promise<PoiDetail> }>();
+
 export function usePoiDetailInteraction({ mapRef, apiBase, accessToken, signOut, poiPins, frame }: Options) {
     const [poiDetail, setPoiDetail] = useState<PoiDetail>(null);
     const [poiAnchor, setPoiAnchor] = useState<PoiAnchor>(null);
@@ -65,47 +79,60 @@ export function usePoiDetailInteraction({ mapRef, apiBase, accessToken, signOut,
         async (poi: Poi) => {
             const authed = Boolean(accessToken);
             const { id } = poi;
+
+            const now = Date.now();
+            const existing = detailCache.get(id);
+            if (existing?.value && existing.expiresAt > now) return existing.value;
+            if (existing?.promise) return await existing.promise;
+
             if (fetchingDetailRef.current === id) return null;
             fetchingDetailRef.current = id;
-            try {
-                const include = [
-                    "address",
-                    "contact",
-                    "openingHours",
-                    "fuel",
-                    "accessibility",
-                    "building",
-                    "photos",
-                    "description",
-                ].join(",");
 
-                const osmId = poi.osmId && poi.osmType ? `${poi.osmType}/${poi.osmId}` : null;
-                const headers = accessToken ? { Authorization: `Bearer ${accessToken}` } : undefined;
+            const headers = accessToken ? { Authorization: `Bearer ${accessToken}` } : undefined;
+            const osmId = poi.osmId && poi.osmType ? `${poi.osmType}/${poi.osmId}` : null;
 
-                // Try enrichment first if we have an OSM identifier
-                if (osmId) {
-                    const enrichUrl = `${apiBase}/api/poi/${osmId}/enrich?include=${encodeURIComponent(include)}`;
-                    const res = await fetch(enrichUrl, { headers: headers as any, credentials: "include" });
-                    if (res.status === 401 && authed) {
+            const request = (async () => {
+                try {
+                    // Try enrichment first if we have an OSM identifier
+                    if (osmId) {
+                        const enrichUrl = `${apiBase}/api/poi/${osmId}/enrich?include=${encodeURIComponent(DETAIL_INCLUDE)}`;
+                        const res = await fetch(enrichUrl, { headers: headers as any, credentials: "include" });
+                        if (res.status === 401 && authed) {
+                            signOut();
+                            return null;
+                        }
+                        if (res.ok) return (await res.json()) as any;
+                        if (res.status !== 404) throw new Error(`poi detail ${res.status}`);
+                        // fall through to legacy if 404
+                    }
+
+                    const legacyUrl = `${apiBase}${authed ? "/api/pois" : "/pois"}/${id}?includeGeometry=true`;
+                    const legacyRes = await fetch(legacyUrl, { headers: headers as any, credentials: "include" });
+                    if (legacyRes.status === 401 && authed) {
                         signOut();
                         return null;
                     }
-                    if (res.ok) return (await res.json()) as any;
-                    if (res.status !== 404) throw new Error(`poi detail ${res.status}`);
-                    // fall through to legacy if 404
+                    if (!legacyRes.ok) throw new Error(`poi detail ${legacyRes.status}`);
+                    return (await legacyRes.json()) as any;
+                } finally {
+                    fetchingDetailRef.current = null;
                 }
+            })()
+                .then((value) => {
+                    if (value) {
+                        detailCache.set(id, { value, expiresAt: Date.now() + DETAIL_TTL_MS });
+                    } else {
+                        detailCache.delete(id);
+                    }
+                    return value as PoiDetail;
+                })
+                .catch((err) => {
+                    detailCache.delete(id);
+                    throw err;
+                });
 
-                const legacyUrl = `${apiBase}${authed ? "/api/pois" : "/pois"}/${id}?includeGeometry=true`;
-                const legacyRes = await fetch(legacyUrl, { headers: headers as any, credentials: "include" });
-                if (legacyRes.status === 401 && authed) {
-                    signOut();
-                    return null;
-                }
-                if (!legacyRes.ok) throw new Error(`poi detail ${legacyRes.status}`);
-                return (await legacyRes.json()) as any;
-            } finally {
-                fetchingDetailRef.current = null;
-            }
+            detailCache.set(id, { promise: request, expiresAt: now + DETAIL_TTL_MS });
+            return await request;
         },
         [accessToken, apiBase, signOut],
     );
