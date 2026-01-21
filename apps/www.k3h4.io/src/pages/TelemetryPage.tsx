@@ -13,7 +13,7 @@ import {
     YAxis,
 } from "recharts";
 
-import { PageHeader } from "../components/PageHeader";
+import { PageHeader } from "../r3f-primitives/PageHeader";
 import { R3FErrorBoundary } from "../r3f-components/R3FErrorBoundary";
 import type { TelemetryEvent } from "../react-hooks/telemetry";
 import { useTelemetryInfiniteQuery } from "../react-hooks/telemetry";

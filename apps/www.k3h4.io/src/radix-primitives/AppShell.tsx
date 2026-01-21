@@ -4,14 +4,14 @@ import { useQueryClient } from "@tanstack/react-query";
 import { MapLayer } from "../radix-components/MapLayer";
 import { MapViewProvider } from "../react-hooks/useMapView";
 import { UiErrorBoundary } from "./UiErrorBoundary";
-import { PageHeader } from "../components/PageHeader";
+import { PageHeader } from "../r3f-primitives/PageHeader";
 import { useAuthStore } from "../react-hooks/auth";
 import { useAuthOverlay } from "../react-hooks/useAuthOverlay";
 import { LoginMenu } from "../radix-components/auth/LoginMenu";
 import { CallbackScreen } from "../radix-components/auth/CallbackScreen";
 import { useGeoState } from "../zustand-stores/geo";
 import { useMapView } from "../react-hooks/useMapView";
-import { SessionPanel } from "../components/SessionPanel";
+import { SessionPanel } from "../r3f-primitives/SessionPanel";
 import { primeHistoryCache, usePoiStore } from "../zustand-stores/poi";
 
 const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));

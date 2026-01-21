@@ -1,10 +1,10 @@
 import { Stars } from "@react-three/drei";
 import { Canvas } from "@react-three/fiber";
 
-import { PageHeader } from "../components/PageHeader";
+import { PageHeader } from "../r3f-primitives/PageHeader";
 import { R3FErrorBoundary } from "../r3f-components/R3FErrorBoundary";
 import { useAuthStore } from "../react-hooks/auth";
-import { SessionPanel } from "../components/SessionPanel";
+import { SessionPanel } from "../r3f-primitives/SessionPanel";
 
 function OrbitingStars() {
     return (
