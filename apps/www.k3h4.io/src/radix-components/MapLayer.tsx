@@ -317,6 +317,12 @@ export function MapLayer({ readonly }: { readonly?: boolean }) {
             setMapFrame((n) => n + 1);
         };
 
+        const loadFallback = setTimeout(() => setMapLoaded(true), 3200);
+
+        map.once("styledata", () => {
+            setMapLoaded(true);
+        });
+
         map.on("load", () => {
             setMapLoaded(true);
             if (!map.getSource("building-highlight")) {
@@ -389,6 +395,7 @@ export function MapLayer({ readonly }: { readonly?: boolean }) {
         registerMap(map);
 
         return () => {
+            clearTimeout(loadFallback);
             registerMap(null);
             overlayRef.current?.finalize();
             overlayRef.current = null;
