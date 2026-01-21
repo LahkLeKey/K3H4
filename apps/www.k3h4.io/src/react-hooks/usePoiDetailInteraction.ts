@@ -182,27 +182,89 @@ export function usePoiDetailInteraction({ mapRef, apiBase, accessToken, signOut,
             }
             if (!nearest || minDist > 28) return;
             if (currentPoiDetailIdRef.current === nearest.id) return;
+            const rawDetail = await fetchPoiDetail(nearest);
+            if (!rawDetail) return;
 
-            const detail = await fetchPoiDetail(nearest);
-            if (!detail) return;
-            const building = detail.building ?? null;
+            const normalizeDetail = (d: PoiDetail) => {
+                const tags = (d as any)?.tags ?? null;
+
+                const address = d?.address
+                    ? d.address
+                    : tags
+                        ? {
+                            label: tags["addr:full"] ?? null,
+                            house_number: tags["addr:housenumber"] ?? tags["addr:housename"] ?? null,
+                            road: tags["addr:street"] ?? null,
+                            city: tags["addr:city"] ?? null,
+                            postcode: tags["addr:postcode"] ?? null,
+                            country: tags["addr:country"] ?? null,
+                        }
+                        : null;
+
+                const contact = d?.contact
+                    ? d.contact
+                    : tags
+                        ? {
+                            phone: tags.phone ?? tags["contact:phone"] ?? null,
+                            website: tags.website ?? tags["brand:website"] ?? null,
+                        }
+                        : null;
+
+                const openingHours = d?.openingHours ?? (tags ? tags.opening_hours ?? null : null);
+                const accessibility = d?.accessibility ?? (tags?.wheelchair ? { wheelchair: tags.wheelchair } : null);
+
+                const building = d?.building
+                    ? d.building
+                    : tags && (tags.building || tags["building:levels"])
+                        ? {
+                            type: tags.building ?? null,
+                            subtype: tags["building:use"] ?? null,
+                            levels: tags["building:levels"] ? Number(tags["building:levels"]) : null,
+                            footprint: null,
+                        }
+                        : null;
+
+                const source = d?.source
+                    ? d.source
+                    : tags
+                        ? {
+                            osmId: (d as any)?.osmId ?? null,
+                            wikidataId: tags["brand:wikidata"] ?? tags.wikidata ?? null,
+                            lastUpdated: null,
+                        }
+                        : null;
+
+                return {
+                    ...d,
+                    address,
+                    contact,
+                    openingHours,
+                    accessibility,
+                    building,
+                    source,
+                } as PoiDetail;
+            };
+
+            const detail = normalizeDetail(rawDetail);
+
+            const building = detail?.building ?? null;
             const footprint = building?.footprint ?? (building as any)?.geometry ?? null;
             updateHighlight(footprint);
             const projected = map.project([nearest.lng, nearest.lat]);
             setPoiAnchor({ x: projected.x, y: projected.y, lat: nearest.lat, lng: nearest.lng });
             setPoiDetail({
                 id: nearest.id,
-                name: detail.name ?? nearest.name ?? null,
-                category: detail.category ?? nearest.kind ?? null,
+                name: detail?.name ?? nearest.name ?? null,
+                category: detail?.category ?? nearest.kind ?? null,
                 lat: nearest.lat,
                 lng: nearest.lng,
-                address: detail.address ?? null,
-                contact: detail.contact ?? null,
-                openingHours: detail.openingHours ?? null,
-                fuelTypes: detail.fuelTypes ?? null,
-                accessibility: detail.accessibility ?? null,
-                description: detail.description ?? null,
-                photos: detail.photos ?? null,
+                address: detail?.address ?? null,
+                contact: detail?.contact ?? null,
+                openingHours: detail?.openingHours ?? null,
+                fuelTypes: detail?.fuelTypes ?? null,
+                accessibility: detail?.accessibility ?? null,
+                description: detail?.description ?? null,
+                photos: detail?.photos ?? null,
                 building: building
                     ? {
                         type: building.type ?? null,
@@ -211,8 +273,8 @@ export function usePoiDetailInteraction({ mapRef, apiBase, accessToken, signOut,
                         footprint: footprint ?? null,
                     }
                     : null,
-                route: detail.route ?? null,
-                source: detail.source ?? null,
+                route: detail?.route ?? null,
+                source: detail?.source ?? null,
             });
         },
         [fetchPoiDetail, mapRef, updateHighlight],
