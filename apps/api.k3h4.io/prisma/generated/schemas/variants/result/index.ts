@@ -20,6 +20,7 @@ export { GeoDemTileCacheResultSchema } from './GeoDemTileCache.result';
 export { MaptilerQueryResultSchema } from './MaptilerQuery.result';
 export { MaptilerCacheEntryResultSchema } from './MaptilerCacheEntry.result';
 export { OsrmCacheEntryResultSchema } from './OsrmCacheEntry.result';
+export { PoiEnrichmentCacheResultSchema } from './PoiEnrichmentCache.result';
 export { UserPreferenceResultSchema } from './UserPreference.result';
 export { TelemetryEventResultSchema } from './TelemetryEvent.result';
 export { BankTransactionResultSchema } from './BankTransaction.result';

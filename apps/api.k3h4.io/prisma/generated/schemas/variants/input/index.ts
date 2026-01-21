@@ -20,6 +20,7 @@ export { GeoDemTileCacheInputSchema } from './GeoDemTileCache.input';
 export { MaptilerQueryInputSchema } from './MaptilerQuery.input';
 export { MaptilerCacheEntryInputSchema } from './MaptilerCacheEntry.input';
 export { OsrmCacheEntryInputSchema } from './OsrmCacheEntry.input';
+export { PoiEnrichmentCacheInputSchema } from './PoiEnrichmentCache.input';
 export { UserPreferenceInputSchema } from './UserPreference.input';
 export { TelemetryEventInputSchema } from './TelemetryEvent.input';
 export { BankTransactionInputSchema } from './BankTransaction.input';

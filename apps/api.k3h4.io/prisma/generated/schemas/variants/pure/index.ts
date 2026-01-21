@@ -20,6 +20,7 @@ export { GeoDemTileCacheModelSchema } from './GeoDemTileCache.pure';
 export { MaptilerQueryModelSchema } from './MaptilerQuery.pure';
 export { MaptilerCacheEntryModelSchema } from './MaptilerCacheEntry.pure';
 export { OsrmCacheEntryModelSchema } from './OsrmCacheEntry.pure';
+export { PoiEnrichmentCacheModelSchema } from './PoiEnrichmentCache.pure';
 export { UserPreferenceModelSchema } from './UserPreference.pure';
 export { TelemetryEventModelSchema } from './TelemetryEvent.pure';
 export { BankTransactionModelSchema } from './BankTransaction.pure';
