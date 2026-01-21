@@ -37,7 +37,15 @@ export const apiCatalog: ApiDomain[] = [
         label: "Personas",
         accent: "#c084fc",
         summary: "Seed/generate personas, manage attributes, approvals, and compute Jaccard + ONNX compatibility.",
-        endpoints: ["GET /personas", "POST /personas", "PUT /personas/:id/attributes", "POST /personas/compatibility/recompute", "POST /personas/confusion"],
+        endpoints: [
+            "GET /personas",
+            "POST /personas",
+            "POST /personas/generate",
+            "PUT /personas/:id/attributes",
+            "POST /personas/compatibility/recompute",
+            "GET /personas/compatibility",
+            "POST /personas/compatibility/confusion",
+        ],
         tag: "graph",
     },
     {

@@ -60,7 +60,7 @@ const swaggerTags: Record<string, { name: string; description: string }> = {
   bank: { name: "Bank", description: "Banking and balances" },
   persona: { name: "Persona", description: "Persona management" },
   assignment: { name: "Assignment", description: "Assignments and tasks" },
-  staffing: { name: "Staffing", description: "Staffing cockpit and workforce planning" },
+  staffing: { name: "Staffing", description: "Staffing and workforce planning" },
   freight: { name: "Freight", description: "Freight and routing" },
   warehouse: { name: "Warehouse", description: "Inventory and storage" },
   pos: { name: "POS", description: "Point of sale" },

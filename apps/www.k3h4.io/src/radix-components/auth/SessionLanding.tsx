@@ -71,7 +71,7 @@ function ProfileHud({ session, decoded, onClose }: { session: Session; decoded: 
         <div className="pointer-events-auto w-[500px] max-w-[92vw] rounded-2xl border border-white/12 bg-slate-900/80 p-6 text-slate-50 shadow-2xl backdrop-blur">
             <div className="flex items-start justify-between gap-4">
                 <div>
-                    <div className="text-[11px] uppercase tracking-[0.24em] text-slate-400">Profile cockpit</div>
+                    <div className="text-[11px] uppercase tracking-[0.24em] text-slate-400">Profile</div>
                     <div className="text-2xl font-semibold text-white">Welcome back</div>
                     <p className="mt-1 text-sm text-slate-300">Manage tokens, identity, and data lifecycle.</p>
                 </div>

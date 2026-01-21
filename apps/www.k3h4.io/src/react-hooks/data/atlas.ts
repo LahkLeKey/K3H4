@@ -343,13 +343,13 @@ export const atlasContexts: AtlasContext[] = [
         ],
         actions: [
             { label: "Approve bundle", description: "Validate agency persona kit for new assignments.", tag: "review", cta: "Approve" },
-            { label: "Sync credits", description: "Share persona scoring back to staffing cockpit.", tag: "sync" },
+            { label: "Sync credits", description: "Share persona scoring back to staffing", tag: "sync" },
             { label: "Tighten policy", description: "Require consent token for cross-agency sharing.", tag: "policy" },
         ],
         timeline: [
             { at: "14:14", title: "Persona minted", detail: "Fabricated avatar linked to agency pod.", tone: "positive" },
             { at: "13:46", title: "Similarity drift", detail: "Jaccard score dipped below threshold.", tone: "warn" },
-            { at: "13:10", title: "Credit sync", detail: "Staffing cockpit pulled latest scores.", tone: "info" },
+            { at: "13:10", title: "Credit sync", detail: "Staffing pulled latest scores.", tone: "info" },
         ],
         streams: [
             { label: "Profiles", status: "steady", volume: "48", window: "live", accent: "#a78bfa" },

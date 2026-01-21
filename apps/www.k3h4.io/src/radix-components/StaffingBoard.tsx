@@ -35,7 +35,7 @@ export function StaffingBoard() {
                 <StatChip label="Fill rate" value={`${metrics?.fillRate ?? 0}%`} accent="#67e8f9" />
             </div>
 
-            <Card eyebrow="Engagements" title="Cockpit" actions={<Badge accent="#60a5fa">Live</Badge>}>
+            <Card eyebrow="Engagements" title="Engagements" actions={<Badge accent="#60a5fa">Live</Badge>}>
                 {engagements.length === 0 ? (
                     <div className="space-y-1 rounded-2xl border border-white/5 bg-white/5 p-4 text-sm text-slate-200">
                         <div className="font-semibold">{session ? "No engagements yet" : "Sign in to view staffing"}</div>
