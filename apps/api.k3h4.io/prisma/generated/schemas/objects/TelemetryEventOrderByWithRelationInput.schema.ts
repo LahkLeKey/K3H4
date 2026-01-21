@@ -12,6 +12,7 @@ const makeSchema = () => z.object({
   source: SortOrderSchema.optional(),
   path: z.union([SortOrderSchema, z.lazy(() => SortOrderInputObjectSchema)]).optional(),
   payload: z.union([SortOrderSchema, z.lazy(() => SortOrderInputObjectSchema)]).optional(),
+  durationMs: z.union([SortOrderSchema, z.lazy(() => SortOrderInputObjectSchema)]).optional(),
   createdAt: SortOrderSchema.optional(),
   user: z.lazy(() => UserOrderByWithRelationInputObjectSchema).optional()
 }).strict();

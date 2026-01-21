@@ -8,5 +8,6 @@ export const TelemetryEventCreateResultSchema = z.object({
   source: z.string(),
   path: z.string().optional(),
   payload: z.unknown().optional(),
+  durationMs: z.number().int().optional(),
   createdAt: z.date()
 });
