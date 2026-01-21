@@ -347,6 +347,57 @@ server.post("/telemetry", async (request, reply) => {
   return { ok: true, recorded: normalizedEvents.length };
 });
 
+// Telemetry query endpoint with lightweight filters
+server.get("/telemetry", async (request, reply) => {
+  const query = request.query as {
+    eventType?: string | string[];
+    source?: string | string[];
+    sessionId?: string;
+    userId?: string;
+    since?: string;
+    limit?: string;
+  };
+
+  const limit = Math.min(500, Math.max(1, Number(query.limit ?? 200)));
+  const since = query.since ? new Date(query.since) : null;
+
+  const eventTypes = Array.isArray(query.eventType)
+    ? query.eventType.filter(Boolean)
+    : query.eventType?.split(",").map((s) => s.trim()).filter(Boolean);
+  const sources = Array.isArray(query.source)
+    ? query.source.filter(Boolean)
+    : query.source?.split(",").map((s) => s.trim()).filter(Boolean);
+
+  const where: any = {};
+  if (eventTypes?.length) where.eventType = { in: eventTypes };
+  if (sources?.length) where.source = { in: sources };
+  if (query.sessionId) where.sessionId = query.sessionId;
+  if (query.userId) where.userId = query.userId;
+  if (since && !Number.isNaN(since.getTime())) where.createdAt = { gte: since };
+
+  const events = await prisma.telemetryEvent.findMany({
+    where,
+    orderBy: { createdAt: "desc" },
+    take: limit,
+  });
+
+  const summary = {
+    total: events.length,
+    byEventType: events.reduce<Record<string, number>>((acc, evt) => {
+      acc[evt.eventType] = (acc[evt.eventType] ?? 0) + 1;
+      return acc;
+    }, {}),
+    bySource: events.reduce<Record<string, number>>((acc, evt) => {
+      acc[evt.source] = (acc[evt.source] ?? 0) + 1;
+      return acc;
+    }, {}),
+    newestTs: events[0]?.createdAt ?? null,
+    oldestTs: events[events.length - 1]?.createdAt ?? null,
+  };
+
+  return { events, summary };
+});
+
 await registerAllRoutes(server, prisma, recordTelemetry);
 
 server.addHook("onClose", async () => {
