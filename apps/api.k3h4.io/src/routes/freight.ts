@@ -1,5 +1,6 @@
 import { Prisma, type PrismaClient } from "@prisma/client";
 import { type FastifyInstance } from "fastify";
+import { buildTelemetryBase } from "./telemetry";
 import { type RecordTelemetryFn } from "./types";
 
 const OSRM_BASE = process.env.OSRM_URL || "https://router.project-osrm.org";
@@ -35,7 +36,12 @@ export function registerFreightRoutes(server: FastifyInstance, prisma: PrismaCli
     async (request) => {
       const userId = (request.user as { sub: string }).sub;
       const loads = await prisma.freightLoad.findMany({ where: { userId }, orderBy: { createdAt: "desc" } });
-      await recordTelemetry(request, { eventType: "freight.list", source: "api", payload: { count: loads.length } });
+      await recordTelemetry(request, {
+        ...buildTelemetryBase(request),
+        eventType: "freight.list",
+        source: "api",
+        payload: { count: loads.length },
+      });
       return { loads: loads.map(serializeLoad) };
     },
   );
@@ -92,6 +98,7 @@ export function registerFreightRoutes(server: FastifyInstance, prisma: PrismaCli
       });
 
       await recordTelemetry(request, {
+        ...buildTelemetryBase(request),
         eventType: "freight.create",
         source: "api",
         payload: { distanceKm: distance, cost: cost.toFixed(2) },
@@ -136,6 +143,7 @@ export function registerFreightRoutes(server: FastifyInstance, prisma: PrismaCli
         });
 
         await recordTelemetry(request, {
+          ...buildTelemetryBase(request),
           eventType: "freight.complete",
           source: "api",
           payload: { id, cost: load.cost.toFixed(2) },

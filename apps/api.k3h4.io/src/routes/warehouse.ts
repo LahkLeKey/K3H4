@@ -1,5 +1,6 @@
 import { Prisma, type PrismaClient } from "@prisma/client";
 import { type FastifyInstance } from "fastify";
+import { buildTelemetryBase } from "./telemetry";
 import { type RecordTelemetryFn } from "./types";
 
 const serializeItem = (item: any) => ({
@@ -14,7 +15,12 @@ export function registerWarehouseRoutes(server: FastifyInstance, prisma: PrismaC
     async (request) => {
       const userId = (request.user as { sub: string }).sub;
       const items = await prisma.warehouseItem.findMany({ where: { userId }, orderBy: { createdAt: "desc" } });
-      await recordTelemetry(request, { eventType: "warehouse.list", source: "api", payload: { count: items.length } });
+      await recordTelemetry(request, {
+        ...buildTelemetryBase(request),
+        eventType: "warehouse.list",
+        source: "api",
+        payload: { count: items.length },
+      });
       return { items: items.map(serializeItem) };
     },
   );
@@ -59,7 +65,12 @@ export function registerWarehouseRoutes(server: FastifyInstance, prisma: PrismaC
         },
       });
 
-      await recordTelemetry(request, { eventType: "warehouse.create", source: "api", payload: { sku: body.sku, freightLoadId } });
+      await recordTelemetry(request, {
+        ...buildTelemetryBase(request),
+        eventType: "warehouse.create",
+        source: "api",
+        payload: { sku: body.sku, freightLoadId },
+      });
       return { item: serializeItem(item) };
     },
   );
@@ -103,7 +114,12 @@ export function registerWarehouseRoutes(server: FastifyInstance, prisma: PrismaC
         },
       });
 
-      await recordTelemetry(request, { eventType: "warehouse.update", source: "api", payload: { id, freightLoadId: updated.freightLoadId } });
+      await recordTelemetry(request, {
+        ...buildTelemetryBase(request),
+        eventType: "warehouse.update",
+        source: "api",
+        payload: { id, freightLoadId: updated.freightLoadId },
+      });
       return { item: serializeItem(updated) };
     },
   );

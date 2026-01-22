@@ -1,5 +1,6 @@
 import { Prisma, PrismaClient } from "@prisma/client";
 import { type FastifyInstance } from "fastify";
+import { buildTelemetryBase } from "./telemetry";
 import { type RecordTelemetryFn } from "./types";
 
 const userProfileSelect = {
@@ -47,7 +48,12 @@ export function registerProfileRoutes(server: FastifyInstance, prisma: PrismaCli
 
       const profile = await prisma.user.findUnique({ where: { id: userId }, select: userProfileSelect });
       if (!profile) return reply.status(404).send({ error: "User not found" });
-      await recordTelemetry(request, { eventType: "profile.fetch", source: "api" });
+      await recordTelemetry(request, {
+        ...buildTelemetryBase(request),
+        eventType: "profile.fetch",
+        source: "api",
+        payload: { hasProfile: Boolean(profile) },
+      });
       return { profile: serializeProfile(profile) };
     },
   );
@@ -84,6 +90,7 @@ export function registerProfileRoutes(server: FastifyInstance, prisma: PrismaCli
 
       const profile = await prisma.user.findUnique({ where: { id: userId }, select: userProfileSelect });
       await recordTelemetry(request, {
+        ...buildTelemetryBase(request),
         eventType: "profile.update",
         source: "api",
         payload: {

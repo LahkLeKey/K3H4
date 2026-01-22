@@ -3,6 +3,7 @@ import { Prisma, type PrismaClient } from "@prisma/client";
 import { type FastifyInstance, type FastifyReply, type FastifyRequest } from "fastify";
 import { enqueueOverpass } from "../lib/overpass-queue";
 import { enrichPoi } from "../modules/poi-enrich/enrich";
+import { buildTelemetryBase } from "./telemetry";
 import { type RecordTelemetryFn } from "./types";
 
 type Bbox = { minLat: number; minLng: number; maxLat: number; maxLng: number };
@@ -314,6 +315,7 @@ export function registerPoiRoutes(server: FastifyInstance, prisma: PrismaClient,
     }
 
     await recordTelemetry(request, {
+      ...buildTelemetryBase(request),
       eventType: "poi.list",
       source: "api",
       payload: { zoom, total, returned: items.length, clustered },
@@ -435,6 +437,7 @@ export function registerPoiRoutes(server: FastifyInstance, prisma: PrismaClient,
       }
 
       await recordTelemetry(request, {
+        ...buildTelemetryBase(request),
         eventType: "poi.sync",
         source: "api",
         payload: {
@@ -588,7 +591,12 @@ export function registerPoiRoutes(server: FastifyInstance, prisma: PrismaClient,
         }),
       );
 
-      await recordTelemetry(request, { eventType: "poi.batch", source: "api", payload: { count: ids.length, include: includeHash } });
+      await recordTelemetry(request, {
+        ...buildTelemetryBase(request),
+        eventType: "poi.batch",
+        source: "api",
+        payload: { count: ids.length, include: includeHash },
+      });
       return { items: results };
     },
   );

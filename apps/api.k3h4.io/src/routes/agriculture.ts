@@ -1,5 +1,6 @@
 import { Prisma, type PrismaClient } from "@prisma/client";
 import { type FastifyInstance } from "fastify";
+import { buildTelemetryBase } from "./telemetry";
 import { type RecordTelemetryFn } from "./types";
 
 const decimalToString = (value: Prisma.Decimal | null | undefined) => {
@@ -165,7 +166,12 @@ export function registerAgricultureRoutes(server: FastifyInstance, prisma: Prism
         acc[row.sku.toLowerCase()] = row._sum.totalQuantity instanceof Prisma.Decimal ? row._sum.totalQuantity.toFixed(2) : "0.00";
         return acc;
       }, {} as Record<string, string>);
-      await recordTelemetry(request, { eventType: "agriculture.overview.fetch", source: "api", payload: {} });
+      await recordTelemetry(request, {
+        ...buildTelemetryBase(request),
+        eventType: "agriculture.overview.fetch",
+        source: "api",
+        payload: {},
+      });
       return {
         plots: plots.length,
         tasks: tasks.length,
@@ -194,6 +200,7 @@ export function registerAgricultureRoutes(server: FastifyInstance, prisma: Prism
         include: { plot: { select: { id: true, name: true, crop: true, stage: true } } },
       });
       await recordTelemetry(request, {
+        ...buildTelemetryBase(request),
         eventType: "agriculture.slots.list",
         source: "api",
         payload: { count: slots.length },
@@ -225,6 +232,7 @@ export function registerAgricultureRoutes(server: FastifyInstance, prisma: Prism
       });
 
       await recordTelemetry(request, {
+        ...buildTelemetryBase(request),
         eventType: "agriculture.slot.unlock",
         source: "api",
         payload: { slotIndex, costPaid: costPaid instanceof Prisma.Decimal ? costPaid.toString() : `${costPaid}` },
@@ -261,6 +269,7 @@ export function registerAgricultureRoutes(server: FastifyInstance, prisma: Prism
       });
 
       await recordTelemetry(request, {
+        ...buildTelemetryBase(request),
         eventType: "agriculture.slot.update",
         source: "api",
         payload: { slotId, plotId: nextPlotId },
@@ -298,7 +307,12 @@ export function registerAgricultureRoutes(server: FastifyInstance, prisma: Prism
           slots: true,
         },
       });
-      await recordTelemetry(request, { eventType: "agriculture.plots.list", source: "api", payload: { count: plots.length } });
+      await recordTelemetry(request, {
+        ...buildTelemetryBase(request),
+        eventType: "agriculture.plots.list",
+        source: "api",
+        payload: { count: plots.length },
+      });
       return { plots: plots.map(serializePlot) };
     },
   );
@@ -333,7 +347,12 @@ export function registerAgricultureRoutes(server: FastifyInstance, prisma: Prism
 
         return createdPlot;
       });
-      await recordTelemetry(request, { eventType: "agriculture.plot.create", source: "api", payload: { plotId: plot.id } });
+      await recordTelemetry(request, {
+        ...buildTelemetryBase(request),
+        eventType: "agriculture.plot.create",
+        source: "api",
+        payload: { plotId: plot.id },
+      });
       return { id: plot.id };
     },
   );
@@ -371,7 +390,12 @@ export function registerAgricultureRoutes(server: FastifyInstance, prisma: Prism
         return condition;
       });
 
-      await recordTelemetry(request, { eventType: "agriculture.plot.condition", source: "api", payload: { plotId } });
+      await recordTelemetry(request, {
+        ...buildTelemetryBase(request),
+        eventType: "agriculture.plot.condition",
+        source: "api",
+        payload: { plotId },
+      });
       return {
         id: created.id,
         recordedAt: created.recordedAt.toISOString(),
@@ -393,7 +417,12 @@ export function registerAgricultureRoutes(server: FastifyInstance, prisma: Prism
         orderBy: { createdAt: "desc" },
         include: { tasks: { orderBy: { dueDate: "asc" } } },
       });
-      await recordTelemetry(request, { eventType: "agriculture.plans.list", source: "api", payload: { count: plans.length } });
+      await recordTelemetry(request, {
+        ...buildTelemetryBase(request),
+        eventType: "agriculture.plans.list",
+        source: "api",
+        payload: { count: plans.length },
+      });
       return { plans: plans.map(serializePlan) };
     },
   );
@@ -440,7 +469,12 @@ export function registerAgricultureRoutes(server: FastifyInstance, prisma: Prism
         },
       });
 
-      await recordTelemetry(request, { eventType: "agriculture.plan.create", source: "api", payload: { planId: plan.id } });
+      await recordTelemetry(request, {
+        ...buildTelemetryBase(request),
+        eventType: "agriculture.plan.create",
+        source: "api",
+        payload: { planId: plan.id },
+      });
       return serializePlan({ ...plan, tasks: [] });
     },
   );
@@ -454,7 +488,12 @@ export function registerAgricultureRoutes(server: FastifyInstance, prisma: Prism
       const where: Prisma.AgricultureTaskWhereInput = { userId };
       if (query.status) where.status = query.status;
       const tasks = await prisma.agricultureTask.findMany({ where, orderBy: { priority: "asc" } });
-      await recordTelemetry(request, { eventType: "agriculture.tasks.list", source: "api", payload: { count: tasks.length } });
+      await recordTelemetry(request, {
+        ...buildTelemetryBase(request),
+        eventType: "agriculture.tasks.list",
+        source: "api",
+        payload: { count: tasks.length },
+      });
       return { tasks: tasks.map(serializeTask) };
     },
   );
@@ -497,7 +536,12 @@ export function registerAgricultureRoutes(server: FastifyInstance, prisma: Prism
         },
       });
 
-      await recordTelemetry(request, { eventType: "agriculture.task.create", source: "api", payload: { taskId: task.id } });
+      await recordTelemetry(request, {
+        ...buildTelemetryBase(request),
+        eventType: "agriculture.task.create",
+        source: "api",
+        payload: { taskId: task.id },
+      });
       return serializeTask(task);
     },
   );
@@ -536,7 +580,12 @@ export function registerAgricultureRoutes(server: FastifyInstance, prisma: Prism
       if (body?.tags !== undefined) updates.tags = body.tags ?? null;
 
       const updated = await prisma.agricultureTask.update({ where: { id: taskId }, data: updates });
-      await recordTelemetry(request, { eventType: "agriculture.task.update", source: "api", payload: { taskId } });
+      await recordTelemetry(request, {
+        ...buildTelemetryBase(request),
+        eventType: "agriculture.task.update",
+        source: "api",
+        payload: { taskId },
+      });
       return serializeTask(updated);
     },
   );
@@ -550,7 +599,12 @@ export function registerAgricultureRoutes(server: FastifyInstance, prisma: Prism
         where: { userId },
         include: { movements: { orderBy: { createdAt: "desc" }, take: 5 } },
       });
-      await recordTelemetry(request, { eventType: "agriculture.inventory.list", source: "api", payload: { count: inventory.length } });
+      await recordTelemetry(request, {
+        ...buildTelemetryBase(request),
+        eventType: "agriculture.inventory.list",
+        source: "api",
+        payload: { count: inventory.length },
+      });
       return { inventory: inventory.map(serializeInventory) };
     },
   );
@@ -582,7 +636,12 @@ export function registerAgricultureRoutes(server: FastifyInstance, prisma: Prism
         },
       });
 
-      await recordTelemetry(request, { eventType: "agriculture.inventory.create", source: "api", payload: { sku: item.sku } });
+      await recordTelemetry(request, {
+        ...buildTelemetryBase(request),
+        eventType: "agriculture.inventory.create",
+        source: "api",
+        payload: { sku: item.sku },
+      });
       return serializeInventory({ ...item, movements: [] });
     },
   );
@@ -631,6 +690,7 @@ export function registerAgricultureRoutes(server: FastifyInstance, prisma: Prism
       });
 
       await recordTelemetry(request, {
+        ...buildTelemetryBase(request),
         eventType: "agriculture.inventory.movement",
         source: "api",
         payload: { inventoryId: inventory.id, movementId: movement.id },
@@ -667,7 +727,12 @@ export function registerAgricultureRoutes(server: FastifyInstance, prisma: Prism
         },
       });
 
-      await recordTelemetry(request, { eventType: "agriculture.shipment.create", source: "api", payload: { shipmentId: shipment.id } });
+      await recordTelemetry(request, {
+        ...buildTelemetryBase(request),
+        eventType: "agriculture.shipment.create",
+        source: "api",
+        payload: { shipmentId: shipment.id },
+      });
       return { id: shipment.id };
     },
   );
@@ -680,7 +745,12 @@ export function registerAgricultureRoutes(server: FastifyInstance, prisma: Prism
         orderBy: { title: "asc" },
         include: { resources: { orderBy: { title: "asc" } } },
       });
-      await recordTelemetry(request, { eventType: "agriculture.resources.fetch", source: "api", payload: { count: categories.length } });
+      await recordTelemetry(request, {
+        ...buildTelemetryBase(request),
+        eventType: "agriculture.resources.fetch",
+        source: "api",
+        payload: { count: categories.length },
+      });
       return { categories: categories.map(serializeResourceCategory) };
     },
   );
@@ -715,7 +785,12 @@ export function registerAgricultureRoutes(server: FastifyInstance, prisma: Prism
         return acc;
       }, {} as Record<string, number>);
 
-      await recordTelemetry(request, { eventType: "agriculture.analytics.fetch", source: "api", payload: {} });
+      await recordTelemetry(request, {
+        ...buildTelemetryBase(request),
+        eventType: "agriculture.analytics.fetch",
+        source: "api",
+        payload: {},
+      });
       return {
         totalPlots,
         planPhaseCounts: phases,

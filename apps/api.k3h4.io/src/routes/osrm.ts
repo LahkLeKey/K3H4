@@ -1,6 +1,7 @@
 import { PrismaClient } from "@prisma/client";
 import { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import { fetchOsrmWithCache } from "../services/osrm-cache";
+import { buildTelemetryBase } from "./telemetry";
 import { type RecordTelemetryFn } from "./types";
 
 const DEFAULT_MAX_AGE_MINUTES = 60 * 6; // 6 hours
@@ -57,6 +58,7 @@ export function registerOsrmRoutes(server: FastifyInstance, prisma: PrismaClient
     );
 
     await recordTelemetry(request, {
+      ...buildTelemetryBase(request),
       eventType: `osrm.${service}.${cached ? "cached" : "fetched"}`,
       source: "api",
       payload: { profile, coordinates, cached },

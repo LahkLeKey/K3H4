@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import Fastify from "fastify";
 import { registerUsdaRoutes } from "../usda";
 import * as cache from "../../services/usda-cache";
+import { type RecordTelemetryFn } from "../types";
 
 vi.mock("../../services/usda-cache", () => {
   return {
@@ -9,7 +10,7 @@ vi.mock("../../services/usda-cache", () => {
   };
 });
 
-const recordTelemetry = vi.fn();
+const recordTelemetry = vi.fn() as unknown as RecordTelemetryFn;
 const userId = "user-1";
 
 const buildServer = () => {

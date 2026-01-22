@@ -1,6 +1,7 @@
 import { faker } from "@faker-js/faker";
 import { type Prisma, type PrismaClient } from "@prisma/client";
 import { type FastifyInstance } from "fastify";
+import { buildTelemetryBase } from "./telemetry";
 import { type RecordTelemetryFn } from "./types";
 import { runOnnxCompatibility, type CompatFeatureVector } from "../lib/compat-onnx";
 
@@ -242,6 +243,7 @@ export function registerPersonaRoutes(server: FastifyInstance, prisma: PrismaCli
           personas = await prisma.persona.findMany({ where: { userId }, orderBy: { createdAt: "desc" }, include: { attributes: true } });
         }
         await recordTelemetry(request, {
+          ...buildTelemetryBase(request),
           eventType: "persona.seed",
           source: "api",
           payload: { count: seedPayload.length },
@@ -249,6 +251,7 @@ export function registerPersonaRoutes(server: FastifyInstance, prisma: PrismaCli
       }
 
       await recordTelemetry(request, {
+        ...buildTelemetryBase(request),
         eventType: "persona.list",
         source: "api",
         payload: { count: personas.length },
@@ -304,6 +307,7 @@ export function registerPersonaRoutes(server: FastifyInstance, prisma: PrismaCli
       }
 
       await recordTelemetry(request, {
+        ...buildTelemetryBase(request),
         eventType: "persona.create",
         source: "api",
         payload: { hasTags: Array.isArray(body?.tags) && body?.tags.length > 0 },
@@ -337,6 +341,7 @@ export function registerPersonaRoutes(server: FastifyInstance, prisma: PrismaCli
       }
 
       await recordTelemetry(request, {
+        ...buildTelemetryBase(request),
         eventType: "persona.generate",
         source: "api",
         payload: { count },
@@ -383,6 +388,7 @@ export function registerPersonaRoutes(server: FastifyInstance, prisma: PrismaCli
       const updated = await prisma.persona.findUnique({ where: { id: personaId }, include: { attributes: true } });
 
       await recordTelemetry(request, {
+        ...buildTelemetryBase(request),
         eventType: "persona.attributes.update",
         source: "api",
         payload: { count: attributes.length },
@@ -421,6 +427,7 @@ export function registerPersonaRoutes(server: FastifyInstance, prisma: PrismaCli
       });
 
       await recordTelemetry(request, {
+        ...buildTelemetryBase(request),
         eventType: "persona.compatibility.recompute",
         source: "api",
         payload: { count: compatibilities.length },
@@ -447,6 +454,7 @@ export function registerPersonaRoutes(server: FastifyInstance, prisma: PrismaCli
       });
 
       await recordTelemetry(request, {
+        ...buildTelemetryBase(request),
         eventType: "persona.compatibility.list",
         source: "api",
         payload: { count: compatibilities.length },
@@ -479,6 +487,7 @@ export function registerPersonaRoutes(server: FastifyInstance, prisma: PrismaCli
       const f1 = precision + recall === 0 ? 0 : (2 * precision * recall) / (precision + recall);
 
       await recordTelemetry(request, {
+        ...buildTelemetryBase(request),
         eventType: "persona.compatibility.confusion",
         source: "api",
         payload: { evaluated: details.length, missing, threshold },

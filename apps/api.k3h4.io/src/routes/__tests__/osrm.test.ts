@@ -2,13 +2,14 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import Fastify from "fastify";
 import { registerOsrmRoutes } from "../osrm";
 import * as cache from "../../services/osrm-cache";
+import { type RecordTelemetryFn } from "../types";
 
 vi.mock("../../services/osrm-cache", () => ({
   fetchOsrmWithCache: vi.fn(),
 }));
 
 const fetchOsrmWithCache = cache.fetchOsrmWithCache as unknown as ReturnType<typeof vi.fn>;
-const recordTelemetry = vi.fn();
+const recordTelemetry = vi.fn() as unknown as RecordTelemetryFn;
 const userId = "user-1";
 
 const buildServer = () => {

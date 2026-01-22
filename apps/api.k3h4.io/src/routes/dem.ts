@@ -1,6 +1,7 @@
 import { Prisma, type PrismaClient } from "@prisma/client";
 import { type FastifyInstance } from "fastify";
 import { cleanupDemCache, DEM_TTL_MS, demSignature, TERRAIN_PROVIDER } from "../services/geo-dem-cache";
+import { buildTelemetryBase } from "./telemetry";
 import { type RecordTelemetryFn } from "./types";
 
 const DEM_TILE_MAX_BYTES = Number(process.env.DEM_TILE_MAX_BYTES ?? 5_000_000); // 5 MB safety guard
@@ -73,7 +74,12 @@ export function registerDemRoutes(server: FastifyInstance, prisma: PrismaClient,
         reply.header("Cache-Control", cached.cacheControl ?? `public, max-age=${Math.floor(DEM_TTL_MS / 1000)}`);
         if (cached.etag) reply.header("ETag", cached.etag);
         reply.header("X-Cache", "HIT");
-        await recordTelemetry(request, { eventType: "geo.dem.cached", source: "api", payload: { signature, provider } });
+        await recordTelemetry(request, {
+          ...buildTelemetryBase(request),
+          eventType: "geo.dem.cached",
+          source: "api",
+          payload: { signature, provider },
+        });
         return reply.send(Buffer.from(cached.data));
       }
 
@@ -147,7 +153,12 @@ export function registerDemRoutes(server: FastifyInstance, prisma: PrismaClient,
       });
 
       void cleanupDemCache(prisma, server.log).catch((err) => server.log.error({ err }, "dem cache cleanup post-write failed"));
-      await recordTelemetry(request, { eventType: "geo.dem.fetched", source: "api", payload: { signature, provider } });
+      await recordTelemetry(request, {
+        ...buildTelemetryBase(request),
+        eventType: "geo.dem.fetched",
+        source: "api",
+        payload: { signature, provider },
+      });
 
       reply.header("Content-Type", `image/${fmt}`);
       reply.header("Cache-Control", cacheControl);

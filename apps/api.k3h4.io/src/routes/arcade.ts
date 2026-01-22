@@ -1,5 +1,6 @@
 import { Prisma, type PrismaClient } from "@prisma/client";
 import { type FastifyInstance } from "fastify";
+import { buildTelemetryBase } from "./telemetry";
 import { type RecordTelemetryFn } from "./types";
 
 const serializeDecimal = (val: Prisma.Decimal | number | null | undefined) => {
@@ -24,6 +25,7 @@ export function registerArcadeRoutes(server: FastifyInstance, prisma: PrismaClie
       ]);
 
       await recordTelemetry(request, {
+        ...buildTelemetryBase(request),
         eventType: "arcade.overview.fetch",
         source: "api",
         payload: {
@@ -62,7 +64,12 @@ export function registerArcadeRoutes(server: FastifyInstance, prisma: PrismaClie
           balance: new Prisma.Decimal(0),
         },
       });
-      await recordTelemetry(request, { eventType: "arcade.card.create", source: "api", payload: { label: card.label ?? "" } });
+      await recordTelemetry(request, {
+        ...buildTelemetryBase(request),
+        eventType: "arcade.card.create",
+        source: "api",
+        payload: { label: card.label ?? "" },
+      });
       return { card: { ...card, balance: serializeDecimal(card.balance) } };
     },
   );
@@ -115,7 +122,12 @@ export function registerArcadeRoutes(server: FastifyInstance, prisma: PrismaClie
           return { card: updatedCard, nextBalance: nextCardBalance };
         });
 
-        await recordTelemetry(request, { eventType: "arcade.card.topup", source: "api", payload: { cardId: id, amount: amount.toFixed(2) } });
+        await recordTelemetry(request, {
+          ...buildTelemetryBase(request),
+          eventType: "arcade.card.topup",
+          source: "api",
+          payload: { cardId: id, amount: amount.toFixed(2) },
+        });
         return { card: { ...card, balance: serializeDecimal(nextBalance) } };
       } catch (err) {
         request.log.error({ err }, "arcade top-up failed");
@@ -140,7 +152,12 @@ export function registerArcadeRoutes(server: FastifyInstance, prisma: PrismaClie
           stock: Number.isFinite(body.stock) ? Math.max(0, Math.floor(Number(body.stock))) : 0,
         },
       });
-      await recordTelemetry(request, { eventType: "arcade.prize.create", source: "api", payload: { name: prize.name, stock: prize.stock } });
+      await recordTelemetry(request, {
+        ...buildTelemetryBase(request),
+        eventType: "arcade.prize.create",
+        source: "api",
+        payload: { name: prize.name, stock: prize.stock },
+      });
       return { prize };
     },
   );
@@ -179,6 +196,7 @@ export function registerArcadeRoutes(server: FastifyInstance, prisma: PrismaClie
         });
 
         await recordTelemetry(request, {
+          ...buildTelemetryBase(request),
           eventType: "arcade.session.start",
           source: "api",
           payload: { machineId: body.machineId, credits: credits.toFixed(2) },
@@ -229,6 +247,7 @@ export function registerArcadeRoutes(server: FastifyInstance, prisma: PrismaClie
         });
 
         await recordTelemetry(request, {
+          ...buildTelemetryBase(request),
           eventType: "arcade.prize.redeem",
           source: "api",
           payload: { prizeId, cardId: body.cardId },

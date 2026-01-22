@@ -2,8 +2,9 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import Fastify from "fastify";
 import { Prisma } from "@prisma/client";
 import { registerPosRoutes } from "../pos";
+import { type RecordTelemetryFn } from "../types";
 
-const recordTelemetry = vi.fn();
+const recordTelemetry = vi.fn() as unknown as RecordTelemetryFn;
 const userId = "user-1";
 
 function buildServer(mocks: any) {

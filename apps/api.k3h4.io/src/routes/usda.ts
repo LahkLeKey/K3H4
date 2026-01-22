@@ -3,6 +3,7 @@ import { type FastifyInstance, type FastifyReply } from "fastify";
 import { createTelemetryTimer } from "../lib/telemetry-timer";
 import { fetchAndCache } from "../services/usda-cache";
 import { fetchWikidataWithCache } from "../services/wikidata-cache";
+import { buildTelemetryBase } from "./telemetry";
 import { type RecordTelemetryFn } from "./types";
 
 const DEFAULT_MAX_AGE_MINUTES = 60;

@@ -2,6 +2,7 @@ import { Prisma, PrismaClient } from "@prisma/client";
 import { type FastifyInstance } from "fastify";
 import { randomBytes } from "node:crypto";
 import { URLSearchParams } from "node:url";
+import { buildTelemetryBase } from "./telemetry";
 import { type RecordTelemetryFn } from "./types";
 
 const ACCOUNT_DELETE_PHRASE = "Delete-My-K3H4-Data";
@@ -103,6 +104,7 @@ const runDeleteJob = async (prisma: PrismaClient, jobId: string, userId: string,
     updateStatus({ status: "done", progress: 100, message: "Deletion complete", counts });
 
     await recordTelemetry(request, {
+      ...buildTelemetryBase(request),
       eventType: "auth.delete.completed",
       source: "api",
       payload: { userId, counts },
@@ -110,6 +112,7 @@ const runDeleteJob = async (prisma: PrismaClient, jobId: string, userId: string,
   } catch (err) {
     updateStatus({ status: "error", progress: 100, message: err instanceof Error ? err.message : "unknown" });
     await recordTelemetry(request, {
+      ...buildTelemetryBase(request),
       eventType: "auth.delete.error",
       source: "api",
       payload: { message: err instanceof Error ? err.message : "unknown" },
@@ -146,6 +149,7 @@ export function registerAuthRoutes(server: FastifyInstance, prisma: PrismaClient
       const tokenData = (await tokenRes.json()) as { access_token?: string; error?: string; error_description?: string };
       if (!tokenRes.ok || !tokenData.access_token) {
         await recordTelemetry(request, {
+          ...buildTelemetryBase(request),
           eventType: "auth.github.callback.failed",
           source: "api",
           payload: { code: body.code, detail: tokenData.error_description ?? tokenData.error ?? null },
@@ -168,6 +172,7 @@ export function registerAuthRoutes(server: FastifyInstance, prisma: PrismaClient
       const ghUser = (await userRes.json()) as { id?: number; login?: string; name?: string; avatar_url?: string; email?: string; message?: string };
       if (!userRes.ok || !ghUser.id) {
         await recordTelemetry(request, {
+          ...buildTelemetryBase(request),
           eventType: "auth.github.callback.failed",
           source: "api",
           payload: { code: body.code, detail: ghUser.message ?? null, status: userRes.status },
@@ -245,6 +250,7 @@ export function registerAuthRoutes(server: FastifyInstance, prisma: PrismaClient
       }
 
       await recordTelemetry(request, {
+        ...buildTelemetryBase(request),
         eventType: "auth.github.callback.success",
         source: "api",
         payload: { providerId, email: user.email, redirectUri: body.redirectUri },
@@ -254,6 +260,7 @@ export function registerAuthRoutes(server: FastifyInstance, prisma: PrismaClient
     } catch (err) {
       request.log.error({ err }, "github callback failed");
       await recordTelemetry(request, {
+        ...buildTelemetryBase(request),
         eventType: "auth.github.callback.error",
         source: "api",
         payload: { message: err instanceof Error ? err.message : "unknown" },
@@ -425,6 +432,7 @@ export function registerAuthRoutes(server: FastifyInstance, prisma: PrismaClient
         }
 
         await recordTelemetry(request, {
+          ...buildTelemetryBase(request),
           eventType: "auth.delete.requested",
           source: "api",
           payload: { confirmationMatched: body.confirmText === ACCOUNT_DELETE_PHRASE },
@@ -444,6 +452,7 @@ export function registerAuthRoutes(server: FastifyInstance, prisma: PrismaClient
       } catch (err) {
         request.log.error({ err }, "account delete failed");
         await recordTelemetry(request, {
+          ...buildTelemetryBase(request),
           eventType: "auth.delete.error",
           source: "api",
           payload: { message: err instanceof Error ? err.message : "unknown" },
@@ -543,6 +552,7 @@ export function registerAuthRoutes(server: FastifyInstance, prisma: PrismaClient
       await prisma.refreshToken.deleteMany({ where: { userId } });
 
       await recordTelemetry(request, {
+        ...buildTelemetryBase(request),
         eventType: "auth.signout",
         source: "api",
         payload: { userId },

@@ -1,6 +1,7 @@
 import { Prisma, type PrismaClient } from "@prisma/client";
 import { type FastifyInstance } from "fastify";
 import { enqueueOverpass } from "../lib/overpass-queue";
+import { buildTelemetryBase } from "./telemetry";
 import { type RecordTelemetryFn } from "./types";
 
 const OSRM_BASE = process.env.OSRM_URL || "https://router.project-osrm.org";
@@ -108,7 +109,12 @@ export function registerGeoRoutes(server: FastifyInstance, prisma: PrismaClient,
 
       const cached = await db.geoRouteCache.findFirst({ where: { signature, expiresAt: { gt: now } } });
       if (cached) {
-        await recordTelemetry(request, { eventType: "geo.route.cached", source: "api", payload: { signature } });
+        await recordTelemetry(request, {
+          ...buildTelemetryBase(request),
+          eventType: "geo.route.cached",
+          source: "api",
+          payload: { signature },
+        });
         return {
           distanceKm: Number(cached.distanceKm),
           durationMinutes: cached.durationMinutes,
@@ -143,7 +149,12 @@ export function registerGeoRoutes(server: FastifyInstance, prisma: PrismaClient,
           },
         });
 
-        await recordTelemetry(request, { eventType: "geo.route.fetched", source: "api", payload: { signature } });
+        await recordTelemetry(request, {
+          ...buildTelemetryBase(request),
+          eventType: "geo.route.fetched",
+          source: "api",
+          payload: { signature },
+        });
         return { ...osrm, cached: false };
       } catch (err) {
         return reply.status(502).send({ error: err instanceof Error ? err.message : "OSRM unavailable" });
@@ -193,7 +204,12 @@ export function registerGeoRoutes(server: FastifyInstance, prisma: PrismaClient,
           center: { lat, lng },
           poi: { signature, kinds, radiusM, count: cached.count, fetchedAt: expiresAt },
         });
-        await recordTelemetry(request, { eventType: "geo.poi.cached", source: "api", payload: { signature, count: cached.count } });
+        await recordTelemetry(request, {
+          ...buildTelemetryBase(request),
+          eventType: "geo.poi.cached",
+          source: "api",
+          payload: { signature, count: cached.count },
+        });
         return { pois: cached.pois, count: cached.count, cached: true };
       }
 
@@ -240,13 +256,23 @@ export function registerGeoRoutes(server: FastifyInstance, prisma: PrismaClient,
           poi: { signature, kinds, radiusM, count: pois.length, fetchedAt: expiresAt },
         });
 
-        await recordTelemetry(request, { eventType: "geo.poi.fetched", source: "api", payload: { signature, count: pois.length } });
+        await recordTelemetry(request, {
+          ...buildTelemetryBase(request),
+          eventType: "geo.poi.fetched",
+          source: "api",
+          payload: { signature, count: pois.length },
+        });
         return { pois, count: pois.length, cached: false };
       } catch (err) {
         // Fall back to the most recent cache (even if expired) so the UI degrades gracefully.
         const stale = await db.geoPoiCache.findFirst({ where: { signature }, orderBy: { expiresAt: "desc" } });
         if (stale) {
-          await recordTelemetry(request, { eventType: "geo.poi.stale", source: "api", payload: { signature, count: stale.count ?? 0 } });
+          await recordTelemetry(request, {
+            ...buildTelemetryBase(request),
+            eventType: "geo.poi.stale",
+            source: "api",
+            payload: { signature, count: stale.count ?? 0 },
+          });
           return { pois: stale.pois, count: stale.count, cached: true, stale: true };
         }
 
@@ -436,7 +462,16 @@ export function registerGeoRoutes(server: FastifyInstance, prisma: PrismaClient,
         });
       }
 
-      await recordTelemetry(request, { eventType: "geo.prefs.update", source: "api" });
+      await recordTelemetry(request, {
+        ...buildTelemetryBase(request),
+        eventType: "geo.prefs.update",
+        source: "api",
+        payload: {
+          hasCenter: centerLat !== undefined && centerLng !== undefined,
+          hasPoi: Boolean(poiSig),
+          hasView: zoom !== undefined || bearing !== undefined || pitch !== undefined,
+        },
+      });
       return { ok: true };
     },
   );
@@ -484,6 +519,7 @@ export function registerGeoRoutes(server: FastifyInstance, prisma: PrismaClient,
         });
 
         await recordTelemetry(request, {
+          ...buildTelemetryBase(request),
           eventType: "geo.status",
           source: "api",
           payload: {
