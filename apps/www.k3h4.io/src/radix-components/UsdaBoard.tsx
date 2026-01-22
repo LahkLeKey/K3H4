@@ -1,11 +1,9 @@
-import { useEffect, useMemo, useState } from "react";
-import { z } from "zod";
+import { useEffect, useState } from "react";
 
 import { Badge, Button, Grid, MetricTile, SectionHeader, Stack, Table } from "../components/ui";
 import { useAuthStore } from "../zustand-stores/auth";
 import { useUsdaState } from "../react-hooks/usda";
 import { TableCard } from "./TableCard";
-import { apiFetch } from "../react-hooks/lib/api-client";
 
 export function UsdaBoard() {
     const { session } = useAuthStore();
@@ -22,11 +20,7 @@ export function UsdaBoard() {
         error,
         fetchReference,
     } = useUsdaState();
-    const [wdQuery, setWdQuery] = useState("");
-    const [wdResults, setWdResults] = useState<Array<{ id: string; label: string; description?: string }>>([]);
-    const [wdStatus, setWdStatus] = useState<"idle" | "loading" | "error" | "ready">("idle");
-    const [wdError, setWdError] = useState<string | null>(null);
-    const [detail, setDetail] = useState<{ title: string; enrichment: any } | null>(null);
+    const [detail, setDetail] = useState<{ title: string; code?: string; wikidataId?: string; enrichment: any } | null>(null);
 
     useEffect(() => {
         if (session?.accessToken && status === "idle") fetchReference();
@@ -34,11 +28,20 @@ export function UsdaBoard() {
 
     const loading = status === "loading";
 
-    const defaultQuery = useMemo(() => {
-        const commodityName = (commodities as Array<{ name?: string }>)[0]?.name;
-        const countryName = (countries as Array<{ name?: string }>)[0]?.name;
-        return commodityName || countryName || "Wheat";
-    }, [commodities, countries]);
+    const pickCode = (item: any) =>
+        item?.code || item?.regionCode || item?.countryCode || item?.commodityCode || item?.unitCode || item?.attributeCode || item?.Code || item?.codeId || "-";
+
+    const pickName = (item: any) =>
+        item?.name ||
+        item?.regionName ||
+        item?.countryName ||
+        item?.commodityName ||
+        item?.unitName ||
+        item?.attributeName ||
+        item?.description ||
+        item?.label ||
+        item?.Name ||
+        "-";
 
     const hitRate = (arr: any[]) => {
         if (!arr.length) return "-";
@@ -47,47 +50,25 @@ export function UsdaBoard() {
         return `${pct}%`;
     };
 
-    const handleEnrich = async () => {
-        if (!session?.accessToken) return;
-        const query = (wdQuery || defaultQuery).trim();
-        if (!query) return;
-        setWdStatus("loading");
-        setWdError(null);
-        try {
-            const res = await apiFetch(`/wikidata/search/items?query=${encodeURIComponent(query)}`, {
-                token: session.accessToken,
-                baseUrl: useAuthStore.getState().apiBase,
-                schema: z.any(),
-            });
-            const itemsSource: any = (res as any)?.items ?? res;
-            const items = Array.isArray(itemsSource) ? itemsSource : [];
-            const normalized = items.map((item, idx) => ({
-                id: item.id || item.qid || item.wikidataId || `item-${idx}`,
-                label: item.label || item.name || item.title || "Item",
-                description: item.description || item.extract || "",
-            }));
-            setWdResults(normalized.slice(0, 10));
-            setWdStatus("ready");
-        } catch (err) {
-            const msg = err instanceof Error ? err.message : "Failed";
-            setWdError(msg);
-            setWdStatus("error");
-        }
-    };
-
     return (
         <Stack gap="lg">
             <SectionHeader
                 kicker="USDA"
                 title="Agricultural reference"
                 description="Live USDA regions, commodities, and enriched PSD units and attributes."
-                status={loading ? "Loading…" : error ? error : undefined}
+                status={loading ? "Backend enrichment in progress…" : error ? error : undefined}
                 actions={(
                     <Button accent="#7dd3fc" variant="outline" disabled={loading} onClick={() => fetchReference()}>
                         Refresh
                     </Button>
                 )}
             />
+
+            {loading ? (
+                <div className="rounded-xl border border-white/10 bg-slate-900/70 p-3 text-sm text-slate-200">
+                    USDA datasets are being hydrated and enriched on the backend. This may take a little while on first load; data appears automatically when ready.
+                </div>
+            ) : null}
 
             <Grid gap="md" smCols={3} lgCols={5}>
                 <MetricTile label="Regions" value={regions.length.toString()} hint="ESR" accent="#7dd3fc" />
@@ -104,16 +85,41 @@ export function UsdaBoard() {
             </div>
 
             <TableCard title="Regions" subtitle="Sample (first 10)" actions={<Badge accent="#7dd3fc">ESR</Badge>}>
-                <Table
-                    columns={[
-                        { key: "name", label: "Name" },
-                        { key: "code", label: "Code" },
-                    ]}
-                    rows={(regions as Array<{ name?: string; code?: string }>)
-                        .slice(0, 10)
-                        .map((r, idx) => ({ key: `r-${idx}`, name: (r as any)?.name || "Region", code: (r as any)?.code || "-" }))}
-                    rowKey={(row) => row.key}
-                />
+                {loading ? (
+                    <div className="rounded-lg border border-white/10 bg-slate-900/60 p-3 text-xs text-slate-200">Loading USDA regions…</div>
+                ) : (
+                    <Table
+                        columns={[
+                            { key: "name", label: "Name" },
+                            { key: "code", label: "Code" },
+                            { key: "action", label: "Details" },
+                        ]}
+                        rows={(regions as Array<{ name?: string; code?: string }>)
+                            .slice(0, 10)
+                            .map((r, idx) => ({
+                                key: `r-${idx}`,
+                                name: pickName(r),
+                                code: pickCode(r),
+                                action: (
+                                    <Button
+                                        accent="#7dd3fc"
+                                        variant="ghost"
+                                        onClick={() =>
+                                            setDetail({
+                                                title: pickName(r) || "Region",
+                                                code: pickCode(r),
+                                                wikidataId: (r as any)?.wikidataId,
+                                                enrichment: (r as any)?.enrichment,
+                                            })
+                                        }
+                                    >
+                                        View
+                                    </Button>
+                                ),
+                            }))}
+                        rowKey={(row) => row.key}
+                    />
+                )}
             </TableCard>
 
             <TableCard
@@ -121,37 +127,49 @@ export function UsdaBoard() {
                 subtitle="First 15 with enrichment coverage"
                 actions={<Badge accent="#fbbf24">PSD</Badge>}
             >
-                <Table
-                    columns={[
-                        { key: "name", label: "Name" },
-                        { key: "code", label: "Code" },
-                        { key: "wikidataId", label: "Wikidata" },
-                        { key: "statements", label: "Statements" },
-                        { key: "action", label: "Details" },
-                    ]}
-                    rows={(psdUnits as Array<any>).slice(0, 15).map((unit, idx) => {
-                        const statements = unit?.enrichment?.statements || unit?.enrichment?.hit?.statements;
-                        const statementKeys = statements ? Object.keys(statements) : [];
-                        return {
-                            key: `u-${idx}`,
-                            name: unit?.name || "Unit",
-                            code: unit?.code || unit?.unitCode || "-",
-                            wikidataId: unit?.wikidataId || "-",
-                            statements: statementKeys.length ? `${statementKeys.length} props` : "-",
-                            action: (
-                                <Button
-                                    accent="#fbbf24"
-                                    variant="ghost"
-                                    disabled={!unit?.enrichment}
-                                    onClick={() => setDetail({ title: unit?.name || unit?.code || "Unit", enrichment: unit?.enrichment })}
-                                >
-                                    View
-                                </Button>
-                            ),
-                        };
-                    })}
-                    rowKey={(row) => row.key}
-                />
+                {loading ? (
+                    <div className="rounded-lg border border-white/10 bg-slate-900/60 p-3 text-xs text-slate-200">Loading PSD units with enrichment…</div>
+                ) : (
+                    <Table
+                        columns={[
+                            { key: "name", label: "Name" },
+                            { key: "code", label: "Code" },
+                            { key: "wikidataId", label: "Wikidata" },
+                            { key: "statements", label: "Statements" },
+                            { key: "action", label: "Details" },
+                        ]}
+                        rows={(psdUnits as Array<any>).slice(0, 15).map((unit, idx) => {
+                            const statements = unit?.enrichment?.statements || unit?.enrichment?.hit?.statements;
+                            const statementKeys = statements ? Object.keys(statements) : [];
+                            const wikidataId = unit?.wikidataId || unit?.enrichment?.hit?.id || "-";
+                            return {
+                                key: `u-${idx}`,
+                                name: pickName(unit) || "Unit",
+                                code: pickCode(unit),
+                                wikidataId,
+                                statements: statementKeys.length ? `${statementKeys.length} props` : "-",
+                                action: (
+                                    <Button
+                                        accent="#fbbf24"
+                                        variant="ghost"
+                                        disabled={!unit?.enrichment}
+                                        onClick={() =>
+                                            setDetail({
+                                                title: pickName(unit) || "Unit",
+                                                code: pickCode(unit),
+                                                wikidataId,
+                                                enrichment: unit?.enrichment,
+                                            })
+                                        }
+                                    >
+                                        View
+                                    </Button>
+                                ),
+                            };
+                        })}
+                        rowKey={(row) => row.key}
+                    />
+                )}
             </TableCard>
 
             <TableCard
@@ -159,75 +177,70 @@ export function UsdaBoard() {
                 subtitle="First 15 with enrichment coverage"
                 actions={<Badge accent="#fb7185">PSD</Badge>}
             >
-                <Table
-                    columns={[
-                        { key: "name", label: "Name" },
-                        { key: "code", label: "Code" },
-                        { key: "wikidataId", label: "Wikidata" },
-                        { key: "statements", label: "Statements" },
-                        { key: "action", label: "Details" },
-                    ]}
-                    rows={(psdAttributes as Array<any>).slice(0, 15).map((attr, idx) => {
-                        const statements = attr?.enrichment?.statements || attr?.enrichment?.hit?.statements;
-                        const statementKeys = statements ? Object.keys(statements) : [];
-                        return {
-                            key: `a-${idx}`,
-                            name: attr?.name || "Attribute",
-                            code: attr?.code || attr?.attributeCode || "-",
-                            wikidataId: attr?.wikidataId || "-",
-                            statements: statementKeys.length ? `${statementKeys.length} props` : "-",
-                            action: (
-                                <Button
-                                    accent="#fb7185"
-                                    variant="ghost"
-                                    disabled={!attr?.enrichment}
-                                    onClick={() => setDetail({ title: attr?.name || attr?.code || "Attribute", enrichment: attr?.enrichment })}
-                                >
-                                    View
-                                </Button>
-                            ),
-                        };
-                    })}
-                    rowKey={(row) => row.key}
-                />
+                {loading ? (
+                    <div className="rounded-lg border border-white/10 bg-slate-900/60 p-3 text-xs text-slate-200">Loading PSD commodity attributes…</div>
+                ) : (
+                    <Table
+                        columns={[
+                            { key: "name", label: "Name" },
+                            { key: "code", label: "Code" },
+                            { key: "wikidataId", label: "Wikidata" },
+                            { key: "statements", label: "Statements" },
+                            { key: "action", label: "Details" },
+                        ]}
+                        rows={(psdAttributes as Array<any>).slice(0, 15).map((attr, idx) => {
+                            const statements = attr?.enrichment?.statements || attr?.enrichment?.hit?.statements;
+                            const statementKeys = statements ? Object.keys(statements) : [];
+                            const wikidataId = attr?.wikidataId || attr?.enrichment?.hit?.id || "-";
+                            return {
+                                key: `a-${idx}`,
+                                name: pickName(attr) || "Attribute",
+                                code: pickCode(attr),
+                                wikidataId,
+                                statements: statementKeys.length ? `${statementKeys.length} props` : "-",
+                                action: (
+                                    <Button
+                                        accent="#fb7185"
+                                        variant="ghost"
+                                        disabled={!attr?.enrichment}
+                                        onClick={() =>
+                                            setDetail({
+                                                title: pickName(attr) || "Attribute",
+                                                code: pickCode(attr),
+                                                wikidataId,
+                                                enrichment: attr?.enrichment,
+                                            })
+                                        }
+                                    >
+                                        View
+                                    </Button>
+                                ),
+                            };
+                        })}
+                        rowKey={(row) => row.key}
+                    />
+                )}
             </TableCard>
 
             <TableCard
-                title="Wikidata enrichment"
-                subtitle="Search by commodity or country"
-                actions={(
-                    <div className="flex flex-wrap items-center gap-2">
-                        <input
-                            className="w-48 rounded-lg border border-white/10 bg-slate-900/80 p-2 text-sm text-slate-100 focus:border-emerald-300/60 focus:outline-none"
-                            value={wdQuery}
-                            onChange={(e) => setWdQuery(e.target.value)}
-                            placeholder={defaultQuery}
-                        />
-                        <Button accent="#7dd3fc" onClick={handleEnrich} disabled={!session?.accessToken || wdStatus === "loading"}>
-                            Enrich
-                        </Button>
-                    </div>
-                )}
+                title="Enrichment"
+                subtitle="Backend-enriched Wikidata links populate automatically."
+                actions={<Badge accent="#7dd3fc">Auto</Badge>}
             >
-                {wdStatus === "idle" ? <div className="text-xs text-slate-300">Enter a commodity or country to enrich via Wikidata search.</div> : null}
-                {wdStatus === "loading" ? <div className="text-xs text-slate-300">Loading…</div> : null}
-                {wdError ? <div className="text-xs text-amber-300">{wdError}</div> : null}
-                {wdResults.length > 0 ? (
-                    <Table
-                        columns={[
-                            { key: "label", label: "Label" },
-                            { key: "description", label: "Description" },
-                        ]}
-                        rows={wdResults}
-                        rowKey={(row) => row.id}
-                    />
-                ) : null}
+                <div className="text-xs text-slate-300">
+                    USDA reference responses already include backend-enriched Wikidata IDs and statements where available. No manual action needed.
+                </div>
             </TableCard>
 
             {detail ? (
-                <div className="space-y-2 rounded-xl border border-white/10 bg-slate-900/70 p-4">
+                <div className="space-y-3 rounded-xl border border-white/10 bg-slate-900/70 p-4">
                     <div className="flex items-center justify-between">
-                        <div className="text-sm font-semibold text-white">{detail.title}</div>
+                        <div>
+                            <div className="text-sm font-semibold text-white">{detail.title}</div>
+                            <div className="text-xs text-slate-300">
+                                Code: {detail.code ?? "-"} • Wikidata: {detail.wikidataId ?? "-"}
+                            </div>
+                        </div>
                         <Button accent="#94a3b8" variant="ghost" onClick={() => setDetail(null)}>
                             Close
                         </Button>

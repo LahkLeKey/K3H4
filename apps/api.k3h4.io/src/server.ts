@@ -53,27 +53,27 @@ await server.register(fastifyRateLimit, {
   },
 });
 
-// Unified lower-case tag names to keep Swagger sidebar consistent
+// Unified PascalCase tag names to keep Swagger sidebar consistent
 const swaggerTags: Record<string, { name: string; description: string }> = {
-  health: { name: "health", description: "Health and diagnostics" },
-  auth: { name: "auth", description: "Authentication and session" },
-  profile: { name: "profile", description: "User profiles" },
-  bank: { name: "bank", description: "Banking and balances" },
-  persona: { name: "persona", description: "Persona management" },
-  assignment: { name: "assignment", description: "Assignments and tasks" },
-  staffing: { name: "staffing", description: "Workforce planning" },
-  freight: { name: "freight", description: "Freight and routing" },
-  warehouse: { name: "warehouse", description: "Inventory and storage" },
-  pos: { name: "pos", description: "Point of sale" },
-  agriculture: { name: "agriculture", description: "Agriculture simulator" },
-  culinary: { name: "culinary", description: "Culinary simulator" },
-  arcade: { name: "arcade", description: "Arcade simulator" },
-  usda: { name: "usda", description: "USDA data" },
-  wikidata: { name: "wikidata", description: "Wikidata REST cache" },
-  geo: { name: "geo", description: "Geospatial caches and lookups" },
-  maptiler: { name: "maptiler", description: "MapTiler Cloud API proxy" },
-  osrm: { name: "osrm", description: "OSRM routing proxy" },
-  telemetry: { name: "telemetry", description: "Telemetry intake" },
+  health: { name: "Health", description: "Health and diagnostics" },
+  auth: { name: "Auth", description: "Authentication and session" },
+  profile: { name: "Profile", description: "User profiles" },
+  bank: { name: "Bank", description: "Banking and balances" },
+  persona: { name: "Persona", description: "Persona management" },
+  assignment: { name: "Assignment", description: "Assignments and tasks" },
+  staffing: { name: "Staffing", description: "Workforce planning" },
+  freight: { name: "Freight", description: "Freight and routing" },
+  warehouse: { name: "Warehouse", description: "Inventory and storage" },
+  pos: { name: "POS", description: "Point of sale" },
+  agriculture: { name: "Agriculture", description: "Agriculture simulator" },
+  culinary: { name: "Culinary", description: "Culinary simulator" },
+  arcade: { name: "Arcade", description: "Arcade simulator" },
+  usda: { name: "USDA", description: "USDA data" },
+  wikidata: { name: "Wikidata", description: "Wikidata REST cache" },
+  geo: { name: "Geo", description: "Geospatial caches and lookups" },
+  maptiler: { name: "MapTiler", description: "MapTiler Cloud API proxy" },
+  osrm: { name: "OSRM", description: "OSRM routing proxy" },
+  telemetry: { name: "Telemetry", description: "Telemetry intake" },
 };
 
 // Route-segment -> tag mapping (keeps sidebar organized by domain)
@@ -217,6 +217,15 @@ const prisma = new PrismaClient({
 // Periodic DEM cache cleanup (expired tiles + size cap)
 const demCleanupHandle = scheduleDemCacheCleanup(prisma, server.log);
 
+const resolveServerUrl = () => {
+  const envUrl = process.env.PUBLIC_API_URL?.trim();
+  if (envUrl) return envUrl;
+
+  const port = process.env.PORT?.trim() || "3000";
+  const host = process.env.HOST?.trim() && process.env.HOST !== "0.0.0.0" ? process.env.HOST.trim() : "localhost";
+  return `http://${host}:${port}`;
+};
+
 // Basic OpenAPI definition for the service
 const openApiOptions: SwaggerOptions = {
   openapi: {
@@ -237,7 +246,7 @@ const openApiOptions: SwaggerOptions = {
       },
     },
     servers: [
-      { url: "http://localhost:3000", description: "Local dev" },
+      { url: resolveServerUrl(), description: "Active server" },
       { url: "https://api.k3h4.dev", description: "Production" },
     ],
     components: {

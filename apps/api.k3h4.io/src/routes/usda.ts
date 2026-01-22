@@ -5,6 +5,8 @@ import { fetchWikidataWithCache } from "../services/wikidata-cache";
 import { type RecordTelemetryFn } from "./types";
 
 const DEFAULT_MAX_AGE_MINUTES = 60;
+const ENRICH_CACHE_TTL_MINUTES = 24 * 60;
+const ENRICH_ERROR_CACHE_TTL_MINUTES = 30;
 
 const badRequest = (reply: FastifyReply, message: string) => reply.status(400).send({ error: message });
 
@@ -65,6 +67,7 @@ export function registerUsdaRoutes(server: FastifyInstance, prisma: PrismaClient
     };
 
     const enriched = [] as any[];
+    const now = Date.now();
     for (const row of items) {
       const { code, name } = normalize(row);
       if (!code || !name) {
@@ -77,6 +80,23 @@ export function registerUsdaRoutes(server: FastifyInstance, prisma: PrismaClient
         create: { dataset, code, name },
         update: { name },
       });
+
+      const cacheKey = {
+        provider_namespace_kind_sourceKey: { provider: "wikidata", namespace: dataset, kind, sourceKey: code },
+      } as const;
+      const cacheHit = await prisma.enrichmentCache.findUnique({ where: cacheKey });
+      const cacheFresh = cacheHit && (!cacheHit.expiresAt || cacheHit.expiresAt.getTime() > now);
+
+      // Skip enrichment if cached recently, but backfill record fields if missing
+      if (cacheFresh) {
+        record = {
+          ...record,
+          wikidataId: record.wikidataId ?? cacheHit?.wikidataId ?? null,
+          enrichment: record.enrichment ?? (cacheHit?.payload as any) ?? null,
+        };
+        enriched.push({ ...row, wikidataId: record.wikidataId ?? null, enrichment: record.enrichment ?? null });
+        continue;
+      }
 
       if (!record.wikidataId && name) {
         try {
@@ -115,15 +135,59 @@ export function registerUsdaRoutes(server: FastifyInstance, prisma: PrismaClient
                 server.log.warn({ err, kind, code, name, hitId: hit.id }, "wikidata statements fetch failed");
               }
             }
+            const enrichmentPayload = { hit, statements: statements ?? undefined };
 
             record = await repo.update({
               where: { dataset_code: { dataset, code } },
-              data: { wikidataId: hit.id as string, enrichment: { hit, statements: statements ?? undefined } },
+              data: { wikidataId: hit.id as string, enrichment: enrichmentPayload },
+            });
+
+            await prisma.enrichmentCache.upsert({
+              where: cacheKey,
+              create: {
+                provider: "wikidata",
+                namespace: dataset,
+                kind,
+                sourceKey: code,
+                paramsHash: null,
+                wikidataId: hit.id,
+                payload: enrichmentPayload,
+                status: "success",
+                fetchedAt: new Date(now),
+                expiresAt: new Date(now + ENRICH_CACHE_TTL_MINUTES * 60 * 1000),
+              },
+              update: {
+                wikidataId: hit.id,
+                payload: enrichmentPayload,
+                status: "success",
+                fetchedAt: new Date(now),
+                expiresAt: new Date(now + ENRICH_CACHE_TTL_MINUTES * 60 * 1000),
+              },
             });
           }
         } catch (err) {
           // best-effort enrichment; ignore failures
           server.log.warn({ err, kind, code, name }, "wikidata enrichment failed");
+          await prisma.enrichmentCache.upsert({
+            where: cacheKey,
+            create: {
+              provider: "wikidata",
+              namespace: dataset,
+              kind,
+              sourceKey: code,
+              paramsHash: null,
+              wikidataId: null,
+              payload: null,
+              status: "error",
+              fetchedAt: new Date(now),
+              expiresAt: new Date(now + ENRICH_ERROR_CACHE_TTL_MINUTES * 60 * 1000),
+            },
+            update: {
+              status: "error",
+              fetchedAt: new Date(now),
+              expiresAt: new Date(now + ENRICH_ERROR_CACHE_TTL_MINUTES * 60 * 1000),
+            },
+          });
         }
       }
 

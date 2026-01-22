@@ -1180,3 +1180,22 @@ model WikidataCacheEntry {
   @@unique([resource, endpoint, paramsHash])
   @@index([resource, fetchedAt])
 }
+
+// Prevents repeated enrichment calls against Wikidata for the same source entity
+model EnrichmentCache {
+  id         String   @id @default(cuid())
+  provider   String   @default("wikidata")
+  namespace  String   // e.g., "usda" or domain-specific namespace
+  kind       String   // e.g., "region", "unit", "commodity"
+  sourceKey  String   // upstream identifier/code for the entity
+  paramsHash String?
+  wikidataId String?
+  payload    Json?
+  status     String?  // success, error, skipped
+  fetchedAt  DateTime @default(now())
+  expiresAt  DateTime?
+  note       String?
+
+  @@unique([provider, namespace, kind, sourceKey])
+  @@index([provider, fetchedAt])
+}
