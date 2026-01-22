@@ -5,6 +5,8 @@ import { fetchUsdaJson, type UsdaDataset } from "../lib/usda-client";
 type CacheOptions = {
   maxAgeMinutes?: number;
   expiresAt?: Date;
+  staleWhileRevalidate?: boolean;
+  logger?: { warn?: (...args: any[]) => void; error?: (...args: any[]) => void };
 };
 
 type Params = Record<string, string | number | boolean | null | undefined> | undefined;
@@ -50,6 +52,32 @@ export async function fetchAndCache<T = unknown>(
   const cacheKey = { dataset, endpoint, paramsHash };
   const maxAgeMs = options?.maxAgeMinutes ? options.maxAgeMinutes * 60 * 1000 : undefined;
   const now = Date.now();
+  const log = options?.logger;
+
+  const refreshAndStore = async () => {
+    const payload = await fetchUsdaJson<T>(endpoint, params ?? undefined);
+    const expiresAt = options?.expiresAt;
+    await prisma.usdaCacheEntry.upsert({
+      where: { dataset_endpoint_paramsHash: cacheKey },
+      create: {
+        dataset,
+        endpoint,
+        params: params ?? {},
+        paramsHash,
+        payload,
+        fetchedAt: new Date(),
+        expiresAt: expiresAt ?? null,
+      },
+      update: {
+        params: params ?? {},
+        payload,
+        fetchedAt: new Date(),
+        expiresAt: expiresAt ?? null,
+      },
+    });
+
+    return payload;
+  };
 
   const existing = await prisma.usdaCacheEntry.findUnique({ where: { dataset_endpoint_paramsHash: cacheKey } });
   if (existing) {
@@ -58,30 +86,14 @@ export async function fetchAndCache<T = unknown>(
     if (freshByAge || notExpired) {
       return existing.payload as T;
     }
+
+    if (options?.staleWhileRevalidate) {
+      void refreshAndStore().catch((err) => log?.warn?.({ err, dataset, endpoint }, "usda fetchAndCache refresh failed"));
+      return existing.payload as T;
+    }
   }
 
-  const payload = await fetchUsdaJson<T>(endpoint, params ?? undefined);
-  const expiresAt = options?.expiresAt;
-  await prisma.usdaCacheEntry.upsert({
-    where: { dataset_endpoint_paramsHash: cacheKey },
-    create: {
-      dataset,
-      endpoint,
-      params: params ?? {},
-      paramsHash,
-      payload,
-      fetchedAt: new Date(),
-      expiresAt: expiresAt ?? null,
-    },
-    update: {
-      params: params ?? {},
-      payload,
-      fetchedAt: new Date(),
-      expiresAt: expiresAt ?? null,
-    },
-  });
-
-  return payload;
+  return refreshAndStore();
 }
 
 export async function readCache<T = unknown>(prisma: PrismaWithUsda, dataset: UsdaDataset, endpoint: string, params?: Params): Promise<T | null> {
