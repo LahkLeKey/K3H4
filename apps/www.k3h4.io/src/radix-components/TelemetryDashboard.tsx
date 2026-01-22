@@ -11,7 +11,7 @@ import {
     YAxis,
 } from "recharts";
 
-import { Card, MetricTile, SectionHeader } from "../radix-primitives";
+import { Badge, Button, Card, EmptyState, MetricTile, SectionHeader, Stack, Table, TablePagination } from "../radix-primitives";
 import type { TelemetryEvent } from "../react-hooks/telemetry";
 import { useTelemetryInfiniteQuery } from "../react-hooks/telemetry";
 import { TableCard } from "./TableCard";
@@ -261,78 +261,45 @@ export function TelemetryDashboard() {
                 subtitle={`Most recent ${pageSize} of ${events.length}`}
                 actions={(
                     <>
-                        <button
-                            type="button"
-                            className="rounded border border-white/15 bg-white/5 px-3 py-1 text-xs font-semibold text-white transition hover:border-white/30 hover:bg-white/10 disabled:opacity-60"
-                            onClick={() => refetch()}
-                            disabled={isLoading}
-                        >
-                            {isLoading ? "Refreshing..." : "Refresh"}
-                        </button>
-                        <button
-                            type="button"
-                            className="rounded border border-white/15 bg-white/5 px-3 py-1 text-xs font-semibold text-white transition hover:border-white/30 hover:bg-white/10 disabled:opacity-60"
+                        <Button accent="#22d3ee" variant="subtle" onClick={() => refetch()} disabled={isLoading}>
+                            {isLoading ? "Refreshing…" : "Refresh"}
+                        </Button>
+                        <Button
+                            accent="#a78bfa"
+                            variant="subtle"
                             onClick={() => fetchNextPage()}
                             disabled={!hasNextPage || isFetchingNextPage}
                         >
-                            {isFetchingNextPage ? "Loading..." : hasNextPage ? "Load more" : "All loaded"}
-                        </button>
-                        {error ? <span className="text-amber-300">{error instanceof Error ? error.message : "Error"}</span> : null}
+                            {isFetchingNextPage ? "Loading…" : hasNextPage ? "Load more" : "All loaded"}
+                        </Button>
+                        {error ? <Badge accent="#f59e0b">{error instanceof Error ? error.message : "Error"}</Badge> : null}
                     </>
                 )}
             >
-                <table className="min-w-full text-left text-xs text-slate-100">
-                    <thead className="bg-white/5 text-[11px] uppercase tracking-[0.16em] text-slate-400">
-                        <tr>
-                            <th className="px-3 py-2">Time</th>
-                            <th className="px-3 py-2">Type</th>
-                            <th className="px-3 py-2">Duration</th>
-                            <th className="px-3 py-2">Payload</th>
-                        </tr>
-                    </thead>
-                    <tbody className="divide-y divide-white/5">
-                        {pagedEvents.length === 0 ? (
-                            <tr>
-                                <td colSpan={4} className="px-3 py-4 text-center text-slate-400">
-                                    {isLoading ? "Loading events..." : "No events returned."}
-                                </td>
-                            </tr>
-                        ) : (
-                            pagedEvents.map((evt) => (
-                                <tr key={evt.id} className="transition hover:bg-white/5">
-                                    <td className="px-3 py-2 font-mono text-[11px] text-slate-200">{fmtTs(evt.createdAt)}</td>
-                                    <td className="px-3 py-2 text-sm text-white">{evt.eventType}</td>
-                                    <td className="px-3 py-2 text-sm text-white">{evt.durationMs ? `${evt.durationMs} ms` : "-"}</td>
-                                    <td className="px-3 py-2 text-[11px] text-slate-300">{fmtPayload(evt.payload)}</td>
-                                </tr>
-                            ))
-                        )}
-                    </tbody>
-                </table>
+                <Stack gap="sm">
+                    {pagedEvents.length === 0 ? (
+                        <EmptyState title={isLoading ? "Loading events..." : "No events returned."} />
+                    ) : (
+                        <Table
+                            columns={[
+                                { key: "createdAt" as const, label: "Time", render: (row) => fmtTs(row.createdAt) },
+                                { key: "eventType" as const, label: "Type" },
+                                { key: "durationMs" as const, label: "Duration", render: (row) => (row.durationMs ? `${row.durationMs} ms` : "-") },
+                                { key: "payload" as const, label: "Payload", render: (row) => fmtPayload(row.payload) },
+                            ]}
+                            rows={pagedEvents}
+                            rowKey={(row) => row.id}
+                        />
+                    )}
 
-                <div className="mt-3 flex items-center justify-between text-[11px] text-slate-300">
-                    <div>
-                        Page {page + 1} / {totalPages}
-                    </div>
-                    <div className="flex items-center gap-2">
-                        <button
-                            type="button"
-                            className="rounded border border-white/15 bg-white/5 px-3 py-1 text-xs font-semibold text-white transition hover:border-white/30 hover:bg-white/10 disabled:opacity-60"
-                            onClick={() => setPage((p) => Math.max(0, p - 1))}
-                            disabled={page === 0}
-                        >
-                            Prev
-                        </button>
-                        <button
-                            type="button"
-                            className="rounded border border-white/15 bg-white/5 px-3 py-1 text-xs font-semibold text-white transition hover:border-white/30 hover:bg-white/10 disabled:opacity-60"
-                            onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
-                            disabled={page >= totalPages - 1}
-                        >
-                            Next
-                        </button>
-                    </div>
-                </div>
+                    <TablePagination
+                        page={page}
+                        totalPages={totalPages}
+                        pageSize={pageSize}
+                        totalItems={events.length}
+                        onPageChange={(next) => setPage(next)}
+                    />
+                </Stack>
             </TableCard>
         </div>
     );

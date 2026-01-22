@@ -1,7 +1,25 @@
 import { useEffect, useMemo, useState } from "react";
 import { Canvas } from "@react-three/fiber";
 
-import { Badge, Button, Card, Histogram, Input, MetricTile, Pill, SectionHeader, StatChip, Table, Tabs, Textarea, type TableColumn } from "../radix-primitives";
+import {
+    Badge,
+    Button,
+    Card,
+    FormField,
+    Grid,
+    Histogram,
+    Input,
+    MetricTile,
+    Pill,
+    SectionHeader,
+    Select,
+    Stack,
+    StatChip,
+    Table,
+    Tabs,
+    Textarea,
+    type TableColumn,
+} from "../radix-primitives";
 import { useAuthStore } from "../react-hooks/auth";
 import { useAssignmentState } from "../react-hooks/assignments";
 import {
@@ -971,36 +989,34 @@ export function PersonaDashboard() {
     );
 
     const attributesTab = (
-        <div className="grid gap-3 md:grid-cols-3">
-            <div className="space-y-2">
-                <label className="text-xs uppercase tracking-[0.16em] text-slate-400">Persona</label>
-                <select
-                    value={selectedPersonaId || ""}
-                    onChange={(e) => setSelectedPersonaId(e.target.value)}
-                    className="w-full rounded-xl border border-white/15 bg-slate-950/60 px-3 py-2 text-sm text-white"
-                >
-                    <option value="" disabled>
-                        Select persona
-                    </option>
-                    {personaOptions.map((opt) => (
-                        <option key={opt.value} value={opt.value}>
-                            {opt.label}
+        <Grid gap="md" mdCols={3}>
+            <Stack gap="sm">
+                <FormField label="Persona" hint="Replace all attributes for the selected persona.">
+                    <Select value={selectedPersonaId || ""} onChange={(e) => setSelectedPersonaId(e.target.value)}>
+                        <option value="" disabled>
+                            Select persona
                         </option>
-                    ))}
-                </select>
-                <div className="text-[11px] text-slate-400">Replace all attributes for the selected persona.</div>
+                        {personaOptions.map((opt) => (
+                            <option key={opt.value} value={opt.value}>
+                                {opt.label}
+                            </option>
+                        ))}
+                    </Select>
+                </FormField>
                 <Button accent="#f59e0b" onClick={handleAttributesSave} disabled={!selectedPersonaId || parsedAttributes.length === 0}>
                     Save attributes
                 </Button>
-            </div>
-            <div className="md:col-span-2">
-                <Textarea
-                    rows={6}
-                    value={attributesInput}
-                    onChange={(e) => setAttributesInput(e.target.value)}
-                    placeholder="category: value1, value2 | weight=1"
-                />
-                <div className="mt-2 flex flex-wrap gap-2 text-xs text-slate-300">
+            </Stack>
+            <Stack gap="sm" className="md:col-span-2">
+                <FormField label="Attributes" hint="Format: category: value1, value2 | weight=1">
+                    <Textarea
+                        rows={6}
+                        value={attributesInput}
+                        onChange={(e) => setAttributesInput(e.target.value)}
+                        placeholder="category: value1, value2 | weight=1"
+                    />
+                </FormField>
+                <div className="flex flex-wrap gap-2 text-xs text-slate-300">
                     <span className="rounded-full border border-white/10 px-2 py-1">Parsed {parsedAttributes.length} entries</span>
                     {parsedAttributes.map((attr, idx) => (
                         <span key={`${attr.category}-${idx}`} className="rounded-full bg-white/10 px-2 py-1">
@@ -1009,37 +1025,40 @@ export function PersonaDashboard() {
                         </span>
                     ))}
                 </div>
-            </div>
-        </div>
+            </Stack>
+        </Grid>
     );
 
     const qualityTab = (
-        <div className="space-y-3">
-            <div className="grid gap-3 lg:grid-cols-3">
-                <div className="space-y-2">
-                    <label className="text-xs uppercase tracking-[0.16em] text-slate-400">Threshold (0-1)</label>
-                    <Input
-                        type="number"
-                        min={0}
-                        max={1}
-                        step={0.01}
-                        value={threshold}
-                        onChange={(e) => setThreshold(Number(e.target.value))}
-                    />
-                    <Input
-                        placeholder="Optional ONNX model path"
-                        value={modelPath}
-                        onChange={(e) => setModelPath(e.target.value)}
-                    />
+        <Stack gap="md">
+            <Grid gap="md" lgCols={3}>
+                <Stack gap="sm">
+                    <FormField label="Threshold (0-1)">
+                        <Input
+                            type="number"
+                            min={0}
+                            max={1}
+                            step={0.01}
+                            value={threshold}
+                            onChange={(e) => setThreshold(Number(e.target.value))}
+                        />
+                    </FormField>
+                    <FormField label="ONNX model path" hint="Optional">
+                        <Input
+                            placeholder="Optional ONNX model path"
+                            value={modelPath}
+                            onChange={(e) => setModelPath(e.target.value)}
+                        />
+                    </FormField>
                     <Button accent="#e11d48" onClick={handleRunConfusion} disabled={confusionStatus === "loading" || validPairs.length === 0}>
                         {confusionStatus === "loading" ? "Scoring..." : "Run confusion"}
                     </Button>
                     {confusionError ? <div className="text-xs text-amber-300">{confusionError}</div> : null}
                     {validPairs.length === 0 ? <div className="text-xs text-slate-400">Add at least one labeled pair.</div> : null}
-                </div>
-                <div className="lg:col-span-2 space-y-2">
-                    <div className="flex items-center justify-between text-xs text-slate-400">
-                        <span>Pairs ({pairRows.length})</span>
+                </Stack>
+                <Stack gap="sm" className="lg:col-span-2">
+                    <Stack direction="row" justify="between" align="center">
+                        <span className="text-xs text-slate-400">Pairs ({pairRows.length})</span>
                         <Button
                             variant="subtle"
                             accent="#94a3b8"
@@ -1050,16 +1069,16 @@ export function PersonaDashboard() {
                         >
                             Add pair
                         </Button>
-                    </div>
-                    <div className="space-y-2">
+                    </Stack>
+                    <Stack gap="sm">
                         {pairRows.map((row) => (
                             <div key={row.id} className="grid grid-cols-5 items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-2 py-2 text-sm text-white">
-                                <select
+                                <Select
                                     value={row.sourceId || ""}
                                     onChange={(e) =>
                                         setPairRows((rows) => rows.map((r) => (r.id === row.id ? { ...r, sourceId: e.target.value } : r)))
                                     }
-                                    className="col-span-2 rounded border border-white/15 bg-slate-950/60 px-2 py-2 text-sm"
+                                    className="col-span-2"
                                 >
                                     <option value="">Source</option>
                                     {personaOptions.map((opt) => (
@@ -1067,13 +1086,13 @@ export function PersonaDashboard() {
                                             {opt.label}
                                         </option>
                                     ))}
-                                </select>
-                                <select
+                                </Select>
+                                <Select
                                     value={row.targetId || ""}
                                     onChange={(e) =>
                                         setPairRows((rows) => rows.map((r) => (r.id === row.id ? { ...r, targetId: e.target.value } : r)))
                                     }
-                                    className="col-span-2 rounded border border-white/15 bg-slate-950/60 px-2 py-2 text-sm"
+                                    className="col-span-2"
                                 >
                                     <option value="">Target</option>
                                     {personaOptions.map((opt) => (
@@ -1081,7 +1100,7 @@ export function PersonaDashboard() {
                                             {opt.label}
                                         </option>
                                     ))}
-                                </select>
+                                </Select>
                                 <label className="flex items-center gap-2 text-xs text-slate-200">
                                     <input
                                         type="checkbox"
@@ -1094,11 +1113,11 @@ export function PersonaDashboard() {
                                 </label>
                             </div>
                         ))}
-                    </div>
-                </div>
-            </div>
+                    </Stack>
+                </Stack>
+            </Grid>
             {confusion ? (
-                <div className="space-y-3">
+                <Stack gap="sm">
                     <ConfusionSummary result={confusion} />
                     <div className="rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-xs text-slate-200">
                         <div className="flex flex-wrap items-center gap-3">
@@ -1110,9 +1129,9 @@ export function PersonaDashboard() {
                             <span className="rounded-full border border-white/10 px-2 py-1">Missing {confusion.missing}</span>
                         </div>
                     </div>
-                </div>
+                </Stack>
             ) : null}
-        </div>
+        </Stack>
     );
 
     return (

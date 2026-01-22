@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 
-import { Badge, Button, MetricTile, SectionHeader, Table } from "../radix-primitives";
+import { Badge, Button, EmptyState, Grid, MetricTile, SectionHeader, Stack, Table } from "../radix-primitives";
 import { useAuthStore } from "../zustand-stores/auth";
 import { useStaffingState } from "../react-hooks/staffing";
 import { TableCard } from "./TableCard";
@@ -16,7 +16,7 @@ export function StaffingBoard() {
     }, [session?.accessToken, status, fetchDashboard]);
 
     return (
-        <div className="space-y-4">
+        <Stack gap="lg">
             <SectionHeader
                 kicker="Staffing"
                 title="Workforce snapshot"
@@ -29,20 +29,20 @@ export function StaffingBoard() {
                 )}
             />
 
-            <div className="grid gap-3 sm:grid-cols-5">
+            <Grid gap="md" smCols={5}>
                 <MetricTile label="Open roles" value={(metrics?.openRoles ?? 0).toString()} hint="Live" accent="#60a5fa" />
                 <MetricTile label="Candidates" value={(metrics?.activeCandidates ?? 0).toString()} hint="Pipeline" accent="#a78bfa" />
                 <MetricTile label="Shifts" value={(metrics?.scheduledShifts ?? 0).toString()} hint="Scheduled" accent="#f59e0b" />
                 <MetricTile label="Placements" value={(metrics?.activePlacements ?? 0).toString()} hint="Active" accent="#22c55e" />
                 <MetricTile label="Fill rate" value={`${metrics?.fillRate ?? 0}%`} hint="" accent="#67e8f9" />
-            </div>
+            </Grid>
 
             <TableCard title="Engagements" subtitle="Live" actions={<Badge accent="#60a5fa">Live</Badge>}>
                 {engagements.length === 0 ? (
-                    <div className="space-y-1 rounded-2xl border border-white/5 bg-white/5 p-4 text-sm text-slate-200">
-                        <div className="font-semibold">{session ? "No engagements yet" : "Sign in to view staffing"}</div>
-                        <div className="text-slate-400">{session ? "Refresh to pull dashboard." : "Authorize to load your data."}</div>
-                    </div>
+                    <EmptyState
+                        title={session ? "No engagements yet" : "Sign in to view staffing"}
+                        description={session ? "Refresh to pull dashboard." : "Authorize to load your data."}
+                    />
                 ) : (
                     <Table
                         columns={[
@@ -121,6 +121,6 @@ export function StaffingBoard() {
                     rowKey={(row) => row.id}
                 />
             </TableCard>
-        </div>
+        </Stack>
     );
 }

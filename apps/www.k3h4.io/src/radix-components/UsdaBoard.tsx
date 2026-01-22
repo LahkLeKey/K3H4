@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 
-import { Badge, Button, MetricTile, SectionHeader, Table } from "../radix-primitives";
+import { Badge, Button, Grid, MetricTile, SectionHeader, Stack, Table } from "../radix-primitives";
 import { useAuthStore } from "../zustand-stores/auth";
 import { useUsdaState } from "../react-hooks/usda";
 import { TableCard } from "./TableCard";
@@ -16,7 +16,7 @@ export function UsdaBoard() {
     const loading = status === "loading";
 
     return (
-        <div className="space-y-4">
+        <Stack gap="lg">
             <SectionHeader
                 kicker="USDA"
                 title="Agricultural reference"
@@ -29,11 +29,11 @@ export function UsdaBoard() {
                 )}
             />
 
-            <div className="grid gap-3 sm:grid-cols-3">
+            <Grid gap="md" smCols={3}>
                 <MetricTile label="Regions" value={regions.length.toString()} hint="ESR" accent="#7dd3fc" />
                 <MetricTile label="Commodities" value={commodities.length.toString()} hint="Reference" accent="#a78bfa" />
                 <MetricTile label="Countries" value={countries.length.toString()} hint="ISO" accent="#34d399" />
-            </div>
+            </Grid>
 
             <TableCard title="Regions" subtitle="Sample (first 10)" actions={<Badge accent="#7dd3fc">ESR</Badge>}>
                 <Table
@@ -42,6 +42,6 @@ export function UsdaBoard() {
                     rowKey={(row) => row.key}
                 />
             </TableCard>
-        </div>
+        </Stack>
     );
 }
