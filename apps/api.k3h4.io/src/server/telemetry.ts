@@ -4,7 +4,7 @@ import { type RecordTelemetryFn, type TelemetryParams } from "../routes/types";
 import { normalizeDurationMs, warnOnSuspiciousDuration } from "../routes/telemetry";
 import { createTelemetryBuffer } from "../lib/telemetry-buffer";
 
-const TELEMETRY_MAX_EVENTS = 2000;
+const TELEMETRY_MAX_EVENTS = 200;
 const TELEMETRY_PRUNE_BATCH = 32;
 
 const pruneTelemetry = async (prisma: PrismaClient) => {
