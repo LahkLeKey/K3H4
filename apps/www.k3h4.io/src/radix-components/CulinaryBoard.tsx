@@ -5,12 +5,12 @@ import { Badge, Button, Card, StatChip, Table } from "../components/ui";
 import { useAuthStore } from "../zustand-stores/auth";
 import { useCulinaryState } from "../react-hooks/culinary";
 import { apiFetch } from "../react-hooks/lib/api-client";
-import { useLogisticsStore } from "../zustand-stores/logistics";
+import { useStorefrontsStore } from "../zustand-stores/storefronts";
 
 export function CulinaryBoard() {
     const { session } = useAuthStore();
     const { overview, status, error, fetchOverview } = useCulinaryState();
-    const { culinaryName, culinaryPrepMinutes, culinaryStatus, updateField } = useLogisticsStore();
+    const { culinaryName, culinaryPrepMinutes, culinaryStatus, updateField } = useStorefrontsStore();
 
     useEffect(() => {
         if (session?.accessToken && status === "idle") fetchOverview();

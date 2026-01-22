@@ -5,12 +5,12 @@ import { Badge, Button, Card, StatChip, Table } from "../components/ui";
 import { useAuthStore } from "../zustand-stores/auth";
 import { usePosState } from "../react-hooks/pos";
 import { apiFetch } from "../react-hooks/lib/api-client";
-import { useLogisticsStore } from "../zustand-stores/logistics";
+import { useStorefrontsStore } from "../zustand-stores/storefronts";
 
 export function PosBoard() {
     const { session } = useAuthStore();
     const { overview, status, error, fetchOverview } = usePosState();
-    const { posTicketStore, posTicketChannel, posTicketAmount, posTicketStatus, updateField } = useLogisticsStore();
+    const { posTicketStore, posTicketChannel, posTicketAmount, posTicketStatus, updateField } = useStorefrontsStore();
 
     useEffect(() => {
         if (session?.accessToken && status === "idle") {

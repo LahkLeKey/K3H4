@@ -1,14 +1,12 @@
 import { create } from "zustand";
 
-export type LogisticsTab = "freight" | "warehouse" | "agriculture" | "usda" | "culinary" | "pos";
+export type LogisticsTab = "freight" | "warehouse" | "agriculture" | "usda";
 
 export type LogisticsFieldKey =
     | "freightTitle"
     | "freightRate"
     | "warehouseSku"
     | "warehouseQty"
-    | "culinaryName"
-    | "posStore"
     | "freightCustomTitle"
     | "freightCustomRate"
     | "freightActionStatus"
@@ -18,12 +16,6 @@ export type LogisticsFieldKey =
     | "agricultureInvName"
     | "agricultureInvQty"
     | "agricultureFormStatus"
-    | "culinaryPrepMinutes"
-    | "culinaryStatus"
-    | "posTicketStore"
-    | "posTicketChannel"
-    | "posTicketAmount"
-    | "posTicketStatus"
     | "status";
 
 const defaultState = {
@@ -32,12 +24,6 @@ const defaultState = {
     freightRate: "2.1",
     warehouseSku: "SKU-123",
     warehouseQty: "10",
-    culinaryName: "Smoked Trout Toast",
-    posStore: "Demo Store",
-    posTicketStore: "Demo Store",
-    posTicketChannel: "dine-in",
-    posTicketAmount: "42.00",
-    posTicketStatus: "",
     freightCustomTitle: "Austin -> Dallas",
     freightCustomRate: "2.1",
     freightActionStatus: "",
@@ -47,8 +33,6 @@ const defaultState = {
     agricultureInvName: "Seeds",
     agricultureInvQty: "5",
     agricultureFormStatus: "",
-    culinaryPrepMinutes: "12",
-    culinaryStatus: "",
     status: "",
     usdaDetail: null as { title: string; code?: string; wikidataId?: string; enrichment: any } | null,
 };

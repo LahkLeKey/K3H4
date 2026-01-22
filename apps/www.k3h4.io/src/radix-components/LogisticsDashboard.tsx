@@ -7,15 +7,11 @@ import { useFreightState } from "../react-hooks/freight";
 import { useWarehouseState } from "../react-hooks/warehouse";
 import { useAgricultureState } from "../react-hooks/agriculture";
 import { useUsdaState } from "../react-hooks/usda";
-import { useCulinaryState } from "../react-hooks/culinary";
-import { usePosState } from "../react-hooks/pos";
 import { useLogisticsStore } from "../zustand-stores/logistics";
 import { FreightBoard } from "./FreightBoard";
 import { WarehouseBoard } from "./WarehouseBoard";
 import { AgricultureBoard } from "./AgricultureBoard";
 import { UsdaBoard } from "./UsdaBoard";
-import { CulinaryBoard } from "./CulinaryBoard";
-import { PosBoard } from "./PosBoard";
 import { LogisticsActionsPanel } from "./LogisticsActionsPanel";
 
 export function LogisticsDashboard() {
@@ -24,11 +20,9 @@ export function LogisticsDashboard() {
     const { items, status: warehouseStatus, fetchItems } = useWarehouseState();
     const { overview: agOverview, status: agStatus, fetchOverview: fetchAg } = useAgricultureState();
     const { regions, commodities, countries, status: usdaStatus, fetchReference } = useUsdaState();
-    const { overview: culinaryOverview, status: culinaryStatus, fetchOverview: fetchCulinary } = useCulinaryState();
-    const { overview: posOverview, status: posStatus, fetchOverview: fetchPos } = usePosState();
     const { activeTab, setActiveTab } = useLogisticsStore();
 
-    const anyLoading = [freightStatus, warehouseStatus, agStatus, usdaStatus, culinaryStatus, posStatus].some((s) => s === "loading");
+    const anyLoading = [freightStatus, warehouseStatus, agStatus, usdaStatus].some((s) => s === "loading");
 
     const kpis = useMemo(
         () => [
@@ -50,14 +44,8 @@ export function LogisticsDashboard() {
                 hint: "Sim overview",
                 accent: "#86efac",
             },
-            {
-                label: "POS",
-                value: posOverview ? `₭${posOverview.metrics.grossRevenue}` : "-",
-                hint: "Gross",
-                accent: "#f472b6",
-            },
         ],
-        [totals, items.length, agOverview, posOverview],
+        [totals, items.length, agOverview],
     );
 
     const handleRefreshAll = () => {
@@ -66,8 +54,6 @@ export function LogisticsDashboard() {
         fetchItems();
         fetchAg();
         fetchReference();
-        fetchCulinary();
-        fetchPos();
     };
 
     return (
@@ -75,11 +61,11 @@ export function LogisticsDashboard() {
             <div className="space-y-2">
                 <div className="inline-flex flex-wrap items-center gap-2 text-xs uppercase tracking-[0.18em] text-emerald-100">
                     <span className="rounded-full border border-emerald-300/30 bg-emerald-500/15 px-3 py-1">Logistics</span>
-                    <span className="text-[11px] text-slate-300">Freight / Warehouse / Agriculture / USDA / Culinary / POS</span>
+                    <span className="text-[11px] text-slate-300">Freight / Warehouse / Agriculture / USDA</span>
                 </div>
                 <div className="text-3xl font-semibold text-white">Operations control</div>
                 <p className="max-w-3xl text-sm text-slate-300">
-                    Unified dashboard across routing, storage, agriculture sim, USDA reference, culinary workflows, and point of sale.
+                    Unified dashboard across routing, storage, agriculture simulation, and USDA reference data.
                 </p>
                 <div className="flex flex-wrap items-center gap-2">
                     {!session ? <div className="text-xs text-amber-200">Sign in to load live data from the logistics endpoints.</div> : null}
@@ -97,12 +83,6 @@ export function LogisticsDashboard() {
                         <Button accent="#7dd3fc" variant="outline" onClick={() => setActiveTab("usda")}>
                             USDA
                         </Button>
-                        <Button accent="#fb7185" variant="outline" onClick={() => setActiveTab("culinary")}>
-                            Culinary
-                        </Button>
-                        <Button accent="#f472b6" variant="outline" onClick={() => setActiveTab("pos")}>
-                            POS
-                        </Button>
                     </div>
                 </div>
             </div>
@@ -112,12 +92,6 @@ export function LogisticsDashboard() {
                     <MetricTile key={kpi.label} label={kpi.label} value={kpi.value} hint={kpi.hint} accent={kpi.accent} />
                 ))}
                 <MetricTile label="USDA" value={regions.length ? regions.length.toString() : "-"} hint="Regions" accent="#7dd3fc" />
-                <MetricTile
-                    label="Culinary"
-                    value={culinaryOverview ? culinaryOverview.menuItems.length.toString() : "-"}
-                    hint="Menu items"
-                    accent="#fb7185"
-                />
                 <MetricTile
                     label="Warehouse qty"
                     value={items.reduce((sum, item) => sum + Number(item.quantity || 0), 0).toString()}
@@ -142,8 +116,6 @@ export function LogisticsDashboard() {
                     { key: "warehouse", label: "Warehouse", content: <WarehouseBoard /> },
                     { key: "agriculture", label: "Agriculture", content: <AgricultureBoard /> },
                     { key: "usda", label: "USDA", content: <UsdaBoard /> },
-                    { key: "culinary", label: "Culinary", content: <CulinaryBoard /> },
-                    { key: "pos", label: "POS", content: <PosBoard /> },
                 ]}
                 className="w-full"
             />
