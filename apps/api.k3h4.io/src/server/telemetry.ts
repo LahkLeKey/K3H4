@@ -3,7 +3,7 @@ import { type FastifyInstance, type FastifyReply, type FastifyRequest } from "fa
 import { type RecordTelemetryFn, type TelemetryParams } from "../routes/types";
 import { normalizeDurationMs, warnOnSuspiciousDuration } from "../routes/telemetry";
 
-const TELEMETRY_MAX_EVENTS = 1000;
+const TELEMETRY_MAX_EVENTS = 20; // Keep telemetry slim globally (we will want to increase this later)
 const TELEMETRY_PRUNE_BATCH = 200;
 
 const pruneTelemetry = async (prisma: PrismaClient) => {
