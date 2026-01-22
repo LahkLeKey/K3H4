@@ -492,6 +492,7 @@ export function MapLayer({ readonly }: { readonly?: boolean }) {
     ];
     const readyProgress = Math.round((loadSteps.filter((step) => step.done).length / loadSteps.length) * 100);
     const mapReady = mapLoaded && (terrainReady || mapGateTimerDone);
+    const showPreparingOverlay = Boolean(session) && !mapReady;
 
     const prewarmedRef = useRef<Record<string, boolean>>({});
     const prewarmTiles = useDebouncedCallback(async () => {
@@ -576,7 +577,7 @@ export function MapLayer({ readonly }: { readonly?: boolean }) {
     return (
         <>
             <div ref={ref} className="absolute inset-0 z-0" />
-            {!mapReady ? (
+            {showPreparingOverlay ? (
                 <div className="absolute inset-0 z-50 flex items-center justify-center bg-slate-950/85 backdrop-blur-sm">
                     <div className="w-80 max-w-[calc(100%-48px)] space-y-3 rounded-xl border border-white/10 bg-slate-900/80 p-4 text-white shadow-2xl">
                         <div className="flex items-center justify-between text-xs uppercase tracking-[0.08em] text-white/60">
