@@ -3,7 +3,7 @@ import type { Prisma, PrismaClient } from "@prisma/client";
 const TELEMETRY_BATCH_SIZE = 64;
 const TELEMETRY_FLUSH_INTERVAL_MS = 250;
 
-type TelemetryRow = Prisma.TelemetryEventCreateManyInput;
+type TelemetryRow = Prisma.TelemetryEventCreateManyInput & { error?: boolean };
 
 export function createTelemetryBuffer(prisma: PrismaClient) {
   const queue: TelemetryRow[] = [];
@@ -22,10 +22,28 @@ export function createTelemetryBuffer(prisma: PrismaClient) {
     try {
       while (queue.length) {
         const batch = queue.splice(0, TELEMETRY_BATCH_SIZE);
-        try {
-          await prisma.telemetryEvent.createMany({ data: batch });
-        } catch (err) {
-          console.warn({ err, batch: batch.length }, "batched telemetry write failed");
+        const errorRows = batch.filter((row) => row.error);
+        const successRows = batch.filter((row) => !row.error);
+
+        if (successRows.length) {
+          const payload = successRows.map(({ error: _error, ...rest }) => rest as Prisma.TelemetryEventCreateManyInput);
+          try {
+            await prisma.telemetryEvent.createMany({ data: payload });
+          } catch (err) {
+            console.warn({ err, batch: payload.length }, "batched telemetry write failed");
+          }
+        }
+
+        if (errorRows.length) {
+          await Promise.all(
+            errorRows.map(async (row) => {
+              try {
+                await prisma.telemetryEvent.create({ data: row });
+              } catch (err) {
+                console.warn({ err, eventType: row.eventType }, "single telemetry write failed");
+              }
+            }),
+          );
         }
       }
     } finally {
