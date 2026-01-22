@@ -34,7 +34,6 @@ export const DropdownMenuCheckboxItem = ({ className = "", ...props }: Component
     <Dropdown.CheckboxItem
         {...props}
         className={`${itemBase} ${className}`.trim()}
-        indicatorOffset={-4}
     >
         <Dropdown.ItemIndicator className="text-emerald-300">✓</Dropdown.ItemIndicator>
     </Dropdown.CheckboxItem>

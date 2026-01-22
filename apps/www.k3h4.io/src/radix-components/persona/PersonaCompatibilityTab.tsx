@@ -1,6 +1,6 @@
 import { Canvas } from "@react-three/fiber";
 import type { PersonaCompatibility } from "../../zustand-stores/persona";
-import { Badge, Button, Histogram, Pill, Stack, Surface } from "../../components/ui";
+import { Button, Histogram, Pill, Stack, Surface } from "../../components/ui";
 import { R3FErrorBoundary } from "../../r3f-components/R3FErrorBoundary";
 import { NodeLinkGraph } from "../../r3f-primitives/NodeLinkGraph";
 import { CompatibilityRow } from "./CompatibilityRow";

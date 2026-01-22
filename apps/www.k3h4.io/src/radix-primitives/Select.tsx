@@ -1,11 +1,12 @@
 import { Children, isValidElement } from "react";
-import type { ComponentPropsWithoutRef, ReactNode } from "react";
+import type { ComponentPropsWithoutRef, ReactElement, ReactNode } from "react";
 import * as RadixSelect from "@radix-ui/react-select";
 
 export type SelectProps = ComponentPropsWithoutRef<typeof RadixSelect.Root> & {
     placeholder?: ReactNode;
     contentClassName?: string;
     triggerClassName?: string;
+    className?: string;
     // Keep compatibility with native <select> usage in callers
     onChange?: (event: { target: { value: string } }) => void;
 };
@@ -19,6 +20,7 @@ export function Select({
     placeholder,
     contentClassName = "",
     triggerClassName = "",
+    className = "",
     onValueChange,
     onChange,
     value,
@@ -33,9 +35,10 @@ export function Select({
     const rendered = Children.map(children, (child) => {
         if (!isValidElement(child)) return child;
         if (child.type === "option") {
-            const valueProp = (child.props as any).value ?? "";
-            const disabled = Boolean((child.props as any).disabled);
-            const label = child.props.children ?? String(valueProp);
+            const optionProps = (child as ReactElement<{ value?: string; disabled?: boolean; children?: ReactNode }>).props;
+            const valueProp = optionProps.value ?? "";
+            const disabled = Boolean(optionProps.disabled);
+            const label = optionProps.children ?? String(valueProp);
             return (
                 <RadixSelect.Item value={valueProp} disabled={disabled} className={baseItem}>
                     <RadixSelect.ItemIndicator className="text-emerald-300">•</RadixSelect.ItemIndicator>
@@ -47,22 +50,24 @@ export function Select({
     });
 
     return (
-        <RadixSelect.Root
-            {...props}
-            value={value}
-            defaultValue={defaultValue}
-            onValueChange={handleValueChange}
-        >
-            <RadixSelect.Trigger className={`${baseTrigger} ${triggerClassName}`.trim()}>
-                <RadixSelect.Value placeholder={placeholder} />
-                <RadixSelect.Icon aria-hidden>▾</RadixSelect.Icon>
-            </RadixSelect.Trigger>
-            <RadixSelect.Portal>
-                <RadixSelect.Content className={`${baseContent} ${contentClassName}`.trim()} position="popper" sideOffset={8}>
-                    <RadixSelect.Viewport className="p-1">{rendered}</RadixSelect.Viewport>
-                </RadixSelect.Content>
-            </RadixSelect.Portal>
-        </RadixSelect.Root>
+        <div className={className}>
+            <RadixSelect.Root
+                {...props}
+                value={value}
+                defaultValue={defaultValue}
+                onValueChange={handleValueChange}
+            >
+                <RadixSelect.Trigger className={`${baseTrigger} ${triggerClassName}`.trim()}>
+                    <RadixSelect.Value placeholder={placeholder} />
+                    <RadixSelect.Icon aria-hidden>▾</RadixSelect.Icon>
+                </RadixSelect.Trigger>
+                <RadixSelect.Portal>
+                    <RadixSelect.Content className={`${baseContent} ${contentClassName}`.trim()} position="popper" sideOffset={8}>
+                        <RadixSelect.Viewport className="p-1">{rendered}</RadixSelect.Viewport>
+                    </RadixSelect.Content>
+                </RadixSelect.Portal>
+            </RadixSelect.Root>
+        </div>
     );
 }
 

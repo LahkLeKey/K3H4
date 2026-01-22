@@ -3,13 +3,14 @@ import type { ReactNode } from "react";
 export type CardProps = {
     title?: string;
     eyebrow?: string;
+    subtitle?: ReactNode;
     actions?: ReactNode;
     children?: ReactNode;
     footer?: ReactNode;
     className?: string;
 };
 
-export function Card({ title, eyebrow, actions, children, footer, className = "" }: CardProps) {
+export function Card({ title, eyebrow, subtitle, actions, children, footer, className = "" }: CardProps) {
     return (
         <div className={`rounded-2xl border border-white/10 bg-slate-950 shadow-xl ${className}`.trim()}>
             {(eyebrow || title || actions) ? (
@@ -17,6 +18,7 @@ export function Card({ title, eyebrow, actions, children, footer, className = ""
                     <div className="flex flex-col gap-1">
                         {eyebrow ? <span className="text-[11px] uppercase tracking-[0.18em] text-slate-400">{eyebrow}</span> : null}
                         {title ? <span className="text-sm font-semibold text-white">{title}</span> : null}
+                        {subtitle ? <span className="text-xs text-slate-300">{subtitle}</span> : null}
                     </div>
                     {actions ? <div className="flex items-center gap-2">{actions}</div> : null}
                 </div>
