@@ -22,6 +22,7 @@ export type TelemetryEvent = {
     path?: string | null;
     payload?: unknown;
     durationMs?: number | null;
+    error?: boolean | null;
     createdAt: string;
 };
 

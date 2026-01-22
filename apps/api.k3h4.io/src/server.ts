@@ -129,12 +129,14 @@ const recordTelemetry = async (
     path?: string;
     userId?: string;
     durationMs?: number;
+    error?: boolean;
   },
 ) => {
   try {
     const sessionId = params.sessionId ?? getSessionId(request);
     const userId = params.userId ?? (request.user as { sub?: string } | undefined)?.sub;
     const durationMs = coerceDurationMs(params.durationMs);
+    const error = params.error === true;
     await prisma.telemetryEvent.create({
       data: {
         sessionId,
@@ -144,6 +146,7 @@ const recordTelemetry = async (
         path: params.path ?? request.url,
         payload: params.payload ? (params.payload as any) : undefined,
         durationMs: durationMs ?? undefined,
+        error,
       },
     });
   } catch (err) {
@@ -342,6 +345,7 @@ server.post("/telemetry", async (request, reply) => {
           payload?: unknown;
           userId?: string;
           durationMs?: number;
+          error?: boolean;
         }>;
         eventType?: string;
         source?: string;
@@ -350,6 +354,7 @@ server.post("/telemetry", async (request, reply) => {
         payload?: unknown;
         userId?: string;
         durationMs?: number;
+        error?: boolean;
       }
     | undefined;
 
@@ -366,6 +371,7 @@ server.post("/telemetry", async (request, reply) => {
       payload: evt.payload,
       userId: evt.userId,
       durationMs: coerceDurationMs(evt.durationMs),
+      error: evt.error === true,
     }))
     .filter((evt) => evt.eventType && evt.source) as Array<{
     eventType: string;
@@ -375,6 +381,7 @@ server.post("/telemetry", async (request, reply) => {
     payload?: unknown;
     userId?: string;
     durationMs?: number;
+    error?: boolean;
   }>;
 
   if (normalizedEvents.length === 0) {
@@ -401,6 +408,7 @@ server.post("/telemetry", async (request, reply) => {
         payload: evt.payload,
         userId: evt.userId,
         durationMs: evt.durationMs,
+        error: evt.error,
       }),
     ),
   );

@@ -44,7 +44,8 @@ const extractLatencyMs = (payload: unknown) => {
     return percentile(msCandidates, 50);
 };
 
-const isErrorEvent = (eventType: string, payload: unknown) => {
+const isErrorEvent = (eventType: string, payload: unknown, explicit?: boolean | null) => {
+    if (explicit === true) return true;
     const t = eventType.toLowerCase();
     if (t.includes("error") || t.includes("fail")) return true;
     if (typeof payload === "string") return payload.toLowerCase().includes("error");
@@ -96,7 +97,7 @@ export function TelemetryDashboard() {
             const latency = evt.durationMs ?? extractLatencyMs(evt.payload);
             if (latency !== null) bucket.latencies.push(latency);
 
-            if (isErrorEvent(evt.eventType, evt.payload)) bucket.errorCount += 1;
+            if (isErrorEvent(evt.eventType, evt.payload, evt.error)) bucket.errorCount += 1;
 
             if (isRefreshEvent(evt.eventType)) {
                 if (lastRefreshTs !== null) bucket.refreshCadences.push((ts - lastRefreshTs) / 60_000);
@@ -284,6 +285,11 @@ export function TelemetryDashboard() {
                             columns={[
                                 { key: "createdAt" as const, label: "Time", render: (row) => fmtTs(row.createdAt) },
                                 { key: "eventType" as const, label: "Type" },
+                                {
+                                    key: "error" as const,
+                                    label: "Status",
+                                    render: (row) => (row.error ? <Badge accent="#f472b6">Error</Badge> : <Badge accent="#22c55e">OK</Badge>),
+                                },
                                 { key: "durationMs" as const, label: "Duration", render: (row) => (row.durationMs ? `${row.durationMs} ms` : "-") },
                                 { key: "payload" as const, label: "Payload", render: (row) => fmtPayload(row.payload) },
                             ]}

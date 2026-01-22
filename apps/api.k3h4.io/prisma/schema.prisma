@@ -432,6 +432,7 @@ model TelemetryEvent {
   path      String?
   payload   Json?
   durationMs Int?
+  error     Boolean  @default(false)
   createdAt DateTime @default(now())
 
   @@index([userId])
