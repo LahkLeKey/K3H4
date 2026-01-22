@@ -1,5 +1,5 @@
 import type { PersonaCompatibility } from "../../zustand-stores/persona";
-import { Surface, Stack } from "../../radix-primitives";
+import { Surface, Stack } from "../../components/ui";
 
 export function CompatibilityRow({ compat }: { compat: PersonaCompatibility }) {
     const overlap = compat.overlappingTokens.slice(0, 4);

@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 
-import { Badge, Button, Grid, MetricTile, SectionHeader, Stack, Table } from "../radix-primitives";
+import { Badge, Button, Grid, MetricTile, SectionHeader, Stack, Table } from "../components/ui";
 import { useAuthStore } from "../zustand-stores/auth";
 import { useUsdaState } from "../react-hooks/usda";
 import { TableCard } from "./TableCard";

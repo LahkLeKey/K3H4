@@ -9,7 +9,7 @@ import {
     SectionHeader,
     Stack,
     Table,
-} from "../radix-primitives";
+} from "../components/ui";
 import { useBankState } from "../react-hooks/bank";
 import { EndpointList } from "./EndpointList";
 import { TableCard } from "./TableCard";

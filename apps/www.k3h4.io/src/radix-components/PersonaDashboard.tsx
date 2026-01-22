@@ -1,6 +1,7 @@
 import { useEffect, useMemo } from "react";
 
-import { Stack, Tabs } from "../radix-primitives";
+import { Tabs } from "../radix-primitives";
+import { Stack } from "../components/ui";
 import { useAuthStore } from "../react-hooks/auth";
 import { usePersonaState, type Persona } from "../react-hooks/persona";
 import { usePersonaDashboardStore } from "../zustand-stores/persona-dashboard";

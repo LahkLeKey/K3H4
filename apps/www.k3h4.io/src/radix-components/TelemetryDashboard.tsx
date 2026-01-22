@@ -11,7 +11,7 @@ import {
     YAxis,
 } from "recharts";
 
-import { Badge, Button, Card, EmptyState, MetricTile, SectionHeader, Stack, Table, TablePagination } from "../radix-primitives";
+import { Badge, Button, Card, EmptyState, MetricTile, SectionHeader, Stack, Table, TablePagination } from "../components/ui";
 import type { TelemetryEvent } from "../react-hooks/telemetry";
 import { useTelemetryInfiniteQuery } from "../react-hooks/telemetry";
 import { TableCard } from "./TableCard";

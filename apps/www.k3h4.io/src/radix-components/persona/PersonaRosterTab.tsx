@@ -1,6 +1,7 @@
-import type { TableColumn } from "../../radix-primitives";
+import { Select } from "../../radix-primitives";
+import type { TableColumn } from "../../components/ui";
 import type { Persona } from "../../zustand-stores/persona";
-import { Badge, Button, Card, Grid, Input, Pill, SectionHeader, Select, Stack, Surface, Table, Textarea } from "../../radix-primitives";
+import { Badge, Button, Card, Grid, Input, Pill, SectionHeader, Stack, Surface, Table, Textarea } from "../../components/ui";
 
 export type TagCount = [string, number];
 

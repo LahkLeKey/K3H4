@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 
-import { Badge, Button, Card, StatChip, Table } from "../radix-primitives";
+import { Badge, Button, Card, StatChip, Table } from "../components/ui";
 import { useAuthStore } from "../zustand-stores/auth";
 import { usePosState } from "../react-hooks/pos";
 

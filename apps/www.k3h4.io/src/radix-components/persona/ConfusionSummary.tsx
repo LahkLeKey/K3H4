@@ -1,5 +1,5 @@
 import type { PersonaConfusionResult } from "../../zustand-stores/persona";
-import { Grid, StatChip } from "../../radix-primitives";
+import { Grid, StatChip } from "../../components/ui";
 import { formatNumber } from "./formatNumber";
 
 export function ConfusionSummary({ result }: { result: PersonaConfusionResult }) {

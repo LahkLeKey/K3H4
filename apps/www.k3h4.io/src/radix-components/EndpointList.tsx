@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 
-import { Card, Pill } from "../radix-primitives";
+import { Card, Pill } from "../components/ui";
 
 export type Endpoint = {
     method: "GET" | "POST" | "PUT" | "PATCH" | "DELETE" | string;
