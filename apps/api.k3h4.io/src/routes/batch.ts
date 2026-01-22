@@ -107,6 +107,46 @@ export function registerBatchRoutes(server: FastifyInstance, prisma: PrismaClien
       const results: Record<string, MaptilerResult> = {};
       const maptilerTasks: Array<{ id: string; raw: MaptilerOp }> = [];
       let maptilerCount = 0;
+      let invalidOps = 0;
+      let unsupportedOps = 0;
+
+      const recordInvalidOp = async (id: string, raw: BatchOp | undefined, reason: string) => {
+        const opName = typeof raw?.op === "string" ? raw.op : null;
+        const path = typeof raw?.path === "string" ? raw.path : null;
+        await rt({
+          eventType: "batch.invalid",
+          source: "api",
+          payload: { id, op: opName, path, reason },
+        });
+      };
+
+      const recordMaptilerEvent = async (
+        id: string,
+        telemetryPath: string,
+        raw: MaptilerOp,
+        result: MaptilerResult,
+        responseType: "json" | "arrayBuffer",
+      ) => {
+        const eventType = raw.op === "maptiler.json" ? "batch.maptiler.json" : "batch.maptiler.tile";
+        await rt({
+          eventType,
+          source: "api",
+          payload: {
+            id,
+            path: telemetryPath,
+            kind: result.kind ?? raw.kind,
+            responseType,
+            cacheOnly: raw.cacheOnly === true,
+            cached: result.cached,
+            source: result.source,
+            cacheMiss: result.cacheMiss ?? false,
+            status: result.status,
+            ok: result.ok,
+            error: result.error ?? null,
+            size: result.size ?? null,
+          },
+        });
+      };
 
       for (let idx = 0; idx < body.ops.length; idx += 1) {
         const raw: BatchOp = body.ops[idx] as BatchOp;
@@ -114,6 +154,8 @@ export function registerBatchRoutes(server: FastifyInstance, prisma: PrismaClien
 
         if (!raw || typeof raw !== "object" || typeof raw.op !== "string") {
           results[id] = { ok: false, status: 400, cached: false, source: "none", error: "invalid op" };
+          invalidOps += 1;
+          await recordInvalidOp(id, raw, "invalid op");
           continue;
         }
 
@@ -123,7 +165,10 @@ export function registerBatchRoutes(server: FastifyInstance, prisma: PrismaClien
           continue;
         }
 
+        invalidOps += 1;
+        unsupportedOps += 1;
         results[id] = { ok: false, status: 400, cached: false, source: "none", error: `unsupported op ${raw.op}` };
+        await recordInvalidOp(id, raw, `unsupported op ${raw.op}`);
       }
 
       const executeMaptilerTask = async ({ id, raw }: { id: string; raw: MaptilerOp }) => {
@@ -133,8 +178,16 @@ export function registerBatchRoutes(server: FastifyInstance, prisma: PrismaClien
             ? "json"
             : "arrayBuffer";
 
+        const finalizeMaptilerResult = async (result: MaptilerResult, telemetryPath: string) => {
+          results[id] = result;
+          await recordMaptilerEvent(id, telemetryPath, raw, result, responseType);
+        };
+
+        let telemetryPath = typeof raw.path === "string" ? raw.path.trim() : "";
+
         try {
-          const path = normalizePath(String(raw.path ?? ""));
+          const path = normalizePath(telemetryPath);
+          telemetryPath = path;
           const maxAgeMinutes = coerceNumber(raw.maxAgeMinutes) ?? DEFAULT_MAX_AGE_MINUTES;
           let params = pickParams(raw.params);
 
@@ -162,7 +215,7 @@ export function registerBatchRoutes(server: FastifyInstance, prisma: PrismaClien
           const source: "cache" | "network" | "none" = fromCache ? "cache" : cached ? "cache" : "network";
 
           if (!response.ok) {
-            results[id] = {
+            await finalizeMaptilerResult({
               ok: false,
               status: response.status,
               cached,
@@ -172,13 +225,13 @@ export function registerBatchRoutes(server: FastifyInstance, prisma: PrismaClien
               contentType: response.contentType,
               cacheControl: response.cacheControl,
               error: "maptiler error",
-            };
+            }, telemetryPath);
             return;
           }
 
           if (responseType === "arrayBuffer") {
             const buf = response.data ? Buffer.from(response.data) : null;
-            results[id] = {
+            await finalizeMaptilerResult({
               ok: true,
               status: response.status,
               cached,
@@ -188,28 +241,29 @@ export function registerBatchRoutes(server: FastifyInstance, prisma: PrismaClien
               cacheControl: response.cacheControl,
               dataBase64: buf ? buf.toString("base64") : null,
               size: buf?.byteLength ?? 0,
-            };
-          } else {
-            results[id] = {
-              ok: true,
-              status: response.status,
-              cached,
-              source,
-              kind,
-              contentType: response.contentType,
-              cacheControl: response.cacheControl,
-              body: response.body ?? null,
-            };
+            }, telemetryPath);
+            return;
           }
+
+          await finalizeMaptilerResult({
+            ok: true,
+            status: response.status,
+            cached,
+            source,
+            kind,
+            contentType: response.contentType,
+            cacheControl: response.cacheControl,
+            body: response.body ?? null,
+          }, telemetryPath);
         } catch (err) {
-          results[id] = {
+          await finalizeMaptilerResult({
             ok: false,
             status: 400,
             cached: false,
             source: "none",
             cacheMiss: false,
             error: err instanceof Error ? err.message : "maptiler failed",
-          };
+          }, telemetryPath);
         }
       };
 
@@ -218,7 +272,16 @@ export function registerBatchRoutes(server: FastifyInstance, prisma: PrismaClien
         await Promise.all(chunk.map(executeMaptilerTask));
       }
 
-      await rt({ eventType: "batch", source: "api", payload: { total: body.ops.length, maptiler: maptilerCount } });
+      await rt({
+        eventType: "batch.summary",
+        source: "api",
+        payload: {
+          total: body.ops.length,
+          maptiler: maptilerCount,
+          invalid: invalidOps,
+          unsupported: unsupportedOps,
+        },
+      });
 
       return { ok: true, results };
     },
