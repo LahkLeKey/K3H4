@@ -1,18 +1,18 @@
 import * as dotenv from "dotenv";
 import Fastify, { FastifyReply, FastifyRequest } from "fastify";
-import fastifySwagger, { type SwaggerOptions } from "@fastify/swagger";
+import fastifySwagger from "@fastify/swagger";
 import fastifySwaggerUi from "@fastify/swagger-ui";
 import fastifyJwt from "@fastify/jwt";
 import fastifyCors from "@fastify/cors";
 import fastifyRateLimit from "@fastify/rate-limit";
-import path from "node:path";
 import { existsSync } from "node:fs";
 import { PrismaClient } from "@prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { registerAllRoutes } from "./routes";
 import { scheduleDemCacheCleanup } from "./services/geo-dem-cache";
-import { buildTelemetryBase, normalizeDurationMs, warnOnSuspiciousDuration } from "./routes/telemetry";
-import { type TelemetryParams } from "./routes/types";
+import { registerCoreHooks } from "./server/hooks";
+import { buildOpenApiOptions, docsStaticDir } from "./server/swagger";
+import { createTelemetryRecorder, registerTelemetryRoutes } from "./server/telemetry";
 
 dotenv.config();
 
@@ -55,166 +55,7 @@ await server.register(fastifyRateLimit, {
   },
 });
 
-// Unified PascalCase tag names to keep Swagger sidebar consistent
-const swaggerTags: Record<string, { name: string; description: string }> = {
-  health: { name: "Health", description: "Health and diagnostics" },
-  auth: { name: "Auth", description: "Authentication and session" },
-  profile: { name: "Profile", description: "User profiles" },
-  bank: { name: "Bank", description: "Banking and balances" },
-  persona: { name: "Persona", description: "Persona management" },
-  assignment: { name: "Assignment", description: "Assignments and tasks" },
-  staffing: { name: "Staffing", description: "Workforce planning" },
-  freight: { name: "Freight", description: "Freight and routing" },
-  warehouse: { name: "Warehouse", description: "Inventory and storage" },
-  pos: { name: "POS", description: "Point of sale" },
-  agriculture: { name: "Agriculture", description: "Agriculture simulator" },
-  culinary: { name: "Culinary", description: "Culinary simulator" },
-  arcade: { name: "Arcade", description: "Arcade simulator" },
-  usda: { name: "USDA", description: "USDA data" },
-  wikidata: { name: "Wikidata", description: "Wikidata REST cache" },
-  geo: { name: "Geo", description: "Geospatial caches and lookups" },
-  maptiler: { name: "MapTiler", description: "MapTiler Cloud API proxy" },
-  osrm: { name: "OSRM", description: "OSRM routing proxy" },
-  telemetry: { name: "Telemetry", description: "Telemetry intake" },
-};
-
-// Route-segment -> tag mapping (keeps sidebar organized by domain)
-const swaggerTagMap: Record<string, { name: string; description: string }> = {
-  // platform
-  health: swaggerTags.health,
-  auth: swaggerTags.auth,
-  profile: swaggerTags.profile,
-  telemetry: swaggerTags.telemetry,
-  // finance/persona
-  bank: swaggerTags.bank,
-  persona: swaggerTags.persona,
-  personas: swaggerTags.persona,
-  assignment: swaggerTags.assignment,
-  assignments: swaggerTags.assignment,
-  staffing: swaggerTags.staffing,
-  // logistics & sims
-  freight: swaggerTags.freight,
-  warehouse: swaggerTags.warehouse,
-  pos: swaggerTags.pos,
-  agriculture: swaggerTags.agriculture,
-  culinary: swaggerTags.culinary,
-  arcade: swaggerTags.arcade,
-  // data & geo
-  usda: swaggerTags.usda,
-  wikidata: swaggerTags.wikidata,
-  geo: swaggerTags.geo,
-  maptiler: swaggerTags.maptiler,
-  osrm: swaggerTags.osrm,
-};
-
-const clampDurationMs = normalizeDurationMs;
-
-const TELEMETRY_MAX_EVENTS = 1000; // amount of telemetry events to retain in the DB (Destroys anything older on prune)
-const TELEMETRY_PRUNE_BATCH = 200; // trim in small batches to avoid large deletes
-
-const pruneTelemetry = async () => {
-  const staleEvents = await prisma.telemetryEvent.findMany({
-    select: { id: true },
-    orderBy: [
-      { createdAt: "desc" },
-      { id: "desc" },
-    ],
-    skip: TELEMETRY_MAX_EVENTS,
-    take: TELEMETRY_PRUNE_BATCH,
-  });
-
-  if (!staleEvents.length) return;
-
-  await prisma.telemetryEvent.deleteMany({ where: { id: { in: staleEvents.map((event) => event.id) } } });
-};
-
-const recordTelemetry = async (request: FastifyRequest, params: TelemetryParams) => {
-  const durationMs = clampDurationMs(params.durationMs);
-  warnOnSuspiciousDuration(request, { eventType: params.eventType, durationMs });
-
-  if (!params.sessionId || !params.path || !params.userId) {
-    request.log.warn({ params }, "telemetry payload missing required identifiers");
-    return;
-  }
-
-  try {
-    await prisma.telemetryEvent.create({
-      data: {
-        sessionId: params.sessionId,
-        userId: params.userId,
-        eventType: params.eventType,
-        source: params.source,
-        path: params.path,
-        payload: params.payload as any,
-        durationMs,
-        error: params.error,
-      },
-    });
-  } catch (err) {
-    request.log.warn({ err }, "telemetry insert failed");
-    return;
-  }
-
-  try {
-    await pruneTelemetry();
-  } catch (err) {
-    request.log.warn({ err }, "telemetry prune failed");
-  }
-};
-
-// Verbose request lifecycle logging
-server.addHook("onRequest", async (request) => {
-  request.requestStartTime = process.hrtime.bigint();
-  request.log.info(
-    {
-      method: request.method,
-      url: request.url,
-      ip: request.ip,
-      userAgent: request.headers["user-agent"],
-    },
-    "incoming request",
-  );
-});
-
-server.addHook("onResponse", async (request, reply) => {
-  const durationMs = request.requestStartTime
-    ? Number((process.hrtime.bigint() - request.requestStartTime) / 1000000n)
-    : undefined;
-
-  request.log.info(
-    {
-      method: request.method,
-      url: request.url,
-      statusCode: reply.statusCode,
-      durationMs,
-      contentLength: reply.getHeader("content-length"),
-    },
-    "response sent",
-  );
-});
-
-server.addHook("onError", async (request, reply, error) => {
-  request.log.error(
-    {
-      err: error,
-      method: request.method,
-      url: request.url,
-      statusCode: reply.statusCode,
-    },
-    "request error",
-  );
-});
-
-server.addHook("onRoute", (routeOptions) => {
-  const existing = routeOptions.schema?.tags;
-  if (existing && Array.isArray(existing) && existing.length > 0) return;
-
-  const firstSegment = routeOptions.url?.split("/").filter(Boolean)[0];
-  const mapped = firstSegment ? swaggerTagMap[firstSegment] : undefined;
-  const fallback = firstSegment ?? "general";
-  const tagName = mapped?.name ?? fallback;
-  routeOptions.schema = { ...(routeOptions.schema ?? {}), tags: [tagName] };
-});
+registerCoreHooks(server);
 
 const databaseUrl = process.env.DATABASE_URL;
 if (!databaseUrl) {
@@ -237,50 +78,10 @@ const resolveServerUrl = () => {
   return `http://${host}:${port}`;
 };
 
-// Basic OpenAPI definition for the service
-const openApiOptions: SwaggerOptions = {
-  openapi: {
-    openapi: "3.0.0",
-    info: {
-      title: "K3H4 API",
-      description:
-        "API for K3H4 services. To authorize, sign in at https://www.k3h4.dev (or the dev frontend), open devtools > Application > Local Storage, and copy the value of k3h4.accessToken. Paste the token in Authorize; the UI will send it as a Bearer token automatically.",
-      version: "0.1.0",
-      contact: {
-        name: "K3H4 Platform",
-        url: "https://www.k3h4.dev",
-        email: "support@k3h4.dev",
-      },
-      license: {
-        name: "MIT",
-        url: "https://opensource.org/licenses/MIT",
-      },
-    },
-    servers: [
-      { url: resolveServerUrl(), description: "Active server" },
-      { url: "https://api.k3h4.dev", description: "Production" },
-    ],
-    components: {
-      securitySchemes: {
-        bearerAuth: {
-          type: "http",
-          scheme: "bearer",
-          bearerFormat: "JWT",
-          description: "Paste your k3h4.accessToken; the UI prefixes Bearer for you.",
-        },
-      },
-    },
-    security: [{ bearerAuth: [] }],
-    tags: Object.values(swaggerTags),
-    externalDocs: {
-      description: "Frontend console and docs",
-      url: "https://www.k3h4.dev",
-    },
-  },
-};
+// Build OpenAPI definition for the service
+const openApiOptions = buildOpenApiOptions(resolveServerUrl);
 
 await server.register(fastifySwagger, openApiOptions);
-const docsStaticDir = path.join(process.cwd(), "public", "docs", "static");
 const swaggerUiOpts = {
   routePrefix: "/docs",
   uiHooks: {
@@ -341,165 +142,8 @@ server.decorate(
 
 server.get("/health", async () => ({ status: "ok" }));
 
-// Public telemetry intake; best-effort association with user/session
-server.post("/telemetry", async (request, reply) => {
-  const body = request.body as
-    | {
-        events?: Array<{
-          eventType?: string;
-          source?: string;
-          sessionId?: string;
-          path?: string;
-          payload?: unknown;
-          userId?: string;
-          durationMs?: number | string;
-          error?: boolean;
-        }>;
-        eventType?: string;
-        source?: string;
-        sessionId?: string;
-        path?: string;
-        payload?: unknown;
-        userId?: string;
-        durationMs?: number | string;
-        error?: boolean;
-      }
-    | undefined;
-
-  const incomingEvents = Array.isArray(body?.events)
-    ? body?.events ?? []
-    : [body].filter((val): val is NonNullable<typeof body> => Boolean(val));
-
-  const normalizedEvents: TelemetryParams[] = [];
-
-  incomingEvents.forEach((evt) => {
-    if (!evt) return;
-
-    const eventType = typeof evt.eventType === "string" ? evt.eventType.trim() : "";
-    const source = typeof evt.source === "string" ? evt.source.trim() : "";
-    const sessionId = typeof evt.sessionId === "string" ? evt.sessionId.trim() : "";
-    const path = typeof evt.path === "string" ? evt.path.trim() : "";
-    const userId = typeof evt.userId === "string" ? evt.userId.trim() : "";
-    const hasPayload = Object.prototype.hasOwnProperty.call(evt, "payload");
-    const rawDuration =
-      typeof evt.durationMs === "number"
-        ? evt.durationMs
-        : typeof evt.durationMs === "string" && evt.durationMs.trim().length > 0
-          ? Number(evt.durationMs)
-          : NaN;
-
-    if (!eventType || !source || !sessionId || !path || !userId || !hasPayload || !Number.isFinite(rawDuration)) {
-      return;
-    }
-
-    const durationMs = clampDurationMs(rawDuration);
-
-    normalizedEvents.push({
-      eventType,
-      source,
-      sessionId,
-      path,
-      payload: evt.payload,
-      userId,
-      durationMs,
-      error: evt.error === true,
-    });
-  });
-
-  if (normalizedEvents.length === 0) {
-    return reply.status(400).send({ error: "eventType, source, sessionId, path, userId, payload, durationMs are required" });
-  }
-
-  // Optionally attach user if a valid token is present; do not fail intake on auth errors
-  const hasAuth = typeof request.headers.authorization === "string" && request.headers.authorization.length > 0;
-  if (hasAuth) {
-    try {
-      await request.jwtVerify();
-    } catch (err) {
-      request.log.debug({ err }, "telemetry token verification failed; continuing unauthenticated");
-    }
-  }
-
-  await Promise.all(
-    normalizedEvents.map((evt) => recordTelemetry(request, evt)),
-  );
-
-  return { ok: true, recorded: normalizedEvents.length };
-});
-
-// Telemetry query endpoint with lightweight filters
-server.get("/telemetry", async (request, reply) => {
-  const query = request.query as {
-    eventType?: string | string[];
-    source?: string | string[];
-    sessionId?: string;
-    userId?: string;
-    since?: string;
-    limit?: string;
-    cursorTs?: string;
-    cursorId?: string;
-  };
-
-  const limit = Math.min(500, Math.max(1, Number(query.limit ?? 200)));
-  const since = query.since ? new Date(query.since) : null;
-  const cursorTs = query.cursorTs ? new Date(query.cursorTs) : null;
-  const cursorId = typeof query.cursorId === "string" && query.cursorId.length > 0 ? query.cursorId : null;
-  const hasCursor = cursorTs && !Number.isNaN(cursorTs.getTime()) && cursorId;
-
-  const eventTypes = Array.isArray(query.eventType)
-    ? query.eventType.filter(Boolean)
-    : query.eventType?.split(",").map((s) => s.trim()).filter(Boolean);
-  const sources = Array.isArray(query.source)
-    ? query.source.filter(Boolean)
-    : query.source?.split(",").map((s) => s.trim()).filter(Boolean);
-
-  const where: any = {};
-  if (eventTypes?.length) where.eventType = { in: eventTypes };
-  if (sources?.length) where.source = { in: sources };
-  if (query.sessionId) where.sessionId = query.sessionId;
-  if (query.userId) where.userId = query.userId;
-  if (since && !Number.isNaN(since.getTime())) where.createdAt = { gte: since };
-
-  const cursorClause = hasCursor
-    ? {
-        OR: [
-          { createdAt: { lt: cursorTs } },
-          { createdAt: cursorTs, id: { lt: cursorId } },
-        ],
-      }
-    : null;
-
-  const finalWhere = cursorClause ? { AND: [where, cursorClause] } : where;
-
-  const events = await prisma.telemetryEvent.findMany({
-    where: finalWhere,
-    orderBy: [
-      { createdAt: "desc" },
-      { id: "desc" },
-    ],
-    take: limit,
-  });
-
-  const summary = {
-    total: events.length,
-    byEventType: events.reduce<Record<string, number>>((acc, evt) => {
-      acc[evt.eventType] = (acc[evt.eventType] ?? 0) + 1;
-      return acc;
-    }, {}),
-    bySource: events.reduce<Record<string, number>>((acc, evt) => {
-      acc[evt.source] = (acc[evt.source] ?? 0) + 1;
-      return acc;
-    }, {}),
-    newestTs: events[0]?.createdAt ?? null,
-    oldestTs: events[events.length - 1]?.createdAt ?? null,
-  };
-
-  const nextCursor = events.length === limit
-    ? { cursorTs: events[events.length - 1].createdAt, cursorId: events[events.length - 1].id }
-    : null;
-
-  return { events, summary, nextCursor };
-});
+const recordTelemetry = createTelemetryRecorder(prisma);
+registerTelemetryRoutes(server, prisma, recordTelemetry);
 
 await registerAllRoutes(server, prisma, recordTelemetry);
 
