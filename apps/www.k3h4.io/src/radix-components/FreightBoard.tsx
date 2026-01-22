@@ -1,12 +1,17 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
+import { z } from "zod";
 
 import { Badge, Button, Card, StatChip, Table } from "../components/ui";
 import { useAuthStore } from "../zustand-stores/auth";
 import { useFreightState } from "../react-hooks/freight";
+import { apiFetch } from "../react-hooks/lib/api-client";
 
 export function FreightBoard() {
     const { session } = useAuthStore();
     const { loads, status, error, totals, fetchLoads, planQuickLoad, completeLoad } = useFreightState();
+    const [customTitle, setCustomTitle] = useState("Austin -> Dallas");
+    const [customRate, setCustomRate] = useState("2.1");
+    const [actionStatus, setActionStatus] = useState<string>("");
 
     useEffect(() => {
         if (session?.accessToken && status === "idle") {
@@ -15,6 +20,34 @@ export function FreightBoard() {
     }, [session?.accessToken, status, fetchLoads]);
 
     const actionDisabled = !session?.accessToken || status === "loading";
+
+    const handlePlanCustom = async () => {
+        if (!session?.accessToken) return;
+        setActionStatus("Planning...");
+        try {
+            await apiFetch("/freight", {
+                method: "POST",
+                token: session.accessToken,
+                baseUrl: useAuthStore.getState().apiBase,
+                schema: z.any(),
+                body: {
+                    title: customTitle || "Route",
+                    originName: "Austin, TX",
+                    originLat: 30.2672,
+                    originLng: -97.7431,
+                    destinationName: "Dallas, TX",
+                    destinationLat: 32.7767,
+                    destinationLng: -96.797,
+                    ratePerKm: Number(customRate) || 2,
+                },
+            });
+            setActionStatus("Load planned");
+            fetchLoads();
+        } catch (err) {
+            const msg = err instanceof Error ? err.message : "Failed";
+            setActionStatus(msg);
+        }
+    };
 
     return (
         <div className="space-y-4">
@@ -38,6 +71,31 @@ export function FreightBoard() {
                 <StatChip label="Distance" value={`${totals.distanceKm.toFixed(1)} km`} accent="#60a5fa" />
                 <StatChip label="Cost" value={`₭${totals.cost.toFixed(2)}`} accent="#f472b6" />
             </div>
+
+            <Card eyebrow="Create" title="Plan load" actions={<Badge accent="#22d3ee">POST /freight</Badge>}>
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-end">
+                    <div className="flex-1 space-y-1">
+                        <label className="text-xs uppercase tracking-[0.16em] text-slate-400">Title</label>
+                        <input
+                            className="w-full rounded-lg border border-white/10 bg-slate-900/80 p-2 text-sm text-slate-100 focus:border-emerald-300/60 focus:outline-none"
+                            value={customTitle}
+                            onChange={(e) => setCustomTitle(e.target.value)}
+                        />
+                    </div>
+                    <div className="w-32 space-y-1">
+                        <label className="text-xs uppercase tracking-[0.16em] text-slate-400">Rate/km</label>
+                        <input
+                            className="w-full rounded-lg border border-white/10 bg-slate-900/80 p-2 text-sm text-slate-100 focus:border-emerald-300/60 focus:outline-none"
+                            value={customRate}
+                            onChange={(e) => setCustomRate(e.target.value)}
+                        />
+                    </div>
+                    <Button accent="#fbbf24" onClick={handlePlanCustom} disabled={actionDisabled}>
+                        Plan load
+                    </Button>
+                </div>
+                <div className="text-xs text-slate-300">{actionStatus || (actionDisabled ? "Sign in to plan loads." : "Austin to Dallas demo route.")}</div>
+            </Card>
 
             <Card eyebrow="Loads" title="Route planner" actions={<Badge accent="#fbbf24">Live</Badge>}>
                 {loads.length === 0 ? (

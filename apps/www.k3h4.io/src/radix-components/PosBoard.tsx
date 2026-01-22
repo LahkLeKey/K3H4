@@ -1,12 +1,18 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
+import { z } from "zod";
 
 import { Badge, Button, Card, StatChip, Table } from "../components/ui";
 import { useAuthStore } from "../zustand-stores/auth";
 import { usePosState } from "../react-hooks/pos";
+import { apiFetch } from "../react-hooks/lib/api-client";
 
 export function PosBoard() {
     const { session } = useAuthStore();
     const { overview, status, error, fetchOverview } = usePosState();
+    const [ticketStore, setTicketStore] = useState("Demo Store");
+    const [ticketChannel, setTicketChannel] = useState("dine-in");
+    const [ticketAmount, setTicketAmount] = useState("42.00");
+    const [ticketStatus, setTicketStatus] = useState<string>("");
 
     useEffect(() => {
         if (session?.accessToken && status === "idle") {
@@ -15,6 +21,29 @@ export function PosBoard() {
     }, [session?.accessToken, status, fetchOverview]);
 
     const loading = status === "loading";
+
+    const handleCreateTicket = async () => {
+        if (!session?.accessToken) return;
+        setTicketStatus("Creating ticket...");
+        try {
+            await apiFetch("/pos/tickets", {
+                method: "POST",
+                token: session.accessToken,
+                baseUrl: useAuthStore.getState().apiBase,
+                schema: z.any(),
+                body: {
+                    store: ticketStore || "Store",
+                    channel: ticketChannel || "dine-in",
+                    amount: ticketAmount || "0",
+                },
+            });
+            setTicketStatus("Ticket created");
+            fetchOverview();
+        } catch (err) {
+            const msg = err instanceof Error ? err.message : "Failed";
+            setTicketStatus(msg);
+        }
+    };
 
     return (
         <div className="space-y-4">
@@ -64,6 +93,33 @@ export function PosBoard() {
                         rowKey={(row, idx) => `${row.name}-${idx}`}
                     />
                 ) : null}
+            </Card>
+
+            <Card eyebrow="Create" title="Add ticket" actions={<Badge accent="#f472b6">POST /pos/tickets</Badge>}>
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-end">
+                    <input
+                        className="w-full rounded-lg border border-white/10 bg-slate-900/80 p-2 text-sm text-slate-100 focus:border-emerald-300/60 focus:outline-none"
+                        value={ticketStore}
+                        onChange={(e) => setTicketStore(e.target.value)}
+                        placeholder="Store"
+                    />
+                    <input
+                        className="w-32 rounded-lg border border-white/10 bg-slate-900/80 p-2 text-sm text-slate-100 focus:border-emerald-300/60 focus:outline-none"
+                        value={ticketChannel}
+                        onChange={(e) => setTicketChannel(e.target.value)}
+                        placeholder="Channel"
+                    />
+                    <input
+                        className="w-32 rounded-lg border border-white/10 bg-slate-900/80 p-2 text-sm text-slate-100 focus:border-emerald-300/60 focus:outline-none"
+                        value={ticketAmount}
+                        onChange={(e) => setTicketAmount(e.target.value)}
+                        placeholder="Amount"
+                    />
+                    <Button accent="#f472b6" onClick={handleCreateTicket} disabled={!session?.accessToken || loading}>
+                        Create ticket
+                    </Button>
+                </div>
+                <div className="text-xs text-slate-300">{ticketStatus || (!session ? "Sign in to create tickets." : "Adds POS ticket records.")}</div>
             </Card>
         </div>
     );
