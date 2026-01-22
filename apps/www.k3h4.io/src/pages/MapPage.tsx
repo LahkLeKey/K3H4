@@ -1,4 +1,4 @@
-import { AppShell } from "../radix-primitives/AppShell";
+import { AppShell } from "../components/ui";
 
 type MapPageProps = {
     showNav?: boolean;

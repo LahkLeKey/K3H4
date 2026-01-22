@@ -1,2 +1,2 @@
-export { TableCard } from "../radix-primitives/TableCard";
-export type { TableCardProps } from "../radix-primitives/TableCard";
+export { TableCard } from "../components/ui";
+export type { TableCardProps } from "../components/ui";

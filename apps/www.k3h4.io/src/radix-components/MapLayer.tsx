@@ -8,12 +8,12 @@ type DeckMapboxOverlay = InstanceType<typeof MapboxOverlay>;
 
 import { useMapView } from "../react-hooks/useMapView";
 import { useGeoState } from "../zustand-stores/geo";
-import { LocationOverview } from "../radix-primitives/LocationOverview";
+import { LocationOverview } from "../components/ui";
 import { useAuthStore } from "../react-hooks/auth";
 import { MapPinsOverlay, type Poi } from "../r3f-components/MapPinsOverlay";
 import { usePoiQuery, usePoiStore } from "../zustand-stores/poi";
 import { useMapGeocodeSearch, type MapSearchResult } from "../react-hooks/useMapGeocodeSearch";
-import { MapLocateButton, MapSearchPanel, MapStatusOverlay, PoiDetailCard, PoiErrorBanner } from "../radix-primitives";
+import { MapLocateButton, MapSearchPanel, MapStatusOverlay, PoiDetailCard, PoiErrorBanner } from "../components/ui";
 import { usePoiDetailInteraction } from "../react-hooks/usePoiDetailInteraction";
 import { useMapInteractionToggle } from "../react-hooks/useMapInteractionToggle";
 import { usePoiViewportSync } from "../react-hooks/usePoiViewportSync";
