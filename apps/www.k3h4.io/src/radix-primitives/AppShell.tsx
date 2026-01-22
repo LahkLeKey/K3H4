@@ -11,7 +11,7 @@ import { LoginMenu } from "../radix-components/auth/LoginMenu";
 import { CallbackScreen } from "../radix-components/auth/CallbackScreen";
 import { useGeoState } from "../zustand-stores/geo";
 import { useMapView } from "../react-hooks/useMapView";
-import { SessionPanel } from "../r3f-primitives/SessionPanel";
+import { SessionPanel } from "../radix-components/auth/SessionPanel";
 import { primeHistoryCache, usePoiStore } from "../zustand-stores/poi";
 
 const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));

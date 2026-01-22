@@ -1,3 +1,3 @@
 export * from "./Html";
 export * from "./NodeLinkGraph";
-export * from "./SessionPanel";
+export * from "../radix-components/auth/SessionPanel";

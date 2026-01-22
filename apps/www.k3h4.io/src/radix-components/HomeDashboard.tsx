@@ -1,5 +1,5 @@
 import { useAuthStore } from "../react-hooks/auth";
-import { SessionPanel } from "../r3f-primitives/SessionPanel";
+import { SessionPanel } from "./auth/SessionPanel";
 
 export function HomeDashboard() {
     const { session } = useAuthStore();
