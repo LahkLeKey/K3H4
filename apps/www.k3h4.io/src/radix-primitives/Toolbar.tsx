@@ -17,4 +17,4 @@ export const ToolbarSeparator = ({ className = "", ...props }: ComponentPropsWit
     <ToolbarPrimitive.Separator {...props} className={`mx-1 h-5 w-px bg-white/15 ${className}`.trim()} />
 );
 export const ToolbarLink = ToolbarPrimitive.Link;
-export const ToolbarGroup = ToolbarPrimitive.Group;
+export const ToolbarToggleGroup = ToolbarPrimitive.ToggleGroup;
