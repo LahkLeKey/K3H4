@@ -1,6 +1,6 @@
 import { create } from "zustand";
 
-export type TelemetryTab = "overview" | "performance" | "reliability" | "events";
+export type TelemetryTab = "overview" | "performance" | "reliability" | "errors" | "events";
 
 export type TelemetryState = {
     activeTab: TelemetryTab;

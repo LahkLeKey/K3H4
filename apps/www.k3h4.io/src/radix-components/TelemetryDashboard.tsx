@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 
 import { Tabs } from "../radix-primitives";
-import { Badge, Button, SectionHeader, Stack } from "../components/ui";
+import { Badge, Button, Card, EmptyState, SectionHeader, Stack, Table } from "../components/ui";
 import type { TelemetryEvent } from "../react-hooks/telemetry";
 import { useTelemetryInfiniteQuery } from "../react-hooks/telemetry";
 import { useTelemetryStore } from "../zustand-stores/telemetry";
@@ -69,6 +69,42 @@ const isErrorEvent = (eventType: string, payload: unknown, explicit?: boolean | 
 const isRefreshEvent = (eventType: string) => {
     const t = eventType.toLowerCase();
     return t.includes("refresh") || t.includes("tile") || t.includes("cache");
+};
+
+const extractStackTrace = (payload: unknown) => {
+    const stacks: string[] = [];
+    const visit = (val: unknown) => {
+        if (!val) return;
+        if (typeof val === "string") {
+            if (val.toLowerCase().includes("error") || val.includes(" at ") || val.includes("\n")) stacks.push(val);
+            return;
+        }
+        if (Array.isArray(val)) {
+            val.forEach(visit);
+            return;
+        }
+        if (typeof val === "object") {
+            Object.entries(val as Record<string, unknown>).forEach(([key, v]) => {
+                if (key.toLowerCase().includes("stack") && typeof v === "string") {
+                    stacks.push(v);
+                    return;
+                }
+                visit(v);
+            });
+        }
+    };
+    visit(payload);
+    return stacks[0] ?? null;
+};
+
+const formatPayloadSnippet = (payload: unknown, maxLen = 180) => {
+    if (payload === null || payload === undefined) return "-";
+    try {
+        const str = typeof payload === "string" ? payload : JSON.stringify(payload);
+        return str.length > maxLen ? `${str.slice(0, maxLen - 1)}…` : str;
+    } catch (err) {
+        return "[unserializable]";
+    }
 };
 
 export function TelemetryDashboard() {
@@ -166,6 +202,36 @@ export function TelemetryDashboard() {
         return rows.sort((a, b) => b.p95 - a.p95).slice(0, 8);
     }, [durationEvents]);
 
+    const errorEvents = useMemo(() => events.filter((evt) => isErrorEvent(evt.eventType, evt.payload, evt.error)), [events]);
+
+    const errorBreakdown = useMemo(() => {
+        const map = new Map<string, { eventType: string; source: string; path: string; count: number; lastSeen: number; stack: string | null; samplePayload: unknown }>();
+        for (const evt of errorEvents) {
+            const key = `${evt.eventType}|${evt.source}|${evt.path ?? ""}`;
+            const ts = parseTimestampMs(evt.createdAt) ?? Date.now();
+            const existing = map.get(key);
+            if (!existing) {
+                map.set(key, {
+                    eventType: evt.eventType,
+                    source: evt.source,
+                    path: evt.path ?? "-",
+                    count: 1,
+                    lastSeen: ts,
+                    stack: extractStackTrace(evt.payload),
+                    samplePayload: evt.payload,
+                });
+            } else {
+                existing.count += 1;
+                if (ts > existing.lastSeen) {
+                    existing.lastSeen = ts;
+                    existing.stack = extractStackTrace(evt.payload) ?? existing.stack;
+                    existing.samplePayload = evt.payload ?? existing.samplePayload;
+                }
+            }
+        }
+        return Array.from(map.values()).sort((a, b) => b.count - a.count || b.lastSeen - a.lastSeen);
+    }, [errorEvents]);
+
     const summary = useMemo<TelemetrySummary | null>(() => {
         const latest = samples[samples.length - 1];
         if (!latest) return null;
@@ -186,8 +252,16 @@ export function TelemetryDashboard() {
         setPage(0);
     }, [events.length]);
 
+    const errorPageSize = 20;
+    const [errorPage, setErrorPage] = useState(0);
+    useEffect(() => {
+        setErrorPage(0);
+    }, [errorEvents.length]);
+
     const totalPages = Math.max(1, Math.ceil(events.length / pageSize));
     const pagedEvents = events.slice(page * pageSize, page * pageSize + pageSize);
+    const errorTotalPages = Math.max(1, Math.ceil(errorEvents.length / errorPageSize));
+    const pagedErrorEvents = errorEvents.slice(errorPage * errorPageSize, errorPage * errorPageSize + errorPageSize);
     const overviewContent = (
         <Stack gap="md">
             <TelemetrySummaryTiles summary={summary} isLoading={isLoading} />
@@ -220,6 +294,57 @@ export function TelemetryDashboard() {
             <TelemetryRefreshCard data={samples} gradientId="refreshGradient-reliability" />
             <TelemetryIngestCard data={samples} />
         </div>
+    );
+
+    const errorsContent = (
+        <Stack gap="md">
+            <div className="grid gap-4 lg:grid-cols-2">
+                <TelemetryErrorsCard data={samples} gradientId="errorsGradient-errors" />
+                <Card title="Error breakdown" actions={<span className="text-xs text-slate-400">Grouped by type • path • source</span>}>
+                    {errorBreakdown.length === 0 ? (
+                        <EmptyState title="No errors in this window." />
+                    ) : (
+                        <Table
+                            columns={[
+                                { key: "eventType" as const, label: "Type" },
+                                { key: "path" as const, label: "Path" },
+                                { key: "source" as const, label: "Source" },
+                                { key: "count" as const, label: "Count" },
+                                {
+                                    key: "lastSeen" as const,
+                                    label: "Last seen",
+                                    render: (row) => new Date(row.lastSeen).toLocaleTimeString(),
+                                },
+                                {
+                                    key: "stack" as const,
+                                    label: "Stack / payload",
+                                    render: (row) => formatPayloadSnippet(row.stack ?? row.samplePayload, 160),
+                                },
+                            ]}
+                            rows={errorBreakdown}
+                            rowKey={(row) => `${row.eventType}-${row.source}-${row.path}`}
+                        />
+                    )}
+                </Card>
+            </div>
+
+            <TelemetryEventsTableCard
+                pagedEvents={pagedErrorEvents}
+                page={errorPage}
+                totalPages={errorTotalPages}
+                pageSize={errorPageSize}
+                totalItems={errorEvents.length}
+                isLoading={isLoading}
+                error={error instanceof Error ? error : null}
+                hasNextPage={Boolean(hasNextPage)}
+                isFetchingNextPage={isFetchingNextPage}
+                onPageChange={setErrorPage}
+                onRefresh={refetch}
+                onLoadMore={fetchNextPage}
+                subtitle="Errors only"
+                actionsSlot={<Badge accent="#f472b6">{errorEvents.length} errors cached</Badge>}
+            />
+        </Stack>
     );
 
     const eventsContent = (
@@ -271,6 +396,7 @@ export function TelemetryDashboard() {
                     { key: "overview", label: "Overview", content: overviewContent },
                     { key: "performance", label: "Performance", content: performanceContent },
                     { key: "reliability", label: "Reliability", content: reliabilityContent },
+                    { key: "errors", label: "Errors", content: errorsContent },
                     { key: "events", label: "Events", content: eventsContent },
                 ]}
             />
