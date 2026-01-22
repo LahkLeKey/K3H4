@@ -52,6 +52,11 @@ const isErrorEvent = (eventType: string, payload: unknown, explicit?: boolean | 
     return false;
 };
 
+const fmtDuration = (ms?: number | null) => {
+    if (!ms) return "-";
+    return `${ms.toLocaleString()} ms`;
+};
+
 const isRefreshEvent = (eventType: string) => {
     const t = eventType.toLowerCase();
     return t.includes("refresh") || t.includes("tile") || t.includes("cache");
@@ -126,6 +131,31 @@ export function TelemetryDashboard() {
                 };
             });
     }, [events]);
+
+    const durationEvents = useMemo(() => events.filter((evt) => typeof evt.durationMs === "number" && evt.durationMs !== null && evt.durationMs > 0), [events]);
+
+    const slowestEvents = useMemo(() => {
+        return durationEvents
+            .slice()
+            .sort((a, b) => (b.durationMs ?? 0) - (a.durationMs ?? 0))
+            .slice(0, 10);
+    }, [durationEvents]);
+
+    const worstTypes = useMemo(() => {
+        const map = new Map<string, number[]>();
+        for (const evt of durationEvents) {
+            const key = evt.eventType;
+            if (!map.has(key)) map.set(key, []);
+            map.get(key)!.push(evt.durationMs as number);
+        }
+        const rows = Array.from(map.entries()).map(([eventType, durations]) => ({
+            eventType,
+            p95: percentile(durations, 95),
+            p50: percentile(durations, 50),
+            count: durations.length,
+        }));
+        return rows.sort((a, b) => b.p95 - a.p95).slice(0, 8);
+    }, [durationEvents]);
 
     const summary = useMemo(() => {
         const latest = samples[samples.length - 1];
@@ -254,6 +284,53 @@ export function TelemetryDashboard() {
                             </AreaChart>
                         </ResponsiveContainer>
                     </div>
+                </Card>
+            </div>
+
+            <div className="grid gap-4 lg:grid-cols-2">
+                <Card title="Worst latency by type" actions={<span className="text-xs text-slate-400">p95 (recent)</span>}>
+                    <div className="mt-3 h-56">
+                        {worstTypes.length === 0 ? (
+                            <EmptyState title="No duration data yet." />
+                        ) : (
+                            <ResponsiveContainer>
+                                <BarChart data={worstTypes} margin={{ left: 0, right: 10, top: 10, bottom: 0 }} layout="vertical">
+                                    <CartesianGrid stroke="#0f172a" strokeDasharray="3 3" opacity={0.6} />
+                                    <XAxis type="number" stroke="#1e293b" tick={axisStyle} tickFormatter={(v) => `${Math.round(v)} ms`} />
+                                    <YAxis dataKey="eventType" type="category" stroke="#1e293b" tick={axisStyle} width={160} />
+                                    <Tooltip contentStyle={{ background: "#0f172a", border: "1px solid #1e293b", borderRadius: 12 }} formatter={(v: number) => `${Math.round(v)} ms`} />
+                                    <Bar dataKey="p95" fill="#fb7185" radius={[6, 6, 6, 6]} label={{ position: "right", formatter: (v: number) => `${Math.round(v)} ms` }} />
+                                </BarChart>
+                            </ResponsiveContainer>
+                        )}
+                    </div>
+                </Card>
+
+                <Card title="Slowest recent events" actions={<span className="text-xs text-slate-400">Top 10</span>}>
+                    <Stack gap="sm" className="mt-2">
+                        {slowestEvents.length === 0 ? (
+                            <EmptyState title="No duration data yet." />
+                        ) : (
+                            <Table
+                                columns={[
+                                    { key: "createdAt" as const, label: "Time", render: (row) => fmtTs(row.createdAt) },
+                                    { key: "eventType" as const, label: "Type" },
+                                    {
+                                        key: "status" as const,
+                                        label: "Status",
+                                        render: (row) => (row.error ? <Badge accent="#f472b6">Error</Badge> : <Badge accent="#22c55e">OK</Badge>),
+                                    },
+                                    {
+                                        key: "durationMs" as const,
+                                        label: "Duration",
+                                        render: (row) => fmtDuration(row.durationMs ?? undefined),
+                                    },
+                                ]}
+                                rows={slowestEvents}
+                                rowKey={(row) => row.id}
+                            />
+                        )}
+                    </Stack>
                 </Card>
             </div>
 
