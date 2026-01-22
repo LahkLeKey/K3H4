@@ -1,6 +1,6 @@
 import { Prisma, type PrismaClient } from "@prisma/client";
 import { type FastifyInstance } from "fastify";
-import { buildTelemetryBase } from "./telemetry";
+import { withTelemetryBase } from "./telemetry";
 import { type RecordTelemetryFn } from "./types";
 import { enrichPoi } from "../modules/poi-enrich/enrich";
 
@@ -193,8 +193,8 @@ export function registerFrontendRoutes(server: FastifyInstance, prisma: PrismaCl
       payload.selectedPoi = enriched;
     }
 
-    await recordTelemetry(request, {
-      ...buildTelemetryBase(request),
+    const rt = withTelemetryBase(recordTelemetry, request);
+    await rt({
       eventType: "frontend.map.bootstrap",
       source: "api",
       payload: {

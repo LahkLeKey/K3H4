@@ -1,6 +1,6 @@
 import { Prisma, PrismaClient } from "@prisma/client";
 import { type FastifyInstance, type FastifyRequest } from "fastify";
-import { buildTelemetryBase } from "./telemetry";
+import { withTelemetryBase } from "./telemetry";
 import { type RecordTelemetryFn } from "./types";
 
 const MAX_ABSOLUTE_BALANCE = 1_000_000_000;
@@ -31,16 +31,12 @@ export function registerBankRoutes(server: FastifyInstance, prisma: PrismaClient
     "/bank/balance",
     { preHandler: [server.authenticate] },
     async (request, reply) => {
+      const rt = withTelemetryBase(recordTelemetry, request);
       const userId = (request.user as { sub: string }).sub;
       const user = await prisma.user.findUnique({ where: { id: userId }, select: { k3h4CoinBalance: true } });
       if (!user) return reply.status(404).send({ error: "User not found" });
 
-      await recordTelemetry(request, {
-        ...buildTelemetryBase(request),
-        eventType: "bank.balance.fetch",
-        source: "api",
-        payload: { balance: user.k3h4CoinBalance ? user.k3h4CoinBalance.toFixed(2) : "0.00" },
-      });
+      await rt({ eventType: "bank.balance.fetch", source: "api", payload: { balance: user.k3h4CoinBalance ? user.k3h4CoinBalance.toFixed(2) : "0.00" } });
       return { balance: user.k3h4CoinBalance ? user.k3h4CoinBalance.toFixed(2) : "0.00" };
     },
   );
@@ -49,6 +45,7 @@ export function registerBankRoutes(server: FastifyInstance, prisma: PrismaClient
     "/bank/balance",
     { preHandler: [server.authenticate] },
     async (request, reply) => {
+      const rt = withTelemetryBase(recordTelemetry, request);
       const userId = (request.user as { sub: string }).sub;
       const body = request.body as { delta?: number | string; set?: number | string; reason?: string } | undefined;
 
@@ -89,15 +86,7 @@ export function registerBankRoutes(server: FastifyInstance, prisma: PrismaClient
           return { nextBalance: saved.k3h4CoinBalance, transaction: txn };
         });
 
-        await recordTelemetry(request, {
-          ...buildTelemetryBase(request),
-          eventType: "bank.balance.update",
-          source: "api",
-          payload: {
-            mode: hasSet ? "set" : "delta",
-            reason: body?.reason ?? null,
-          },
-        });
+        await rt({ eventType: "bank.balance.update", source: "api", payload: { mode: hasSet ? "set" : "delta", reason: body?.reason ?? null } });
 
         return {
           balance: nextBalance ? nextBalance.toFixed(2) : "0.00",
@@ -114,6 +103,7 @@ export function registerBankRoutes(server: FastifyInstance, prisma: PrismaClient
     "/bank/transactions",
     { preHandler: [server.authenticate] },
     async (request, reply) => {
+      const rt = withTelemetryBase(recordTelemetry, request);
       const userId = (request.user as { sub: string }).sub;
       const query = request.query as {
         limit?: string;
@@ -162,12 +152,7 @@ export function registerBankRoutes(server: FastifyInstance, prisma: PrismaClient
         }),
       ]);
 
-      await recordTelemetry(request, {
-        ...buildTelemetryBase(request),
-        eventType: "bank.transactions.list",
-        source: "api",
-        payload: { limit, offset, direction: direction ?? "", from: query?.from ?? null, to: query?.to ?? null, total },
-      });
+      await rt({ eventType: "bank.transactions.list", source: "api", payload: { limit, offset, direction: direction ?? "", from: query?.from ?? null, to: query?.to ?? null, total } });
 
       return { transactions: txns.map(serializeTransaction), total };
     },

@@ -1,5 +1,5 @@
 import { type FastifyRequest } from "fastify";
-import { type TelemetryParams } from "./types";
+import { type RecordTelemetryFn, type TelemetryParams } from "./types";
 
 export type TelemetryBase = Pick<TelemetryParams, "sessionId" | "userId" | "path" | "durationMs" | "error">;
 
@@ -57,3 +57,14 @@ export const warnOnSuspiciousDuration = (request: FastifyRequest, params: { even
 };
 
 export const normalizeDurationMs = clampDurationMs;
+
+type TelemetryInput = Omit<TelemetryParams, "sessionId" | "userId" | "path" | "durationMs" | "error"> &
+  Partial<Pick<TelemetryParams, "durationMs" | "error">>;
+
+export const withTelemetryBase = (recordTelemetry: RecordTelemetryFn, request: FastifyRequest) =>
+  (params: TelemetryInput) => {
+    const base = buildTelemetryBase(request);
+    const durationMs = params.durationMs !== undefined ? clampDurationMs(params.durationMs) : base.durationMs;
+    const error = params.error ?? base.error;
+    return recordTelemetry(request, { ...base, ...params, durationMs, error });
+  };
