@@ -2,16 +2,8 @@ import { useMemo } from "react";
 import { Badge, Button, Grid, MetricTile, Pill, SectionHeader, Stack } from "../../components/ui";
 import { useAuthStore } from "../../react-hooks/auth";
 import { useAssignmentState } from "../../react-hooks/assignments";
-import { EndpointList } from "../EndpointList";
 import { TableCard } from "../TableCard";
 import { AssignmentBoard } from "../AssignmentBoard";
-
-const assignmentEndpoints = [
-    { method: "GET", path: "/assignments", description: "List assignments with nested timecards and payouts." },
-    { method: "POST", path: "/assignments", description: "Create a new assignment linked to a persona with an hourly rate." },
-    { method: "POST", path: "/assignments/{id}/timecards", description: "Append a timecard entry with hours worked and an optional note." },
-    { method: "POST", path: "/assignments/{id}/pay", description: "Mark a timecard as paid and record the payout with an optional note." },
-];
 
 export function PersonaAssignmentsTab() {
     const { session } = useAuthStore();
@@ -29,7 +21,7 @@ export function PersonaAssignmentsTab() {
             <SectionHeader
                 kicker="Assignments"
                 title="Assignments and tasks"
-                description="Live assignment ledger plus the HTTP endpoints to list work, log hours, and issue payouts."
+                description="Live assignment ledger to list work, log hours, and issue payouts."
                 status={statusMessage}
                 actions={(
                     <>
@@ -53,9 +45,7 @@ export function PersonaAssignmentsTab() {
                 <MetricTile label="Create" value="POST /assignments" hint="Persona + rate" accent="#34d399" />
             </Grid>
 
-            <EndpointList endpoints={assignmentEndpoints} tag="Assignments" />
-
-            <TableCard title="Assignments board" subtitle="Interactive UI backed by the endpoints above" actions={<Badge accent="#22d3ee">Live</Badge>}>
+            <TableCard title="Assignments board" subtitle="Interactive UI for assignments" actions={<Badge accent="#22d3ee">Live</Badge>}>
                 <AssignmentBoard />
             </TableCard>
         </Stack>

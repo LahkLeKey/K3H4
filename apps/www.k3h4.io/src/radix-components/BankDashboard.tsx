@@ -11,26 +11,7 @@ import {
     Table,
 } from "../components/ui";
 import { useBankState } from "../react-hooks/bank";
-import { EndpointList } from "./EndpointList";
 import { TableCard } from "./TableCard";
-
-const endpoints = [
-    {
-        method: "GET",
-        path: "/bank/balance",
-        description: "Return the current K3H4 coin balance for the authenticated session.",
-    },
-    {
-        method: "POST",
-        path: "/bank/balance",
-        description: "Adjust balance by posting a transaction payload (authenticated, validated).",
-    },
-    {
-        method: "GET",
-        path: "/bank/transactions",
-        description: "List the most recent ledger entries with running balances included.",
-    },
-];
 
 const formatAmount = (value: string | null) => {
     if (!value) return "--";
@@ -85,7 +66,7 @@ export function BankDashboard() {
             <SectionHeader
                 kicker="Bank"
                 title="Banking and balances"
-                description="Live view of the K3H4 coin ledger plus the HTTP endpoints you can call to read or post balance updates."
+                description="Live view of the K3H4 coin ledger with tools to read or post balance updates."
                 status={statusMessage}
                 actions={(
                     <Stack direction="row" gap="sm" align="center">
@@ -97,14 +78,11 @@ export function BankDashboard() {
                 )}
             />
 
-            <Grid gap="md" smCols={2} lgCols={4}>
+            <Grid gap="md" smCols={2} lgCols={3}>
                 <MetricTile label="Current balance" value={formatAmount(balance)} hint="GET /bank/balance" accent="#22d3ee" />
                 <MetricTile label="Ledger entries" value={sortedTransactions.length ? `${sortedTransactions.length}` : "--"} hint="GET /bank/transactions" accent="#a78bfa" />
                 <MetricTile label="Last activity" value={lastActivity ? formatDateTime(lastActivity) : "--"} hint="Most recent transaction" accent="#f59e0b" />
-                <MetricTile label="Update balance" value="POST /bank/balance" hint="Authenticated write" accent="#34d399" />
             </Grid>
-
-            <EndpointList endpoints={endpoints} eyebrow="HTTP" title="Endpoints" tag="Bank" />
 
             <TableCard
                 title="Transaction ledger"

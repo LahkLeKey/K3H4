@@ -174,7 +174,7 @@ export function StaffingTabContent() {
                 <Stack direction="row" justify="between" align="center">
                     <div>
                         <div className="text-sm font-semibold text-white">Controls</div>
-                        <div className="text-xs text-slate-400">Direct calls to staffing endpoints.</div>
+                        <div className="text-xs text-slate-400">Direct controls for staffing actions.</div>
                     </div>
                     <Pill tone="slate">{authed ? "Authenticated" : "Sign in required"}</Pill>
                 </Stack>
