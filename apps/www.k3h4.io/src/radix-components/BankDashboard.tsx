@@ -9,11 +9,6 @@ import {
     SectionHeader,
     Stack,
     Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
 } from "../radix-primitives";
 import { useBankState } from "../react-hooks/bank";
 import { EndpointList } from "./EndpointList";
@@ -144,41 +139,48 @@ export function BankDashboard() {
                     </Stack>
                 )}
             >
-                <Table className="text-xs text-slate-100">
-                    <TableHeader className="bg-white/5 text-[11px] uppercase tracking-[0.16em] text-slate-400">
-                        <TableRow>
-                            <TableHead className="px-3 py-2">Time</TableHead>
-                            <TableHead className="px-3 py-2">Kind</TableHead>
-                            <TableHead className="px-3 py-2">Direction</TableHead>
-                            <TableHead className="px-3 py-2">Amount</TableHead>
-                            <TableHead className="px-3 py-2">Balance after</TableHead>
-                            <TableHead className="px-3 py-2">Note</TableHead>
-                        </TableRow>
-                    </TableHeader>
-                    <TableBody className="divide-y divide-white/5">
-                        {sortedTransactions.length === 0 ? (
-                            <TableRow>
-                                <TableCell colSpan={6} className="px-3 py-4 text-center text-slate-400">
-                                    {refreshing || status === "loading" ? "Loading transactions..." : "No transactions returned."}
-                                </TableCell>
-                            </TableRow>
-                        ) : (
-                            sortedTransactions.map((tx) => {
-                                const isCredit = tx.direction.toLowerCase() === "credit";
-                                return (
-                                    <TableRow key={tx.id} className="transition hover:bg-white/5">
-                                        <TableCell className="px-3 py-2 font-mono text-[11px] text-slate-200">{formatDateTime(tx.createdAt)}</TableCell>
-                                        <TableCell className="px-3 py-2 text-sm text-white">{tx.kind}</TableCell>
-                                        <TableCell className="px-3 py-2 text-sm"><Pill tone={isCredit ? "emerald" : "rose"}>{tx.direction}</Pill></TableCell>
-                                        <TableCell className="px-3 py-2 font-semibold text-white">{formatAmount(tx.amount)}</TableCell>
-                                        <TableCell className="px-3 py-2 font-mono text-[12px] text-emerald-100">{formatAmount(tx.balanceAfter)}</TableCell>
-                                        <TableCell className="px-3 py-2 text-[11px] text-slate-300">{tx.note || "--"}</TableCell>
-                                    </TableRow>
-                                );
-                            })
-                        )}
-                    </TableBody>
-                </Table>
+                {sortedTransactions.length === 0 ? (
+                    <div className="px-3 py-4 text-center text-slate-400">
+                        {refreshing || status === "loading" ? "Loading transactions..." : "No transactions returned."}
+                    </div>
+                ) : (
+                    <Table
+                        className="text-sm"
+                        columns={[
+                            {
+                                key: "createdAt",
+                                label: "Time",
+                                render: (tx) => <span className="font-mono text-[11px] text-slate-200">{formatDateTime(tx.createdAt)}</span>,
+                            },
+                            { key: "kind", label: "Kind" },
+                            {
+                                key: "direction",
+                                label: "Direction",
+                                render: (tx) => {
+                                    const isCredit = tx.direction.toLowerCase() === "credit";
+                                    return <Pill tone={isCredit ? "emerald" : "rose"}>{tx.direction}</Pill>;
+                                },
+                            },
+                            {
+                                key: "amount",
+                                label: "Amount",
+                                render: (tx) => <span className="font-semibold text-white">{formatAmount(tx.amount)}</span>,
+                            },
+                            {
+                                key: "balanceAfter",
+                                label: "Balance after",
+                                render: (tx) => <span className="font-mono text-[12px] text-emerald-100">{formatAmount(tx.balanceAfter)}</span>,
+                            },
+                            {
+                                key: "note",
+                                label: "Note",
+                                render: (tx) => <span className="text-[11px] text-slate-300">{tx.note || "--"}</span>,
+                            },
+                        ]}
+                        rows={sortedTransactions}
+                        rowKey={(tx) => tx.id}
+                    />
+                )}
             </TableCard>
         </Stack>
     );
