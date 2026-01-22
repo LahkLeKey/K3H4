@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 
-import { useGeoState } from "../zustand-stores/geo";
-import { useMapView } from "../react-hooks/useMapView";
+import { useGeoState } from "../../zustand-stores/geo";
+import { useMapView } from "../../react-hooks/useMapView";
 
 const statusLabels: Record<string, string> = {
     idle: "Waiting to locate",

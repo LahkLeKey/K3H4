@@ -1,4 +1,5 @@
-import { Badge, Button, Card, Panel, StatChip, Table, Tabs } from "../radix-primitives";
+import { Tabs } from "../radix-primitives";
+import { Badge, Button, Card, Panel, StatChip, Table } from "../components/ui";
 import { useAtlasState } from "../react-hooks/atlas";
 import { FreightBoard } from "./FreightBoard";
 import { PersonaBoard } from "./PersonaBoard";

@@ -8,12 +8,12 @@ type DeckMapboxOverlay = InstanceType<typeof MapboxOverlay>;
 
 import { useMapView } from "../react-hooks/useMapView";
 import { useGeoState } from "../zustand-stores/geo";
-import { LocationOverview } from "../radix-primitives/LocationOverview";
+import { LocationOverview } from "../components/ui";
 import { useAuthStore } from "../react-hooks/auth";
 import { MapPinsOverlay, type Poi } from "../r3f-components/MapPinsOverlay";
 import { usePoiQuery, usePoiStore } from "../zustand-stores/poi";
 import { useMapGeocodeSearch, type MapSearchResult } from "../react-hooks/useMapGeocodeSearch";
-import { MapLocateButton, MapSearchPanel, MapStatusOverlay, PoiDetailCard, PoiErrorBanner } from "../radix-primitives";
+import { MapLocateButton, MapSearchPanel, MapStatusOverlay, PoiDetailCard, PoiErrorBanner } from "../components/ui";
 import { usePoiDetailInteraction } from "../react-hooks/usePoiDetailInteraction";
 import { useMapInteractionToggle } from "../react-hooks/useMapInteractionToggle";
 import { usePoiViewportSync } from "../react-hooks/usePoiViewportSync";
@@ -492,6 +492,7 @@ export function MapLayer({ readonly }: { readonly?: boolean }) {
     ];
     const readyProgress = Math.round((loadSteps.filter((step) => step.done).length / loadSteps.length) * 100);
     const mapReady = mapLoaded && (terrainReady || mapGateTimerDone);
+    const showPreparingOverlay = Boolean(session) && !mapReady;
 
     const prewarmedRef = useRef<Record<string, boolean>>({});
     const prewarmTiles = useDebouncedCallback(async () => {
@@ -576,7 +577,7 @@ export function MapLayer({ readonly }: { readonly?: boolean }) {
     return (
         <>
             <div ref={ref} className="absolute inset-0 z-0" />
-            {!mapReady ? (
+            {showPreparingOverlay ? (
                 <div className="absolute inset-0 z-50 flex items-center justify-center bg-slate-950/85 backdrop-blur-sm">
                     <div className="w-80 max-w-[calc(100%-48px)] space-y-3 rounded-xl border border-white/10 bg-slate-900/80 p-4 text-white shadow-2xl">
                         <div className="flex items-center justify-between text-xs uppercase tracking-[0.08em] text-white/60">
