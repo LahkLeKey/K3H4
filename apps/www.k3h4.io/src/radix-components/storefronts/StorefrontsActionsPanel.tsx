@@ -16,16 +16,11 @@ const AnySchema = z.any();
 export function StorefrontsActionsPanel() {
     const { session, apiBase } = useAuthStore();
     const { fetchOverview: fetchCulinary } = useCulinaryState();
-    const { fetchOverview: fetchPos } = usePosState();
     const { fetchOverview: fetchArcade } = useArcadeState();
     const {
         culinaryName,
         culinaryPrepMinutes,
         culinaryStatus,
-        posTicketStore,
-        posTicketChannel,
-        posTicketAmount,
-        posTicketStatus,
         status,
         updateField,
         setStatus,
@@ -56,33 +51,10 @@ export function StorefrontsActionsPanel() {
         }
     };
 
-    const handleCreateTicket = async () => {
-        if (disabled) return;
-        updateField("posTicketStatus", "Creating ticket...");
-        try {
-            await apiFetch("/pos/tickets", {
-                method: "POST",
-                token: session!.accessToken,
-                baseUrl: apiBase,
-                schema: AnySchema,
-                body: {
-                    storeName: posTicketStore || "Demo Store",
-                    channel: posTicketChannel || "dine-in",
-                    total: posTicketAmount || "0",
-                },
-            });
-            updateField("posTicketStatus", "Ticket created");
-            fetchPos();
-        } catch (err) {
-            updateField("posTicketStatus", err instanceof Error ? err.message : "Failed to create ticket");
-        }
-    };
-
     const handleRefreshAll = () => {
         if (!session?.accessToken) return;
         setStatus("Refreshing storefront data...");
         fetchCulinary();
-        fetchPos();
         fetchArcade();
         setTimeout(() => setStatus(""), 1200);
     };

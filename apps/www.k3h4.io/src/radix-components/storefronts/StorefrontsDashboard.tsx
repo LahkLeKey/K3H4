@@ -8,9 +8,9 @@ import { usePosState } from "../../react-hooks/pos";
 import { useArcadeState } from "../../react-hooks/arcade";
 import { useStorefrontsStore, type StorefrontsTab } from "../../zustand-stores/storefronts";
 import { CulinaryBoard } from "../CulinaryBoard";
-import { PosBoard } from "../PosBoard";
 import { ArcadeBoard } from "../ArcadeBoard";
 import { StorefrontsActionsPanel } from "./StorefrontsActionsPanel";
+import { PosEmbeddedPanel } from "./PosEmbeddedPanel";
 
 export function StorefrontsDashboard() {
     const { session } = useAuthStore();
@@ -60,15 +60,29 @@ export function StorefrontsDashboard() {
         fetchArcade();
     };
 
+    const culinaryPane = (
+        <Stack gap="md">
+            <CulinaryBoard />
+            <PosEmbeddedPanel prefix="culinary" title="Culinary POS" accent="#f472b6" />
+        </Stack>
+    );
+
+    const arcadePane = (
+        <Stack gap="md">
+            <ArcadeBoard />
+            <PosEmbeddedPanel prefix="arcade" title="Arcade POS" accent="#22c55e" />
+        </Stack>
+    );
+
     return (
         <Stack gap="lg">
             <div className="space-y-2">
                 <div className="inline-flex flex-wrap items-center gap-2 text-xs uppercase tracking-[0.18em] text-emerald-100">
                     <span className="rounded-full border border-emerald-300/30 bg-emerald-500/15 px-3 py-1">Storefronts</span>
-                    <span className="text-[11px] text-slate-300">Culinary / POS / Arcade</span>
+                    <span className="text-[11px] text-slate-300">Culinary / Arcade (POS embedded)</span>
                 </div>
                 <div className="text-3xl font-semibold text-white">Storefront control</div>
-                <p className="max-w-3xl text-sm text-slate-300">Menus, sales orchestration, and arcade engagement in one panel.</p>
+                <p className="max-w-3xl text-sm text-slate-300">Menus, sales orchestration, arcade engagement, and POS seeded per vertical.</p>
                 <div className="flex flex-wrap items-center gap-2">
                     {!session ? <div className="text-xs text-amber-200">Sign in to load live storefront data.</div> : null}
                     <div className="flex items-center gap-2">
@@ -77,9 +91,6 @@ export function StorefrontsDashboard() {
                         </Button>
                         <Button accent="#fb7185" variant="outline" onClick={() => setActiveTab("culinary")}>
                             Culinary
-                        </Button>
-                        <Button accent="#f472b6" variant="outline" onClick={() => setActiveTab("pos")}>
-                            POS
                         </Button>
                         <Button accent="#f472ff" variant="outline" onClick={() => setActiveTab("arcade")}>
                             Arcade
@@ -100,9 +111,8 @@ export function StorefrontsDashboard() {
                 value={activeTab}
                 onValueChange={handleTabChange}
                 tabs={[
-                    { key: "culinary", label: "Culinary", content: <CulinaryBoard /> },
-                    { key: "pos", label: "POS", content: <PosBoard /> },
-                    { key: "arcade", label: "Arcade", content: <ArcadeBoard /> },
+                    { key: "culinary", label: "Culinary", content: culinaryPane },
+                    { key: "arcade", label: "Arcade", content: arcadePane },
                 ]}
                 className="w-full"
             />
