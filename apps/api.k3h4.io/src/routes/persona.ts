@@ -1,18 +1,50 @@
 import { faker } from "@faker-js/faker";
 import { type Prisma, type PrismaClient } from "@prisma/client";
 import { type FastifyInstance } from "fastify";
-import { buildTelemetryBase } from "./telemetry";
+import { withTelemetryBase } from "./telemetry";
 import { type RecordTelemetryFn } from "./types";
 import { runOnnxCompatibility, type CompatFeatureVector } from "../lib/compat-onnx";
 
 type PersonaWithAttributes = Prisma.PersonaGetPayload<{ include: { attributes: true } }>;
 
-type CompatibilityWithNodes = Prisma.PersonaCompatibilityGetPayload<{
-  include: {
-    source: { include: { attributes: true } };
-    target: { include: { attributes: true } };
-  };
-}>;
+const compatibilitySelect = {
+  id: true,
+  jaccardScore: true,
+  intersectionCount: true,
+  unionCount: true,
+  overlappingTokens: true,
+  computedAt: true,
+  sourceId: true,
+  targetId: true,
+  status: true,
+  rationale: true,
+  source: {
+    select: {
+      id: true,
+      alias: true,
+      account: true,
+      handle: true,
+      note: true,
+      tags: true,
+      createdAt: true,
+      updatedAt: true,
+    },
+  },
+  target: {
+    select: {
+      id: true,
+      alias: true,
+      account: true,
+      handle: true,
+      note: true,
+      tags: true,
+      createdAt: true,
+      updatedAt: true,
+    },
+  },
+} satisfies Prisma.PersonaCompatibilitySelect;
+
+type CompatibilityWithNodes = Prisma.PersonaCompatibilityGetPayload<{ select: typeof compatibilitySelect }>;
 
 const serializeAttributes = (attrs: { id: string; category: string; value: string; weight: number }[] | undefined) =>
   attrs?.map((attr) => ({ id: attr.id, category: attr.category, value: attr.value, weight: attr.weight })) ?? [];
@@ -230,6 +262,7 @@ export function registerPersonaRoutes(server: FastifyInstance, prisma: PrismaCli
     { preHandler: [server.authenticate] },
     async (request, reply) => {
       const userId = (request.user as { sub: string }).sub;
+      const rt = withTelemetryBase(recordTelemetry, request);
 
       let personas = await prisma.persona.findMany({ where: { userId }, orderBy: { createdAt: "desc" }, include: { attributes: true } });
 
@@ -242,20 +275,10 @@ export function registerPersonaRoutes(server: FastifyInstance, prisma: PrismaCli
           await prisma.personaAttribute.createMany({ data: attributeSeeds, skipDuplicates: true });
           personas = await prisma.persona.findMany({ where: { userId }, orderBy: { createdAt: "desc" }, include: { attributes: true } });
         }
-        await recordTelemetry(request, {
-          ...buildTelemetryBase(request),
-          eventType: "persona.seed",
-          source: "api",
-          payload: { count: seedPayload.length },
-        });
+        await rt({ eventType: "persona.seed", source: "api", payload: { count: seedPayload.length } });
       }
 
-      await recordTelemetry(request, {
-        ...buildTelemetryBase(request),
-        eventType: "persona.list",
-        source: "api",
-        payload: { count: personas.length },
-      });
+      await rt({ eventType: "persona.list", source: "api", payload: { count: personas.length } });
 
       return { personas: personas.map(serializePersona) };
     },
@@ -266,6 +289,7 @@ export function registerPersonaRoutes(server: FastifyInstance, prisma: PrismaCli
     { preHandler: [server.authenticate] },
     async (request, reply) => {
       const userId = (request.user as { sub: string }).sub;
+      const rt = withTelemetryBase(recordTelemetry, request);
       const body = request.body as {
         alias?: string;
         account?: string;
@@ -306,12 +330,7 @@ export function registerPersonaRoutes(server: FastifyInstance, prisma: PrismaCli
         await prisma.personaAttribute.createMany({ data: attributes.map((attr) => ({ ...attr, userId, personaId: persona.id })) });
       }
 
-      await recordTelemetry(request, {
-        ...buildTelemetryBase(request),
-        eventType: "persona.create",
-        source: "api",
-        payload: { hasTags: Array.isArray(body?.tags) && body?.tags.length > 0 },
-      });
+      await rt({ eventType: "persona.create", source: "api", payload: { hasTags: Array.isArray(body?.tags) && body?.tags.length > 0 } });
 
       const withAttributes = await prisma.persona.findUnique({ where: { id: persona.id }, include: { attributes: true } });
       return { persona: withAttributes ? serializePersona(withAttributes) : serializePersona(persona) };
@@ -323,6 +342,7 @@ export function registerPersonaRoutes(server: FastifyInstance, prisma: PrismaCli
     { preHandler: [server.authenticate] },
     async (request, reply) => {
       const userId = (request.user as { sub: string }).sub;
+      const rt = withTelemetryBase(recordTelemetry, request);
       const body = request.body as { count?: number } | undefined;
       const count = (() => {
         const parsed = Number(body?.count ?? 1);
@@ -340,12 +360,7 @@ export function registerPersonaRoutes(server: FastifyInstance, prisma: PrismaCli
         personas = await prisma.persona.findMany({ where: { userId }, orderBy: { createdAt: "desc" }, take: count, include: { attributes: true } });
       }
 
-      await recordTelemetry(request, {
-        ...buildTelemetryBase(request),
-        eventType: "persona.generate",
-        source: "api",
-        payload: { count },
-      });
+      await rt({ eventType: "persona.generate", source: "api", payload: { count } });
 
       return { personas: personas.map(serializePersona) };
     },
@@ -356,6 +371,7 @@ export function registerPersonaRoutes(server: FastifyInstance, prisma: PrismaCli
     { preHandler: [server.authenticate] },
     async (request, reply) => {
       const userId = (request.user as { sub: string }).sub;
+      const rt = withTelemetryBase(recordTelemetry, request);
       const personaId = (request.params as { id?: string } | undefined)?.id;
       if (!personaId) return reply.status(400).send({ error: "persona id is required" });
 
@@ -387,12 +403,7 @@ export function registerPersonaRoutes(server: FastifyInstance, prisma: PrismaCli
 
       const updated = await prisma.persona.findUnique({ where: { id: personaId }, include: { attributes: true } });
 
-      await recordTelemetry(request, {
-        ...buildTelemetryBase(request),
-        eventType: "persona.attributes.update",
-        source: "api",
-        payload: { count: attributes.length },
-      });
+      await rt({ eventType: "persona.attributes.update", source: "api", payload: { count: attributes.length } });
 
       return { persona: updated ? serializePersona(updated) : serializePersona(persona) };
     },
@@ -403,6 +414,7 @@ export function registerPersonaRoutes(server: FastifyInstance, prisma: PrismaCli
     { preHandler: [server.authenticate] },
     async (request, reply) => {
       const userId = (request.user as { sub: string }).sub;
+      const rt = withTelemetryBase(recordTelemetry, request);
       const personas = await prisma.persona.findMany({ where: { userId }, include: { attributes: true } });
 
       if (personas.length < 2) {
@@ -419,19 +431,11 @@ export function registerPersonaRoutes(server: FastifyInstance, prisma: PrismaCli
 
       const compatibilities = await prisma.personaCompatibility.findMany({
         where: { userId },
-        include: {
-          source: { include: { attributes: true } },
-          target: { include: { attributes: true } },
-        },
+        select: compatibilitySelect,
         orderBy: { jaccardScore: "desc" },
       });
 
-      await recordTelemetry(request, {
-        ...buildTelemetryBase(request),
-        eventType: "persona.compatibility.recompute",
-        source: "api",
-        payload: { count: compatibilities.length },
-      });
+      await rt({ eventType: "persona.compatibility.recompute", source: "api", payload: { count: compatibilities.length } });
 
       return { compatibilities: compatibilities.map(serializeCompatibility) };
     },
@@ -442,23 +446,16 @@ export function registerPersonaRoutes(server: FastifyInstance, prisma: PrismaCli
     { preHandler: [server.authenticate] },
     async (request) => {
       const userId = (request.user as { sub: string }).sub;
+      const rt = withTelemetryBase(recordTelemetry, request);
       const personaId = (request.query as { personaId?: string } | undefined)?.personaId;
 
       const compatibilities = await prisma.personaCompatibility.findMany({
         where: personaId ? { userId, OR: [{ sourceId: personaId }, { targetId: personaId }] } : { userId },
-        include: {
-          source: { include: { attributes: true } },
-          target: { include: { attributes: true } },
-        },
+        select: compatibilitySelect,
         orderBy: { jaccardScore: "desc" },
       });
 
-      await recordTelemetry(request, {
-        ...buildTelemetryBase(request),
-        eventType: "persona.compatibility.list",
-        source: "api",
-        payload: { count: compatibilities.length },
-      });
+      await rt({ eventType: "persona.compatibility.list", source: "api", payload: { count: compatibilities.length } });
 
       return { compatibilities: compatibilities.map(serializeCompatibility) };
     },
@@ -469,6 +466,7 @@ export function registerPersonaRoutes(server: FastifyInstance, prisma: PrismaCli
     { preHandler: [server.authenticate] },
     async (request, reply) => {
       const userId = (request.user as { sub: string }).sub;
+      const rt = withTelemetryBase(recordTelemetry, request);
       const body = request.body as { pairs?: ConfusionExampleInput[]; threshold?: number; modelPath?: string } | undefined;
 
       if (!Array.isArray(body?.pairs) || body.pairs.length === 0) {
@@ -486,12 +484,7 @@ export function registerPersonaRoutes(server: FastifyInstance, prisma: PrismaCli
       const accuracy = total === 0 ? 0 : (counts.tp + counts.tn) / total;
       const f1 = precision + recall === 0 ? 0 : (2 * precision * recall) / (precision + recall);
 
-      await recordTelemetry(request, {
-        ...buildTelemetryBase(request),
-        eventType: "persona.compatibility.confusion",
-        source: "api",
-        payload: { evaluated: details.length, missing, threshold },
-      });
+      await rt({ eventType: "persona.compatibility.confusion", source: "api", payload: { evaluated: details.length, missing, threshold } });
 
       return {
         threshold,
