@@ -70,7 +70,7 @@ export function BankDashboard() {
                 status={statusMessage}
                 actions={(
                     <Stack direction="row" gap="sm" align="center">
-                        <Button variant="outline" size="sm" onClick={handleRefresh} disabled={refreshing}>
+                        <Button variant="outline" className="h-8 px-3 text-xs" onClick={handleRefresh} disabled={refreshing}>
                             {refreshing ? "Refreshing..." : "Refresh data"}
                         </Button>
                         <Pill tone="slate">Auth required: Bearer token</Pill>
@@ -107,10 +107,10 @@ export function BankDashboard() {
                             placeholder="Optional note"
                             aria-label="Adjustment reason"
                         />
-                        <Button variant="outline" size="sm" onClick={() => handleAdjust("credit")} disabled={refreshing}>
+                        <Button variant="outline" className="h-8 px-3 text-xs" onClick={() => handleAdjust("credit")} disabled={refreshing}>
                             Add
                         </Button>
-                        <Button variant="destructive" size="sm" onClick={() => handleAdjust("debit")} disabled={refreshing}>
+                        <Button variant="outline" accent="#f87171" className="h-8 px-3 text-xs" onClick={() => handleAdjust("debit")} disabled={refreshing}>
                             Remove
                         </Button>
                         {error ? <div className="text-[11px] text-rose-300">{error}</div> : null}
