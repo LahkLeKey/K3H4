@@ -1,4 +1,4 @@
-import type { PoiAnchor, PoiDetail } from "@/react-hooks/usePoiDetailInteraction";
+import type { PoiAnchor, PoiDetail } from "../../react-hooks/usePoiDetailInteraction";
 
 type Props = {
     detail: NonNullable<PoiDetail>;

@@ -1,7 +1,7 @@
 import React from "react";
 import { Canvas } from "@react-three/fiber";
-import { CampfireFlame } from "@/r3f-components/CampfireFlame";
-import { FireExplosion } from "@/r3f-components/FireExplosion";
+import { CampfireFlame } from "../../r3f-components/CampfireFlame";
+import { FireExplosion } from "../../r3f-components/FireExplosion";
 
 export class UiErrorBoundary extends React.Component<{ children: React.ReactNode }, { hasError: boolean; message?: string }> {
     constructor(props: { children: React.ReactNode }) {

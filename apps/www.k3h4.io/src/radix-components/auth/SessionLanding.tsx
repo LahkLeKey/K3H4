@@ -2,10 +2,10 @@ import { useMemo, useState } from "react";
 import { Canvas } from "@react-three/fiber";
 import { Float, OrbitControls, Stars } from "@react-three/drei";
 
-import { Html } from "../@/r3f-primitives/Html";
-import { R3FErrorBoundary } from "../@/r3f-components/R3FErrorBoundary";
-import { useAuthStore, type Session } from "../@/react-hooks/auth";
-import { useGeoState } from "../@/zustand-stores/geo";
+import { Html } from "../../r3f-primitives/Html";
+import { R3FErrorBoundary } from "../../r3f-components/R3FErrorBoundary";
+import { useAuthStore, type Session } from "../../react-hooks/auth";
+import { useGeoState } from "../../zustand-stores/geo";
 
 type Decoded = {
     sub?: string;

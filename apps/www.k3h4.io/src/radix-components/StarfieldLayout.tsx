@@ -2,7 +2,7 @@ import type { ReactNode } from "react";
 import { Canvas } from "@react-three/fiber";
 import { Stars } from "@react-three/drei";
 
-import { R3FErrorBoundary } from "@/r3f-components/R3FErrorBoundary";
+import { R3FErrorBoundary } from "../r3f-components/R3FErrorBoundary";
 import { PageHeader } from "./PageHeader";
 
 export type StarLayer = {

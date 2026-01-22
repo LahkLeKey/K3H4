@@ -1,5 +1,5 @@
-import { TelemetryDashboard } from "@/radix-components/TelemetryDashboard";
-import { StarfieldLayout } from "@/radix-components/StarfieldLayout";
+import { TelemetryDashboard } from "../radix-components/TelemetryDashboard";
+import { StarfieldLayout } from "../radix-components/StarfieldLayout";
 
 export function TelemetryPage() {
     return (

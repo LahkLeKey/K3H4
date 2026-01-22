@@ -1,7 +1,7 @@
 import { create } from "zustand";
 import { z } from "zod";
 
-import { apiFetch } from "@/react-hooks/lib/api-client";
+import { apiFetch } from "../react-hooks/lib/api-client";
 import { useAuthStore } from "./auth";
 
 const UnknownArraySchema = z.array(z.any());

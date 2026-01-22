@@ -7,4 +7,4 @@ export {
 	type PersonaCompatibility,
 	type PersonaConfusionResult,
 	type PersonaConfusionDetail,
-} from "@/zustand-stores/persona";
+} from "../zustand-stores/persona";

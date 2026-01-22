@@ -1,7 +1,7 @@
 import { useMemo } from "react";
-import { Badge, Button, Grid, MetricTile, Pill, SectionHeader, Stack } from "../@/components/ui";
-import { useAuthStore } from "../@/react-hooks/auth";
-import { useAssignmentState } from "../@/react-hooks/assignments";
+import { Badge, Button, Grid, MetricTile, Pill, SectionHeader, Stack } from "../../components/ui";
+import { useAuthStore } from "../../react-hooks/auth";
+import { useAssignmentState } from "../../react-hooks/assignments";
 import { EndpointList } from "../EndpointList";
 import { TableCard } from "../TableCard";
 import { AssignmentBoard } from "../AssignmentBoard";

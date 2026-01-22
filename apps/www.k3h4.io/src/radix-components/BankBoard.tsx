@@ -1,8 +1,8 @@
 import { useEffect } from "react";
 
-import { Badge, Button, Card, StatChip, Table } from "@/components/ui";
-import { useAuthStore } from "@/zustand-stores/auth";
-import { useBankState } from "@/react-hooks/bank";
+import { Badge, Button, Card, StatChip, Table } from "../components/ui";
+import { useAuthStore } from "../zustand-stores/auth";
+import { useBankState } from "../react-hooks/bank";
 
 export function BankBoard() {
     const { session } = useAuthStore();

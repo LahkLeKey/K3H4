@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import type { MapSearchResult } from "@/react-hooks/useMapGeocodeSearch";
+import type { MapSearchResult } from "../../react-hooks/useMapGeocodeSearch";
 
 export type MapSearchPanelProps = {
     value: string;

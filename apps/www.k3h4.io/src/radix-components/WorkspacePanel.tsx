@@ -1,6 +1,6 @@
-import { Tabs } from "@/radix-primitives";
-import { Badge, Button, Card, Panel, StatChip, Table } from "@/components/ui";
-import { useAtlasState } from "@/react-hooks/atlas";
+import { Tabs } from "../radix-primitives";
+import { Badge, Button, Card, Panel, StatChip, Table } from "../components/ui";
+import { useAtlasState } from "../react-hooks/atlas";
 import { FreightBoard } from "./FreightBoard";
 import { PersonaBoard } from "./PersonaBoard";
 import { StaffingBoard } from "./StaffingBoard";
@@ -12,7 +12,7 @@ import { PosBoard } from "./PosBoard";
 import { ArcadeBoard } from "./ArcadeBoard";
 import { CulinaryBoard } from "./CulinaryBoard";
 import { UsdaBoard } from "./UsdaBoard";
-import type { AtlasAction, AtlasTimelineEvent, AtlasWorkItem, AtlasStream } from "@/react-hooks/data/atlas";
+import type { AtlasAction, AtlasTimelineEvent, AtlasWorkItem, AtlasStream } from "../react-hooks/data/atlas";
 
 const statusTone: Record<AtlasWorkItem["status"], string> = {
     ready: "text-emerald-200",

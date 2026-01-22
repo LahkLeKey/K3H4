@@ -1,8 +1,8 @@
 import { useEffect } from "react";
 
-import { Badge, Button, Card, StatChip, Table } from "@/components/ui";
-import { useAuthStore } from "@/zustand-stores/auth";
-import { useCulinaryState } from "@/react-hooks/culinary";
+import { Badge, Button, Card, StatChip, Table } from "../components/ui";
+import { useAuthStore } from "../zustand-stores/auth";
+import { useCulinaryState } from "../react-hooks/culinary";
 
 export function CulinaryBoard() {
     const { session } = useAuthStore();

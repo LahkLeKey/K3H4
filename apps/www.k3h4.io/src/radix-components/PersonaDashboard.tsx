@@ -1,10 +1,10 @@
 import { useEffect, useMemo } from "react";
 
-import { Tabs } from "@/radix-primitives";
-import { Stack } from "@/components/ui";
-import { useAuthStore } from "@/react-hooks/auth";
-import { usePersonaState, type Persona } from "@/react-hooks/persona";
-import { usePersonaDashboardStore } from "@/zustand-stores/persona-dashboard";
+import { Tabs } from "../radix-primitives";
+import { Stack } from "../components/ui";
+import { useAuthStore } from "../react-hooks/auth";
+import { usePersonaState, type Persona } from "../react-hooks/persona";
+import { usePersonaDashboardStore } from "../zustand-stores/persona-dashboard";
 import { PersonaOverviewTab } from "./persona/PersonaOverviewTab";
 import { PersonaRosterTab } from "./persona/PersonaRosterTab";
 import { PersonaCompatibilityTab } from "./persona/PersonaCompatibilityTab";

@@ -1,4 +1,4 @@
-import { useGeoState } from "@/zustand-stores/geo";
+import { useGeoState } from "../zustand-stores/geo";
 
 export function useGeoStatus() {
     const { status, poiStatus, center, error } = useGeoState();

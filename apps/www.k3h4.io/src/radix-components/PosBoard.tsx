@@ -1,8 +1,8 @@
 import { useEffect } from "react";
 
-import { Badge, Button, Card, StatChip, Table } from "@/components/ui";
-import { useAuthStore } from "@/zustand-stores/auth";
-import { usePosState } from "@/react-hooks/pos";
+import { Badge, Button, Card, StatChip, Table } from "../components/ui";
+import { useAuthStore } from "../zustand-stores/auth";
+import { usePosState } from "../react-hooks/pos";
 
 export function PosBoard() {
     const { session } = useAuthStore();

@@ -1,4 +1,4 @@
-import { AppShell } from "@/components/ui";
+import { AppShell } from "../components/ui";
 
 type MapPageProps = {
     showNav?: boolean;

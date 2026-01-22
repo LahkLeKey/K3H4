@@ -1,8 +1,8 @@
 import { useEffect } from "react";
 
-import { Badge, Button, Card, StatChip, Table } from "@/components/ui";
-import { useAuthStore } from "@/zustand-stores/auth";
-import { useArcadeState } from "@/react-hooks/arcade";
+import { Badge, Button, Card, StatChip, Table } from "../components/ui";
+import { useAuthStore } from "../zustand-stores/auth";
+import { useArcadeState } from "../react-hooks/arcade";
 
 export function ArcadeBoard() {
     const { session } = useAuthStore();

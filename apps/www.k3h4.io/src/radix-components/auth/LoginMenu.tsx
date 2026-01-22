@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 
-import { useAuthStore, type Provider } from "../@/react-hooks/auth";
-import { ExploreBar } from "../@/components/ui";
+import { useAuthStore, type Provider } from "../../react-hooks/auth";
+import { ExploreBar } from "../../components/ui";
 import { SignInProviderCard } from "./SignInProviderCard.tsx";
 
 export function LoginMenu() {

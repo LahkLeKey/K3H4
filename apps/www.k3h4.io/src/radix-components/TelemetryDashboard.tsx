@@ -11,9 +11,9 @@ import {
     YAxis,
 } from "recharts";
 
-import { Badge, Button, Card, EmptyState, MetricTile, SectionHeader, Stack, Table, TablePagination } from "@/components/ui";
-import type { TelemetryEvent } from "@/react-hooks/telemetry";
-import { useTelemetryInfiniteQuery } from "@/react-hooks/telemetry";
+import { Badge, Button, Card, EmptyState, MetricTile, SectionHeader, Stack, Table, TablePagination } from "../components/ui";
+import type { TelemetryEvent } from "../react-hooks/telemetry";
+import { useTelemetryInfiniteQuery } from "../react-hooks/telemetry";
 import { TableCard } from "./TableCard";
 
 const axisStyle = { fill: "#cbd5e1", fontSize: 11 };

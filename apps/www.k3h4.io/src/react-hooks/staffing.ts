@@ -1,1 +1,1 @@
-export { useStaffingStore, useStaffingState, type StaffingState, type StaffingEngagement, type StaffingRole, type StaffingCandidate, type StaffingShift, type StaffingPlacement, type StaffingMetrics } from "@/zustand-stores/staffing";
+export { useStaffingStore, useStaffingState, type StaffingState, type StaffingEngagement, type StaffingRole, type StaffingCandidate, type StaffingShift, type StaffingPlacement, type StaffingMetrics } from "../zustand-stores/staffing";

@@ -1,1 +1,1 @@
-export { usePosStore, usePosState, type PosState, type PosOverview } from "@/zustand-stores/pos";
+export { usePosStore, usePosState, type PosState, type PosOverview } from "../zustand-stores/pos";

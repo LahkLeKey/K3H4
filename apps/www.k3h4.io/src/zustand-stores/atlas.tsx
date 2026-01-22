@@ -1,6 +1,6 @@
 import { create } from "zustand";
 
-import { atlasContexts as atlasTemplates, type AtlasContext } from "@/react-hooks/data/atlas";
+import { atlasContexts as atlasTemplates, type AtlasContext } from "../react-hooks/data/atlas";
 import { useBankStore } from "./bank";
 import { useFreightStore } from "./freight";
 import { usePersonaStore } from "./persona";
