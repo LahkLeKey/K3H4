@@ -26,3 +26,4 @@ export * from "./Grid";
 export * from "./EmptyState";
 export * from "./Select";
 export * from "./Label";
+export * from "./Surface";
