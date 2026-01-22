@@ -10,6 +10,10 @@ export type StorefrontsFieldKey =
   | "culinaryPosChannel"
   | "culinaryPosAmount"
   | "culinaryPosStatus"
+  | "posTicketStore"
+  | "posTicketChannel"
+  | "posTicketAmount"
+  | "posTicketStatus"
   | "arcadePosStore"
   | "arcadePosChannel"
   | "arcadePosAmount"
@@ -36,6 +40,10 @@ const defaultState = {
   culinaryPosChannel: "dine-in",
   culinaryPosAmount: "42.00",
   culinaryPosStatus: "",
+  posTicketStore: "Demo Store",
+  posTicketChannel: "dine-in",
+  posTicketAmount: "0",
+  posTicketStatus: "",
   arcadePosStore: "Arcade Bar",
   arcadePosChannel: "arcade",
   arcadePosAmount: "25.00",
@@ -63,6 +71,10 @@ export type StorefrontsState = {
   culinaryPosChannel: string;
   culinaryPosAmount: string;
   culinaryPosStatus: string;
+  posTicketStore: string;
+  posTicketChannel: string;
+  posTicketAmount: string;
+  posTicketStatus: string;
   arcadePosStore: string;
   arcadePosChannel: string;
   arcadePosAmount: string;

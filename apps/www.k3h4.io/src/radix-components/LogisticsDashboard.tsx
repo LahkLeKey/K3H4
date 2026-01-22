@@ -7,7 +7,7 @@ import { useFreightState } from "../react-hooks/freight";
 import { useWarehouseState } from "../react-hooks/warehouse";
 import { useAgricultureState } from "../react-hooks/agriculture";
 import { useUsdaState } from "../react-hooks/usda";
-import { useLogisticsStore } from "../zustand-stores/logistics";
+import { useLogisticsStore, type LogisticsTab } from "../zustand-stores/logistics";
 import { FreightBoard } from "./FreightBoard";
 import { WarehouseBoard } from "./WarehouseBoard";
 import { AgricultureBoard } from "./AgricultureBoard";
@@ -19,7 +19,7 @@ export function LogisticsDashboard() {
     const { totals, status: freightStatus, fetchLoads } = useFreightState();
     const { items, status: warehouseStatus, fetchItems } = useWarehouseState();
     const { overview: agOverview, status: agStatus, fetchOverview: fetchAg } = useAgricultureState();
-    const { regions, commodities, countries, status: usdaStatus, fetchReference } = useUsdaState();
+    const { regions, status: usdaStatus, fetchReference } = useUsdaState();
     const { activeTab, setActiveTab } = useLogisticsStore();
 
     const anyLoading = [freightStatus, warehouseStatus, agStatus, usdaStatus].some((s) => s === "loading");
@@ -110,7 +110,7 @@ export function LogisticsDashboard() {
 
             <Tabs
                 value={activeTab}
-                onValueChange={setActiveTab}
+                onValueChange={(tab) => setActiveTab(tab as LogisticsTab)}
                 tabs={[
                     { key: "freight", label: "Freight", content: <FreightBoard /> },
                     { key: "warehouse", label: "Warehouse", content: <WarehouseBoard /> },

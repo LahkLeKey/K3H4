@@ -43,12 +43,6 @@ export type LogisticsState = {
     freightRate: string;
     warehouseSku: string;
     warehouseQty: string;
-    culinaryName: string;
-    posStore: string;
-    posTicketStore: string;
-    posTicketChannel: string;
-    posTicketAmount: string;
-    posTicketStatus: string;
     freightCustomTitle: string;
     freightCustomRate: string;
     freightActionStatus: string;
@@ -58,8 +52,6 @@ export type LogisticsState = {
     agricultureInvName: string;
     agricultureInvQty: string;
     agricultureFormStatus: string;
-    culinaryPrepMinutes: string;
-    culinaryStatus: string;
     status: string;
     usdaDetail: { title: string; code?: string; wikidataId?: string; enrichment: any } | null;
     setActiveTab: (tab: LogisticsTab) => void;
