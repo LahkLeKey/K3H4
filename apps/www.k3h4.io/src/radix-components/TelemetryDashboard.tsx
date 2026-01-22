@@ -43,6 +43,21 @@ const extractLatencyMs = (payload: unknown) => {
     return percentile(msCandidates, 50);
 };
 
+const parseTimestampMs = (value: unknown) => {
+    if (typeof value === "number" && Number.isFinite(value)) {
+        return value > 10_000_000_000 ? value : value * 1000; // seconds vs ms
+    }
+    if (typeof value === "string") {
+        const asNum = Number(value);
+        if (Number.isFinite(asNum)) {
+            return asNum > 10_000_000_000 ? asNum : asNum * 1000;
+        }
+        const parsed = Date.parse(value);
+        if (!Number.isNaN(parsed)) return parsed;
+    }
+    return null;
+};
+
 const isErrorEvent = (eventType: string, payload: unknown, explicit?: boolean | null) => {
     if (explicit === true) return true;
     const t = eventType.toLowerCase();
@@ -89,8 +104,7 @@ export function TelemetryDashboard() {
 
         let lastRefreshTs: number | null = null;
         for (const evt of sorted) {
-            const ts = new Date(evt.createdAt).getTime();
-            if (Number.isNaN(ts)) continue;
+            const ts = parseTimestampMs(evt.createdAt) ?? Date.now();
             const bucket = ensureBucket(ts);
             bucket.total += 1;
 

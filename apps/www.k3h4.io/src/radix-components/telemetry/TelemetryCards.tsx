@@ -82,9 +82,12 @@ export function TelemetryLatencyCard({ data, gradientId = "latencyGradient" }: {
 }
 
 export function TelemetryIngestCard({ data }: { data: TelemetrySample[] }) {
-    const cleaned = data
-        .filter((d) => Number.isFinite(d.ingest))
-        .map((d) => ({ ...d, ingest: Number(d.ingest || 0) }));
+    const cleaned = data.map((d) => {
+        const ingest = Number.isFinite(Number(d.ingest)) ? Number(d.ingest) : 0;
+        const tsMs = typeof d.ts === "number" && Number.isFinite(d.ts) ? d.ts : Number(d.ts);
+        const tsLabel = Number.isFinite(tsMs) ? new Date(tsMs).toLocaleTimeString() : "";
+        return { ...d, ingest, tsLabel };
+    });
 
     if (cleaned.length === 0) {
         return (
@@ -100,9 +103,8 @@ export function TelemetryIngestCard({ data }: { data: TelemetrySample[] }) {
             hint="Events per minute"
             data={cleaned}
             dataKey="ingest"
-            categoryKey="ts"
+            categoryKey="tsLabel"
             barColor="#22d3ee"
-            xTickFormatter={(ts) => new Date(ts).toLocaleTimeString()}
         />
     );
 }
@@ -148,6 +150,14 @@ export function TelemetryWorstTypesCard({ rows }: { rows: WorstTypeRow[] }) {
         worst.p50,
     )} ms. Investigate payload size, batching, caching, or backend path.`;
 
+    const compactLabel = (label: string) => {
+        if (!label) return label;
+        const parts = label.split(".");
+        if (parts.length <= 2) return label;
+        const tail = parts.slice(-2).join(".");
+        return tail.length < 18 ? tail : parts.slice(-3).join(".");
+    };
+
     return (
         <BarChartCard
             title="Worst latency by type"
@@ -170,6 +180,9 @@ export function TelemetryWorstTypesCard({ rows }: { rows: WorstTypeRow[] }) {
             barColor="#fb7185"
             layout="vertical"
             xTickFormatter={(v) => `${Math.round(v)} ms`}
+            showCategoryLabels={false}
+            yTickFormatter={(label) => compactLabel(String(label))}
+            categoryWidth={220}
         />
     );
 }
