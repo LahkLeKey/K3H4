@@ -78,7 +78,7 @@ export function LogisticsDashboard() {
                 </div>
                 <div className="text-3xl font-semibold text-white">Operations control</div>
                 <p className="max-w-3xl text-sm text-slate-300">
-                    Unified cockpit across routing, storage, agriculture sim, USDA reference, culinary workflows, and point of sale.
+                    Unified dashboard across routing, storage, agriculture sim, USDA reference, culinary workflows, and point of sale.
                 </p>
                 <div className="flex flex-wrap items-center gap-2">
                     {!session ? <div className="text-xs text-amber-200">Sign in to load live data from the logistics endpoints.</div> : null}
