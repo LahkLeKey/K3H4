@@ -1,6 +1,7 @@
 import { faker } from "@faker-js/faker";
 import { Prisma, type PrismaClient } from "@prisma/client";
 import { type FastifyInstance } from "fastify";
+import { buildTelemetryBase } from "./telemetry";
 import { type RecordTelemetryFn } from "./types";
 
 const serializeMoney = (value: Prisma.Decimal) => value.toFixed(2);
@@ -44,6 +45,7 @@ export function registerAssignmentRoutes(server: FastifyInstance, prisma: Prisma
       });
 
       await recordTelemetry(request, {
+        ...buildTelemetryBase(request),
         eventType: "assignment.list",
         source: "api",
         payload: { count: assignments.length },
@@ -84,6 +86,7 @@ export function registerAssignmentRoutes(server: FastifyInstance, prisma: Prisma
       });
 
       await recordTelemetry(request, {
+        ...buildTelemetryBase(request),
         eventType: "assignment.create",
         source: "api",
         payload: { personaId },
@@ -118,6 +121,7 @@ export function registerAssignmentRoutes(server: FastifyInstance, prisma: Prisma
       });
 
       await recordTelemetry(request, {
+        ...buildTelemetryBase(request),
         eventType: "assignment.timecard.create",
         source: "api",
         payload: { assignmentId, hours, amount: amount.toFixed(2) },
@@ -196,6 +200,7 @@ export function registerAssignmentRoutes(server: FastifyInstance, prisma: Prisma
         });
 
         await recordTelemetry(request, {
+          ...buildTelemetryBase(request),
           eventType: "assignment.payout",
           source: "api",
           payload: { assignmentId, timecardId, amount: amount.toFixed(2) },

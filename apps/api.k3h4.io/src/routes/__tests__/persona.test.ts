@@ -1,8 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import Fastify from "fastify";
 import { registerPersonaRoutes } from "../persona";
+import { type RecordTelemetryFn } from "../types";
 
-const recordTelemetry = vi.fn();
+const recordTelemetry = vi.fn() as unknown as RecordTelemetryFn;
 const userId = "user-1";
 
 function buildServer(prisma: any) {

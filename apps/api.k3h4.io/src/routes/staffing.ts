@@ -1,5 +1,6 @@
 import { Prisma, type PrismaClient } from "@prisma/client";
 import { type FastifyInstance } from "fastify";
+import { buildTelemetryBase } from "./telemetry";
 import { type RecordTelemetryFn } from "./types";
 
 const money = (value?: Prisma.Decimal | null) => (value ? value.toFixed(2) : null);
@@ -139,6 +140,7 @@ export function registerStaffingRoutes(server: FastifyInstance, prisma: PrismaCl
       };
 
       await recordTelemetry(request, {
+        ...buildTelemetryBase(request),
         eventType: "staffing.dashboard.loaded",
         source: "api",
         payload: { engagements: engagements.length, roles: roles.length, candidates: candidates.length },
@@ -181,6 +183,7 @@ export function registerStaffingRoutes(server: FastifyInstance, prisma: PrismaCl
       });
 
       await recordTelemetry(request, {
+        ...buildTelemetryBase(request),
         eventType: "staffing.engagement.create",
         source: "api",
         payload: { engagementId: engagement.id, priority: engagement.priority },
@@ -228,6 +231,7 @@ export function registerStaffingRoutes(server: FastifyInstance, prisma: PrismaCl
       });
 
       await recordTelemetry(request, {
+        ...buildTelemetryBase(request),
         eventType: "staffing.role.create",
         source: "api",
         payload: { roleId: role.id, engagementId: role.engagementId },
@@ -282,6 +286,7 @@ export function registerStaffingRoutes(server: FastifyInstance, prisma: PrismaCl
       });
 
       await recordTelemetry(request, {
+        ...buildTelemetryBase(request),
         eventType: "staffing.candidate.create",
         source: "api",
         payload: { candidateId: candidate.id, roleId: candidate.roleId, stage: candidate.stage },
@@ -308,6 +313,7 @@ export function registerStaffingRoutes(server: FastifyInstance, prisma: PrismaCl
       const updated = await prisma.staffingCandidate.update({ where: { id: candidateId }, data: { stage } });
 
       await recordTelemetry(request, {
+        ...buildTelemetryBase(request),
         eventType: "staffing.candidate.stage",
         source: "api",
         payload: { candidateId, stage },
@@ -365,6 +371,7 @@ export function registerStaffingRoutes(server: FastifyInstance, prisma: PrismaCl
       });
 
       await recordTelemetry(request, {
+        ...buildTelemetryBase(request),
         eventType: "staffing.shift.create",
         source: "api",
         payload: { shiftId: shift.id, roleId: shift.roleId, startsAt: shift.startsAt },
@@ -429,6 +436,7 @@ export function registerStaffingRoutes(server: FastifyInstance, prisma: PrismaCl
       });
 
       await recordTelemetry(request, {
+        ...buildTelemetryBase(request),
         eventType: "staffing.placement.create",
         source: "api",
         payload: { placementId: placement.id, roleId: placement.roleId },

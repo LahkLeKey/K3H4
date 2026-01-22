@@ -11,6 +11,8 @@ import { PrismaClient } from "@prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { registerAllRoutes } from "./routes";
 import { scheduleDemCacheCleanup } from "./services/geo-dem-cache";
+import { buildTelemetryBase, normalizeDurationMs, warnOnSuspiciousDuration } from "./routes/telemetry";
+import { type TelemetryParams } from "./routes/types";
 
 dotenv.config();
 
@@ -53,6 +55,7 @@ await server.register(fastifyRateLimit, {
   },
 });
 
+// Unified PascalCase tag names to keep Swagger sidebar consistent
 const swaggerTags: Record<string, { name: string; description: string }> = {
   health: { name: "Health", description: "Health and diagnostics" },
   auth: { name: "Auth", description: "Authentication and session" },
@@ -60,88 +63,102 @@ const swaggerTags: Record<string, { name: string; description: string }> = {
   bank: { name: "Bank", description: "Banking and balances" },
   persona: { name: "Persona", description: "Persona management" },
   assignment: { name: "Assignment", description: "Assignments and tasks" },
-  staffing: { name: "Staffing", description: "Staffing and workforce planning" },
+  staffing: { name: "Staffing", description: "Workforce planning" },
   freight: { name: "Freight", description: "Freight and routing" },
   warehouse: { name: "Warehouse", description: "Inventory and storage" },
   pos: { name: "POS", description: "Point of sale" },
-  geo: { name: "Geo", description: "Geospatial caches and lookups" },
-  maptiler: { name: "MapTiler", description: "MapTiler Cloud API proxy" },
   agriculture: { name: "Agriculture", description: "Agriculture simulator" },
   culinary: { name: "Culinary", description: "Culinary simulator" },
   arcade: { name: "Arcade", description: "Arcade simulator" },
   usda: { name: "USDA", description: "USDA data" },
   wikidata: { name: "Wikidata", description: "Wikidata REST cache" },
+  geo: { name: "Geo", description: "Geospatial caches and lookups" },
+  maptiler: { name: "MapTiler", description: "MapTiler Cloud API proxy" },
   osrm: { name: "OSRM", description: "OSRM routing proxy" },
   telemetry: { name: "Telemetry", description: "Telemetry intake" },
 };
 
+// Route-segment -> tag mapping (keeps sidebar organized by domain)
 const swaggerTagMap: Record<string, { name: string; description: string }> = {
+  // platform
   health: swaggerTags.health,
   auth: swaggerTags.auth,
   profile: swaggerTags.profile,
+  telemetry: swaggerTags.telemetry,
+  // finance/persona
   bank: swaggerTags.bank,
   persona: swaggerTags.persona,
-  personas: swaggerTags.persona, // plural route prefix
+  personas: swaggerTags.persona,
   assignment: swaggerTags.assignment,
-  assignments: swaggerTags.assignment, // plural route prefix
+  assignments: swaggerTags.assignment,
   staffing: swaggerTags.staffing,
+  // logistics & sims
   freight: swaggerTags.freight,
   warehouse: swaggerTags.warehouse,
   pos: swaggerTags.pos,
-  geo: swaggerTags.geo,
-  maptiler: swaggerTags.maptiler,
   agriculture: swaggerTags.agriculture,
   culinary: swaggerTags.culinary,
   arcade: swaggerTags.arcade,
+  // data & geo
   usda: swaggerTags.usda,
   wikidata: swaggerTags.wikidata,
+  geo: swaggerTags.geo,
+  maptiler: swaggerTags.maptiler,
   osrm: swaggerTags.osrm,
-  telemetry: swaggerTags.telemetry,
 };
 
-const getSessionId = (request: FastifyRequest) => {
-  const headerSession = request.headers["x-session-id"];
-  if (typeof headerSession === "string" && headerSession.trim().length > 0) return headerSession.trim();
-  if (Array.isArray(headerSession) && headerSession[0]) return headerSession[0].trim();
-  return request.id;
+const clampDurationMs = normalizeDurationMs;
+
+const TELEMETRY_MAX_EVENTS = 2000;
+const TELEMETRY_PRUNE_BATCH = 200; // trim in small batches to avoid large deletes
+
+const pruneTelemetry = async () => {
+  const staleEvents = await prisma.telemetryEvent.findMany({
+    select: { id: true },
+    orderBy: [
+      { createdAt: "desc" },
+      { id: "desc" },
+    ],
+    skip: TELEMETRY_MAX_EVENTS,
+    take: TELEMETRY_PRUNE_BATCH,
+  });
+
+  if (!staleEvents.length) return;
+
+  await prisma.telemetryEvent.deleteMany({ where: { id: { in: staleEvents.map((event) => event.id) } } });
 };
 
-const coerceDurationMs = (val: unknown) => {
-  const n = typeof val === "string" ? Number(val) : typeof val === "number" ? val : NaN;
-  if (!Number.isFinite(n)) return undefined;
-  const clamped = Math.max(0, Math.min(1_000_000, n));
-  return Math.round(clamped);
-};
+const recordTelemetry = async (request: FastifyRequest, params: TelemetryParams) => {
+  const durationMs = clampDurationMs(params.durationMs);
+  warnOnSuspiciousDuration(request, { eventType: params.eventType, durationMs });
 
-const recordTelemetry = async (
-  request: FastifyRequest,
-  params: {
-    eventType: string;
-    source: string;
-    payload?: unknown;
-    sessionId?: string;
-    path?: string;
-    userId?: string;
-    durationMs?: number;
-  },
-) => {
+  if (!params.sessionId || !params.path || !params.userId) {
+    request.log.warn({ params }, "telemetry payload missing required identifiers");
+    return;
+  }
+
   try {
-    const sessionId = params.sessionId ?? getSessionId(request);
-    const userId = params.userId ?? (request.user as { sub?: string } | undefined)?.sub;
-    const durationMs = coerceDurationMs(params.durationMs);
     await prisma.telemetryEvent.create({
       data: {
-        sessionId,
-        userId,
+        sessionId: params.sessionId,
+        userId: params.userId,
         eventType: params.eventType,
         source: params.source,
-        path: params.path ?? request.url,
-        payload: params.payload ? (params.payload as any) : undefined,
-        durationMs: durationMs ?? undefined,
+        path: params.path,
+        payload: params.payload as any,
+        durationMs,
+        error: params.error,
       },
     });
   } catch (err) {
     request.log.warn({ err }, "telemetry insert failed");
+    return;
+  }
+
+  try {
+    await pruneTelemetry();
+  } catch (err) {
+    request.log.warn({ err }, "telemetry prune failed");
   }
 };
 
@@ -211,6 +228,15 @@ const prisma = new PrismaClient({
 // Periodic DEM cache cleanup (expired tiles + size cap)
 const demCleanupHandle = scheduleDemCacheCleanup(prisma, server.log);
 
+const resolveServerUrl = () => {
+  const envUrl = process.env.PUBLIC_API_URL?.trim();
+  if (envUrl) return envUrl;
+
+  const port = process.env.PORT?.trim() || "3000";
+  const host = process.env.HOST?.trim() && process.env.HOST !== "0.0.0.0" ? process.env.HOST.trim() : "localhost";
+  return `http://${host}:${port}`;
+};
+
 // Basic OpenAPI definition for the service
 const openApiOptions: SwaggerOptions = {
   openapi: {
@@ -220,7 +246,20 @@ const openApiOptions: SwaggerOptions = {
       description:
         "API for K3H4 services. To authorize, sign in at https://www.k3h4.dev (or the dev frontend), open devtools > Application > Local Storage, and copy the value of k3h4.accessToken. Paste the token in Authorize; the UI will send it as a Bearer token automatically.",
       version: "0.1.0",
+      contact: {
+        name: "K3H4 Platform",
+        url: "https://www.k3h4.dev",
+        email: "support@k3h4.dev",
+      },
+      license: {
+        name: "MIT",
+        url: "https://opensource.org/licenses/MIT",
+      },
     },
+    servers: [
+      { url: resolveServerUrl(), description: "Active server" },
+      { url: "https://api.k3h4.dev", description: "Production" },
+    ],
     components: {
       securitySchemes: {
         bearerAuth: {
@@ -233,6 +272,10 @@ const openApiOptions: SwaggerOptions = {
     },
     security: [{ bearerAuth: [] }],
     tags: Object.values(swaggerTags),
+    externalDocs: {
+      description: "Frontend console and docs",
+      url: "https://www.k3h4.dev",
+    },
   },
 };
 
@@ -309,7 +352,8 @@ server.post("/telemetry", async (request, reply) => {
           path?: string;
           payload?: unknown;
           userId?: string;
-          durationMs?: number;
+          durationMs?: number | string;
+          error?: boolean;
         }>;
         eventType?: string;
         source?: string;
@@ -317,7 +361,8 @@ server.post("/telemetry", async (request, reply) => {
         path?: string;
         payload?: unknown;
         userId?: string;
-        durationMs?: number;
+        durationMs?: number | string;
+        error?: boolean;
       }
     | undefined;
 
@@ -325,28 +370,44 @@ server.post("/telemetry", async (request, reply) => {
     ? body?.events ?? []
     : [body].filter((val): val is NonNullable<typeof body> => Boolean(val));
 
-  const normalizedEvents = incomingEvents
-    .map((evt) => ({
-      eventType: evt.eventType?.trim(),
-      source: evt.source?.trim(),
-      sessionId: evt.sessionId,
-      path: evt.path,
+  const normalizedEvents: TelemetryParams[] = [];
+
+  incomingEvents.forEach((evt) => {
+    if (!evt) return;
+
+    const eventType = typeof evt.eventType === "string" ? evt.eventType.trim() : "";
+    const source = typeof evt.source === "string" ? evt.source.trim() : "";
+    const sessionId = typeof evt.sessionId === "string" ? evt.sessionId.trim() : "";
+    const path = typeof evt.path === "string" ? evt.path.trim() : "";
+    const userId = typeof evt.userId === "string" ? evt.userId.trim() : "";
+    const hasPayload = Object.prototype.hasOwnProperty.call(evt, "payload");
+    const rawDuration =
+      typeof evt.durationMs === "number"
+        ? evt.durationMs
+        : typeof evt.durationMs === "string" && evt.durationMs.trim().length > 0
+          ? Number(evt.durationMs)
+          : NaN;
+
+    if (!eventType || !source || !sessionId || !path || !userId || !hasPayload || !Number.isFinite(rawDuration)) {
+      return;
+    }
+
+    const durationMs = clampDurationMs(rawDuration);
+
+    normalizedEvents.push({
+      eventType,
+      source,
+      sessionId,
+      path,
       payload: evt.payload,
-      userId: evt.userId,
-      durationMs: coerceDurationMs(evt.durationMs),
-    }))
-    .filter((evt) => evt.eventType && evt.source) as Array<{
-    eventType: string;
-    source: string;
-    sessionId?: string;
-    path?: string;
-    payload?: unknown;
-    userId?: string;
-    durationMs?: number;
-  }>;
+      userId,
+      durationMs,
+      error: evt.error === true,
+    });
+  });
 
   if (normalizedEvents.length === 0) {
-    return reply.status(400).send({ error: "eventType and source are required" });
+    return reply.status(400).send({ error: "eventType, source, sessionId, path, userId, payload, durationMs are required" });
   }
 
   // Optionally attach user if a valid token is present; do not fail intake on auth errors
@@ -360,17 +421,7 @@ server.post("/telemetry", async (request, reply) => {
   }
 
   await Promise.all(
-    normalizedEvents.map((evt) =>
-      recordTelemetry(request, {
-        eventType: evt.eventType,
-        source: evt.source,
-        sessionId: evt.sessionId,
-        path: evt.path,
-        payload: evt.payload,
-        userId: evt.userId,
-        durationMs: evt.durationMs,
-      }),
-    ),
+    normalizedEvents.map((evt) => recordTelemetry(request, evt)),
   );
 
   return { ok: true, recorded: normalizedEvents.length };

@@ -3,6 +3,7 @@ import { Prisma, type PrismaClient } from "@prisma/client";
 import { type FastifyInstance, type FastifyReply, type FastifyRequest } from "fastify";
 import { enqueueOverpass } from "../lib/overpass-queue";
 import { enrichPoi } from "../modules/poi-enrich/enrich";
+import { withTelemetryBase } from "./telemetry";
 import { type RecordTelemetryFn } from "./types";
 
 type Bbox = { minLat: number; minLng: number; maxLat: number; maxLng: number };
@@ -198,6 +199,7 @@ export function registerPoiRoutes(server: FastifyInstance, prisma: PrismaClient,
   };
 
   const listHandler = async (request: FastifyRequest, reply: FastifyReply) => {
+    const rt = withTelemetryBase(recordTelemetry, request);
     const bounds = parseBbox(request.query as Record<string, unknown>);
     if (!bounds) return reply.status(400).send({ error: "bbox is required as minLon,minLat,maxLon,maxLat" });
 
@@ -313,11 +315,7 @@ export function registerPoiRoutes(server: FastifyInstance, prisma: PrismaClient,
       }
     }
 
-    await recordTelemetry(request, {
-      eventType: "poi.list",
-      source: "api",
-      payload: { zoom, total, returned: items.length, clustered },
-    });
+    await rt({ eventType: "poi.list", source: "api", payload: { zoom, total, returned: items.length, clustered } });
 
     return {
       items,
@@ -367,6 +365,7 @@ export function registerPoiRoutes(server: FastifyInstance, prisma: PrismaClient,
   };
 
   const syncHandler = async (request: FastifyRequest, reply: FastifyReply) => {
+    const rt = withTelemetryBase(recordTelemetry, request);
     const body = request.body as { bbox?: string; minLat?: number; minLng?: number; maxLat?: number; maxLng?: number; kinds?: string[] | string; pruneMissing?: boolean } | undefined;
     const bounds = parseBbox((body ?? {}) as Record<string, unknown>);
     if (!bounds) return reply.status(400).send({ error: "bbox is required as minLon,minLat,maxLon,maxLat" });
@@ -434,17 +433,10 @@ export function registerPoiRoutes(server: FastifyInstance, prisma: PrismaClient,
         pruned = pruneResult.count;
       }
 
-      await recordTelemetry(request, {
+      await rt({
         eventType: "poi.sync",
         source: "api",
-        payload: {
-          bbox: bounds,
-          kinds,
-          fetched: elements.length,
-          created,
-          updated,
-          pruned,
-        },
+        payload: { bbox: bounds, kinds, fetched: elements.length, created, updated, pruned },
       });
 
       return { ok: true, fetched: elements.length, created, updated, pruned };
@@ -588,7 +580,7 @@ export function registerPoiRoutes(server: FastifyInstance, prisma: PrismaClient,
         }),
       );
 
-      await recordTelemetry(request, { eventType: "poi.batch", source: "api", payload: { count: ids.length, include: includeHash } });
+      await rt({ eventType: "poi.batch", source: "api", payload: { count: ids.length, include: includeHash } });
       return { items: results };
     },
   );

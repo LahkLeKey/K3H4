@@ -2,6 +2,7 @@ import { Prisma, PrismaClient } from "@prisma/client";
 import { type FastifyInstance } from "fastify";
 import { randomBytes } from "node:crypto";
 import { URLSearchParams } from "node:url";
+import { withTelemetryBase } from "./telemetry";
 import { type RecordTelemetryFn } from "./types";
 
 const ACCOUNT_DELETE_PHRASE = "Delete-My-K3H4-Data";
@@ -53,6 +54,8 @@ const runDeleteJob = async (prisma: PrismaClient, jobId: string, userId: string,
     deletionJobs.set(jobId, next);
   };
 
+  const rt = withTelemetryBase(recordTelemetry, request);
+
   try {
     updateStatus({ status: "running", progress: 10, message: "Starting deletion" });
 
@@ -102,18 +105,10 @@ const runDeleteJob = async (prisma: PrismaClient, jobId: string, userId: string,
 
     updateStatus({ status: "done", progress: 100, message: "Deletion complete", counts });
 
-    await recordTelemetry(request, {
-      eventType: "auth.delete.completed",
-      source: "api",
-      payload: { userId, counts },
-    });
+    await rt({ eventType: "auth.delete.completed", source: "api", payload: { userId, counts } });
   } catch (err) {
     updateStatus({ status: "error", progress: 100, message: err instanceof Error ? err.message : "unknown" });
-    await recordTelemetry(request, {
-      eventType: "auth.delete.error",
-      source: "api",
-      payload: { message: err instanceof Error ? err.message : "unknown" },
-    });
+    await rt({ eventType: "auth.delete.error", source: "api", payload: { message: err instanceof Error ? err.message : "unknown" } });
   }
 };
 
@@ -121,6 +116,7 @@ export function registerAuthRoutes(server: FastifyInstance, prisma: PrismaClient
   // Local email/password auth removed; only OAuth flows are supported.
   server.post("/auth/github/callback", async (request, reply) => {
     try {
+      const rt = withTelemetryBase(recordTelemetry, request);
       const body = request.body as { code?: string; redirectUri?: string };
       if (!body?.code || !body?.redirectUri) {
         return reply.status(400).send({ error: "code and redirectUri are required" });
@@ -145,11 +141,7 @@ export function registerAuthRoutes(server: FastifyInstance, prisma: PrismaClient
 
       const tokenData = (await tokenRes.json()) as { access_token?: string; error?: string; error_description?: string };
       if (!tokenRes.ok || !tokenData.access_token) {
-        await recordTelemetry(request, {
-          eventType: "auth.github.callback.failed",
-          source: "api",
-          payload: { code: body.code, detail: tokenData.error_description ?? tokenData.error ?? null },
-        });
+        await rt({ eventType: "auth.github.callback.failed", source: "api", payload: { code: body.code, detail: tokenData.error_description ?? tokenData.error ?? null } });
         const isStaleCode = tokenData.error === "bad_verification_code";
         return reply.status(401).send({
           error: tokenData.error || "GitHub auth failed",
@@ -167,11 +159,7 @@ export function registerAuthRoutes(server: FastifyInstance, prisma: PrismaClient
       });
       const ghUser = (await userRes.json()) as { id?: number; login?: string; name?: string; avatar_url?: string; email?: string; message?: string };
       if (!userRes.ok || !ghUser.id) {
-        await recordTelemetry(request, {
-          eventType: "auth.github.callback.failed",
-          source: "api",
-          payload: { code: body.code, detail: ghUser.message ?? null, status: userRes.status },
-        });
+        await rt({ eventType: "auth.github.callback.failed", source: "api", payload: { code: body.code, detail: ghUser.message ?? null, status: userRes.status } });
         return reply
           .status(401)
           .send({ error: "Unable to fetch GitHub profile", detail: ghUser.message ?? null, status: userRes.status });
@@ -244,20 +232,12 @@ export function registerAuthRoutes(server: FastifyInstance, prisma: PrismaClient
         request.log.warn({ err }, "persisting github grant failed");
       }
 
-      await recordTelemetry(request, {
-        eventType: "auth.github.callback.success",
-        source: "api",
-        payload: { providerId, email: user.email, redirectUri: body.redirectUri },
-      });
+      await rt({ eventType: "auth.github.callback.success", source: "api", payload: { providerId, email: user.email, redirectUri: body.redirectUri } });
 
       return createSessionTokens(server, prisma, user.id, user.email ?? undefined);
     } catch (err) {
       request.log.error({ err }, "github callback failed");
-      await recordTelemetry(request, {
-        eventType: "auth.github.callback.error",
-        source: "api",
-        payload: { message: err instanceof Error ? err.message : "unknown" },
-      });
+      await rt({ eventType: "auth.github.callback.error", source: "api", payload: { message: err instanceof Error ? err.message : "unknown" } });
       return reply.status(500).send({ error: "GitHub auth failed" });
     }
   });
@@ -417,6 +397,7 @@ export function registerAuthRoutes(server: FastifyInstance, prisma: PrismaClient
     },
     async (request, reply) => {
       try {
+        const rt = withTelemetryBase(recordTelemetry, request);
         const userId = (request.user as { sub: string }).sub;
         const body = request.body as { confirmText?: string } | undefined;
 
@@ -424,11 +405,7 @@ export function registerAuthRoutes(server: FastifyInstance, prisma: PrismaClient
           return reply.status(400).send({ error: `To delete your data, type '${ACCOUNT_DELETE_PHRASE}' exactly.` });
         }
 
-        await recordTelemetry(request, {
-          eventType: "auth.delete.requested",
-          source: "api",
-          payload: { confirmationMatched: body.confirmText === ACCOUNT_DELETE_PHRASE },
-        });
+        await rt({ eventType: "auth.delete.requested", source: "api", payload: { confirmationMatched: body.confirmText === ACCOUNT_DELETE_PHRASE } });
 
         const user = await prisma.user.findUnique({ where: { id: userId }, select: { id: true, email: true } });
         if (!user) {
@@ -443,11 +420,7 @@ export function registerAuthRoutes(server: FastifyInstance, prisma: PrismaClient
         return { jobId, status: "queued" };
       } catch (err) {
         request.log.error({ err }, "account delete failed");
-        await recordTelemetry(request, {
-          eventType: "auth.delete.error",
-          source: "api",
-          payload: { message: err instanceof Error ? err.message : "unknown" },
-        });
+        await rt({ eventType: "auth.delete.error", source: "api", payload: { message: err instanceof Error ? err.message : "unknown" } });
         return reply.status(500).send({ error: "Unable to delete account right now" });
       }
     },
@@ -471,6 +444,7 @@ export function registerAuthRoutes(server: FastifyInstance, prisma: PrismaClient
 
   server.post("/auth/signout", async (request, reply) => {
     try {
+      const rt = withTelemetryBase(recordTelemetry, request);
       // Try to identify user from Authorization Bearer token first
       let userId: string | null = null;
       try {
@@ -542,11 +516,7 @@ export function registerAuthRoutes(server: FastifyInstance, prisma: PrismaClient
       await (prisma as any).providerGrant.deleteMany({ where: { userId } }).catch(() => null);
       await prisma.refreshToken.deleteMany({ where: { userId } });
 
-      await recordTelemetry(request, {
-        eventType: "auth.signout",
-        source: "api",
-        payload: { userId },
-      });
+      await rt({ eventType: "auth.signout", source: "api", payload: { userId } });
       return { ok: true };
     } catch (err) {
       request.log.error({ err }, "signout failed");

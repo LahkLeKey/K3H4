@@ -1,6 +1,7 @@
 import { PrismaClient } from "@prisma/client";
 import { type FastifyInstance, type FastifyReply, type FastifyRequest } from "fastify";
 import { fetchMaptilerWithCache } from "../services/maptiler-cache";
+import { buildTelemetryBase } from "./telemetry";
 import { type RecordTelemetryFn } from "./types";
 
 const DEFAULT_MAX_AGE_MINUTES = 60 * 6; // 6 hours
@@ -90,6 +91,7 @@ export function registerMaptilerRoutes(server: FastifyInstance, prisma: PrismaCl
     );
 
     await recordTelemetry(request, {
+      ...buildTelemetryBase(request),
       eventType: `maptiler.${kind}.${cached ? "cached" : "fetched"}`,
       source: "api",
       payload: { path, cached },

@@ -1,6 +1,7 @@
 import { type PrismaClient } from "@prisma/client";
 import { type FastifyInstance, type FastifyReply } from "fastify";
 import { fetchWikidataWithCache } from "../services/wikidata-cache";
+import { buildTelemetryBase } from "./telemetry";
 import { type RecordTelemetryFn } from "./types";
 
 const DEFAULT_ENTITY_MAX_AGE_MINUTES = 360; // Wikidata entities change, but we can reuse results for a few hours
@@ -54,6 +55,7 @@ export function registerWikidataRoutes(server: FastifyInstance, prisma: PrismaCl
 
     const result = await fetchWikidataWithCache(prisma, endpoint, params, { resource: "item", maxAgeMinutes: maxAge });
     await recordTelemetry(request, {
+      ...buildTelemetryBase(request),
       eventType: "wikidata.item.fetch",
       source: "api",
       payload: { itemId, cached: result.cached, status: result.status },
@@ -73,6 +75,7 @@ export function registerWikidataRoutes(server: FastifyInstance, prisma: PrismaCl
 
     const result = await fetchWikidataWithCache(prisma, endpoint, params, { resource: "property", maxAgeMinutes: maxAge });
     await recordTelemetry(request, {
+      ...buildTelemetryBase(request),
       eventType: "wikidata.property.fetch",
       source: "api",
       payload: { propertyId, cached: result.cached, status: result.status },
@@ -92,6 +95,7 @@ export function registerWikidataRoutes(server: FastifyInstance, prisma: PrismaCl
 
     const result = await fetchWikidataWithCache(prisma, endpoint, params, { resource: "item-statements", maxAgeMinutes: maxAge });
     await recordTelemetry(request, {
+      ...buildTelemetryBase(request),
       eventType: "wikidata.item.statements.fetch",
       source: "api",
       payload: { itemId, cached: result.cached, status: result.status },
@@ -111,6 +115,7 @@ export function registerWikidataRoutes(server: FastifyInstance, prisma: PrismaCl
 
     const result = await fetchWikidataWithCache(prisma, endpoint, params, { resource: "item-labels", maxAgeMinutes: maxAge });
     await recordTelemetry(request, {
+      ...buildTelemetryBase(request),
       eventType: "wikidata.item.labels.fetch",
       source: "api",
       payload: { itemId, cached: result.cached, status: result.status },
@@ -134,6 +139,7 @@ export function registerWikidataRoutes(server: FastifyInstance, prisma: PrismaCl
     });
 
     await recordTelemetry(request, {
+      ...buildTelemetryBase(request),
       eventType: "wikidata.item.label.fetch",
       source: "api",
       payload: { itemId, languageCode, cached: result.cached, status: result.status },
@@ -157,6 +163,7 @@ export function registerWikidataRoutes(server: FastifyInstance, prisma: PrismaCl
     });
 
     await recordTelemetry(request, {
+      ...buildTelemetryBase(request),
       eventType: "wikidata.item.sitelinks.fetch",
       source: "api",
       payload: { itemId, cached: result.cached, status: result.status },
@@ -180,6 +187,7 @@ export function registerWikidataRoutes(server: FastifyInstance, prisma: PrismaCl
     });
 
     await recordTelemetry(request, {
+      ...buildTelemetryBase(request),
       eventType: "wikidata.item.sitelink.fetch",
       source: "api",
       payload: { itemId, siteId, cached: result.cached, status: result.status },
@@ -209,6 +217,7 @@ export function registerWikidataRoutes(server: FastifyInstance, prisma: PrismaCl
     });
 
     await recordTelemetry(request, {
+      ...buildTelemetryBase(request),
       eventType: "wikidata.search.items",
       source: "api",
       payload: { q: query, cached: result.cached, status: result.status },
@@ -238,6 +247,7 @@ export function registerWikidataRoutes(server: FastifyInstance, prisma: PrismaCl
     });
 
     await recordTelemetry(request, {
+      ...buildTelemetryBase(request),
       eventType: "wikidata.search.properties",
       source: "api",
       payload: { q: query, cached: result.cached, status: result.status },

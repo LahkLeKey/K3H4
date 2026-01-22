@@ -2,6 +2,7 @@ import { PrismaClient } from "@prisma/client";
 import { Buffer } from "node:buffer";
 import { type FastifyInstance, type FastifyReply, type FastifyRequest } from "fastify";
 import { fetchMaptilerCacheOnly, fetchMaptilerWithCache } from "../services/maptiler-cache";
+import { withTelemetryBase } from "./telemetry";
 import { type RecordTelemetryFn } from "./types";
 
 const DEFAULT_MAX_AGE_MINUTES = 60 * 6; // 6 hours
@@ -92,6 +93,7 @@ export function registerBatchRoutes(server: FastifyInstance, prisma: PrismaClien
     "/api/batch",
     { ...optionalAuth, rateLimit: { max: 120, timeWindow: "1 minute" } } as any,
     async (request: FastifyRequest, reply: FastifyReply) => {
+      const rt = withTelemetryBase(recordTelemetry, request);
       const body = request.body as { ops?: BatchOp[] } | undefined;
       if (!body || !Array.isArray(body.ops) || body.ops.length === 0) return badRequest(reply, "ops array is required");
       if (body.ops.length > MAX_OPS) return badRequest(reply, `max ${MAX_OPS} ops`);
@@ -206,11 +208,7 @@ export function registerBatchRoutes(server: FastifyInstance, prisma: PrismaClien
         results[id] = { ok: false, status: 400, cached: false, source: "none", error: `unsupported op ${raw.op}` };
       }
 
-      await recordTelemetry(request, {
-        eventType: "batch",
-        source: "api",
-        payload: { total: body.ops.length, maptiler: maptilerCount },
-      });
+      await rt({ eventType: "batch", source: "api", payload: { total: body.ops.length, maptiler: maptilerCount } });
 
       return { ok: true, results };
     },

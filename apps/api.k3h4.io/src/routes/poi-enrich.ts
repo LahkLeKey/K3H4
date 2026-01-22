@@ -3,6 +3,7 @@ import { type FastifyInstance, type FastifyReply, type FastifyRequest } from "fa
 import { computeIncludeHash, parseFreshFlag, parseIncludeFlags, parseOrigin, parsePoiId } from "../modules/poi-enrich/parse";
 import { enrichPoi } from "../modules/poi-enrich/enrich";
 import { readCachedEnrichment, writeCachedEnrichment } from "../modules/poi-enrich/cache";
+import { buildTelemetryBase } from "./telemetry";
 import type { RecordTelemetryFn } from "./types";
 
 const DEFAULT_ROUTE_MODE = "driving";
@@ -45,7 +46,12 @@ export function registerPoiEnrichRoutes(server: FastifyInstance, prisma: PrismaC
       try {
         const enriched = await enrichPoi(prisma, poiId, flags, origin, mode);
         void writeCachedEnrichment(prisma, cacheKey, includeHash, enriched).catch((err) => request.log.warn({ err }, "enrich cache write failed"));
-        await recordTelemetry(request, { eventType: "poi.enrich", source: "api", payload: { poi: cacheKey, includeHash } });
+        await recordTelemetry(request, {
+          ...buildTelemetryBase(request),
+          eventType: "poi.enrich",
+          source: "api",
+          payload: { poi: cacheKey, includeHash },
+        });
         reply.header("Cache-Control", "public, max-age=60");
         return enriched;
       } catch (err: any) {

@@ -1,5 +1,6 @@
 import { Prisma, PrismaClient } from "@prisma/client";
 import { type FastifyInstance } from "fastify";
+import { withTelemetryBase } from "./telemetry";
 import { type RecordTelemetryFn } from "./types";
 
 export function registerCulinaryRoutes(server: FastifyInstance, prisma: PrismaClient, recordTelemetry: RecordTelemetryFn) {
@@ -15,7 +16,8 @@ export function registerCulinaryRoutes(server: FastifyInstance, prisma: PrismaCl
         prisma.culinarySupplierNeed.findMany({ where: { userId }, orderBy: { createdAt: "desc" } }),
       ]);
 
-      await recordTelemetry(request, {
+      const rt = withTelemetryBase(recordTelemetry, request);
+      await rt({
         eventType: "culinary.overview.fetch",
         source: "api",
         payload: { menuCount: menuItems.length, prepCount: prepTasks.length, supplierCount: supplierNeeds.length },
@@ -40,7 +42,9 @@ export function registerCulinaryRoutes(server: FastifyInstance, prisma: PrismaCl
           price: new Prisma.Decimal(Number(body.price).toFixed(2)),
         },
       });
-      await recordTelemetry(request, { eventType: "culinary.menu.create", source: "api", payload: { name: item.name } });
+
+      const rt = withTelemetryBase(recordTelemetry, request);
+      await rt({ eventType: "culinary.menu.create", source: "api", payload: { name: item.name } });
       return { item };
     },
   );
@@ -60,7 +64,9 @@ export function registerCulinaryRoutes(server: FastifyInstance, prisma: PrismaCl
           status: body.status || "pending",
         },
       });
-      await recordTelemetry(request, { eventType: "culinary.prep.create", source: "api", payload: { station: prep.station } });
+
+      const rt = withTelemetryBase(recordTelemetry, request);
+      await rt({ eventType: "culinary.prep.create", source: "api", payload: { station: prep.station } });
       return { prep };
     },
   );
@@ -80,7 +86,9 @@ export function registerCulinaryRoutes(server: FastifyInstance, prisma: PrismaCl
           dueDate: body.dueDate ? new Date(body.dueDate) : null,
         },
       });
-      await recordTelemetry(request, { eventType: "culinary.supplier.create", source: "api", payload: { item: need.item } });
+
+      const rt = withTelemetryBase(recordTelemetry, request);
+      await rt({ eventType: "culinary.supplier.create", source: "api", payload: { item: need.item } });
       return { need };
     },
   );

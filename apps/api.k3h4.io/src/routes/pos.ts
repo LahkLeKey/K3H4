@@ -1,5 +1,6 @@
 import { Prisma, PrismaClient } from "@prisma/client";
 import { type FastifyInstance } from "fastify";
+import { buildTelemetryBase } from "./telemetry";
 import { type RecordTelemetryFn } from "./types";
 
 const serializeMoney = (value: Prisma.Decimal | null | undefined) => value ? value.toFixed(2) : "0.00";
@@ -48,6 +49,7 @@ export function registerPosRoutes(server: FastifyInstance, prisma: PrismaClient,
       }, {});
 
       await recordTelemetry(request, {
+        ...buildTelemetryBase(request),
         eventType: "pos.overview.fetch",
         source: "api",
         payload: { gross, ticketCount, storeCount: stores.length },
@@ -134,6 +136,7 @@ export function registerPosRoutes(server: FastifyInstance, prisma: PrismaClient,
       });
 
       await recordTelemetry(request, {
+        ...buildTelemetryBase(request),
         eventType: "pos.ticket.create",
         source: "api",
         payload: { channel, items: ticket.itemsCount, total: ticket.total.toFixed(2) },
@@ -150,7 +153,12 @@ export function registerPosRoutes(server: FastifyInstance, prisma: PrismaClient,
       const userId = (request.user as { sub: string }).sub;
       const body = request.body as { name: string; channel?: string };
       const store = await prisma.posStore.create({ data: { userId, name: body.name, channel: body.channel || "In-store" } });
-      await recordTelemetry(request, { eventType: "pos.store.create", source: "api", payload: { name: store.name, channel: store.channel } });
+      await recordTelemetry(request, {
+        ...buildTelemetryBase(request),
+        eventType: "pos.store.create",
+        source: "api",
+        payload: { name: store.name, channel: store.channel },
+      });
       return { store };
     },
   );
