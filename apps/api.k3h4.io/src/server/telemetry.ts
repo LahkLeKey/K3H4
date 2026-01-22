@@ -1,10 +1,10 @@
 import { PrismaClient } from "@prisma/client";
-import { type FastifyInstance, type FastifyReply, type FastifyRequest } from "fastify";
+import { type FastifyBaseLogger, type FastifyInstance, type FastifyReply, type FastifyRequest } from "fastify";
 import { type RecordTelemetryFn, type TelemetryParams } from "../routes/types";
 import { normalizeDurationMs, warnOnSuspiciousDuration } from "../routes/telemetry";
 
-const TELEMETRY_MAX_EVENTS = 20; // Keep telemetry slim globally (we will want to increase this later)
-const TELEMETRY_PRUNE_BATCH = 200;
+const TELEMETRY_MAX_EVENTS = 2000;
+const TELEMETRY_PRUNE_BATCH = 32;
 
 const pruneTelemetry = async (prisma: PrismaClient) => {
   const staleEvents = await prisma.telemetryEvent.findMany({
@@ -22,6 +22,16 @@ const pruneTelemetry = async (prisma: PrismaClient) => {
   await prisma.telemetryEvent.deleteMany({ where: { id: { in: staleEvents.map((event) => event.id) } } });
 };
 
+const TELEMETRY_PRUNE_FREQUENCY = TELEMETRY_PRUNE_BATCH * 2;
+
+let telemetryWritesSincePrune = 0;
+
+const maybeSchedulePrune = (prisma: PrismaClient, log: FastifyBaseLogger) => {
+  telemetryWritesSincePrune += 1;
+  if (telemetryWritesSincePrune < TELEMETRY_PRUNE_FREQUENCY) return;
+  telemetryWritesSincePrune = 0;
+  void pruneTelemetry(prisma).catch((err) => log.warn({ err }, "telemetry prune failed"));
+};
 export const createTelemetryRecorder = (prisma: PrismaClient): RecordTelemetryFn => {
   return async (request: FastifyRequest, params: TelemetryParams) => {
     const durationMs = normalizeDurationMs(params.durationMs);
@@ -50,11 +60,7 @@ export const createTelemetryRecorder = (prisma: PrismaClient): RecordTelemetryFn
       return;
     }
 
-    try {
-      await pruneTelemetry(prisma);
-    } catch (err) {
-      request.log.warn({ err }, "telemetry prune failed");
-    }
+    maybeSchedulePrune(prisma, request.log);
   };
 };
 
