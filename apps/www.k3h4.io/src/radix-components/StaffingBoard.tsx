@@ -1,8 +1,9 @@
 import { useEffect } from "react";
 
-import { Badge, Button, Card, StatChip, Table } from "../radix-primitives";
+import { Badge, Button, MetricTile, SectionHeader, Table } from "../radix-primitives";
 import { useAuthStore } from "../zustand-stores/auth";
 import { useStaffingState } from "../react-hooks/staffing";
+import { TableCard } from "./TableCard";
 
 export function StaffingBoard() {
     const { session } = useAuthStore();
@@ -16,26 +17,27 @@ export function StaffingBoard() {
 
     return (
         <div className="space-y-4">
-            <div className="flex flex-wrap items-center gap-2">
-                <Badge accent="#60a5fa">Staffing</Badge>
-                {status === "loading" ? <span className="text-xs text-slate-400">Loading…</span> : null}
-                {error ? <span className="text-xs text-amber-300">{error}</span> : null}
-                <div className="ml-auto flex items-center gap-2">
-                    <Button accent="#22d3ee" onClick={() => fetchDashboard()} disabled={status === "loading"}>
+            <SectionHeader
+                kicker="Staffing"
+                title="Workforce snapshot"
+                description="Engagements, roles, candidates, shifts, and placements."
+                status={status === "loading" ? "Loading…" : error ? error : undefined}
+                actions={(
+                    <Button accent="#22d3ee" variant="outline" onClick={() => fetchDashboard()} disabled={status === "loading"}>
                         Refresh
                     </Button>
-                </div>
+                )}
+            />
+
+            <div className="grid gap-3 sm:grid-cols-5">
+                <MetricTile label="Open roles" value={(metrics?.openRoles ?? 0).toString()} hint="Live" accent="#60a5fa" />
+                <MetricTile label="Candidates" value={(metrics?.activeCandidates ?? 0).toString()} hint="Pipeline" accent="#a78bfa" />
+                <MetricTile label="Shifts" value={(metrics?.scheduledShifts ?? 0).toString()} hint="Scheduled" accent="#f59e0b" />
+                <MetricTile label="Placements" value={(metrics?.activePlacements ?? 0).toString()} hint="Active" accent="#22c55e" />
+                <MetricTile label="Fill rate" value={`${metrics?.fillRate ?? 0}%`} hint="" accent="#67e8f9" />
             </div>
 
-            <div className="grid gap-2 sm:grid-cols-5">
-                <StatChip label="Open roles" value={(metrics?.openRoles ?? 0).toString()} accent="#60a5fa" />
-                <StatChip label="Candidates" value={(metrics?.activeCandidates ?? 0).toString()} accent="#a78bfa" />
-                <StatChip label="Shifts" value={(metrics?.scheduledShifts ?? 0).toString()} accent="#f59e0b" />
-                <StatChip label="Placements" value={(metrics?.activePlacements ?? 0).toString()} accent="#22c55e" />
-                <StatChip label="Fill rate" value={`${metrics?.fillRate ?? 0}%`} accent="#67e8f9" />
-            </div>
-
-            <Card eyebrow="Engagements" title="Engagements" actions={<Badge accent="#60a5fa">Live</Badge>}>
+            <TableCard title="Engagements" subtitle="Live" actions={<Badge accent="#60a5fa">Live</Badge>}>
                 {engagements.length === 0 ? (
                     <div className="space-y-1 rounded-2xl border border-white/5 bg-white/5 p-4 text-sm text-slate-200">
                         <div className="font-semibold">{session ? "No engagements yet" : "Sign in to view staffing"}</div>
@@ -63,9 +65,9 @@ export function StaffingBoard() {
                         rowKey={(row) => row.id}
                     />
                 )}
-            </Card>
+            </TableCard>
 
-            <Card eyebrow="Roles" title="Open roles" actions={<Badge accent="#60a5fa">Live</Badge>}>
+            <TableCard title="Open roles" subtitle="Roles" actions={<Badge accent="#60a5fa">Live</Badge>}>
                 <Table
                     columns={[
                         { key: "title", label: "Title" },
@@ -78,9 +80,9 @@ export function StaffingBoard() {
                     rows={roles}
                     rowKey={(row) => row.id}
                 />
-            </Card>
+            </TableCard>
 
-            <Card eyebrow="Pipeline" title="Candidates" actions={<Badge accent="#60a5fa">Live</Badge>}>
+            <TableCard title="Candidates" subtitle="Pipeline" actions={<Badge accent="#60a5fa">Live</Badge>}>
                 <Table
                     columns={[
                         { key: "fullName", label: "Name" },
@@ -91,9 +93,9 @@ export function StaffingBoard() {
                     rows={candidates}
                     rowKey={(row) => row.id}
                 />
-            </Card>
+            </TableCard>
 
-            <Card eyebrow="Ops" title="Shifts" actions={<Badge accent="#60a5fa">Live</Badge>}>
+            <TableCard title="Shifts" subtitle="Ops" actions={<Badge accent="#60a5fa">Live</Badge>}>
                 <Table
                     columns={[
                         { key: "title", label: "Title" },
@@ -104,9 +106,9 @@ export function StaffingBoard() {
                     rows={shifts}
                     rowKey={(row) => row.id}
                 />
-            </Card>
+            </TableCard>
 
-            <Card eyebrow="Placements" title="Bill/pay" actions={<Badge accent="#60a5fa">Live</Badge>}>
+            <TableCard title="Bill/pay" subtitle="Placements" actions={<Badge accent="#60a5fa">Live</Badge>}>
                 <Table
                     columns={[
                         { key: "id", label: "ID" },
@@ -118,7 +120,7 @@ export function StaffingBoard() {
                     rows={placements}
                     rowKey={(row) => row.id}
                 />
-            </Card>
+            </TableCard>
         </div>
     );
 }

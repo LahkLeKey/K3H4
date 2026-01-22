@@ -1,8 +1,9 @@
 import { useEffect } from "react";
 
-import { Badge, Button, Card, StatChip, Table } from "../radix-primitives";
+import { Badge, Button, MetricTile, SectionHeader, Table } from "../radix-primitives";
 import { useAuthStore } from "../zustand-stores/auth";
 import { useWarehouseState } from "../react-hooks/warehouse";
+import { TableCard } from "./TableCard";
 
 export function WarehouseBoard() {
     const { session } = useAuthStore();
@@ -19,24 +20,25 @@ export function WarehouseBoard() {
 
     return (
         <div className="space-y-4">
-            <div className="flex flex-wrap items-center gap-2">
-                <Badge accent="#e0e7ff">Warehouse</Badge>
-                {loading ? <span className="text-xs text-slate-400">Loading…</span> : null}
-                {error ? <span className="text-xs text-amber-300">{error}</span> : null}
-                <div className="ml-auto flex items-center gap-2">
-                    <Button accent="#e0e7ff" disabled={loading} onClick={() => fetchItems()}>
+            <SectionHeader
+                kicker="Warehouse"
+                title="Inventory overview"
+                description="Live SKUs, quantities, and statuses."
+                status={loading ? "Loading…" : error ? error : undefined}
+                actions={(
+                    <Button accent="#e0e7ff" variant="outline" disabled={loading} onClick={() => fetchItems()}>
                         Refresh
                     </Button>
-                </div>
+                )}
+            />
+
+            <div className="grid gap-3 sm:grid-cols-3">
+                <MetricTile label="SKUs" value={items.length.toString()} hint="Count" accent="#e0e7ff" />
+                <MetricTile label="Quantity" value={totalQty.toString()} hint="Units" accent="#34d399" />
+                <MetricTile label="Active" value={items.filter((i) => i.status !== "archived").length.toString()} hint="Non-archived" accent="#fcd34d" />
             </div>
 
-            <div className="grid gap-2 sm:grid-cols-3">
-                <StatChip label="SKUs" value={items.length.toString()} accent="#e0e7ff" />
-                <StatChip label="Quantity" value={totalQty.toString()} accent="#34d399" />
-                <StatChip label="Active" value={items.filter((i) => i.status !== "archived").length.toString()} accent="#fcd34d" />
-            </div>
-
-            <Card eyebrow="Inventory" title="Recent items" actions={<Badge accent="#e0e7ff">Live</Badge>}>
+            <TableCard title="Recent items" subtitle="Inventory" actions={<Badge accent="#e0e7ff">Live</Badge>}>
                 {items.length === 0 ? (
                     <div className="rounded-2xl border border-white/10 bg-white/5 p-4 text-sm text-slate-300">{session ? "No items yet." : "Sign in to view items."}</div>
                 ) : (
@@ -52,7 +54,7 @@ export function WarehouseBoard() {
                         rowKey={(row) => row.id}
                     />
                 )}
-            </Card>
+            </TableCard>
         </div>
     );
 }

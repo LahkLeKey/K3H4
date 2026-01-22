@@ -11,20 +11,10 @@ import {
     YAxis,
 } from "recharts";
 
+import { Card, MetricTile, SectionHeader } from "../radix-primitives";
 import type { TelemetryEvent } from "../react-hooks/telemetry";
 import { useTelemetryInfiniteQuery } from "../react-hooks/telemetry";
-
-function Card({ title, children, subtitle }: { title: string; subtitle?: string; children: React.ReactNode }) {
-    return (
-        <div className="rounded-2xl border border-white/10 bg-slate-900/80 p-4 text-slate-50 shadow-2xl backdrop-blur">
-            <div className="flex items-baseline justify-between">
-                <div className="text-sm font-semibold text-white">{title}</div>
-                {subtitle ? <div className="text-xs text-slate-400">{subtitle}</div> : null}
-            </div>
-            <div className="mt-3 h-56">{children}</div>
-        </div>
-    );
-}
+import { TableCard } from "./TableCard";
 
 const axisStyle = { fill: "#cbd5e1", fontSize: 11 };
 
@@ -172,117 +162,105 @@ export function TelemetryDashboard() {
 
     return (
         <div className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-6 px-6 py-10">
-            <div className="rounded-2xl border border-white/10 bg-slate-900/85 p-6 shadow-2xl backdrop-blur">
-                <p className="text-xs uppercase tracking-[0.28em] text-emerald-200/80">Telemetry</p>
-                <h1 className="mt-2 text-3xl font-semibold text-white">System signals</h1>
-                <p className="mt-2 text-sm text-slate-200">Live ingestion, latency, error rate, and map refresh cadence.</p>
-                {summary ? (
-                    <div className="mt-4 grid gap-3 sm:grid-cols-3 lg:grid-cols-5">
-                        <div className="rounded-xl border border-white/10 bg-white/5 px-3 py-2">
-                            <div className="text-[11px] uppercase tracking-[0.2em] text-slate-400">Ingest</div>
-                            <div className="text-lg font-semibold">{summary.ingest}</div>
-                            <div className="text-[11px] text-slate-400">events/min</div>
-                        </div>
-                        <div className="rounded-xl border border-white/10 bg-white/5 px-3 py-2">
-                            <div className="text-[11px] uppercase tracking-[0.2em] text-slate-400">p50</div>
-                            <div className="text-lg font-semibold">{summary.p50} ms</div>
-                            <div className="text-[11px] text-slate-400">latency</div>
-                        </div>
-                        <div className="rounded-xl border border-white/10 bg-white/5 px-3 py-2">
-                            <div className="text-[11px] uppercase tracking-[0.2em] text-slate-400">p95</div>
-                            <div className="text-lg font-semibold">{summary.p95} ms</div>
-                            <div className="text-[11px] text-slate-400">latency</div>
-                        </div>
-                        <div className="rounded-xl border border-white/10 bg-white/5 px-3 py-2">
-                            <div className="text-[11px] uppercase tracking-[0.2em] text-slate-400">Errors</div>
-                            <div className="text-lg font-semibold">{summary.errors}%</div>
-                            <div className="text-[11px] text-slate-400">recent</div>
-                        </div>
-                        <div className="rounded-xl border border-white/10 bg-white/5 px-3 py-2">
-                            <div className="text-[11px] uppercase tracking-[0.2em] text-slate-400">Refresh</div>
-                            <div className="text-lg font-semibold">{summary.refresh} min</div>
-                            <div className="text-[11px] text-slate-400">tile cadence</div>
-                        </div>
-                    </div>
-                ) : null}
-            </div>
+            <SectionHeader
+                kicker="Telemetry"
+                title="System signals"
+                description="Live ingestion, latency, error rate, and map refresh cadence."
+                status={summary ? `Last updated ${summary.lastUpdated}` : undefined}
+            />
+
+            {summary ? (
+                <div className="grid gap-3 sm:grid-cols-3 lg:grid-cols-5">
+                    <MetricTile label="Ingest" value={summary.ingest} hint="events/min" accent="#22d3ee" />
+                    <MetricTile label="p50" value={`${summary.p50} ms`} hint="latency" accent="#38bdf8" />
+                    <MetricTile label="p95" value={`${summary.p95} ms`} hint="latency" accent="#a78bfa" />
+                    <MetricTile label="Errors" value={`${summary.errors}%`} hint="recent" accent="#f472b6" />
+                    <MetricTile label="Refresh" value={`${summary.refresh} min`} hint="tile cadence" accent="#22c55e" />
+                </div>
+            ) : null}
 
             <div className="grid gap-4 lg:grid-cols-2">
-                <Card title="Latency trend" subtitle="p50 + p95">
-                    <ResponsiveContainer>
-                        <AreaChart data={samples} margin={{ left: 0, right: 0, top: 10, bottom: 0 }}>
-                            <defs>
-                                <linearGradient id="latencyGradient" x1="0" x2="0" y1="0" y2="1">
-                                    <stop offset="5%" stopColor="#22d3ee" stopOpacity={0.42} />
-                                    <stop offset="95%" stopColor="#22d3ee" stopOpacity={0.04} />
-                                </linearGradient>
-                            </defs>
-                            <CartesianGrid stroke="#0f172a" strokeDasharray="3 3" opacity={0.6} />
-                            <XAxis dataKey="ts" tickFormatter={(ts) => new Date(ts).toLocaleTimeString()} stroke="#1e293b" tick={axisStyle} />
-                            <YAxis stroke="#1e293b" tick={axisStyle} />
-                            <Tooltip contentStyle={{ background: "#0f172a", border: "1px solid #1e293b", borderRadius: 12 }} />
-                            <Area type="monotone" dataKey="latencyP50" stroke="#22d3ee" fillOpacity={1} fill="url(#latencyGradient)" />
-                            <Area type="monotone" dataKey="latencyP95" stroke="#a78bfa" fillOpacity={0.35} fill="#a78bfa33" />
-                        </AreaChart>
-                    </ResponsiveContainer>
+                <Card title="Latency trend" actions={<span className="text-xs text-slate-400">p50 + p95</span>}>
+                    <div className="mt-3 h-56">
+                        <ResponsiveContainer>
+                            <AreaChart data={samples} margin={{ left: 0, right: 0, top: 10, bottom: 0 }}>
+                                <defs>
+                                    <linearGradient id="latencyGradient" x1="0" x2="0" y1="0" y2="1">
+                                        <stop offset="5%" stopColor="#22d3ee" stopOpacity={0.42} />
+                                        <stop offset="95%" stopColor="#22d3ee" stopOpacity={0.04} />
+                                    </linearGradient>
+                                </defs>
+                                <CartesianGrid stroke="#0f172a" strokeDasharray="3 3" opacity={0.6} />
+                                <XAxis dataKey="ts" tickFormatter={(ts) => new Date(ts).toLocaleTimeString()} stroke="#1e293b" tick={axisStyle} />
+                                <YAxis stroke="#1e293b" tick={axisStyle} />
+                                <Tooltip contentStyle={{ background: "#0f172a", border: "1px solid #1e293b", borderRadius: 12 }} />
+                                <Area type="monotone" dataKey="latencyP50" stroke="#22d3ee" fillOpacity={1} fill="url(#latencyGradient)" />
+                                <Area type="monotone" dataKey="latencyP95" stroke="#a78bfa" fillOpacity={0.35} fill="#a78bfa33" />
+                            </AreaChart>
+                        </ResponsiveContainer>
+                    </div>
                 </Card>
-                <Card title="Ingest" subtitle="Events per minute">
-                    <ResponsiveContainer>
-                        <BarChart data={samples} margin={{ left: 0, right: 0, top: 10, bottom: 0 }}>
-                            <CartesianGrid stroke="#0f172a" strokeDasharray="3 3" opacity={0.6} />
-                            <XAxis dataKey="ts" tickFormatter={(ts) => new Date(ts).toLocaleTimeString()} stroke="#1e293b" tick={axisStyle} />
-                            <YAxis stroke="#1e293b" tick={axisStyle} />
-                            <Tooltip contentStyle={{ background: "#0f172a", border: "1px solid #1e293b", borderRadius: 12 }} />
-                            <Bar dataKey="ingest" fill="#22d3ee" radius={[6, 6, 0, 0]} />
-                        </BarChart>
-                    </ResponsiveContainer>
+                <Card title="Ingest" actions={<span className="text-xs text-slate-400">Events per minute</span>}>
+                    <div className="mt-3 h-56">
+                        <ResponsiveContainer>
+                            <BarChart data={samples} margin={{ left: 0, right: 0, top: 10, bottom: 0 }}>
+                                <CartesianGrid stroke="#0f172a" strokeDasharray="3 3" opacity={0.6} />
+                                <XAxis dataKey="ts" tickFormatter={(ts) => new Date(ts).toLocaleTimeString()} stroke="#1e293b" tick={axisStyle} />
+                                <YAxis stroke="#1e293b" tick={axisStyle} />
+                                <Tooltip contentStyle={{ background: "#0f172a", border: "1px solid #1e293b", borderRadius: 12 }} />
+                                <Bar dataKey="ingest" fill="#22d3ee" radius={[6, 6, 0, 0]} />
+                            </BarChart>
+                        </ResponsiveContainer>
+                    </div>
                 </Card>
             </div>
 
             <div className="grid gap-4 lg:grid-cols-2">
-                <Card title="Errors" subtitle="% of events">
-                    <ResponsiveContainer>
-                        <AreaChart data={samples} margin={{ left: 0, right: 0, top: 10, bottom: 0 }}>
-                            <defs>
-                                <linearGradient id="errorsGradient" x1="0" x2="0" y1="0" y2="1">
-                                    <stop offset="5%" stopColor="#f472b6" stopOpacity={0.5} />
-                                    <stop offset="95%" stopColor="#f472b6" stopOpacity={0.05} />
-                                </linearGradient>
-                            </defs>
-                            <CartesianGrid stroke="#0f172a" strokeDasharray="3 3" opacity={0.6} />
-                            <XAxis dataKey="ts" tickFormatter={(ts) => new Date(ts).toLocaleTimeString()} stroke="#1e293b" tick={axisStyle} />
-                            <YAxis stroke="#1e293b" tick={axisStyle} domain={[0, 100]} />
-                            <Tooltip contentStyle={{ background: "#0f172a", border: "1px solid #1e293b", borderRadius: 12 }} />
-                            <Area type="monotone" dataKey="errors" stroke="#f472b6" fillOpacity={1} fill="url(#errorsGradient)" />
-                        </AreaChart>
-                    </ResponsiveContainer>
+                <Card title="Errors" actions={<span className="text-xs text-slate-400">% of events</span>}>
+                    <div className="mt-3 h-56">
+                        <ResponsiveContainer>
+                            <AreaChart data={samples} margin={{ left: 0, right: 0, top: 10, bottom: 0 }}>
+                                <defs>
+                                    <linearGradient id="errorsGradient" x1="0" x2="0" y1="0" y2="1">
+                                        <stop offset="5%" stopColor="#f472b6" stopOpacity={0.5} />
+                                        <stop offset="95%" stopColor="#f472b6" stopOpacity={0.05} />
+                                    </linearGradient>
+                                </defs>
+                                <CartesianGrid stroke="#0f172a" strokeDasharray="3 3" opacity={0.6} />
+                                <XAxis dataKey="ts" tickFormatter={(ts) => new Date(ts).toLocaleTimeString()} stroke="#1e293b" tick={axisStyle} />
+                                <YAxis stroke="#1e293b" tick={axisStyle} domain={[0, 100]} />
+                                <Tooltip contentStyle={{ background: "#0f172a", border: "1px solid #1e293b", borderRadius: 12 }} />
+                                <Area type="monotone" dataKey="errors" stroke="#f472b6" fillOpacity={1} fill="url(#errorsGradient)" />
+                            </AreaChart>
+                        </ResponsiveContainer>
+                    </div>
                 </Card>
-                <Card title="Refresh cadence" subtitle="Minutes between refresh events">
-                    <ResponsiveContainer>
-                        <AreaChart data={samples} margin={{ left: 0, right: 0, top: 10, bottom: 0 }}>
-                            <defs>
-                                <linearGradient id="refreshGradient" x1="0" x2="0" y1="0" y2="1">
-                                    <stop offset="5%" stopColor="#38bdf8" stopOpacity={0.5} />
-                                    <stop offset="95%" stopColor="#38bdf8" stopOpacity={0.05} />
-                                </linearGradient>
-                            </defs>
-                            <CartesianGrid stroke="#0f172a" strokeDasharray="3 3" opacity={0.6} />
-                            <XAxis dataKey="ts" tickFormatter={(ts) => new Date(ts).toLocaleTimeString()} stroke="#1e293b" tick={axisStyle} />
-                            <YAxis stroke="#1e293b" tick={axisStyle} />
-                            <Tooltip contentStyle={{ background: "#0f172a", border: "1px solid #1e293b", borderRadius: 12 }} />
-                            <Area type="monotone" dataKey="refresh" stroke="#38bdf8" fillOpacity={1} fill="url(#refreshGradient)" />
-                        </AreaChart>
-                    </ResponsiveContainer>
+                <Card title="Refresh cadence" actions={<span className="text-xs text-slate-400">Minutes between refresh events</span>}>
+                    <div className="mt-3 h-56">
+                        <ResponsiveContainer>
+                            <AreaChart data={samples} margin={{ left: 0, right: 0, top: 10, bottom: 0 }}>
+                                <defs>
+                                    <linearGradient id="refreshGradient" x1="0" x2="0" y1="0" y2="1">
+                                        <stop offset="5%" stopColor="#38bdf8" stopOpacity={0.5} />
+                                        <stop offset="95%" stopColor="#38bdf8" stopOpacity={0.05} />
+                                    </linearGradient>
+                                </defs>
+                                <CartesianGrid stroke="#0f172a" strokeDasharray="3 3" opacity={0.6} />
+                                <XAxis dataKey="ts" tickFormatter={(ts) => new Date(ts).toLocaleTimeString()} stroke="#1e293b" tick={axisStyle} />
+                                <YAxis stroke="#1e293b" tick={axisStyle} />
+                                <Tooltip contentStyle={{ background: "#0f172a", border: "1px solid #1e293b", borderRadius: 12 }} />
+                                <Area type="monotone" dataKey="refresh" stroke="#38bdf8" fillOpacity={1} fill="url(#refreshGradient)" />
+                            </AreaChart>
+                        </ResponsiveContainer>
+                    </div>
                 </Card>
             </div>
 
-            <div className="rounded-2xl border border-white/10 bg-slate-900/85 p-6 shadow-2xl backdrop-blur">
-                <div className="flex flex-wrap items-center justify-between gap-3">
-                    <div>
-                        <div className="text-sm font-semibold text-white">Recent events</div>
-                        <div className="text-xs text-slate-400">Most recent {pageSize} of {events.length}</div>
-                    </div>
-                    <div className="flex flex-wrap items-center gap-2 text-[11px] text-slate-300">
+            <TableCard
+                title="Recent events"
+                subtitle={`Most recent ${pageSize} of ${events.length}`}
+                actions={(
+                    <>
                         <button
                             type="button"
                             className="rounded border border-white/15 bg-white/5 px-3 py-1 text-xs font-semibold text-white transition hover:border-white/30 hover:bg-white/10 disabled:opacity-60"
@@ -300,41 +278,37 @@ export function TelemetryDashboard() {
                             {isFetchingNextPage ? "Loading..." : hasNextPage ? "Load more" : "All loaded"}
                         </button>
                         {error ? <span className="text-amber-300">{error instanceof Error ? error.message : "Error"}</span> : null}
-                    </div>
-                </div>
-
-                <div className="mt-3 overflow-hidden rounded-xl border border-white/10 bg-slate-950/60">
-                    <div className="max-h-[520px] overflow-auto">
-                        <table className="min-w-full text-left text-xs text-slate-100">
-                            <thead className="bg-white/5 text-[11px] uppercase tracking-[0.16em] text-slate-400">
-                                <tr>
-                                    <th className="px-3 py-2">Time</th>
-                                    <th className="px-3 py-2">Type</th>
-                                    <th className="px-3 py-2">Duration</th>
-                                    <th className="px-3 py-2">Payload</th>
+                    </>
+                )}
+            >
+                <table className="min-w-full text-left text-xs text-slate-100">
+                    <thead className="bg-white/5 text-[11px] uppercase tracking-[0.16em] text-slate-400">
+                        <tr>
+                            <th className="px-3 py-2">Time</th>
+                            <th className="px-3 py-2">Type</th>
+                            <th className="px-3 py-2">Duration</th>
+                            <th className="px-3 py-2">Payload</th>
+                        </tr>
+                    </thead>
+                    <tbody className="divide-y divide-white/5">
+                        {pagedEvents.length === 0 ? (
+                            <tr>
+                                <td colSpan={4} className="px-3 py-4 text-center text-slate-400">
+                                    {isLoading ? "Loading events..." : "No events returned."}
+                                </td>
+                            </tr>
+                        ) : (
+                            pagedEvents.map((evt) => (
+                                <tr key={evt.id} className="transition hover:bg-white/5">
+                                    <td className="px-3 py-2 font-mono text-[11px] text-slate-200">{fmtTs(evt.createdAt)}</td>
+                                    <td className="px-3 py-2 text-sm text-white">{evt.eventType}</td>
+                                    <td className="px-3 py-2 text-sm text-white">{evt.durationMs ? `${evt.durationMs} ms` : "-"}</td>
+                                    <td className="px-3 py-2 text-[11px] text-slate-300">{fmtPayload(evt.payload)}</td>
                                 </tr>
-                            </thead>
-                            <tbody className="divide-y divide-white/5">
-                                {pagedEvents.length === 0 ? (
-                                    <tr>
-                                        <td colSpan={4} className="px-3 py-4 text-center text-slate-400">
-                                            {isLoading ? "Loading events..." : "No events returned."}
-                                        </td>
-                                    </tr>
-                                ) : (
-                                    pagedEvents.map((evt) => (
-                                        <tr key={evt.id} className="transition hover:bg-white/5">
-                                            <td className="px-3 py-2 font-mono text-[11px] text-slate-200">{fmtTs(evt.createdAt)}</td>
-                                            <td className="px-3 py-2 text-sm text-white">{evt.eventType}</td>
-                                            <td className="px-3 py-2 text-sm text-white">{evt.durationMs ? `${evt.durationMs} ms` : "-"}</td>
-                                            <td className="px-3 py-2 text-[11px] text-slate-300">{fmtPayload(evt.payload)}</td>
-                                        </tr>
-                                    ))
-                                )}
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
+                            ))
+                        )}
+                    </tbody>
+                </table>
 
                 <div className="mt-3 flex items-center justify-between text-[11px] text-slate-300">
                     <div>
@@ -359,7 +333,7 @@ export function TelemetryDashboard() {
                         </button>
                     </div>
                 </div>
-            </div>
+            </TableCard>
         </div>
     );
 }

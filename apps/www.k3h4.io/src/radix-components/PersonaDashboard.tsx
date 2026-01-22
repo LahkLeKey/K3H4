@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Canvas } from "@react-three/fiber";
 
-import { Badge, Button, Card, Histogram, Input, Sparkline, StatChip, Table, Tabs, Textarea, type TableColumn } from "../radix-primitives";
+import { Badge, Button, Card, Histogram, Input, MetricTile, Pill, SectionHeader, StatChip, Table, Tabs, Textarea, type TableColumn } from "../radix-primitives";
 import { useAuthStore } from "../react-hooks/auth";
 import { useAssignmentState } from "../react-hooks/assignments";
 import {
@@ -10,6 +10,8 @@ import {
     type PersonaConfusionResult,
 } from "../react-hooks/persona";
 import { useStaffingState } from "../react-hooks/staffing";
+import { EndpointList } from "./EndpointList";
+import { TableCard } from "./TableCard";
 import { R3FErrorBoundary } from "../r3f-components/R3FErrorBoundary";
 import { NodeLinkGraph } from "../r3f-primitives/NodeLinkGraph";
 import { AssignmentBoard } from "./AssignmentBoard";
@@ -44,21 +46,6 @@ const parseAttributes = (input: string) =>
             };
         })
         .filter(Boolean) as { category: string; values: string[]; weight?: number }[];
-
-const KpiCard = ({ label, value, hint, trend = [], accent = "#22d3ee" }: { label: string; value: string; hint?: string; trend?: number[]; accent?: string }) => (
-    <div className="rounded-2xl border border-white/10 bg-slate-900/80 p-4 shadow-lg">
-        <div className="flex items-start justify-between gap-3">
-            <div>
-                <div className="text-[11px] uppercase tracking-[0.18em] text-slate-400">{label}</div>
-                <div className="text-2xl font-semibold text-white">{value}</div>
-            </div>
-            {hint ? <span className="rounded-full border border-white/10 px-2 py-1 text-[11px] text-slate-300">{hint}</span> : null}
-        </div>
-        <div className="mt-2">
-            <Sparkline values={trend} color={accent} />
-        </div>
-    </div>
-);
 
 const CompatibilityRow = ({ compat }: { compat: PersonaCompatibility }) => {
     const overlap = compat.overlappingTokens.slice(0, 4);
@@ -109,40 +96,6 @@ const assignmentEndpoints: AssignmentEndpoint[] = [
     { method: "POST", path: "/assignments/{id}/pay", description: "Mark a timecard as paid and record the payout with an optional note." },
 ];
 
-const assignmentMethodColors: Record<AssignmentEndpoint["method"], string> = {
-    GET: "border-emerald-400/40 bg-emerald-500/10 text-emerald-100",
-    POST: "border-sky-400/40 bg-sky-500/10 text-sky-100",
-};
-
-function AssignmentMethodBadge({ method }: { method: AssignmentEndpoint["method"] }) {
-    return <span className={`inline-flex rounded-full border px-2 py-0.5 text-[11px] font-semibold ${assignmentMethodColors[method]}`}>{method}</span>;
-}
-
-function AssignmentEndpointCard({ endpoint }: { endpoint: AssignmentEndpoint }) {
-    return (
-        <div className="rounded-xl border border-white/10 bg-white/5 p-4 shadow-lg transition hover:border-white/20 hover:bg-white/10">
-            <div className="flex items-center justify-between gap-3">
-                <div className="flex items-center gap-2 text-sm font-semibold text-white">
-                    <AssignmentMethodBadge method={endpoint.method} />
-                    <span className="font-mono text-xs text-emerald-50/90">{endpoint.path}</span>
-                </div>
-                <span className="text-[11px] uppercase tracking-[0.2em] text-white/60">Assignments</span>
-            </div>
-            <p className="mt-2 text-sm text-slate-200">{endpoint.description}</p>
-        </div>
-    );
-}
-
-function AssignmentStatTile({ label, value, hint }: { label: string; value: string; hint?: string }) {
-    return (
-        <div className="rounded-xl border border-white/10 bg-white/5 px-4 py-3">
-            <div className="text-[11px] uppercase tracking-[0.2em] text-slate-400">{label}</div>
-            <div className="text-xl font-semibold text-white">{value}</div>
-            {hint ? <div className="text-[11px] text-slate-400">{hint}</div> : null}
-        </div>
-    );
-}
-
 function AssignmentsTabContent() {
     const { session } = useAuthStore();
     const { metrics, status, error, assignments, fetchAssignments } = useAssignmentState();
@@ -156,48 +109,38 @@ function AssignmentsTabContent() {
 
     return (
         <div className="space-y-5">
-            <div className="rounded-2xl border border-white/10 bg-slate-900/85 p-6 shadow-2xl backdrop-blur">
-                <p className="text-xs uppercase tracking-[0.28em] text-emerald-200/80">Assignments</p>
-                <h2 className="mt-2 text-3xl font-semibold text-white">Assignments and tasks</h2>
-                <p className="mt-2 text-sm text-slate-200">Live assignment ledger plus the HTTP endpoints to list work, log hours, and issue payouts.</p>
-                <div className="mt-4 flex flex-wrap items-center gap-3 text-[11px] text-slate-300">
-                    <button
-                        type="button"
-                        className="rounded border border-white/15 bg-white/5 px-3 py-1.5 text-xs font-semibold text-white transition hover:border-white/30 hover:bg-white/10 disabled:opacity-60"
-                        onClick={() => fetchAssignments()}
-                        disabled={!session?.accessToken || status === "loading"}
-                    >
-                        {status === "loading" ? "Refreshing..." : "Refresh data"}
-                    </button>
-                    <div className="rounded-full border border-white/10 px-3 py-1 text-xs font-semibold text-slate-200">Auth required: Bearer token</div>
-                    <div className="text-[11px] text-slate-300">{statusMessage}</div>
-                </div>
-                <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-                    <AssignmentStatTile label="Assignments" value={metrics.count.toString()} hint="GET /assignments" />
-                    <AssignmentStatTile label="Total hours" value={metrics.hours.toFixed(1)} hint="Sum of timecards" />
-                    <AssignmentStatTile label="Payouts" value={`₭${metrics.payouts.toFixed(2)}`} hint="POST /assignments/{id}/pay" />
-                    <AssignmentStatTile label="Create" value="POST /assignments" hint="Persona + rate" />
-                </div>
+            <SectionHeader
+                kicker="Assignments"
+                title="Assignments and tasks"
+                description="Live assignment ledger plus the HTTP endpoints to list work, log hours, and issue payouts."
+                status={statusMessage}
+                actions={(
+                    <>
+                        <Button
+                            variant="outline"
+                            accent="#22d3ee"
+                            onClick={() => fetchAssignments()}
+                            disabled={!session?.accessToken || status === "loading"}
+                        >
+                            {status === "loading" ? "Refreshing..." : "Refresh data"}
+                        </Button>
+                        <Pill tone="slate">Auth required: Bearer token</Pill>
+                    </>
+                )}
+            />
+
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                <MetricTile label="Assignments" value={metrics.count.toString()} hint="GET /assignments" accent="#22d3ee" />
+                <MetricTile label="Total hours" value={metrics.hours.toFixed(1)} hint="Sum of timecards" accent="#a78bfa" />
+                <MetricTile label="Payouts" value={`₭${metrics.payouts.toFixed(2)}`} hint="POST /assignments/{id}/pay" accent="#f59e0b" />
+                <MetricTile label="Create" value="POST /assignments" hint="Persona + rate" accent="#34d399" />
             </div>
 
-            <div className="grid gap-4 lg:grid-cols-2">
-                {assignmentEndpoints.map((ep) => (
-                    <AssignmentEndpointCard key={ep.path + ep.method} endpoint={ep} />
-                ))}
-            </div>
+            <EndpointList endpoints={assignmentEndpoints} tag="Assignments" />
 
-            <div className="rounded-2xl border border-white/10 bg-slate-900/85 p-5 shadow-2xl backdrop-blur">
-                <div className="flex flex-wrap items-center justify-between gap-3">
-                    <div>
-                        <div className="text-sm font-semibold text-white">Assignments board</div>
-                        <div className="text-xs text-slate-400">Interactive UI backed by the endpoints above.</div>
-                    </div>
-                    <div className="text-[11px] text-slate-400">Endpoints: GET, POST, timecards, pay</div>
-                </div>
-                <div className="mt-4">
-                    <AssignmentBoard />
-                </div>
-            </div>
+            <TableCard title="Assignments board" subtitle="Interactive UI backed by the endpoints above" actions={<Badge accent="#22d3ee">Live</Badge>}>
+                <AssignmentBoard />
+            </TableCard>
         </div>
     );
 }
@@ -205,16 +148,6 @@ function AssignmentsTabContent() {
 const stageOptions = ["sourced", "screening", "interview", "offer", "placed"];
 const shiftStatusOptions = ["draft", "open", "scheduled", "closed"];
 const placementStatusOptions = ["confirmed", "pending", "cancelled"];
-
-function StaffingMetricTile({ label, value, hint }: { label: string; value: string; hint?: string }) {
-    return (
-        <div className="rounded-xl border border-white/10 bg-white/5 px-4 py-3">
-            <div className="text-[11px] uppercase tracking-[0.2em] text-slate-400">{label}</div>
-            <div className="text-xl font-semibold text-white">{value}</div>
-            {hint ? <div className="text-[11px] text-slate-400">{hint}</div> : null}
-        </div>
-    );
-}
 
 function StaffingTabContent() {
     const { session } = useAuthStore();
@@ -314,6 +247,7 @@ function StaffingTabContent() {
         setCandName("");
         setCandRoleId("");
         setCandDesired("");
+        setCandStage("sourced");
     };
 
     const handleStage = async () => {
@@ -353,25 +287,23 @@ function StaffingTabContent() {
         setPlacementEngagementId("");
         setPlacementBillRate("");
         setPlacementPayRate("");
+        setPlacementStatus("confirmed");
     };
 
     return (
         <div className="space-y-5">
-            <div className="rounded-2xl border border-white/10 bg-slate-900/85 p-6 shadow-2xl backdrop-blur">
-                <p className="text-xs uppercase tracking-[0.28em] text-emerald-200/80">Staffing</p>
-                <h2 className="mt-2 text-3xl font-semibold text-white">Staffing and workforce planning</h2>
-                <p className="mt-2 text-sm text-slate-200">Plan demand, recruit talent, advance candidates, and finalize placements.</p>
-                <div className="mt-4 flex flex-wrap items-center gap-3 text-[11px] text-slate-300">
-                    <div className="rounded-full border border-white/10 px-3 py-1 text-xs font-semibold text-slate-200">Auth required: Bearer token</div>
-                    <div className="rounded-full border border-white/10 px-3 py-1 text-xs font-semibold text-slate-200">Focus: staffing + shifts</div>
-                    {error ? <div className="text-[11px] text-amber-300">{error}</div> : null}
-                </div>
-                <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-                    <StaffingMetricTile label="Open roles" value={(metrics?.openRoles ?? 0).toString()} hint="Live" />
-                    <StaffingMetricTile label="Candidates" value={(metrics?.activeCandidates ?? 0).toString()} hint="Live" />
-                    <StaffingMetricTile label="Shifts" value={(metrics?.scheduledShifts ?? 0).toString()} hint="Live" />
-                    <StaffingMetricTile label="Placements" value={(metrics?.activePlacements ?? 0).toString()} hint={`Fill ${metrics?.fillRate ?? 0}%`} />
-                </div>
+            <SectionHeader
+                kicker="Staffing"
+                title="Staffing and workforce planning"
+                description="Plan demand, recruit talent, advance candidates, and finalize placements."
+                status={error || (authed ? "Authenticated" : "Sign in required")}
+                actions={<Pill tone="slate">Focus: staffing + shifts</Pill>}
+            />
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                <MetricTile label="Open roles" value={(metrics?.openRoles ?? 0).toString()} hint="Live" accent="#60a5fa" />
+                <MetricTile label="Candidates" value={(metrics?.activeCandidates ?? 0).toString()} hint="Live" accent="#a78bfa" />
+                <MetricTile label="Shifts" value={(metrics?.scheduledShifts ?? 0).toString()} hint="Live" accent="#f59e0b" />
+                <MetricTile label="Placements" value={(metrics?.activePlacements ?? 0).toString()} hint={`Fill ${metrics?.fillRate ?? 0}%`} accent="#22c55e" />
             </div>
 
             <div className="rounded-2xl border border-white/10 bg-slate-900/85 p-5 shadow-2xl backdrop-blur">
@@ -390,9 +322,15 @@ function StaffingTabContent() {
                         <div className="mt-3 grid gap-2">
                             <input className="h-9 rounded border border-white/15 bg-slate-900/60 px-3 text-sm text-white" placeholder="Name" value={engName} onChange={(e) => setEngName(e.target.value)} />
                             <input className="h-9 rounded border border-white/15 bg-slate-900/60 px-3 text-sm text-white" placeholder="Client" value={engClient} onChange={(e) => setEngClient(e.target.value)} />
-                            <button type="button" className="h-9 rounded border border-emerald-400/40 bg-emerald-500/15 px-3 text-sm font-semibold text-emerald-50 disabled:opacity-60" onClick={handleEngagement} disabled={!authed || busy || !engName.trim()}>
+                            <Button
+                                variant="subtle"
+                                accent="#22c55e"
+                                className="h-9 justify-center"
+                                onClick={handleEngagement}
+                                disabled={!authed || busy || !engName.trim()}
+                            >
                                 {busy ? "Working…" : "Create engagement"}
-                            </button>
+                            </Button>
                         </div>
                     </div>
 
@@ -430,9 +368,15 @@ function StaffingTabContent() {
                                 <input className="h-9 rounded border border-white/15 bg-slate-900/60 px-3 text-sm text-white" type="number" placeholder="Rate min" value={roleRateMin} onChange={(e) => setRoleRateMin(e.target.value)} />
                                 <input className="h-9 rounded border border-white/15 bg-slate-900/60 px-3 text-sm text-white" type="number" placeholder="Rate max" value={roleRateMax} onChange={(e) => setRoleRateMax(e.target.value)} />
                             </div>
-                            <button type="button" className="h-9 rounded border border-sky-400/40 bg-sky-500/15 px-3 text-sm font-semibold text-sky-50 disabled:opacity-60" onClick={handleRole} disabled={!authed || busy || !roleTitle.trim()}>
+                            <Button
+                                variant="subtle"
+                                accent="#38bdf8"
+                                className="h-9 justify-center"
+                                onClick={handleRole}
+                                disabled={!authed || busy || !roleTitle.trim()}
+                            >
                                 {busy ? "Working…" : "Create role"}
-                            </button>
+                            </Button>
                         </div>
                     </div>
                 </div>
@@ -461,9 +405,15 @@ function StaffingTabContent() {
                                     ))}
                                 </select>
                             </div>
-                            <button type="button" className="h-9 rounded border border-emerald-400/40 bg-emerald-500/15 px-3 text-sm font-semibold text-emerald-50 disabled:opacity-60" onClick={handleCandidate} disabled={!authed || busy || !candName.trim()}>
+                            <Button
+                                variant="subtle"
+                                accent="#22c55e"
+                                className="h-9 justify-center"
+                                onClick={handleCandidate}
+                                disabled={!authed || busy || !candName.trim()}
+                            >
                                 {busy ? "Working…" : "Create candidate"}
-                            </button>
+                            </Button>
                         </div>
                     </div>
 
@@ -486,9 +436,15 @@ function StaffingTabContent() {
                                     </option>
                                 ))}
                             </select>
-                            <button type="button" className="h-9 rounded border border-emerald-400/40 bg-emerald-500/15 px-3 text-sm font-semibold text-emerald-50 disabled:opacity-60" onClick={handleStage} disabled={!authed || busy || !stageCandidateId.trim()}>
+                            <Button
+                                variant="subtle"
+                                accent="#22c55e"
+                                className="h-9 justify-center"
+                                onClick={handleStage}
+                                disabled={!authed || busy || !stageCandidateId.trim()}
+                            >
                                 {busy ? "Working…" : "Advance stage"}
-                            </button>
+                            </Button>
                         </div>
                     </div>
                 </div>
@@ -522,9 +478,15 @@ function StaffingTabContent() {
                                     ))}
                                 </select>
                             </div>
-                            <button type="button" className="h-9 rounded border border-emerald-400/40 bg-emerald-500/15 px-3 text-sm font-semibold text-emerald-50 disabled:opacity-60" onClick={handleShift} disabled={!authed || busy || !shiftTitle.trim()}>
+                            <Button
+                                variant="subtle"
+                                accent="#22c55e"
+                                className="h-9 justify-center"
+                                onClick={handleShift}
+                                disabled={!authed || busy || !shiftTitle.trim()}
+                            >
                                 {busy ? "Working…" : "Create shift"}
-                            </button>
+                            </Button>
                         </div>
                     </div>
 
@@ -569,9 +531,15 @@ function StaffingTabContent() {
                                     </option>
                                 ))}
                             </select>
-                            <button type="button" className="h-9 rounded border border-emerald-400/40 bg-emerald-500/15 px-3 text-sm font-semibold text-emerald-50 disabled:opacity-60" onClick={handlePlacement} disabled={!authed || busy}>
+                            <Button
+                                variant="subtle"
+                                accent="#22c55e"
+                                className="h-9 justify-center"
+                                onClick={handlePlacement}
+                                disabled={!authed || busy}
+                            >
                                 {busy ? "Working…" : "Create placement"}
-                            </button>
+                            </Button>
                         </div>
                     </div>
                 </div>
@@ -757,32 +725,29 @@ export function PersonaDashboard() {
 
     const overviewTab = (
         <div className="space-y-4">
-            <div className="flex flex-wrap items-start justify-between gap-3">
-                <div className="space-y-2">
-                    <p className="text-[11px] uppercase tracking-[0.24em] text-emerald-200/80">Persona</p>
-                    <h2 className="text-2xl font-semibold text-white">Persona dashboard</h2>
-                    <div className="flex flex-wrap items-center gap-2 text-[11px] text-slate-300">
-                        <span className="rounded-full border border-white/10 px-3 py-1">{authed ? "Authenticated" : "Sign in required"}</span>
-                        <span className="rounded-full border border-white/10 px-3 py-1">{statusText}</span>
-                        <span className="rounded-full border border-white/10 px-3 py-1">Compat {compatText}</span>
+            <SectionHeader
+                kicker="Persona"
+                title="Persona dashboard"
+                description="Roster, compatibility pairs, and quality signals."
+                status={`Auth: ${authed ? "ready" : "sign in"} · ${statusText} · Compat ${compatText}`}
+                actions={(
+                    <div className="flex flex-wrap items-center gap-2">
+                        <Button accent="#22d3ee" variant="outline" onClick={() => fetchPersonas()} disabled={status === "loading"}>
+                            {status === "loading" ? "Refreshing..." : "Refresh"}
+                        </Button>
+                        <Button accent="#a78bfa" variant="outline" onClick={handleGenerate} disabled={seeding}>
+                            {seeding ? "Seeding..." : `Generate ${generateCount}`}
+                        </Button>
+                        <Button accent="#f59e0b" variant="outline" onClick={() => recomputeCompatibilities()} disabled={compatStatus === "loading"}>
+                            {compatStatus === "loading" ? "Recomputing..." : "Recompute"}
+                        </Button>
                     </div>
-                </div>
-                <div className="flex flex-wrap items-center gap-2">
-                    <Button accent="#22d3ee" onClick={() => fetchPersonas()} disabled={status === "loading"}>
-                        {status === "loading" ? "Refreshing..." : "Refresh"}
-                    </Button>
-                    <Button accent="#a78bfa" onClick={handleGenerate} disabled={seeding}>
-                        {seeding ? "Seeding..." : `Generate ${generateCount}`}
-                    </Button>
-                    <Button accent="#f59e0b" onClick={() => recomputeCompatibilities()} disabled={compatStatus === "loading"}>
-                        {compatStatus === "loading" ? "Recomputing..." : "Recompute"}
-                    </Button>
-                </div>
-            </div>
+                )}
+            />
 
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
                 {kpis.map((kpi) => (
-                    <KpiCard key={kpi.label} {...kpi} />
+                    <MetricTile key={kpi.label} label={kpi.label} value={kpi.value} hint={kpi.hint} accent={kpi.accent} trend={kpi.trend} />
                 ))}
             </div>
 
@@ -805,49 +770,61 @@ export function PersonaDashboard() {
 
     const rosterTab = (
         <div className="space-y-4">
-            <Card eyebrow="Roster" title="Persona workspace" actions={<Badge accent="#22d3ee">Live roster</Badge>}>
-                <div className="flex flex-wrap items-center gap-2 text-[11px] text-slate-300">
-                    <Input
-                        placeholder="Search alias, account, tag"
-                        value={rosterQuery}
-                        onChange={(e) => setRosterQuery(e.target.value)}
-                        className="min-w-[220px]"
-                    />
-                    <select
-                        value={sortKey}
-                        onChange={(e) => setSortKey(e.target.value as "alias" | "attributes")}
-                        className="h-10 rounded-xl border border-white/15 bg-slate-900/60 px-3 text-sm text-white"
-                    >
-                        <option value="attributes">Sort by attributes</option>
-                        <option value="alias">Sort by alias</option>
-                    </select>
-                    {error ? <span className="text-amber-300">{error}</span> : null}
-                </div>
-                <div className="mt-3 flex flex-wrap items-center gap-2 text-[11px] text-slate-300">
-                    <span className="rounded-full border border-white/10 px-3 py-1">{filteredPersonas.length} shown</span>
-                    <span className="rounded-full border border-white/10 px-3 py-1">{personas.length} total</span>
-                    {tagCounts.map(([tag, count]) => (
-                        <button
-                            key={tag}
-                            type="button"
-                            onClick={() => setSelectedTag((current) => (current === tag ? null : tag))}
-                            className={`rounded-full border px-3 py-1 text-[11px] transition ${selectedTag === tag ? "border-emerald-400/60 bg-emerald-500/20 text-emerald-50" : "border-white/10 bg-white/5 text-slate-200 hover:border-white/30"}`}
-                        >
-                            {tag} · {count}
-                        </button>
-                    ))}
-                    {selectedTag ? (
-                        <button
-                            type="button"
-                            onClick={() => setSelectedTag(null)}
-                            className="rounded-full border border-white/10 px-3 py-1 text-[11px] text-slate-200 hover:border-white/30"
-                        >
-                            Clear tag
-                        </button>
-                    ) : null}
-                </div>
+            <SectionHeader
+                kicker="Roster"
+                title="Persona workspace"
+                description="Search, tag, and create personas."
+                status={`${filteredPersonas.length} shown / ${personas.length} total`}
+                actions={<Badge accent="#22d3ee">Live roster</Badge>}
+            />
 
-                <div className="mt-4 grid gap-4 lg:grid-cols-2">
+            <div className="flex flex-wrap items-center gap-2 text-[11px] text-slate-300">
+                <Input
+                    placeholder="Search alias, account, tag"
+                    value={rosterQuery}
+                    onChange={(e) => setRosterQuery(e.target.value)}
+                    className="min-w-[220px]"
+                />
+                <select
+                    value={sortKey}
+                    onChange={(e) => setSortKey(e.target.value as "alias" | "attributes")}
+                    className="h-10 rounded-xl border border-white/15 bg-slate-900/60 px-3 text-sm text-white"
+                >
+                    <option value="attributes">Sort by attributes</option>
+                    <option value="alias">Sort by alias</option>
+                </select>
+                {error ? <span className="text-amber-300">{error}</span> : null}
+            </div>
+            <div className="flex flex-wrap items-center gap-2 text-[11px] text-slate-300">
+                <Pill tone="slate">{filteredPersonas.length} shown</Pill>
+                <Pill tone="slate">{personas.length} total</Pill>
+                {tagCounts.map(([tag, count]) => (
+                    <Button
+                        key={tag}
+                        type="button"
+                        variant={selectedTag === tag ? "solid" : "subtle"}
+                        accent={selectedTag === tag ? "#22c55e" : "#94a3b8"}
+                        className="px-3 py-1 text-[11px]"
+                        onClick={() => setSelectedTag((current) => (current === tag ? null : tag))}
+                    >
+                        {tag} · {count}
+                    </Button>
+                ))}
+                {selectedTag ? (
+                    <Button
+                        type="button"
+                        variant="ghost"
+                        accent="#94a3b8"
+                        className="px-3 py-1 text-[11px]"
+                        onClick={() => setSelectedTag(null)}
+                    >
+                        Clear tag
+                    </Button>
+                ) : null}
+            </div>
+
+            <div className="grid gap-4 lg:grid-cols-2">
+                <Card eyebrow="Create" title="New persona" actions={<Badge accent="#22d3ee">Write</Badge>}>
                     <div className="space-y-2">
                         <div className="flex items-center gap-2">
                             <Input placeholder="Alias" value={newAlias} onChange={(e) => setNewAlias(e.target.value)} />
@@ -857,7 +834,7 @@ export function PersonaDashboard() {
                         <Input placeholder="Tags comma separated" value={newTags} onChange={(e) => setNewTags(e.target.value)} />
                         <Textarea rows={3} placeholder="Note" value={newNote} onChange={(e) => setNewNote(e.target.value)} />
                         <div className="flex flex-wrap items-center gap-2">
-                            <Button accent="#22c55e" onClick={handleCreate} disabled={creating || !newAlias.trim() || !newAccount.trim()}>
+                            <Button accent="#22c55e" variant="solid" onClick={handleCreate} disabled={creating || !newAlias.trim() || !newAccount.trim()}>
                                 {creating ? "Saving..." : "Create"}
                             </Button>
                             <Input
@@ -868,71 +845,69 @@ export function PersonaDashboard() {
                                 onChange={(e) => setGenerateCount(Number(e.target.value))}
                                 className="w-20"
                             />
-                            <Button accent="#a78bfa" onClick={handleGenerate} disabled={seeding}>
+                            <Button accent="#a78bfa" variant="outline" onClick={handleGenerate} disabled={seeding}>
                                 {seeding ? "Seeding..." : "Generate"}
                             </Button>
                         </div>
                     </div>
-                    <div>
-                        <div className="flex items-center justify-between text-xs text-slate-400">
-                            <span>Roster ({filteredPersonas.length})</span>
-                            <span>{authed ? "Live" : "Auth required"}</span>
-                        </div>
-                        {filteredPersonas.length === 0 ? (
-                            <div className="mt-2 rounded-xl border border-white/10 bg-white/5 px-3 py-4 text-sm text-slate-200">
-                                {session ? "No personas match filters. Adjust search or tag." : "Sign in to view personas."}
-                            </div>
-                        ) : (
-                            (() => {
-                                type PersonaRow = (typeof filteredPersonas)[number] & { actions?: string };
-                                const columns: TableColumn<PersonaRow>[] = [
-                                    { key: "alias", label: "Alias" },
-                                    { key: "account", label: "Account" },
-                                    { key: "tags", label: "Tags", render: (row) => (row.tags || []).join(", ") || "--" },
-                                    { key: "attributes", label: "Attributes", render: (row) => row.attributes.length },
-                                    {
-                                        key: "actions",
-                                        label: "Actions",
-                                        render: (row) => (
-                                            <div className="flex items-center gap-2 text-[11px]">
-                                                <button
-                                                    type="button"
-                                                    className="rounded border border-white/15 px-2 py-1 text-white hover:border-emerald-300/60"
-                                                    onClick={() => {
-                                                        setSelectedPersonaId(row.id);
-                                                        setActiveTab("attributes");
-                                                    }}
-                                                >
-                                                    Edit attributes
-                                                </button>
-                                                <button
-                                                    type="button"
-                                                    className="rounded border border-white/15 px-2 py-1 text-white hover:border-sky-300/60"
-                                                    onClick={() => {
-                                                        setSelectedPersonaId(row.id);
-                                                        setActiveTab("compatibility");
-                                                    }}
-                                                >
-                                                    View compat
-                                                </button>
-                                            </div>
-                                        ),
-                                    },
-                                ];
+                </Card>
 
-                                return (
-                                    <Table
-                                        columns={columns}
-                                        rows={filteredPersonas as PersonaRow[]}
-                                        rowKey={(row) => row.id}
-                                        className="mt-2"
-                                    />
-                                );
-                            })()
-                        )}
-                    </div>
-                </div>
-            </Card>
+                <TableCard title="Roster" subtitle={authed ? "Live" : "Auth required"} actions={<Badge accent="#22d3ee">Live roster</Badge>}>
+                    {filteredPersonas.length === 0 ? (
+                        <div className="rounded-2xl border border-white/10 bg-white/5 px-3 py-4 text-sm text-slate-200">
+                            {session ? "No personas match filters. Adjust search or tag." : "Sign in to view personas."}
+                        </div>
+                    ) : (
+                        (() => {
+                            type PersonaRow = (typeof filteredPersonas)[number] & { actions?: string };
+                            const columns: TableColumn<PersonaRow>[] = [
+                                { key: "alias", label: "Alias" },
+                                { key: "account", label: "Account" },
+                                { key: "tags", label: "Tags", render: (row) => (row.tags || []).join(", ") || "--" },
+                                { key: "attributes", label: "Attributes", render: (row) => row.attributes.length },
+                                {
+                                    key: "actions",
+                                    label: "Actions",
+                                    render: (row) => (
+                                        <div className="flex items-center gap-2 text-[11px]">
+                                            <Button
+                                                variant="subtle"
+                                                accent="#22c55e"
+                                                className="px-3 py-1"
+                                                onClick={() => {
+                                                    setSelectedPersonaId(row.id);
+                                                    setActiveTab("attributes");
+                                                }}
+                                            >
+                                                Edit attributes
+                                            </Button>
+                                            <Button
+                                                variant="subtle"
+                                                accent="#38bdf8"
+                                                className="px-3 py-1"
+                                                onClick={() => {
+                                                    setSelectedPersonaId(row.id);
+                                                    setActiveTab("compatibility");
+                                                }}
+                                            >
+                                                View compat
+                                            </Button>
+                                        </div>
+                                    ),
+                                },
+                            ];
+
+                            return (
+                                <Table
+                                    columns={columns}
+                                    rows={filteredPersonas as PersonaRow[]}
+                                    rowKey={(row) => row.id}
+                                />
+                            );
+                        })()
+                    )}
+                </TableCard>
+            </div>
         </div>
     );
 
@@ -948,13 +923,14 @@ export function PersonaDashboard() {
                 <span className="rounded-full border border-white/10 px-3 py-1">{compatText}</span>
                 {compatError ? <span className="text-amber-300">{compatError}</span> : null}
                 {compatibilities.length > 0 ? (
-                    <button
-                        type="button"
-                        className={`rounded-full border px-3 py-1 text-[11px] transition ${showGraph ? "border-emerald-400/60 bg-emerald-500/20 text-emerald-50" : "border-white/10 bg-white/5 text-slate-200 hover:border-white/30"}`}
+                    <Button
+                        variant={showGraph ? "solid" : "subtle"}
+                        accent="#22c55e"
+                        className="px-3 py-1 text-[11px]"
                         onClick={() => setShowGraph((prev) => !prev)}
                     >
                         {showGraph ? "Hide graph" : "Show graph"}
-                    </button>
+                    </Button>
                 ) : null}
             </div>
             <Histogram bins={compatBins} labels={["0-0.2", "0.2-0.4", "0.4-0.6", "0.6-0.8", "0.8-1.0"]} footer={`Pairs: ${compatibilities.length}`} />
@@ -1064,15 +1040,16 @@ export function PersonaDashboard() {
                 <div className="lg:col-span-2 space-y-2">
                     <div className="flex items-center justify-between text-xs text-slate-400">
                         <span>Pairs ({pairRows.length})</span>
-                        <button
-                            type="button"
-                            className="rounded border border-white/15 px-2 py-1 text-[11px] text-white"
+                        <Button
+                            variant="subtle"
+                            accent="#94a3b8"
+                            className="px-3 py-1 text-[11px]"
                             onClick={() =>
                                 setPairRows((rows) => [...rows, { id: `pair-${rows.length}`, label: rows.length % 2 === 0 }])
                             }
                         >
                             Add pair
-                        </button>
+                        </Button>
                     </div>
                     <div className="space-y-2">
                         {pairRows.map((row) => (

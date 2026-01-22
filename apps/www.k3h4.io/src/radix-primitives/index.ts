@@ -1,6 +1,7 @@
 export * from "./AppShell";
 export * from "./Button";
 export * from "./Badge";
+export * from "./Pill";
 export * from "./StatChip";
 export * from "./Panel";
 export * from "./Input";
@@ -8,6 +9,8 @@ export * from "./Tabs";
 export * from "./Textarea";
 export * from "./Card";
 export * from "./Table";
+export * from "./MetricTile";
+export * from "./SectionHeader";
 export * from "./MapSearchPanel";
 export * from "./PoiDetailCard";
 export * from "./MapStatusOverlay";
