@@ -1,22 +1,21 @@
 import { useEffect, useMemo, useState } from "react";
-import {
-    Area,
-    AreaChart,
-    Bar,
-    BarChart,
-    CartesianGrid,
-    ResponsiveContainer,
-    Tooltip,
-    XAxis,
-    YAxis,
-} from "recharts";
 
-import { Badge, Button, Card, EmptyState, MetricTile, SectionHeader, Stack, Table, TablePagination } from "../components/ui";
+import { Tabs } from "../radix-primitives";
+import { Badge, Button, SectionHeader, Stack } from "../components/ui";
 import type { TelemetryEvent } from "../react-hooks/telemetry";
 import { useTelemetryInfiniteQuery } from "../react-hooks/telemetry";
-import { TableCard } from "./TableCard";
-
-const axisStyle = { fill: "#cbd5e1", fontSize: 11 };
+import { useTelemetryStore } from "../zustand-stores/telemetry";
+import {
+    TelemetryEventsTableCard,
+    TelemetryErrorsCard,
+    TelemetryIngestCard,
+    TelemetryLatencyCard,
+    TelemetryRefreshCard,
+    TelemetrySlowestEventsCard,
+    type TelemetrySummary,
+    TelemetrySummaryTiles,
+    TelemetryWorstTypesCard,
+} from "./telemetry/TelemetryCards";
 
 const percentile = (values: number[], p: number) => {
     if (values.length === 0) return 0;
@@ -52,19 +51,15 @@ const isErrorEvent = (eventType: string, payload: unknown, explicit?: boolean | 
     return false;
 };
 
-const fmtDuration = (ms?: number | null) => {
-    if (!ms) return "-";
-    return `${ms.toLocaleString()} ms`;
-};
-
 const isRefreshEvent = (eventType: string) => {
     const t = eventType.toLowerCase();
     return t.includes("refresh") || t.includes("tile") || t.includes("cache");
 };
 
 export function TelemetryDashboard() {
-    const sinceIso = useMemo(() => new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(), []);
-    const [filters] = useState({ limit: 200, since: sinceIso });
+    const { activeTab, setActiveTab, windowHours, limit } = useTelemetryStore();
+    const sinceIso = useMemo(() => new Date(Date.now() - windowHours * 60 * 60 * 1000).toISOString(), [windowHours]);
+    const filters = useMemo(() => ({ limit, since: sinceIso }), [limit, sinceIso]);
     const { data, isLoading, error, fetchNextPage, hasNextPage, isFetchingNextPage, refetch } = useTelemetryInfiniteQuery(filters);
 
     const events = useMemo(() => {
@@ -157,7 +152,7 @@ export function TelemetryDashboard() {
         return rows.sort((a, b) => b.p95 - a.p95).slice(0, 8);
     }, [durationEvents]);
 
-    const summary = useMemo(() => {
+    const summary = useMemo<TelemetrySummary | null>(() => {
         const latest = samples[samples.length - 1];
         if (!latest) return null;
         const errorsPct = Math.min(100, latest.errors);
@@ -179,211 +174,92 @@ export function TelemetryDashboard() {
 
     const totalPages = Math.max(1, Math.ceil(events.length / pageSize));
     const pagedEvents = events.slice(page * pageSize, page * pageSize + pageSize);
+    const overviewContent = (
+        <Stack gap="md">
+            <TelemetrySummaryTiles summary={summary} isLoading={isLoading} />
 
-    const fmtTs = (ts: string) => new Date(ts).toLocaleString();
-    const fmtPayload = (payload: unknown) => {
-        if (payload === null || payload === undefined) return "-";
-        try {
-            const str = typeof payload === "string" ? payload : JSON.stringify(payload);
-            return str.length > 120 ? `${str.slice(0, 116)}…` : str;
-        } catch (err) {
-            return "[unserializable]";
-        }
-    };
+            <div className="grid gap-4 lg:grid-cols-2">
+                <TelemetryLatencyCard data={samples} gradientId="latencyGradient-overview" />
+                <TelemetryIngestCard data={samples} />
+            </div>
+
+            <div className="grid gap-4 lg:grid-cols-2">
+                <TelemetryErrorsCard data={samples} gradientId="errorsGradient-overview" />
+                <TelemetryRefreshCard data={samples} gradientId="refreshGradient-overview" />
+            </div>
+        </Stack>
+    );
+
+    const performanceContent = (
+        <Stack gap="md">
+            <div className="grid gap-4 lg:grid-cols-2">
+                <TelemetryLatencyCard data={samples} gradientId="latencyGradient-performance" />
+                <TelemetryWorstTypesCard rows={worstTypes} />
+            </div>
+            <TelemetrySlowestEventsCard rows={slowestEvents} />
+        </Stack>
+    );
+
+    const reliabilityContent = (
+        <div className="grid gap-4 lg:grid-cols-2">
+            <TelemetryErrorsCard data={samples} gradientId="errorsGradient-reliability" />
+            <TelemetryRefreshCard data={samples} gradientId="refreshGradient-reliability" />
+            <TelemetryIngestCard data={samples} />
+        </div>
+    );
+
+    const eventsContent = (
+        <Stack gap="md">
+            <TelemetrySlowestEventsCard rows={slowestEvents} />
+            <TelemetryEventsTableCard
+                pagedEvents={pagedEvents}
+                page={page}
+                totalPages={totalPages}
+                pageSize={pageSize}
+                totalItems={events.length}
+                isLoading={isLoading}
+                error={error instanceof Error ? error : null}
+                hasNextPage={Boolean(hasNextPage)}
+                isFetchingNextPage={isFetchingNextPage}
+                onPageChange={setPage}
+                onRefresh={refetch}
+                onLoadMore={fetchNextPage}
+            />
+        </Stack>
+    );
 
     return (
         <div className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-6 px-6 py-10">
             <SectionHeader
                 kicker="Telemetry"
-                title="System signals"
-                description="Live ingestion, latency, error rate, and map refresh cadence."
-                status={summary ? `Last updated ${summary.lastUpdated}` : undefined}
-            />
-
-            {summary ? (
-                <div className="grid gap-3 sm:grid-cols-3 lg:grid-cols-5">
-                    <MetricTile label="Ingest" value={summary.ingest} hint="events/min" accent="#22d3ee" />
-                    <MetricTile label="p50" value={`${summary.p50} ms`} hint="latency" accent="#38bdf8" />
-                    <MetricTile label="p95" value={`${summary.p95} ms`} hint="latency" accent="#a78bfa" />
-                    <MetricTile label="Errors" value={`${summary.errors}%`} hint="recent" accent="#f472b6" />
-                    <MetricTile label="Refresh" value={`${summary.refresh} min`} hint="tile cadence" accent="#22c55e" />
-                </div>
-            ) : null}
-
-            <div className="grid gap-4 lg:grid-cols-2">
-                <Card title="Latency trend" actions={<span className="text-xs text-slate-400">p50 + p95</span>}>
-                    <div className="mt-3 h-56">
-                        <ResponsiveContainer>
-                            <AreaChart data={samples} margin={{ left: 0, right: 0, top: 10, bottom: 0 }}>
-                                <defs>
-                                    <linearGradient id="latencyGradient" x1="0" x2="0" y1="0" y2="1">
-                                        <stop offset="5%" stopColor="#22d3ee" stopOpacity={0.42} />
-                                        <stop offset="95%" stopColor="#22d3ee" stopOpacity={0.04} />
-                                    </linearGradient>
-                                </defs>
-                                <CartesianGrid stroke="#0f172a" strokeDasharray="3 3" opacity={0.6} />
-                                <XAxis dataKey="ts" tickFormatter={(ts) => new Date(ts).toLocaleTimeString()} stroke="#1e293b" tick={axisStyle} />
-                                <YAxis stroke="#1e293b" tick={axisStyle} />
-                                <Tooltip contentStyle={{ background: "#0f172a", border: "1px solid #1e293b", borderRadius: 12 }} />
-                                <Area type="monotone" dataKey="latencyP50" stroke="#22d3ee" fillOpacity={1} fill="url(#latencyGradient)" />
-                                <Area type="monotone" dataKey="latencyP95" stroke="#a78bfa" fillOpacity={0.35} fill="#a78bfa33" />
-                            </AreaChart>
-                        </ResponsiveContainer>
-                    </div>
-                </Card>
-                <Card title="Ingest" actions={<span className="text-xs text-slate-400">Events per minute</span>}>
-                    <div className="mt-3 h-56">
-                        <ResponsiveContainer>
-                            <BarChart data={samples} margin={{ left: 0, right: 0, top: 10, bottom: 0 }}>
-                                <CartesianGrid stroke="#0f172a" strokeDasharray="3 3" opacity={0.6} />
-                                <XAxis dataKey="ts" tickFormatter={(ts) => new Date(ts).toLocaleTimeString()} stroke="#1e293b" tick={axisStyle} />
-                                <YAxis stroke="#1e293b" tick={axisStyle} />
-                                <Tooltip contentStyle={{ background: "#0f172a", border: "1px solid #1e293b", borderRadius: 12 }} />
-                                <Bar dataKey="ingest" fill="#22d3ee" radius={[6, 6, 0, 0]} />
-                            </BarChart>
-                        </ResponsiveContainer>
-                    </div>
-                </Card>
-            </div>
-
-            <div className="grid gap-4 lg:grid-cols-2">
-                <Card title="Errors" actions={<span className="text-xs text-slate-400">% of events</span>}>
-                    <div className="mt-3 h-56">
-                        <ResponsiveContainer>
-                            <AreaChart data={samples} margin={{ left: 0, right: 0, top: 10, bottom: 0 }}>
-                                <defs>
-                                    <linearGradient id="errorsGradient" x1="0" x2="0" y1="0" y2="1">
-                                        <stop offset="5%" stopColor="#f472b6" stopOpacity={0.5} />
-                                        <stop offset="95%" stopColor="#f472b6" stopOpacity={0.05} />
-                                    </linearGradient>
-                                </defs>
-                                <CartesianGrid stroke="#0f172a" strokeDasharray="3 3" opacity={0.6} />
-                                <XAxis dataKey="ts" tickFormatter={(ts) => new Date(ts).toLocaleTimeString()} stroke="#1e293b" tick={axisStyle} />
-                                <YAxis stroke="#1e293b" tick={axisStyle} domain={[0, 100]} />
-                                <Tooltip contentStyle={{ background: "#0f172a", border: "1px solid #1e293b", borderRadius: 12 }} />
-                                <Area type="monotone" dataKey="errors" stroke="#f472b6" fillOpacity={1} fill="url(#errorsGradient)" />
-                            </AreaChart>
-                        </ResponsiveContainer>
-                    </div>
-                </Card>
-                <Card title="Refresh cadence" actions={<span className="text-xs text-slate-400">Minutes between refresh events</span>}>
-                    <div className="mt-3 h-56">
-                        <ResponsiveContainer>
-                            <AreaChart data={samples} margin={{ left: 0, right: 0, top: 10, bottom: 0 }}>
-                                <defs>
-                                    <linearGradient id="refreshGradient" x1="0" x2="0" y1="0" y2="1">
-                                        <stop offset="5%" stopColor="#38bdf8" stopOpacity={0.5} />
-                                        <stop offset="95%" stopColor="#38bdf8" stopOpacity={0.05} />
-                                    </linearGradient>
-                                </defs>
-                                <CartesianGrid stroke="#0f172a" strokeDasharray="3 3" opacity={0.6} />
-                                <XAxis dataKey="ts" tickFormatter={(ts) => new Date(ts).toLocaleTimeString()} stroke="#1e293b" tick={axisStyle} />
-                                <YAxis stroke="#1e293b" tick={axisStyle} />
-                                <Tooltip contentStyle={{ background: "#0f172a", border: "1px solid #1e293b", borderRadius: 12 }} />
-                                <Area type="monotone" dataKey="refresh" stroke="#38bdf8" fillOpacity={1} fill="url(#refreshGradient)" />
-                            </AreaChart>
-                        </ResponsiveContainer>
-                    </div>
-                </Card>
-            </div>
-
-            <div className="grid gap-4 lg:grid-cols-2">
-                <Card title="Worst latency by type" actions={<span className="text-xs text-slate-400">p95 (recent)</span>}>
-                    <div className="mt-3 h-56">
-                        {worstTypes.length === 0 ? (
-                            <EmptyState title="No duration data yet." />
-                        ) : (
-                            <ResponsiveContainer>
-                                <BarChart data={worstTypes} margin={{ left: 0, right: 10, top: 10, bottom: 0 }} layout="vertical">
-                                    <CartesianGrid stroke="#0f172a" strokeDasharray="3 3" opacity={0.6} />
-                                    <XAxis type="number" stroke="#1e293b" tick={axisStyle} tickFormatter={(v) => `${Math.round(v)} ms`} />
-                                    <YAxis dataKey="eventType" type="category" stroke="#1e293b" tick={axisStyle} width={160} />
-                                    <Tooltip contentStyle={{ background: "#0f172a", border: "1px solid #1e293b", borderRadius: 12 }} formatter={(v: number) => `${Math.round(v)} ms`} />
-                                    <Bar dataKey="p95" fill="#fb7185" radius={[6, 6, 6, 6]} label={{ position: "right", formatter: (v: number) => `${Math.round(v)} ms` }} />
-                                </BarChart>
-                            </ResponsiveContainer>
-                        )}
-                    </div>
-                </Card>
-
-                <Card title="Slowest recent events" actions={<span className="text-xs text-slate-400">Top 10</span>}>
-                    <Stack gap="sm" className="mt-2">
-                        {slowestEvents.length === 0 ? (
-                            <EmptyState title="No duration data yet." />
-                        ) : (
-                            <Table
-                                columns={[
-                                    { key: "createdAt" as const, label: "Time", render: (row) => fmtTs(row.createdAt) },
-                                    { key: "eventType" as const, label: "Type" },
-                                    {
-                                        key: "status" as const,
-                                        label: "Status",
-                                        render: (row) => (row.error ? <Badge accent="#f472b6">Error</Badge> : <Badge accent="#22c55e">OK</Badge>),
-                                    },
-                                    {
-                                        key: "durationMs" as const,
-                                        label: "Duration",
-                                        render: (row) => fmtDuration(row.durationMs ?? undefined),
-                                    },
-                                ]}
-                                rows={slowestEvents}
-                                rowKey={(row) => row.id}
-                            />
-                        )}
-                    </Stack>
-                </Card>
-            </div>
-
-            <TableCard
-                title="Recent events"
-                subtitle={`Most recent ${pageSize} of ${events.length}`}
+                title="Observability cockpit"
+                description="Live ingestion, latency, error rate, and map refresh cadence across the last 24 hours."
+                status={summary ? `Last updated ${summary.lastUpdated}` : "Awaiting telemetry stream..."}
                 actions={(
-                    <>
-                        <Button accent="#22d3ee" variant="subtle" onClick={() => refetch()} disabled={isLoading}>
+                    <div className="flex flex-wrap items-center gap-2">
+                        <Badge accent="#22d3ee">{events.length ? `${events.length} cached` : "No events"}</Badge>
+                        <Badge accent="#38bdf8">Window: {windowHours}h • limit {limit}</Badge>
+                        <Button accent="#22d3ee" variant="outline" onClick={() => refetch()} disabled={isLoading}>
                             {isLoading ? "Refreshing…" : "Refresh"}
                         </Button>
-                        <Button
-                            accent="#a78bfa"
-                            variant="subtle"
-                            onClick={() => fetchNextPage()}
-                            disabled={!hasNextPage || isFetchingNextPage}
-                        >
+                        <Button accent="#a78bfa" variant="outline" onClick={() => fetchNextPage()} disabled={!hasNextPage || isFetchingNextPage}>
                             {isFetchingNextPage ? "Loading…" : hasNextPage ? "Load more" : "All loaded"}
                         </Button>
                         {error ? <Badge accent="#f59e0b">{error instanceof Error ? error.message : "Error"}</Badge> : null}
-                    </>
+                    </div>
                 )}
-            >
-                <Stack gap="sm">
-                    {pagedEvents.length === 0 ? (
-                        <EmptyState title={isLoading ? "Loading events..." : "No events returned."} />
-                    ) : (
-                        <Table
-                            columns={[
-                                { key: "createdAt" as const, label: "Time", render: (row) => fmtTs(row.createdAt) },
-                                { key: "eventType" as const, label: "Type" },
-                                {
-                                    key: "error" as const,
-                                    label: "Status",
-                                    render: (row) => (row.error ? <Badge accent="#f472b6">Error</Badge> : <Badge accent="#22c55e">OK</Badge>),
-                                },
-                                { key: "durationMs" as const, label: "Duration", render: (row) => (row.durationMs ? `${row.durationMs} ms` : "-") },
-                                { key: "payload" as const, label: "Payload", render: (row) => fmtPayload(row.payload) },
-                            ]}
-                            rows={pagedEvents}
-                            rowKey={(row) => row.id}
-                        />
-                    )}
+            />
 
-                    <TablePagination
-                        page={page}
-                        totalPages={totalPages}
-                        pageSize={pageSize}
-                        totalItems={events.length}
-                        onPageChange={(next) => setPage(next)}
-                    />
-                </Stack>
-            </TableCard>
+            <Tabs
+                value={activeTab}
+                onValueChange={(key) => setActiveTab(key as typeof activeTab)}
+                tabs={[
+                    { key: "overview", label: "Overview", content: overviewContent },
+                    { key: "performance", label: "Performance", content: performanceContent },
+                    { key: "reliability", label: "Reliability", content: reliabilityContent },
+                    { key: "events", label: "Events", content: eventsContent },
+                ]}
+            />
         </div>
     );
 }
