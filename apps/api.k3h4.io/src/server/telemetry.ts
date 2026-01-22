@@ -2,6 +2,7 @@ import { PrismaClient } from "@prisma/client";
 import { type FastifyBaseLogger, type FastifyInstance, type FastifyReply, type FastifyRequest } from "fastify";
 import { type RecordTelemetryFn, type TelemetryParams } from "../routes/types";
 import { normalizeDurationMs, warnOnSuspiciousDuration } from "../routes/telemetry";
+import { createTelemetryBuffer } from "../lib/telemetry-buffer";
 
 const TELEMETRY_MAX_EVENTS = 2000;
 const TELEMETRY_PRUNE_BATCH = 32;
@@ -33,6 +34,7 @@ const maybeSchedulePrune = (prisma: PrismaClient, log: FastifyBaseLogger) => {
   void pruneTelemetry(prisma).catch((err) => log.warn({ err }, "telemetry prune failed"));
 };
 export const createTelemetryRecorder = (prisma: PrismaClient): RecordTelemetryFn => {
+  const bufferedTelemetry = createTelemetryBuffer(prisma);
   return async (request: FastifyRequest, params: TelemetryParams) => {
     const durationMs = normalizeDurationMs(params.durationMs);
     warnOnSuspiciousDuration(request, { eventType: params.eventType, durationMs });
@@ -43,17 +45,15 @@ export const createTelemetryRecorder = (prisma: PrismaClient): RecordTelemetryFn
     }
 
     try {
-      await prisma.telemetryEvent.create({
-        data: {
-          sessionId: params.sessionId,
-          userId: params.userId,
-          eventType: params.eventType,
-          source: params.source,
-          path: params.path,
-          payload: params.payload as any,
-          durationMs,
-          error: params.error,
-        },
+      bufferedTelemetry.enqueue({
+        sessionId: params.sessionId,
+        userId: params.userId,
+        eventType: params.eventType,
+        source: params.source,
+        path: params.path,
+        payload: params.payload as any,
+        durationMs,
+        error: params.error,
       });
     } catch (err) {
       request.log.warn({ err }, "telemetry insert failed");
