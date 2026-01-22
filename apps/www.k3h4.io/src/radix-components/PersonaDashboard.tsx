@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Canvas } from "@react-three/fiber";
 
-import { Badge, Button, Card, Histogram, Input, Sparkline, StatChip, Table, Tabs, Textarea } from "../radix-primitives";
+import { Badge, Button, Card, Histogram, Input, Sparkline, StatChip, Table, Tabs, Textarea, type TableColumn } from "../radix-primitives";
 import { useAuthStore } from "../react-hooks/auth";
 import { useAssignmentState } from "../react-hooks/assignments";
 import {
@@ -883,8 +883,9 @@ export function PersonaDashboard() {
                                 {session ? "No personas match filters. Adjust search or tag." : "Sign in to view personas."}
                             </div>
                         ) : (
-                            <Table
-                                columns={[
+                            (() => {
+                                type PersonaRow = (typeof filteredPersonas)[number] & { actions?: string };
+                                const columns: TableColumn<PersonaRow>[] = [
                                     { key: "alias", label: "Alias" },
                                     { key: "account", label: "Account" },
                                     { key: "tags", label: "Tags", render: (row) => (row.tags || []).join(", ") || "--" },
@@ -917,11 +918,17 @@ export function PersonaDashboard() {
                                             </div>
                                         ),
                                     },
-                                ]}
-                                rows={filteredPersonas}
-                                rowKey={(row) => row.id}
-                                className="mt-2"
-                            />
+                                ];
+
+                                return (
+                                    <Table
+                                        columns={columns}
+                                        rows={filteredPersonas as PersonaRow[]}
+                                        rowKey={(row) => row.id}
+                                        className="mt-2"
+                                    />
+                                );
+                            })()
                         )}
                     </div>
                 </div>
