@@ -9,7 +9,6 @@ import { useArcadeState } from "../../react-hooks/arcade";
 import { useStorefrontsStore, type StorefrontsTab } from "../../zustand-stores/storefronts";
 import { CulinaryBoard } from "../CulinaryBoard";
 import { ArcadeBoard } from "../ArcadeBoard";
-import { StorefrontsActionsPanel } from "./StorefrontsActionsPanel";
 import { PosEmbeddedPanel } from "./PosEmbeddedPanel";
 
 export function StorefrontsDashboard() {
@@ -104,8 +103,6 @@ export function StorefrontsDashboard() {
                     <MetricTile key={kpi.label} label={kpi.label} value={kpi.value} hint={kpi.hint} accent={kpi.accent} />
                 ))}
             </Grid>
-
-            <StorefrontsActionsPanel />
 
             <Tabs
                 value={activeTab}
