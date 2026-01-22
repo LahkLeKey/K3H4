@@ -53,50 +53,56 @@ await server.register(fastifyRateLimit, {
   },
 });
 
+// Unified lower-case tag names to keep Swagger sidebar consistent
 const swaggerTags: Record<string, { name: string; description: string }> = {
-  health: { name: "Health", description: "Health and diagnostics" },
-  auth: { name: "Auth", description: "Authentication and session" },
-  profile: { name: "Profile", description: "User profiles" },
-  bank: { name: "Bank", description: "Banking and balances" },
-  persona: { name: "Persona", description: "Persona management" },
-  assignment: { name: "Assignment", description: "Assignments and tasks" },
-  staffing: { name: "Staffing", description: "Staffing and workforce planning" },
-  freight: { name: "Freight", description: "Freight and routing" },
-  warehouse: { name: "Warehouse", description: "Inventory and storage" },
-  pos: { name: "POS", description: "Point of sale" },
-  geo: { name: "Geo", description: "Geospatial caches and lookups" },
-  maptiler: { name: "MapTiler", description: "MapTiler Cloud API proxy" },
-  agriculture: { name: "Agriculture", description: "Agriculture simulator" },
-  culinary: { name: "Culinary", description: "Culinary simulator" },
-  arcade: { name: "Arcade", description: "Arcade simulator" },
-  usda: { name: "USDA", description: "USDA data" },
-  wikidata: { name: "Wikidata", description: "Wikidata REST cache" },
-  osrm: { name: "OSRM", description: "OSRM routing proxy" },
-  telemetry: { name: "Telemetry", description: "Telemetry intake" },
+  health: { name: "health", description: "Health and diagnostics" },
+  auth: { name: "auth", description: "Authentication and session" },
+  profile: { name: "profile", description: "User profiles" },
+  bank: { name: "bank", description: "Banking and balances" },
+  persona: { name: "persona", description: "Persona management" },
+  assignment: { name: "assignment", description: "Assignments and tasks" },
+  staffing: { name: "staffing", description: "Workforce planning" },
+  freight: { name: "freight", description: "Freight and routing" },
+  warehouse: { name: "warehouse", description: "Inventory and storage" },
+  pos: { name: "pos", description: "Point of sale" },
+  agriculture: { name: "agriculture", description: "Agriculture simulator" },
+  culinary: { name: "culinary", description: "Culinary simulator" },
+  arcade: { name: "arcade", description: "Arcade simulator" },
+  usda: { name: "usda", description: "USDA data" },
+  wikidata: { name: "wikidata", description: "Wikidata REST cache" },
+  geo: { name: "geo", description: "Geospatial caches and lookups" },
+  maptiler: { name: "maptiler", description: "MapTiler Cloud API proxy" },
+  osrm: { name: "osrm", description: "OSRM routing proxy" },
+  telemetry: { name: "telemetry", description: "Telemetry intake" },
 };
 
+// Route-segment -> tag mapping (keeps sidebar organized by domain)
 const swaggerTagMap: Record<string, { name: string; description: string }> = {
+  // platform
   health: swaggerTags.health,
   auth: swaggerTags.auth,
   profile: swaggerTags.profile,
+  telemetry: swaggerTags.telemetry,
+  // finance/persona
   bank: swaggerTags.bank,
   persona: swaggerTags.persona,
-  personas: swaggerTags.persona, // plural route prefix
+  personas: swaggerTags.persona,
   assignment: swaggerTags.assignment,
-  assignments: swaggerTags.assignment, // plural route prefix
+  assignments: swaggerTags.assignment,
   staffing: swaggerTags.staffing,
+  // logistics & sims
   freight: swaggerTags.freight,
   warehouse: swaggerTags.warehouse,
   pos: swaggerTags.pos,
-  geo: swaggerTags.geo,
-  maptiler: swaggerTags.maptiler,
   agriculture: swaggerTags.agriculture,
   culinary: swaggerTags.culinary,
   arcade: swaggerTags.arcade,
+  // data & geo
   usda: swaggerTags.usda,
   wikidata: swaggerTags.wikidata,
+  geo: swaggerTags.geo,
+  maptiler: swaggerTags.maptiler,
   osrm: swaggerTags.osrm,
-  telemetry: swaggerTags.telemetry,
 };
 
 const getSessionId = (request: FastifyRequest) => {
@@ -220,7 +226,20 @@ const openApiOptions: SwaggerOptions = {
       description:
         "API for K3H4 services. To authorize, sign in at https://www.k3h4.dev (or the dev frontend), open devtools > Application > Local Storage, and copy the value of k3h4.accessToken. Paste the token in Authorize; the UI will send it as a Bearer token automatically.",
       version: "0.1.0",
+      contact: {
+        name: "K3H4 Platform",
+        url: "https://www.k3h4.dev",
+        email: "support@k3h4.dev",
+      },
+      license: {
+        name: "MIT",
+        url: "https://opensource.org/licenses/MIT",
+      },
     },
+    servers: [
+      { url: "http://localhost:3000", description: "Local dev" },
+      { url: "https://api.k3h4.dev", description: "Production" },
+    ],
     components: {
       securitySchemes: {
         bearerAuth: {
@@ -233,6 +252,10 @@ const openApiOptions: SwaggerOptions = {
     },
     security: [{ bearerAuth: [] }],
     tags: Object.values(swaggerTags),
+    externalDocs: {
+      description: "Frontend console and docs",
+      url: "https://www.k3h4.dev",
+    },
   },
 };
 
