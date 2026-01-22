@@ -82,12 +82,18 @@ export function TelemetryLatencyCard({ data, gradientId = "latencyGradient" }: {
 }
 
 export function TelemetryIngestCard({ data }: { data: TelemetrySample[] }) {
-    const cleaned = data.map((d) => {
-        const ingest = Number.isFinite(Number(d.ingest)) ? Number(d.ingest) : 0;
-        const tsMs = typeof d.ts === "number" && Number.isFinite(d.ts) ? d.ts : Number(d.ts);
-        const tsLabel = Number.isFinite(tsMs) ? new Date(tsMs).toLocaleTimeString() : "";
-        return { ...d, ingest, tsLabel };
-    });
+    const cleaned = data
+        .map((d, idx) => {
+            const ingestNum = Number(d.ingest);
+            if (!Number.isFinite(ingestNum) || ingestNum < 0) return null;
+
+            const tsMsRaw = typeof d.ts === "number" && Number.isFinite(d.ts) ? d.ts : Number(d.ts);
+            const tsMs = Number.isFinite(tsMsRaw) ? tsMsRaw : Date.now() - idx * 60_000;
+            const tsLabel = new Date(tsMs).toLocaleTimeString();
+
+            return { ...d, ingest: ingestNum, ts: tsMs, tsLabel };
+        })
+        .filter((d): d is TelemetrySample & { tsLabel: string } => Boolean(d));
 
     if (cleaned.length === 0) {
         return (
@@ -98,13 +104,13 @@ export function TelemetryIngestCard({ data }: { data: TelemetrySample[] }) {
     }
 
     return (
-        <BarChartCard
+        <TimeAreaChartCard
             title="Ingest"
             hint="Events per minute"
             data={cleaned}
-            dataKey="ingest"
-            categoryKey="tsLabel"
-            barColor="#22d3ee"
+            xDataKey="ts"
+            series={[{ key: "ingest", color: "#22d3ee", gradientId: "ingestGradient", fillOpacity: 0.35 }]}
+            xTickFormatter={(ts) => new Date(ts).toLocaleTimeString()}
         />
     );
 }

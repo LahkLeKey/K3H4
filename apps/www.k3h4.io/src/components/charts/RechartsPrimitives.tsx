@@ -140,26 +140,65 @@ export function BarChartCard<T extends Record<string, any>>({
         .map((d, idx) => {
             const rawValue = (d as any)[resolvedDataKey];
             const numericValue = Number(rawValue);
-            const safeValue = Number.isFinite(numericValue) ? numericValue : 0;
+            if (!Number.isFinite(numericValue)) return null;
 
             const rawCategory = categoryKey ? (d as any)[categoryKey as string] : idx;
-            const safeCategory = rawCategory ?? idx;
+            const formattedCategory = formatCategory(rawCategory);
+            const safeCategory = formattedCategory === "" ? String(idx) : formattedCategory;
 
             return {
                 ...d,
-                [resolvedDataKey]: safeValue,
-                [resolvedCategoryKey]: formatCategory(safeCategory),
-                [fallbackCategoryKey]: formatCategory(safeCategory),
+                [resolvedDataKey]: numericValue,
+                [resolvedCategoryKey]: safeCategory,
+                [fallbackCategoryKey]: safeCategory,
             };
         })
-        .filter((d) => Number.isFinite((d as any)[resolvedDataKey]));
+        .filter(Boolean) as Array<Record<string, any>>;
+
+    if (!preparedData.length) {
+        return (
+            <Card title={title} actions={hint ? <span className="text-xs text-slate-400">{hint}</span> : null} className={className}>
+                <div className="mt-3 h-56">
+                    <R3FErrorBoundary>
+                        <div className="flex h-full items-center justify-center text-sm text-slate-400">No data</div>
+                    </R3FErrorBoundary>
+                </div>
+            </Card>
+        );
+    }
+
+    const maxValue = Math.max(...preparedData.map((d) => Number((d as any)[resolvedDataKey]) || 0));
+    const yDomain = horizontal ? [0, Math.max(maxValue, 1)] : undefined;
+
+    const safeData = preparedData.filter((d, idx) => {
+        const v = Number((d as any)[resolvedDataKey]);
+        const cat = (d as any)[resolvedCategoryKey];
+        const catOk = typeof cat === "string" ? cat.length > 0 : typeof cat === "number";
+        const valOk = Number.isFinite(v);
+        if (!catOk || !valOk) {
+            console.warn("BarChartCard dropped invalid row", { idx, v, cat, dataKey: resolvedDataKey, categoryKey: resolvedCategoryKey });
+        }
+        return catOk && valOk;
+    });
+
+    if (!safeData.length) {
+        return (
+            <Card title={title} actions={hint ? <span className="text-xs text-slate-400">{hint}</span> : null} className={className}>
+                <div className="mt-3 h-56">
+                    <R3FErrorBoundary>
+                        <div className="flex h-full items-center justify-center text-sm text-slate-400">No data</div>
+                    </R3FErrorBoundary>
+                </div>
+            </Card>
+        );
+    }
     return (
         <Card title={title} actions={hint ? <span className="text-xs text-slate-400">{hint}</span> : null} className={className}>
             <div className="mt-3 h-56">
                 <R3FErrorBoundary>
                     <ResponsiveContainer>
                         <BarChart
-                            data={preparedData}
+                            data={safeData}
                             margin={{ left: 0, right: horizontal ? 0 : 10, top: 10, bottom: 0 }}
                             layout={horizontal ? "horizontal" : "vertical"}
                         >
@@ -177,6 +216,7 @@ export function BarChartCard<T extends Record<string, any>>({
                                 stroke="#1e293b"
                                 tick={axisStyle}
                                 tickFormatter={horizontal ? formatNumber(yTickFormatter) : formatCategory}
+                                domain={horizontal ? yDomain : undefined}
                                 width={!horizontal && categoryKey ? categoryWidth : undefined}
                             />
                             <Tooltip contentStyle={{ background: "#0f172a", border: "1px solid #1e293b", borderRadius: 12 }} />
