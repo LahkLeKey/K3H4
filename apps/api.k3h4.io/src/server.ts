@@ -109,7 +109,7 @@ const swaggerTagMap: Record<string, { name: string; description: string }> = {
 
 const clampDurationMs = normalizeDurationMs;
 
-const TELEMETRY_MAX_EVENTS = 2000;
+const TELEMETRY_MAX_EVENTS = 1000; // amount of telemetry events to retain in the DB (Destroys anything older on prune)
 const TELEMETRY_PRUNE_BATCH = 200; // trim in small batches to avoid large deletes
 
 const pruneTelemetry = async () => {
