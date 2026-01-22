@@ -126,6 +126,7 @@ export function registerBatchRoutes(server: FastifyInstance, prisma: PrismaClien
         raw: MaptilerOp,
         result: MaptilerResult,
         responseType: "json" | "arrayBuffer",
+        durationMs: number,
       ) => {
         const eventType = raw.op === "maptiler.json" ? "batch.maptiler.json" : "batch.maptiler.tile";
         await rt({
@@ -145,6 +146,7 @@ export function registerBatchRoutes(server: FastifyInstance, prisma: PrismaClien
             error: result.error ?? null,
             size: result.size ?? null,
           },
+          durationMs,
         });
       };
 
@@ -178,9 +180,13 @@ export function registerBatchRoutes(server: FastifyInstance, prisma: PrismaClien
             ? "json"
             : "arrayBuffer";
 
+        const taskStart = process.hrtime.bigint();
+
         const finalizeMaptilerResult = async (result: MaptilerResult, telemetryPath: string) => {
+          const durationNs = process.hrtime.bigint() - taskStart;
+          const durationMs = Number((durationNs >= 0n ? durationNs : 0n) / 1_000_000n);
           results[id] = result;
-          await recordMaptilerEvent(id, telemetryPath, raw, result, responseType);
+          await recordMaptilerEvent(id, telemetryPath, raw, result, responseType, durationMs);
         };
 
         let telemetryPath = typeof raw.path === "string" ? raw.path.trim() : "";
