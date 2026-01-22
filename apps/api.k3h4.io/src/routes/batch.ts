@@ -7,6 +7,7 @@ import { type RecordTelemetryFn } from "./types";
 
 const DEFAULT_MAX_AGE_MINUTES = 60 * 6; // 6 hours
 const MAX_OPS = 32;
+const MAPTILER_CONCURRENCY = 4;
 const allowedRoots = new Set([
   "geocoding",
   "search",
@@ -104,6 +105,7 @@ export function registerBatchRoutes(server: FastifyInstance, prisma: PrismaClien
         : Promise.resolve(null);
 
       const results: Record<string, MaptilerResult> = {};
+      const maptilerTasks: Array<{ id: string; raw: MaptilerOp }> = [];
       let maptilerCount = 0;
 
       for (let idx = 0; idx < body.ops.length; idx += 1) {
@@ -117,95 +119,103 @@ export function registerBatchRoutes(server: FastifyInstance, prisma: PrismaClien
 
         if (isMaptilerOp(raw)) {
           maptilerCount += 1;
-          const responseType: "json" | "arrayBuffer" = raw.op === "maptiler.json"
-            ? "json"
-            : raw.responseType === "json"
-              ? "json"
-              : "arrayBuffer";
-
-          try {
-            const path = normalizePath(String(raw.path ?? ""));
-            const maxAgeMinutes = coerceNumber(raw.maxAgeMinutes) ?? DEFAULT_MAX_AGE_MINUTES;
-            let params = pickParams(raw.params);
-
-            if (userId) {
-              const pref = await prefsPromise;
-              if (pref) {
-                if (params.language === undefined && pref.maptilerLanguage) params = { ...params, language: pref.maptilerLanguage };
-                if (params.style === undefined && pref.maptilerStyle) params = { ...params, style: pref.maptilerStyle };
-              }
-            }
-
-            const cacheOnly = raw.cacheOnly === true;
-            const fromCache = cacheOnly
-              ? await fetchMaptilerCacheOnly(prisma as any, { path, params, responseType, kind: raw.kind }, { userId, maxAgeMinutes })
-              : null;
-
-            const { cached, response, kind } = fromCache
-              ? fromCache
-              : await fetchMaptilerWithCache(
-                prisma as any,
-                { path, params, responseType, kind: raw.kind },
-                { userId, maxAgeMinutes },
-              );
-
-            const source: "cache" | "network" | "none" = fromCache ? "cache" : cached ? "cache" : "network";
-
-            if (!response.ok) {
-              results[id] = {
-                ok: false,
-                status: response.status,
-                cached,
-                source,
-                cacheMiss: cacheOnly && !fromCache,
-                kind,
-                contentType: response.contentType,
-                cacheControl: response.cacheControl,
-                error: "maptiler error",
-              };
-              continue;
-            }
-
-            if (responseType === "arrayBuffer") {
-              const buf = response.data ? Buffer.from(response.data) : null;
-              results[id] = {
-                ok: true,
-                status: response.status,
-                cached,
-                source,
-                kind,
-                contentType: response.contentType,
-                cacheControl: response.cacheControl,
-                dataBase64: buf ? buf.toString("base64") : null,
-                size: buf?.byteLength ?? 0,
-              };
-            } else {
-              results[id] = {
-                ok: true,
-                status: response.status,
-                cached,
-                source,
-                kind,
-                contentType: response.contentType,
-                cacheControl: response.cacheControl,
-                body: response.body ?? null,
-              };
-            }
-          } catch (err) {
-            results[id] = {
-              ok: false,
-              status: 400,
-              cached: false,
-              source: "none",
-              cacheMiss: false,
-              error: err instanceof Error ? err.message : "maptiler failed",
-            };
-          }
-
+          maptilerTasks.push({ id, raw });
           continue;
         }
 
         results[id] = { ok: false, status: 400, cached: false, source: "none", error: `unsupported op ${raw.op}` };
+      }
+
+      const executeMaptilerTask = async ({ id, raw }: { id: string; raw: MaptilerOp }) => {
+        const responseType: "json" | "arrayBuffer" = raw.op === "maptiler.json"
+          ? "json"
+          : raw.responseType === "json"
+            ? "json"
+            : "arrayBuffer";
+
+        try {
+          const path = normalizePath(String(raw.path ?? ""));
+          const maxAgeMinutes = coerceNumber(raw.maxAgeMinutes) ?? DEFAULT_MAX_AGE_MINUTES;
+          let params = pickParams(raw.params);
+
+          if (userId) {
+            const pref = await prefsPromise;
+            if (pref) {
+              if (params.language === undefined && pref.maptilerLanguage) params = { ...params, language: pref.maptilerLanguage };
+              if (params.style === undefined && pref.maptilerStyle) params = { ...params, style: pref.maptilerStyle };
+            }
+          }
+
+          const cacheOnly = raw.cacheOnly === true;
+          const fromCache = cacheOnly
+            ? await fetchMaptilerCacheOnly(prisma as any, { path, params, responseType, kind: raw.kind }, { userId, maxAgeMinutes })
+            : null;
+
+          const { cached, response, kind } = fromCache
+            ? fromCache
+            : await fetchMaptilerWithCache(
+              prisma as any,
+              { path, params, responseType, kind: raw.kind },
+              { userId, maxAgeMinutes },
+            );
+
+          const source: "cache" | "network" | "none" = fromCache ? "cache" : cached ? "cache" : "network";
+
+          if (!response.ok) {
+            results[id] = {
+              ok: false,
+              status: response.status,
+              cached,
+              source,
+              cacheMiss: cacheOnly && !fromCache,
+              kind,
+              contentType: response.contentType,
+              cacheControl: response.cacheControl,
+              error: "maptiler error",
+            };
+            return;
+          }
+
+          if (responseType === "arrayBuffer") {
+            const buf = response.data ? Buffer.from(response.data) : null;
+            results[id] = {
+              ok: true,
+              status: response.status,
+              cached,
+              source,
+              kind,
+              contentType: response.contentType,
+              cacheControl: response.cacheControl,
+              dataBase64: buf ? buf.toString("base64") : null,
+              size: buf?.byteLength ?? 0,
+            };
+          } else {
+            results[id] = {
+              ok: true,
+              status: response.status,
+              cached,
+              source,
+              kind,
+              contentType: response.contentType,
+              cacheControl: response.cacheControl,
+              body: response.body ?? null,
+            };
+          }
+        } catch (err) {
+          results[id] = {
+            ok: false,
+            status: 400,
+            cached: false,
+            source: "none",
+            cacheMiss: false,
+            error: err instanceof Error ? err.message : "maptiler failed",
+          };
+        }
+      };
+
+      for (let i = 0; i < maptilerTasks.length; i += MAPTILER_CONCURRENCY) {
+        const chunk = maptilerTasks.slice(i, i + MAPTILER_CONCURRENCY);
+        await Promise.all(chunk.map(executeMaptilerTask));
       }
 
       await rt({ eventType: "batch", source: "api", payload: { total: body.ops.length, maptiler: maptilerCount } });
