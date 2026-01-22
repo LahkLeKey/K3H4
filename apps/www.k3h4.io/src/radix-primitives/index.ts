@@ -29,7 +29,6 @@ export * from "./Breadcrumbs";
 export * from "./Pagination";
 export * from "./Avatar";
 export * from "./Alert";
-export * from "./EmptyState";
 export * from "./MapSearchPanel";
 export * from "./PoiDetailCard";
 export * from "./MapStatusOverlay";
