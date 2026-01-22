@@ -29,6 +29,7 @@ export function registerUsdaRoutes(server: FastifyInstance, prisma: PrismaClient
     kind: "region" | "country" | "commodity" | "unit" | "attribute",
     dataset: "esr" | "gats" | "psd",
     items: any,
+    opts?: { skipEnrichment?: boolean },
   ) => {
     if (!Array.isArray(items)) return items;
     const repo =
@@ -68,6 +69,10 @@ export function registerUsdaRoutes(server: FastifyInstance, prisma: PrismaClient
 
     const enriched = [] as any[];
     const now = Date.now();
+    const metaKey = { provider_namespace_kind_sourceKey: { provider: "wikidata", namespace: dataset, kind, sourceKey: "__meta__" } } as const;
+    const metaHit = await prisma.enrichmentCache.findUnique({ where: metaKey });
+    const metaFresh = metaHit && (!metaHit.expiresAt || metaHit.expiresAt.getTime() > now);
+
     for (const row of items) {
       const { code, name } = normalize(row);
       if (!code || !name) {
@@ -80,6 +85,11 @@ export function registerUsdaRoutes(server: FastifyInstance, prisma: PrismaClient
         create: { dataset, code, name },
         update: { name },
       });
+
+      if (metaFresh || opts?.skipEnrichment) {
+        enriched.push({ ...row, wikidataId: record.wikidataId ?? null, enrichment: record.enrichment ?? null });
+        continue;
+      }
 
       const cacheKey = {
         provider_namespace_kind_sourceKey: { provider: "wikidata", namespace: dataset, kind, sourceKey: code },
@@ -193,28 +203,56 @@ export function registerUsdaRoutes(server: FastifyInstance, prisma: PrismaClient
 
       enriched.push({ ...row, wikidataId: record.wikidataId ?? null, enrichment: record.enrichment ?? null });
     }
+    // Mark meta cache so subsequent calls within TTL can skip enrichment entirely
+    if (!metaFresh && !opts?.skipEnrichment) {
+      await prisma.enrichmentCache.upsert({
+        where: metaKey,
+        create: {
+          provider: "wikidata",
+          namespace: dataset,
+          kind,
+          sourceKey: "__meta__",
+          paramsHash: null,
+          wikidataId: null,
+          payload: { total: items.length },
+          status: "success",
+          fetchedAt: new Date(now),
+          expiresAt: new Date(now + ENRICH_CACHE_TTL_MINUTES * 60 * 1000),
+        },
+        update: {
+          payload: { total: items.length },
+          status: "success",
+          fetchedAt: new Date(now),
+          expiresAt: new Date(now + ENRICH_CACHE_TTL_MINUTES * 60 * 1000),
+        },
+      });
+    }
+
     server.log.info({ kind, dataset, total: items.length, enriched: enriched.filter((e) => e.wikidataId).length }, "usda enrichment");
     return enriched;
   };
 
   // ESR reference endpoints
   server.get("/usda/esr/regions", auth, async (request) => {
+    const fast = Boolean((request.query as any)?.fast);
     const payload = await fetchAndCache(prisma, "esr", "/api/esr/regions", undefined, { maxAgeMinutes: DEFAULT_MAX_AGE_MINUTES });
-    const enriched = await enrichReference("region", "esr", payload);
+    const enriched = await enrichReference("region", "esr", payload, { skipEnrichment: fast });
     await recordTelemetry(request, { eventType: "usda.esr.regions.fetch", source: "api" });
     return enriched;
   });
 
   server.get("/usda/esr/countries", auth, async (request) => {
+    const fast = Boolean((request.query as any)?.fast);
     const payload = await fetchAndCache(prisma, "esr", "/api/esr/countries", undefined, { maxAgeMinutes: DEFAULT_MAX_AGE_MINUTES });
-    const enriched = await enrichReference("country", "esr", payload);
+    const enriched = await enrichReference("country", "esr", payload, { skipEnrichment: fast });
     await recordTelemetry(request, { eventType: "usda.esr.countries.fetch", source: "api" });
     return enriched;
   });
 
   server.get("/usda/esr/commodities", auth, async (request) => {
+    const fast = Boolean((request.query as any)?.fast);
     const payload = await fetchAndCache(prisma, "esr", "/api/esr/commodities", undefined, { maxAgeMinutes: DEFAULT_MAX_AGE_MINUTES });
-    const enriched = await enrichReference("commodity", "esr", payload);
+    const enriched = await enrichReference("commodity", "esr", payload, { skipEnrichment: fast });
     await recordTelemetry(request, { eventType: "usda.esr.commodities.fetch", source: "api" });
     return enriched;
   });
@@ -281,29 +319,33 @@ export function registerUsdaRoutes(server: FastifyInstance, prisma: PrismaClient
 
   // GATS reference endpoints
   server.get("/usda/gats/regions", auth, async (request) => {
+    const fast = Boolean((request.query as any)?.fast);
     const payload = await fetchAndCache(prisma, "gats", "/api/gats/regions", undefined, { maxAgeMinutes: DEFAULT_MAX_AGE_MINUTES });
-    const enriched = await enrichReference("region", "gats", payload);
+    const enriched = await enrichReference("region", "gats", payload, { skipEnrichment: fast });
     await recordTelemetry(request, { eventType: "usda.gats.regions.fetch", source: "api" });
     return enriched;
   });
 
   server.get("/usda/gats/countries", auth, async (request) => {
+    const fast = Boolean((request.query as any)?.fast);
     const payload = await fetchAndCache(prisma, "gats", "/api/gats/countries", undefined, { maxAgeMinutes: DEFAULT_MAX_AGE_MINUTES });
-    const enriched = await enrichReference("country", "gats", payload);
+    const enriched = await enrichReference("country", "gats", payload, { skipEnrichment: fast });
     await recordTelemetry(request, { eventType: "usda.gats.countries.fetch", source: "api" });
     return enriched;
   });
 
   server.get("/usda/gats/commodities", auth, async (request) => {
+    const fast = Boolean((request.query as any)?.fast);
     const payload = await fetchAndCache(prisma, "gats", "/api/gats/commodities", undefined, { maxAgeMinutes: DEFAULT_MAX_AGE_MINUTES });
-    const enriched = await enrichReference("commodity", "gats", payload);
+    const enriched = await enrichReference("commodity", "gats", payload, { skipEnrichment: fast });
     await recordTelemetry(request, { eventType: "usda.gats.commodities.fetch", source: "api" });
     return enriched;
   });
 
   server.get("/usda/gats/hs6-commodities", auth, async (request) => {
+    const fast = Boolean((request.query as any)?.fast);
     const payload = await fetchAndCache(prisma, "gats", "/api/gats/HS6Commodities", undefined, { maxAgeMinutes: DEFAULT_MAX_AGE_MINUTES });
-    const enriched = await enrichReference("commodity", "gats", payload);
+    const enriched = await enrichReference("commodity", "gats", payload, { skipEnrichment: fast });
     await recordTelemetry(request, { eventType: "usda.gats.hs6.fetch", source: "api" });
     return enriched;
   });

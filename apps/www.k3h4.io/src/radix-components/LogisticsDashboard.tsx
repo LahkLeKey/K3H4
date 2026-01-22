@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 
 import { Tabs } from "../radix-primitives";
 import { Button, Grid, MetricTile, Stack } from "../components/ui";
@@ -9,6 +9,7 @@ import { useAgricultureState } from "../react-hooks/agriculture";
 import { useUsdaState } from "../react-hooks/usda";
 import { useCulinaryState } from "../react-hooks/culinary";
 import { usePosState } from "../react-hooks/pos";
+import { useLogisticsStore } from "../zustand-stores/logistics";
 import { FreightBoard } from "./FreightBoard";
 import { WarehouseBoard } from "./WarehouseBoard";
 import { AgricultureBoard } from "./AgricultureBoard";
@@ -25,7 +26,7 @@ export function LogisticsDashboard() {
     const { regions, commodities, countries, status: usdaStatus, fetchReference } = useUsdaState();
     const { overview: culinaryOverview, status: culinaryStatus, fetchOverview: fetchCulinary } = useCulinaryState();
     const { overview: posOverview, status: posStatus, fetchOverview: fetchPos } = usePosState();
-    const [activeTab, setActiveTab] = useState("freight");
+    const { activeTab, setActiveTab } = useLogisticsStore();
 
     const anyLoading = [freightStatus, warehouseStatus, agStatus, usdaStatus, culinaryStatus, posStatus].some((s) => s === "loading");
 

@@ -1,18 +1,16 @@
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { z } from "zod";
 
 import { Badge, Button, Card, StatChip } from "../components/ui";
 import { useAuthStore } from "../zustand-stores/auth";
 import { useAgricultureState } from "../react-hooks/agriculture";
 import { apiFetch } from "../react-hooks/lib/api-client";
+import { useLogisticsStore } from "../zustand-stores/logistics";
 
 export function AgricultureBoard() {
     const { session } = useAuthStore();
     const { overview, status, error, fetchOverview } = useAgricultureState();
-    const [slotId, setSlotId] = useState("slot-1");
-    const [invName, setInvName] = useState("Seeds");
-    const [invQty, setInvQty] = useState("5");
-    const [formStatus, setFormStatus] = useState<string>("");
+    const { agricultureSlotId, agricultureInvName, agricultureInvQty, agricultureFormStatus, updateField } = useLogisticsStore();
 
     useEffect(() => {
         if (session?.accessToken && status === "idle") {
@@ -24,37 +22,37 @@ export function AgricultureBoard() {
 
     const handleUnlockSlot = async () => {
         if (!session?.accessToken) return;
-        setFormStatus("Unlocking slot...");
+        updateField("agricultureFormStatus", "Unlocking slot...");
         try {
             await apiFetch("/agriculture/slots/unlock", {
                 method: "POST",
                 token: session.accessToken,
                 baseUrl: useAuthStore.getState().apiBase,
                 schema: z.any(),
-                body: { slotId: slotId || "slot-1" },
+                body: { slotId: agricultureSlotId || "slot-1" },
             });
-            setFormStatus("Slot unlocked");
+            updateField("agricultureFormStatus", "Slot unlocked");
             fetchOverview();
         } catch (err) {
-            setFormStatus(err instanceof Error ? err.message : "Failed");
+            updateField("agricultureFormStatus", err instanceof Error ? err.message : "Failed");
         }
     };
 
     const handleAddInventory = async () => {
         if (!session?.accessToken) return;
-        setFormStatus("Adding inventory...");
+        updateField("agricultureFormStatus", "Adding inventory...");
         try {
             await apiFetch("/agriculture/inventory", {
                 method: "POST",
                 token: session.accessToken,
                 baseUrl: useAuthStore.getState().apiBase,
                 schema: z.any(),
-                body: { item: invName || "Item", quantity: Number(invQty) || 1, unit: "units" },
+                body: { item: agricultureInvName || "Item", quantity: Number(agricultureInvQty) || 1, unit: "units" },
             });
-            setFormStatus("Inventory added");
+            updateField("agricultureFormStatus", "Inventory added");
             fetchOverview();
         } catch (err) {
-            setFormStatus(err instanceof Error ? err.message : "Failed");
+            updateField("agricultureFormStatus", err instanceof Error ? err.message : "Failed");
         }
     };
 
@@ -97,8 +95,8 @@ export function AgricultureBoard() {
                         <div className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-300">Unlock slot</div>
                         <input
                             className="w-full rounded-lg border border-white/10 bg-slate-900/80 p-2 text-sm text-slate-100 focus:border-emerald-300/60 focus:outline-none"
-                            value={slotId}
-                            onChange={(e) => setSlotId(e.target.value)}
+                            value={agricultureSlotId}
+                            onChange={(e) => updateField("agricultureSlotId", e.target.value)}
                             placeholder="slot-1"
                         />
                         <Button accent="#86efac" onClick={handleUnlockSlot} disabled={!session?.accessToken || loading}>
@@ -110,14 +108,14 @@ export function AgricultureBoard() {
                         <div className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-300">Add inventory</div>
                         <input
                             className="w-full rounded-lg border border-white/10 bg-slate-900/80 p-2 text-sm text-slate-100 focus:border-emerald-300/60 focus:outline-none"
-                            value={invName}
-                            onChange={(e) => setInvName(e.target.value)}
+                            value={agricultureInvName}
+                            onChange={(e) => updateField("agricultureInvName", e.target.value)}
                             placeholder="Item"
                         />
                         <input
                             className="w-full rounded-lg border border-white/10 bg-slate-900/80 p-2 text-sm text-slate-100 focus:border-emerald-300/60 focus:outline-none"
-                            value={invQty}
-                            onChange={(e) => setInvQty(e.target.value)}
+                            value={agricultureInvQty}
+                            onChange={(e) => updateField("agricultureInvQty", e.target.value)}
                             placeholder="Qty"
                         />
                         <Button accent="#22d3ee" onClick={handleAddInventory} disabled={!session?.accessToken || loading}>
@@ -125,7 +123,7 @@ export function AgricultureBoard() {
                         </Button>
                     </div>
                 </div>
-                <div className="mt-2 text-xs text-slate-300">{formStatus || (!session ? "Sign in to post actions." : "Live agriculture actions.")}</div>
+                <div className="mt-2 text-xs text-slate-300">{agricultureFormStatus || (!session ? "Sign in to post actions." : "Live agriculture actions.")}</div>
             </Card>
         </div>
     );

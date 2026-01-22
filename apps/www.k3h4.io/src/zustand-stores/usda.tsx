@@ -40,15 +40,16 @@ export const useUsdaStore = create<UsdaState>((set) => ({
         }
         set({ status: "loading", error: null });
         try {
+            const fast = "?fast=1";
             const [regions, commodities, countries, psdUnits, psdAttributes, psdRegions, psdCountries, psdCommodities] = await Promise.all([
-                apiFetch("/usda/esr/regions", { token: session.accessToken, baseUrl: apiBase, schema: UnknownArraySchema }),
-                apiFetch("/usda/esr/commodities", { token: session.accessToken, baseUrl: apiBase, schema: UnknownArraySchema }),
-                apiFetch("/usda/esr/countries", { token: session.accessToken, baseUrl: apiBase, schema: UnknownArraySchema }),
-                apiFetch("/usda/psd/units", { token: session.accessToken, baseUrl: apiBase, schema: UnknownArraySchema }),
-                apiFetch("/usda/psd/commodity-attributes", { token: session.accessToken, baseUrl: apiBase, schema: UnknownArraySchema }),
-                apiFetch("/usda/psd/regions", { token: session.accessToken, baseUrl: apiBase, schema: UnknownArraySchema }),
-                apiFetch("/usda/psd/countries", { token: session.accessToken, baseUrl: apiBase, schema: UnknownArraySchema }),
-                apiFetch("/usda/psd/commodities", { token: session.accessToken, baseUrl: apiBase, schema: UnknownArraySchema }),
+                apiFetch(`/usda/esr/regions${fast}`, { token: session.accessToken, baseUrl: apiBase, schema: UnknownArraySchema }),
+                apiFetch(`/usda/esr/commodities${fast}`, { token: session.accessToken, baseUrl: apiBase, schema: UnknownArraySchema }),
+                apiFetch(`/usda/esr/countries${fast}`, { token: session.accessToken, baseUrl: apiBase, schema: UnknownArraySchema }),
+                apiFetch(`/usda/psd/units${fast}`, { token: session.accessToken, baseUrl: apiBase, schema: UnknownArraySchema }),
+                apiFetch(`/usda/psd/commodity-attributes${fast}`, { token: session.accessToken, baseUrl: apiBase, schema: UnknownArraySchema }),
+                apiFetch(`/usda/psd/regions${fast}`, { token: session.accessToken, baseUrl: apiBase, schema: UnknownArraySchema }),
+                apiFetch(`/usda/psd/countries${fast}`, { token: session.accessToken, baseUrl: apiBase, schema: UnknownArraySchema }),
+                apiFetch(`/usda/psd/commodities${fast}`, { token: session.accessToken, baseUrl: apiBase, schema: UnknownArraySchema }),
             ]);
             set({
                 regions,

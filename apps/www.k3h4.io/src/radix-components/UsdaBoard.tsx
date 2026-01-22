@@ -1,9 +1,10 @@
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 
 import { Badge, Button, Grid, MetricTile, SectionHeader, Stack, Table } from "../components/ui";
 import { useAuthStore } from "../zustand-stores/auth";
 import { useUsdaState } from "../react-hooks/usda";
 import { TableCard } from "./TableCard";
+import { useLogisticsStore } from "../zustand-stores/logistics";
 
 export function UsdaBoard() {
     const { session } = useAuthStore();
@@ -20,7 +21,7 @@ export function UsdaBoard() {
         error,
         fetchReference,
     } = useUsdaState();
-    const [detail, setDetail] = useState<{ title: string; code?: string; wikidataId?: string; enrichment: any } | null>(null);
+    const { usdaDetail, setUsdaDetail } = useLogisticsStore();
 
     useEffect(() => {
         if (session?.accessToken && status === "idle") fetchReference();
@@ -29,7 +30,21 @@ export function UsdaBoard() {
     const loading = status === "loading";
 
     const pickCode = (item: any) =>
-        item?.code || item?.regionCode || item?.countryCode || item?.commodityCode || item?.unitCode || item?.attributeCode || item?.Code || item?.codeId || "-";
+        item?.code ||
+        item?.regionCode ||
+        item?.countryCode ||
+        item?.commodityCode ||
+        item?.unitCode ||
+        item?.attributeCode ||
+        item?.regionId ||
+        item?.countryId ||
+        item?.commodityId ||
+        item?.unitId ||
+        item?.attributeId ||
+        item?.Code ||
+        item?.codeId ||
+        item?.id ||
+        "-";
 
     const pickName = (item: any) =>
         item?.name ||
@@ -40,6 +55,11 @@ export function UsdaBoard() {
         item?.attributeName ||
         item?.description ||
         item?.label ||
+        item?.title ||
+        item?.text ||
+        item?.unitDescription ||
+        item?.attributeDescription ||
+        item?.longDescription ||
         item?.Name ||
         "-";
 
@@ -105,7 +125,7 @@ export function UsdaBoard() {
                                         accent="#7dd3fc"
                                         variant="ghost"
                                         onClick={() =>
-                                            setDetail({
+                                            setUsdaDetail({
                                                 title: pickName(r) || "Region",
                                                 code: pickCode(r),
                                                 wikidataId: (r as any)?.wikidataId,
@@ -154,7 +174,7 @@ export function UsdaBoard() {
                                         variant="ghost"
                                         disabled={!unit?.enrichment}
                                         onClick={() =>
-                                            setDetail({
+                                            setUsdaDetail({
                                                 title: pickName(unit) || "Unit",
                                                 code: pickCode(unit),
                                                 wikidataId,
@@ -204,7 +224,7 @@ export function UsdaBoard() {
                                         variant="ghost"
                                         disabled={!attr?.enrichment}
                                         onClick={() =>
-                                            setDetail({
+                                            setUsdaDetail({
                                                 title: pickName(attr) || "Attribute",
                                                 code: pickCode(attr),
                                                 wikidataId,
@@ -222,32 +242,25 @@ export function UsdaBoard() {
                 )}
             </TableCard>
 
-            <TableCard
-                title="Enrichment"
-                subtitle="Backend-enriched Wikidata links populate automatically."
-                actions={<Badge accent="#7dd3fc">Auto</Badge>}
-            >
-                <div className="text-xs text-slate-300">
-                    USDA reference responses already include backend-enriched Wikidata IDs and statements where available. No manual action needed.
-                </div>
-            </TableCard>
-
-            {detail ? (
-                <div className="space-y-3 rounded-xl border border-white/10 bg-slate-900/70 p-4">
-                    <div className="flex items-center justify-between">
-                        <div>
-                            <div className="text-sm font-semibold text-white">{detail.title}</div>
-                            <div className="text-xs text-slate-300">
-                                Code: {detail.code ?? "-"} • Wikidata: {detail.wikidataId ?? "-"}
+            {usdaDetail ? (
+                <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/50 px-4 py-8" onClick={() => setUsdaDetail(null)}>
+                    <div
+                        className="max-h-[80vh] w-full max-w-3xl space-y-3 rounded-2xl border border-white/15 bg-slate-900/90 p-5 shadow-2xl backdrop-blur"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <div className="flex items-start justify-between gap-4">
+                            <div>
+                                <div className="text-lg font-semibold text-white">{usdaDetail.title}</div>
+                                <div className="text-xs text-slate-300">Code: {usdaDetail.code ?? "-"} • Wikidata: {usdaDetail.wikidataId ?? "-"}</div>
                             </div>
+                            <Button accent="#94a3b8" variant="ghost" onClick={() => setUsdaDetail(null)}>
+                                Close
+                            </Button>
                         </div>
-                        <Button accent="#94a3b8" variant="ghost" onClick={() => setDetail(null)}>
-                            Close
-                        </Button>
+                        <pre className="max-h-[60vh] overflow-auto rounded-lg bg-black/40 p-3 text-xs text-slate-100">
+                            {JSON.stringify(usdaDetail.enrichment ?? usdaDetail, null, 2)}
+                        </pre>
                     </div>
-                    <pre className="max-h-72 overflow-auto rounded-lg bg-black/30 p-3 text-xs text-slate-200">
-                        {JSON.stringify(detail.enrichment, null, 2)}
-                    </pre>
                 </div>
             ) : null}
         </Stack>

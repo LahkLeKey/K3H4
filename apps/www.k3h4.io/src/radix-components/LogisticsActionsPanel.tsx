@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { z } from "zod";
 
 import { Button } from "../components/ui/Button";
@@ -11,6 +10,7 @@ import { useFreightState } from "../react-hooks/freight";
 import { useWarehouseState } from "../react-hooks/warehouse";
 import { useCulinaryState } from "../react-hooks/culinary";
 import { usePosState } from "../react-hooks/pos";
+import { useLogisticsStore } from "../zustand-stores/logistics";
 
 const AnySchema = z.any();
 
@@ -20,20 +20,23 @@ export function LogisticsActionsPanel() {
     const { fetchItems } = useWarehouseState();
     const { fetchOverview: fetchCulinary } = useCulinaryState();
     const { fetchOverview: fetchPos } = usePosState();
-
-    const [freightTitle, setFreightTitle] = useState("Austin -> Dallas");
-    const [freightRate, setFreightRate] = useState("2.1");
-    const [warehouseSku, setWarehouseSku] = useState("SKU-123");
-    const [warehouseQty, setWarehouseQty] = useState("10");
-    const [culinaryName, setCulinaryName] = useState("Smoked Trout Toast");
-    const [posStore, setPosStore] = useState("Demo Store");
-    const [status, setStatus] = useState<string>("");
+    const {
+        freightTitle,
+        freightRate,
+        warehouseSku,
+        warehouseQty,
+        culinaryName,
+        posStore,
+        status,
+        updateField,
+        setStatus: setStatusMessage,
+    } = useLogisticsStore();
 
     const disabled = !session?.accessToken;
 
     const handlePlanFreight = async () => {
         if (disabled) return;
-        setStatus("Planning load...");
+        setStatusMessage("Planning load...");
         try {
             await apiFetch("/freight", {
                 method: "POST",
@@ -51,16 +54,16 @@ export function LogisticsActionsPanel() {
                     ratePerKm: Number(freightRate) || 2,
                 },
             });
-            setStatus("Freight load planned");
+            setStatusMessage("Freight load planned");
             fetchLoads();
         } catch (err) {
-            setStatus(err instanceof Error ? err.message : "Failed to plan load");
+            setStatusMessage(err instanceof Error ? err.message : "Failed to plan load");
         }
     };
 
     const handleCreateItem = async () => {
         if (disabled) return;
-        setStatus("Creating item...");
+        setStatusMessage("Creating item...");
         try {
             await apiFetch("/warehouse/items", {
                 method: "POST",
@@ -75,16 +78,16 @@ export function LogisticsActionsPanel() {
                     status: "active",
                 },
             });
-            setStatus("Item created");
+            setStatusMessage("Item created");
             fetchItems();
         } catch (err) {
-            setStatus(err instanceof Error ? err.message : "Failed to create item");
+            setStatusMessage(err instanceof Error ? err.message : "Failed to create item");
         }
     };
 
     const handleCreateMenuItem = async () => {
         if (disabled) return;
-        setStatus("Creating menu item...");
+        setStatusMessage("Creating menu item...");
         try {
             await apiFetch("/culinary/menu-items", {
                 method: "POST",
@@ -98,16 +101,16 @@ export function LogisticsActionsPanel() {
                     price: "16.00",
                 },
             });
-            setStatus("Menu item created");
+            setStatusMessage("Menu item created");
             fetchCulinary();
         } catch (err) {
-            setStatus(err instanceof Error ? err.message : "Failed to create menu item");
+            setStatusMessage(err instanceof Error ? err.message : "Failed to create menu item");
         }
     };
 
     const handleCreateStore = async () => {
         if (disabled) return;
-        setStatus("Creating store...");
+        setStatusMessage("Creating store...");
         try {
             await apiFetch("/pos/stores", {
                 method: "POST",
@@ -119,10 +122,10 @@ export function LogisticsActionsPanel() {
                     channel: "dine-in",
                 },
             });
-            setStatus("Store created");
+            setStatusMessage("Store created");
             fetchPos();
         } catch (err) {
-            setStatus(err instanceof Error ? err.message : "Failed to create store");
+            setStatusMessage(err instanceof Error ? err.message : "Failed to create store");
         }
     };
 
@@ -139,13 +142,13 @@ export function LogisticsActionsPanel() {
                         <input
                             className="w-full rounded-lg border border-white/10 bg-slate-900/80 p-2 text-sm text-slate-100 focus:border-emerald-300/60 focus:outline-none"
                             value={freightTitle}
-                            onChange={(e) => setFreightTitle(e.target.value)}
+                            onChange={(e) => updateField("freightTitle", e.target.value)}
                             placeholder="Route title"
                         />
                         <input
                             className="w-full rounded-lg border border-white/10 bg-slate-900/80 p-2 text-sm text-slate-100 focus:border-emerald-300/60 focus:outline-none"
                             value={freightRate}
-                            onChange={(e) => setFreightRate(e.target.value)}
+                            onChange={(e) => updateField("freightRate", e.target.value)}
                             placeholder="Rate per km"
                         />
                         <Button accent="#fbbf24" onClick={handlePlanFreight} disabled={disabled}>
@@ -158,13 +161,13 @@ export function LogisticsActionsPanel() {
                         <input
                             className="w-full rounded-lg border border-white/10 bg-slate-900/80 p-2 text-sm text-slate-100 focus:border-emerald-300/60 focus:outline-none"
                             value={warehouseSku}
-                            onChange={(e) => setWarehouseSku(e.target.value)}
+                            onChange={(e) => updateField("warehouseSku", e.target.value)}
                             placeholder="SKU"
                         />
                         <input
                             className="w-full rounded-lg border border-white/10 bg-slate-900/80 p-2 text-sm text-slate-100 focus:border-emerald-300/60 focus:outline-none"
                             value={warehouseQty}
-                            onChange={(e) => setWarehouseQty(e.target.value)}
+                            onChange={(e) => updateField("warehouseQty", e.target.value)}
                             placeholder="Quantity"
                         />
                         <Button accent="#e0e7ff" onClick={handleCreateItem} disabled={disabled}>
@@ -177,7 +180,7 @@ export function LogisticsActionsPanel() {
                         <input
                             className="w-full rounded-lg border border-white/10 bg-slate-900/80 p-2 text-sm text-slate-100 focus:border-emerald-300/60 focus:outline-none"
                             value={culinaryName}
-                            onChange={(e) => setCulinaryName(e.target.value)}
+                            onChange={(e) => updateField("culinaryName", e.target.value)}
                             placeholder="Menu item name"
                         />
                         <Button accent="#fb7185" onClick={handleCreateMenuItem} disabled={disabled}>
@@ -190,7 +193,7 @@ export function LogisticsActionsPanel() {
                         <input
                             className="w-full rounded-lg border border-white/10 bg-slate-900/80 p-2 text-sm text-slate-100 focus:border-emerald-300/60 focus:outline-none"
                             value={posStore}
-                            onChange={(e) => setPosStore(e.target.value)}
+                            onChange={(e) => updateField("posStore", e.target.value)}
                             placeholder="Store name"
                         />
                         <Button accent="#f472b6" onClick={handleCreateStore} disabled={disabled}>

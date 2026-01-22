@@ -1,17 +1,16 @@
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { z } from "zod";
 
 import { Badge, Button, Card, StatChip, Table } from "../components/ui";
 import { useAuthStore } from "../zustand-stores/auth";
 import { useCulinaryState } from "../react-hooks/culinary";
 import { apiFetch } from "../react-hooks/lib/api-client";
+import { useLogisticsStore } from "../zustand-stores/logistics";
 
 export function CulinaryBoard() {
     const { session } = useAuthStore();
     const { overview, status, error, fetchOverview } = useCulinaryState();
-    const [itemName, setItemName] = useState("Smoked Trout Toast");
-    const [prepMinutes, setPrepMinutes] = useState("12");
-    const [itemStatus, setItemStatus] = useState<string>("");
+    const { culinaryName, culinaryPrepMinutes, culinaryStatus, updateField } = useLogisticsStore();
 
     useEffect(() => {
         if (session?.accessToken && status === "idle") fetchOverview();
@@ -21,7 +20,7 @@ export function CulinaryBoard() {
 
     const handleCreateMenu = async () => {
         if (!session?.accessToken) return;
-        setItemStatus("Creating menu item...");
+        updateField("culinaryStatus", "Creating menu item...");
         try {
             await apiFetch("/culinary/menu-items", {
                 method: "POST",
@@ -29,17 +28,17 @@ export function CulinaryBoard() {
                 baseUrl: useAuthStore.getState().apiBase,
                 schema: z.any(),
                 body: {
-                    name: itemName || "Menu Item",
-                    prepMinutes: Number(prepMinutes) || 10,
+                    name: culinaryName || "Menu Item",
+                    prepMinutes: Number(culinaryPrepMinutes) || 10,
                     cost: "7.50",
                     price: "16.00",
                 },
             });
-            setItemStatus("Menu item created");
+            updateField("culinaryStatus", "Menu item created");
             fetchOverview();
         } catch (err) {
             const msg = err instanceof Error ? err.message : "Failed";
-            setItemStatus(msg);
+            updateField("culinaryStatus", msg);
         }
     };
 
@@ -81,21 +80,21 @@ export function CulinaryBoard() {
                 <div className="flex flex-col gap-2 sm:flex-row sm:items-end">
                     <input
                         className="w-full rounded-lg border border-white/10 bg-slate-900/80 p-2 text-sm text-slate-100 focus:border-emerald-300/60 focus:outline-none"
-                        value={itemName}
-                        onChange={(e) => setItemName(e.target.value)}
+                        value={culinaryName}
+                        onChange={(e) => updateField("culinaryName", e.target.value)}
                         placeholder="Name"
                     />
                     <input
                         className="w-32 rounded-lg border border-white/10 bg-slate-900/80 p-2 text-sm text-slate-100 focus:border-emerald-300/60 focus:outline-none"
-                        value={prepMinutes}
-                        onChange={(e) => setPrepMinutes(e.target.value)}
+                        value={culinaryPrepMinutes}
+                        onChange={(e) => updateField("culinaryPrepMinutes", e.target.value)}
                         placeholder="Prep (min)"
                     />
                     <Button accent="#fb7185" onClick={handleCreateMenu} disabled={!session?.accessToken || loading}>
                         Create
                     </Button>
                 </div>
-                <div className="text-xs text-slate-300">{itemStatus || (!session ? "Sign in to create items." : "Creates menu items.")}</div>
+                <div className="text-xs text-slate-300">{culinaryStatus || (!session ? "Sign in to create items." : "Creates menu items.")}</div>
             </Card>
 
             <Card eyebrow="Prep" title="Tasks" actions={<Badge accent="#f59e0b">Stations</Badge>}>

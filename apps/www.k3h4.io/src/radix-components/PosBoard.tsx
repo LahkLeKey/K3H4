@@ -1,18 +1,16 @@
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { z } from "zod";
 
 import { Badge, Button, Card, StatChip, Table } from "../components/ui";
 import { useAuthStore } from "../zustand-stores/auth";
 import { usePosState } from "../react-hooks/pos";
 import { apiFetch } from "../react-hooks/lib/api-client";
+import { useLogisticsStore } from "../zustand-stores/logistics";
 
 export function PosBoard() {
     const { session } = useAuthStore();
     const { overview, status, error, fetchOverview } = usePosState();
-    const [ticketStore, setTicketStore] = useState("Demo Store");
-    const [ticketChannel, setTicketChannel] = useState("dine-in");
-    const [ticketAmount, setTicketAmount] = useState("42.00");
-    const [ticketStatus, setTicketStatus] = useState<string>("");
+    const { posTicketStore, posTicketChannel, posTicketAmount, posTicketStatus, updateField } = useLogisticsStore();
 
     useEffect(() => {
         if (session?.accessToken && status === "idle") {
@@ -24,7 +22,7 @@ export function PosBoard() {
 
     const handleCreateTicket = async () => {
         if (!session?.accessToken) return;
-        setTicketStatus("Creating ticket...");
+        updateField("posTicketStatus", "Creating ticket...");
         try {
             await apiFetch("/pos/tickets", {
                 method: "POST",
@@ -32,16 +30,16 @@ export function PosBoard() {
                 baseUrl: useAuthStore.getState().apiBase,
                 schema: z.any(),
                 body: {
-                    storeName: ticketStore || "Demo Store",
-                    channel: ticketChannel || "dine-in",
-                    total: ticketAmount || "0",
+                    storeName: posTicketStore || "Demo Store",
+                    channel: posTicketChannel || "dine-in",
+                    total: posTicketAmount || "0",
                 },
             });
-            setTicketStatus("Ticket created");
+            updateField("posTicketStatus", "Ticket created");
             fetchOverview();
         } catch (err) {
             const msg = err instanceof Error ? err.message : "Failed";
-            setTicketStatus(msg);
+            updateField("posTicketStatus", msg);
         }
     };
 
@@ -99,27 +97,27 @@ export function PosBoard() {
                 <div className="flex flex-col gap-2 sm:flex-row sm:items-end">
                     <input
                         className="w-full rounded-lg border border-white/10 bg-slate-900/80 p-2 text-sm text-slate-100 focus:border-emerald-300/60 focus:outline-none"
-                        value={ticketStore}
-                        onChange={(e) => setTicketStore(e.target.value)}
+                        value={posTicketStore}
+                        onChange={(e) => updateField("posTicketStore", e.target.value)}
                         placeholder="Store"
                     />
                     <input
                         className="w-32 rounded-lg border border-white/10 bg-slate-900/80 p-2 text-sm text-slate-100 focus:border-emerald-300/60 focus:outline-none"
-                        value={ticketChannel}
-                        onChange={(e) => setTicketChannel(e.target.value)}
+                        value={posTicketChannel}
+                        onChange={(e) => updateField("posTicketChannel", e.target.value)}
                         placeholder="Channel"
                     />
                     <input
                         className="w-32 rounded-lg border border-white/10 bg-slate-900/80 p-2 text-sm text-slate-100 focus:border-emerald-300/60 focus:outline-none"
-                        value={ticketAmount}
-                        onChange={(e) => setTicketAmount(e.target.value)}
+                        value={posTicketAmount}
+                        onChange={(e) => updateField("posTicketAmount", e.target.value)}
                         placeholder="Amount"
                     />
                     <Button accent="#f472b6" onClick={handleCreateTicket} disabled={!session?.accessToken || loading}>
                         Create ticket
                     </Button>
                 </div>
-                <div className="text-xs text-slate-300">{ticketStatus || (!session ? "Sign in to create tickets." : "Adds POS ticket records.")}</div>
+                <div className="text-xs text-slate-300">{posTicketStatus || (!session ? "Sign in to create tickets." : "Adds POS ticket records.")}</div>
             </Card>
         </div>
     );

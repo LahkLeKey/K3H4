@@ -1,17 +1,16 @@
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { z } from "zod";
 
 import { Badge, Button, Card, StatChip, Table } from "../components/ui";
 import { useAuthStore } from "../zustand-stores/auth";
 import { useFreightState } from "../react-hooks/freight";
 import { apiFetch } from "../react-hooks/lib/api-client";
+import { useLogisticsStore } from "../zustand-stores/logistics";
 
 export function FreightBoard() {
     const { session } = useAuthStore();
     const { loads, status, error, totals, fetchLoads, planQuickLoad, completeLoad } = useFreightState();
-    const [customTitle, setCustomTitle] = useState("Austin -> Dallas");
-    const [customRate, setCustomRate] = useState("2.1");
-    const [actionStatus, setActionStatus] = useState<string>("");
+    const { freightCustomTitle, freightCustomRate, freightActionStatus, updateField } = useLogisticsStore();
 
     useEffect(() => {
         if (session?.accessToken && status === "idle") {
@@ -23,7 +22,7 @@ export function FreightBoard() {
 
     const handlePlanCustom = async () => {
         if (!session?.accessToken) return;
-        setActionStatus("Planning...");
+        updateField("freightActionStatus", "Planning...");
         try {
             await apiFetch("/freight", {
                 method: "POST",
@@ -31,21 +30,21 @@ export function FreightBoard() {
                 baseUrl: useAuthStore.getState().apiBase,
                 schema: z.any(),
                 body: {
-                    title: customTitle || "Route",
+                    title: freightCustomTitle || "Route",
                     originName: "Austin, TX",
                     originLat: 30.2672,
                     originLng: -97.7431,
                     destinationName: "Dallas, TX",
                     destinationLat: 32.7767,
                     destinationLng: -96.797,
-                    ratePerKm: Number(customRate) || 2,
+                    ratePerKm: Number(freightCustomRate) || 2,
                 },
             });
-            setActionStatus("Load planned");
+            updateField("freightActionStatus", "Load planned");
             fetchLoads();
         } catch (err) {
             const msg = err instanceof Error ? err.message : "Failed";
-            setActionStatus(msg);
+            updateField("freightActionStatus", msg);
         }
     };
 
@@ -78,23 +77,23 @@ export function FreightBoard() {
                         <label className="text-xs uppercase tracking-[0.16em] text-slate-400">Title</label>
                         <input
                             className="w-full rounded-lg border border-white/10 bg-slate-900/80 p-2 text-sm text-slate-100 focus:border-emerald-300/60 focus:outline-none"
-                            value={customTitle}
-                            onChange={(e) => setCustomTitle(e.target.value)}
+                            value={freightCustomTitle}
+                            onChange={(e) => updateField("freightCustomTitle", e.target.value)}
                         />
                     </div>
                     <div className="w-32 space-y-1">
                         <label className="text-xs uppercase tracking-[0.16em] text-slate-400">Rate/km</label>
                         <input
                             className="w-full rounded-lg border border-white/10 bg-slate-900/80 p-2 text-sm text-slate-100 focus:border-emerald-300/60 focus:outline-none"
-                            value={customRate}
-                            onChange={(e) => setCustomRate(e.target.value)}
+                            value={freightCustomRate}
+                            onChange={(e) => updateField("freightCustomRate", e.target.value)}
                         />
                     </div>
                     <Button accent="#fbbf24" onClick={handlePlanCustom} disabled={actionDisabled}>
                         Plan load
                     </Button>
                 </div>
-                <div className="text-xs text-slate-300">{actionStatus || (actionDisabled ? "Sign in to plan loads." : "Austin to Dallas demo route.")}</div>
+                <div className="text-xs text-slate-300">{freightActionStatus || (actionDisabled ? "Sign in to plan loads." : "Austin to Dallas demo route.")}</div>
             </Card>
 
             <Card eyebrow="Loads" title="Route planner" actions={<Badge accent="#fbbf24">Live</Badge>}>
