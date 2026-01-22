@@ -7,7 +7,6 @@ import { Stack } from "../../components/ui";
 import { useAuthStore } from "../../zustand-stores/auth";
 import { apiFetch } from "../../react-hooks/lib/api-client";
 import { useCulinaryState } from "../../react-hooks/culinary";
-import { usePosState } from "../../react-hooks/pos";
 import { useArcadeState } from "../../react-hooks/arcade";
 import { useStorefrontsStore } from "../../zustand-stores/storefronts";
 
@@ -60,9 +59,9 @@ export function StorefrontsActionsPanel() {
     };
 
     return (
-        <Card eyebrow="Actions" title="Storefront workflows" subtitle="Menus, tickets, and arcade operations.">
+        <Card eyebrow="Actions" title="Storefront workflows" subtitle="Menus and live sync controls.">
             <Stack gap="md">
-                <Grid smCols={1} mdCols={2} lgCols={3} gap="md">
+                <Grid smCols={1} mdCols={2} lgCols={2} gap="md">
                     <div className="space-y-2 rounded-xl border border-white/10 bg-white/5 p-3">
                         <div className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-300">Add menu item</div>
                         <input
@@ -81,32 +80,6 @@ export function StorefrontsActionsPanel() {
                             Create menu item
                         </Button>
                         <div className="text-xs text-slate-300">{culinaryStatus || (!session ? "Sign in to create items." : "Posts to /culinary/menu-items")}</div>
-                    </div>
-
-                    <div className="space-y-2 rounded-xl border border-white/10 bg-white/5 p-3">
-                        <div className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-300">Add POS ticket</div>
-                        <input
-                            className="w-full rounded-lg border border-white/10 bg-slate-900/80 p-2 text-sm text-slate-100 focus:border-emerald-300/60 focus:outline-none"
-                            value={posTicketStore}
-                            onChange={(e) => updateField("posTicketStore", e.target.value)}
-                            placeholder="Store"
-                        />
-                        <input
-                            className="w-32 rounded-lg border border-white/10 bg-slate-900/80 p-2 text-sm text-slate-100 focus:border-emerald-300/60 focus:outline-none"
-                            value={posTicketChannel}
-                            onChange={(e) => updateField("posTicketChannel", e.target.value)}
-                            placeholder="Channel"
-                        />
-                        <input
-                            className="w-32 rounded-lg border border-white/10 bg-slate-900/80 p-2 text-sm text-slate-100 focus:border-emerald-300/60 focus:outline-none"
-                            value={posTicketAmount}
-                            onChange={(e) => updateField("posTicketAmount", e.target.value)}
-                            placeholder="Amount"
-                        />
-                        <Button accent="#f472b6" onClick={handleCreateTicket} disabled={disabled}>
-                            Create ticket
-                        </Button>
-                        <div className="text-xs text-slate-300">{posTicketStatus || (!session ? "Sign in to create tickets." : "Posts to /pos/tickets")}</div>
                     </div>
 
                     <div className="space-y-3 rounded-xl border border-white/10 bg-white/5 p-3">
