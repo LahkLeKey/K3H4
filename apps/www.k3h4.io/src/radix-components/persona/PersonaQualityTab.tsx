@@ -1,7 +1,7 @@
-import { Select } from "../../radix-primitives";
-import { Button, FormField, Grid, Input, Pill, Stack, Surface } from "../../components/ui";
-import type { PersonaConfusionResult } from "../../zustand-stores/persona";
-import type { PairRow } from "../../zustand-stores/persona-dashboard";
+import { Select } from "../@/radix-primitives";
+import { Button, FormField, Grid, Input, Pill, Stack, Surface } from "../@/components/ui";
+import type { PersonaConfusionResult } from "../@/zustand-stores/persona";
+import type { PairRow } from "../@/zustand-stores/persona-dashboard";
 import { ConfusionSummary } from "./ConfusionSummary";
 
 export type PersonaOption = { value: string; label: string };

@@ -1,8 +1,8 @@
 import { useEffect } from "react";
 
-import { Badge, Button, Card, StatChip, Table } from "../components/ui";
-import { useAuthStore } from "../zustand-stores/auth";
-import { useFreightState } from "../react-hooks/freight";
+import { Badge, Button, Card, StatChip, Table } from "@/components/ui";
+import { useAuthStore } from "@/zustand-stores/auth";
+import { useFreightState } from "@/react-hooks/freight";
 
 export function FreightBoard() {
     const { session } = useAuthStore();

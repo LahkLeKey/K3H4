@@ -1,5 +1,5 @@
-import { Select } from "../../radix-primitives";
-import { Button, FormField, Grid, Pill, Stack, Textarea } from "../../components/ui";
+import { Select } from "../@/radix-primitives";
+import { Button, FormField, Grid, Pill, Stack, Textarea } from "../@/components/ui";
 
 export type PersonaOption = { value: string; label: string };
 

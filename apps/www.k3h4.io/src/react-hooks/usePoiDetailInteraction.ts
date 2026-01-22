@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type maplibregl from "maplibre-gl";
 import type { Polygon, MultiPolygon } from "geojson";
-import type { Poi } from "../r3f-components/MapPinsOverlay";
+import type { Poi } from "@/r3f-components/MapPinsOverlay";
 import { useDebouncedCallback } from "./useDebouncedCallback";
 
 export type PoiDetail = {

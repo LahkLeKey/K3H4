@@ -1,5 +1,5 @@
-import type { PersonaCompatibility } from "../../zustand-stores/persona";
-import { Badge, Button, Card, Grid, Histogram, MetricTile, SectionHeader, Stack, Surface } from "../../components/ui";
+import type { PersonaCompatibility } from "../@/zustand-stores/persona";
+import { Badge, Button, Card, Grid, Histogram, MetricTile, SectionHeader, Stack, Surface } from "../@/components/ui";
 import { CompatibilityRow } from "./CompatibilityRow";
 
 export type KPI = { label: string; value: string; hint: string; trend?: number[]; accent: string };

@@ -2,8 +2,8 @@ import { create } from "zustand";
 import { z } from "zod";
 import { useQuery } from "@tanstack/react-query";
 
-import { apiFetch } from "../react-hooks/lib/api-client";
-import { useAuthStore } from "../react-hooks/auth";
+import { apiFetch } from "@/react-hooks/lib/api-client";
+import { useAuthStore } from "@/react-hooks/auth";
 
 export type Bbox = { minLat: number; minLng: number; maxLat: number; maxLng: number };
 

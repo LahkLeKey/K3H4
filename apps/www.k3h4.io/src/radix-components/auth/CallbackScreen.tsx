@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 
-import { useAuthStore, type Provider } from "../../react-hooks/auth";
-import { ExploreBar } from "../../components/ui";
+import { useAuthStore, type Provider } from "../@/react-hooks/auth";
+import { ExploreBar } from "../@/components/ui";
 
 export function CallbackScreen() {
     const { apiBase, finalizeCallback } = useAuthStore();

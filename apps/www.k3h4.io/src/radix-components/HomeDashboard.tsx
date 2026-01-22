@@ -1,4 +1,4 @@
-import { useAuthStore } from "../react-hooks/auth";
+import { useAuthStore } from "@/react-hooks/auth";
 import { SessionPanel } from "./auth/SessionPanel";
 
 export function HomeDashboard() {

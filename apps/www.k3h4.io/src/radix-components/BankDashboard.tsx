@@ -9,8 +9,8 @@ import {
     SectionHeader,
     Stack,
     Table,
-} from "../components/ui";
-import { useBankState } from "../react-hooks/bank";
+} from "@/components/ui";
+import { useBankState } from "@/react-hooks/bank";
 import { EndpointList } from "./EndpointList";
 import { TableCard } from "./TableCard";
 

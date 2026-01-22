@@ -1,8 +1,8 @@
 import { useEffect } from "react";
 
-import { Badge, Button, Card, StatChip } from "../components/ui";
-import { useAuthStore } from "../zustand-stores/auth";
-import { useAgricultureState } from "../react-hooks/agriculture";
+import { Badge, Button, Card, StatChip } from "@/components/ui";
+import { useAuthStore } from "@/zustand-stores/auth";
+import { useAgricultureState } from "@/react-hooks/agriculture";
 
 export function AgricultureBoard() {
     const { session } = useAuthStore();

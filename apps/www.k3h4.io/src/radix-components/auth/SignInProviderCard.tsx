@@ -1,4 +1,4 @@
-import type { Provider } from "../../react-hooks/auth";
+import type { Provider } from "../@/react-hooks/auth";
 
 export type SignInProviderCardProps = {
     provider: Provider;

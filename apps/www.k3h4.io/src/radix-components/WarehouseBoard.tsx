@@ -1,8 +1,8 @@
 import { useEffect } from "react";
 
-import { Badge, Button, EmptyState, Grid, MetricTile, SectionHeader, Stack, Table } from "../components/ui";
-import { useAuthStore } from "../zustand-stores/auth";
-import { useWarehouseState } from "../react-hooks/warehouse";
+import { Badge, Button, EmptyState, Grid, MetricTile, SectionHeader, Stack, Table } from "@/components/ui";
+import { useAuthStore } from "@/zustand-stores/auth";
+import { useWarehouseState } from "@/react-hooks/warehouse";
 import { TableCard } from "./TableCard";
 
 export function WarehouseBoard() {

@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
 
-import { Badge, Button, Card, Input, StatChip, Table } from "../components/ui";
-import { useAuthStore } from "../zustand-stores/auth";
-import { useAssignmentState } from "../react-hooks/assignments";
-import { usePersonaState } from "../react-hooks/persona";
+import { Badge, Button, Card, Input, StatChip, Table } from "@/components/ui";
+import { useAuthStore } from "@/zustand-stores/auth";
+import { useAssignmentState } from "@/react-hooks/assignments";
+import { usePersonaState } from "@/react-hooks/persona";
 
 export function AssignmentBoard() {
     const { session } = useAuthStore();

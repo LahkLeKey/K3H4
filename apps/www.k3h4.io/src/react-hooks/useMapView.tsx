@@ -1,6 +1,6 @@
 import { useMemo, type ReactNode } from "react";
 
-import { useMapViewStore, type MapViewState } from "../zustand-stores/map-view";
+import { useMapViewStore, type MapViewState } from "@/zustand-stores/map-view";
 
 export type MapViewContextValue = {
     view: MapViewState;

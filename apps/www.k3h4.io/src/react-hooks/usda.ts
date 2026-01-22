@@ -1,1 +1,1 @@
-export { useUsdaStore, useUsdaState, type UsdaState } from "../zustand-stores/usda";
+export { useUsdaStore, useUsdaState, type UsdaState } from "@/zustand-stores/usda";

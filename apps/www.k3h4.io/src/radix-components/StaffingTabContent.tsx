@@ -1,9 +1,9 @@
 import { useEffect, useState } from "react";
 
-import { Select } from "../radix-primitives";
-import { Badge, Button, Card, Grid, Input, MetricTile, Pill, SectionHeader, Stack } from "../components/ui";
-import { useAuthStore } from "../react-hooks/auth";
-import { useStaffingState } from "../react-hooks/staffing";
+import { Select } from "@/radix-primitives";
+import { Badge, Button, Card, Grid, Input, MetricTile, Pill, SectionHeader, Stack } from "@/components/ui";
+import { useAuthStore } from "@/react-hooks/auth";
+import { useStaffingState } from "@/react-hooks/staffing";
 import { StaffingBoard } from "./StaffingBoard";
 
 const stageOptions = ["sourced", "screening", "interview", "offer", "placed"];

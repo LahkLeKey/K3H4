@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 
-import { useAuthStore } from "../react-hooks/auth";
+import { useAuthStore } from "@/react-hooks/auth";
 
 export type ExploreLink = { label: string; href: string };
 
