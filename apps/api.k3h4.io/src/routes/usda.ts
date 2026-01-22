@@ -1,6 +1,7 @@
 import { type PrismaClient } from "@prisma/client";
 import { type FastifyInstance, type FastifyReply } from "fastify";
 import { fetchAndCache } from "../services/usda-cache";
+import { fetchWikidataWithCache } from "../services/wikidata-cache";
 import { type RecordTelemetryFn } from "./types";
 
 const DEFAULT_MAX_AGE_MINUTES = 60;
@@ -22,23 +23,88 @@ const toStringParam = (value: unknown) => {
 export function registerUsdaRoutes(server: FastifyInstance, prisma: PrismaClient, recordTelemetry: RecordTelemetryFn) {
   const auth = { preHandler: [server.authenticate] };
 
+  const enrichReference = async (
+    kind: "region" | "country" | "commodity",
+    dataset: "esr" | "gats" | "psd",
+    items: any,
+  ) => {
+    if (!Array.isArray(items)) return items;
+    const repo =
+      kind === "region" ? prisma.usdaRegion : kind === "country" ? prisma.usdaCountry : prisma.usdaCommodity;
+
+    const normalize = (item: any) => {
+      const code =
+        item.code ?? item.regionCode ?? item.countryCode ?? item.commodityCode ?? item.Code ?? item.codeId ?? null;
+      const name =
+        item.name ??
+        item.regionName ??
+        item.countryName ??
+        item.commodityName ??
+        item.description ??
+        item.Name ??
+        null;
+      return { code: code ? String(code) : null, name: name ? String(name) : null };
+    };
+
+    const enriched = [] as any[];
+    for (const row of items) {
+      const { code, name } = normalize(row);
+      if (!code || !name) {
+        enriched.push(row);
+        continue;
+      }
+
+      let record = await repo.upsert({
+        where: { dataset_code: { dataset, code } },
+        create: { dataset, code, name },
+        update: { name },
+      });
+
+      if (!record.wikidataId && name) {
+        try {
+          const search = await fetchWikidataWithCache(prisma, "/wikidata/v1/search/items", { q: name, limit: 1 }, {
+            resource: "usda-wikidata",
+            maxAgeMinutes: 24 * 60,
+          });
+          const payload = search.payload as any;
+          const hit = payload?.search?.[0] ?? payload?.items?.[0];
+          if (hit?.id) {
+            record = await repo.update({
+              where: { dataset_code: { dataset, code } },
+              data: { wikidataId: hit.id as string, enrichment: hit },
+            });
+          }
+        } catch (err) {
+          // best-effort enrichment; ignore failures
+          server.log.warn({ err, kind, code, name }, "wikidata enrichment failed");
+        }
+      }
+
+      enriched.push({ ...row, wikidataId: record.wikidataId ?? null, enrichment: record.enrichment ?? null });
+    }
+    return enriched;
+  };
+
   // ESR reference endpoints
   server.get("/usda/esr/regions", auth, async (request) => {
     const payload = await fetchAndCache(prisma, "esr", "/api/esr/regions", undefined, { maxAgeMinutes: DEFAULT_MAX_AGE_MINUTES });
+    const enriched = await enrichReference("region", "esr", payload);
     await recordTelemetry(request, { eventType: "usda.esr.regions.fetch", source: "api" });
-    return payload;
+    return enriched;
   });
 
   server.get("/usda/esr/countries", auth, async (request) => {
     const payload = await fetchAndCache(prisma, "esr", "/api/esr/countries", undefined, { maxAgeMinutes: DEFAULT_MAX_AGE_MINUTES });
+    const enriched = await enrichReference("country", "esr", payload);
     await recordTelemetry(request, { eventType: "usda.esr.countries.fetch", source: "api" });
-    return payload;
+    return enriched;
   });
 
   server.get("/usda/esr/commodities", auth, async (request) => {
     const payload = await fetchAndCache(prisma, "esr", "/api/esr/commodities", undefined, { maxAgeMinutes: DEFAULT_MAX_AGE_MINUTES });
+    const enriched = await enrichReference("commodity", "esr", payload);
     await recordTelemetry(request, { eventType: "usda.esr.commodities.fetch", source: "api" });
-    return payload;
+    return enriched;
   });
 
   server.get("/usda/esr/units", auth, async (request) => {

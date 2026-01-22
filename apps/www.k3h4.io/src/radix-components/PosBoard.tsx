@@ -32,9 +32,9 @@ export function PosBoard() {
                 baseUrl: useAuthStore.getState().apiBase,
                 schema: z.any(),
                 body: {
-                    store: ticketStore || "Store",
+                    storeName: ticketStore || "Demo Store",
                     channel: ticketChannel || "dine-in",
-                    amount: ticketAmount || "0",
+                    total: ticketAmount || "0",
                 },
             });
             setTicketStatus("Ticket created");

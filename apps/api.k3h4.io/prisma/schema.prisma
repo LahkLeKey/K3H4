@@ -1046,6 +1046,8 @@ model UsdaRegion {
   dataset   String
   code      String
   name      String?
+  wikidataId String?
+  enrichment Json?
   extra     Json?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -1060,6 +1062,8 @@ model UsdaCountry {
   code       String
   name       String?
   regionCode String?
+  wikidataId String?
+  enrichment Json?
   extra      Json?
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
@@ -1073,6 +1077,8 @@ model UsdaCommodity {
   dataset   String
   code      String
   name      String?
+  wikidataId String?
+  enrichment Json?
   extra     Json?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
