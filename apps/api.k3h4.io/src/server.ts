@@ -119,6 +119,25 @@ const coerceDurationMs = (val: unknown) => {
   return Math.round(clamped);
 };
 
+const TELEMETRY_MAX_EVENTS = 2000;
+const TELEMETRY_PRUNE_BATCH = 200; // trim in small batches to avoid large deletes
+
+const pruneTelemetry = async () => {
+  const staleEvents = await prisma.telemetryEvent.findMany({
+    select: { id: true },
+    orderBy: [
+      { createdAt: "desc" },
+      { id: "desc" },
+    ],
+    skip: TELEMETRY_MAX_EVENTS,
+    take: TELEMETRY_PRUNE_BATCH,
+  });
+
+  if (!staleEvents.length) return;
+
+  await prisma.telemetryEvent.deleteMany({ where: { id: { in: staleEvents.map((event) => event.id) } } });
+};
+
 const recordTelemetry = async (
   request: FastifyRequest,
   params: {
@@ -132,11 +151,12 @@ const recordTelemetry = async (
     error?: boolean;
   },
 ) => {
+  const sessionId = params.sessionId ?? getSessionId(request);
+  const userId = params.userId ?? (request.user as { sub?: string } | undefined)?.sub;
+  const durationMs = coerceDurationMs(params.durationMs);
+  const error = params.error === true;
+
   try {
-    const sessionId = params.sessionId ?? getSessionId(request);
-    const userId = params.userId ?? (request.user as { sub?: string } | undefined)?.sub;
-    const durationMs = coerceDurationMs(params.durationMs);
-    const error = params.error === true;
     await prisma.telemetryEvent.create({
       data: {
         sessionId,
@@ -151,6 +171,13 @@ const recordTelemetry = async (
     });
   } catch (err) {
     request.log.warn({ err }, "telemetry insert failed");
+    return;
+  }
+
+  try {
+    await pruneTelemetry();
+  } catch (err) {
+    request.log.warn({ err }, "telemetry prune failed");
   }
 };
 
