@@ -24,22 +24,40 @@ export function registerUsdaRoutes(server: FastifyInstance, prisma: PrismaClient
   const auth = { preHandler: [server.authenticate] };
 
   const enrichReference = async (
-    kind: "region" | "country" | "commodity",
+    kind: "region" | "country" | "commodity" | "unit" | "attribute",
     dataset: "esr" | "gats" | "psd",
     items: any,
   ) => {
     if (!Array.isArray(items)) return items;
     const repo =
-      kind === "region" ? prisma.usdaRegion : kind === "country" ? prisma.usdaCountry : prisma.usdaCommodity;
+      kind === "region"
+        ? prisma.usdaRegion
+        : kind === "country"
+          ? prisma.usdaCountry
+          : kind === "commodity"
+            ? prisma.usdaCommodity
+            : kind === "unit"
+              ? prisma.usdaUnit
+              : prisma.usdaCommodityAttribute;
 
     const normalize = (item: any) => {
       const code =
-        item.code ?? item.regionCode ?? item.countryCode ?? item.commodityCode ?? item.Code ?? item.codeId ?? null;
+        item.code ??
+        item.regionCode ??
+        item.countryCode ??
+        item.commodityCode ??
+        item.unitCode ??
+        item.attributeCode ??
+        item.Code ??
+        item.codeId ??
+        null;
       const name =
         item.name ??
         item.regionName ??
         item.countryName ??
         item.commodityName ??
+        item.unitName ??
+        item.attributeName ??
         item.description ??
         item.Name ??
         null;
@@ -62,16 +80,45 @@ export function registerUsdaRoutes(server: FastifyInstance, prisma: PrismaClient
 
       if (!record.wikidataId && name) {
         try {
-          const search = await fetchWikidataWithCache(prisma, "/wikidata/v1/search/items", { q: name, limit: 1 }, {
+          const query = code ? `${name} ${code}` : name;
+          const search = await fetchWikidataWithCache(prisma, "/wikidata/search/items", { q: query, limit: 1 }, {
             resource: "usda-wikidata",
             maxAgeMinutes: 24 * 60,
           });
           const payload = search.payload as any;
           const hit = payload?.search?.[0] ?? payload?.items?.[0];
           if (hit?.id) {
+            const propertyWhitelist: Record<typeof kind, string[]> = {
+              region: ["P17", "P1082"],
+              country: ["P17", "P36", "P1082"],
+              commodity: ["P495", "P279"],
+              unit: ["P558", "P1686"],
+              attribute: ["P279", "P31"],
+            } as const;
+
+            let statements: any = null;
+            const props = propertyWhitelist[kind];
+            if (props && props.length > 0) {
+              try {
+                const stmt = await fetchWikidataWithCache(prisma, `/wikidata/items/${hit.id}/statements`, undefined, {
+                  resource: "usda-wikidata-statements",
+                  maxAgeMinutes: 24 * 60,
+                });
+                const payloadStmt: any = stmt.payload;
+                const filtered: Record<string, any> = {};
+                props.forEach((p) => {
+                  const val = payloadStmt?.statements?.[p] ?? payloadStmt?.[p];
+                  if (val) filtered[p] = val;
+                });
+                statements = filtered;
+              } catch (err) {
+                server.log.warn({ err, kind, code, name, hitId: hit.id }, "wikidata statements fetch failed");
+              }
+            }
+
             record = await repo.update({
               where: { dataset_code: { dataset, code } },
-              data: { wikidataId: hit.id as string, enrichment: hit },
+              data: { wikidataId: hit.id as string, enrichment: { hit, statements: statements ?? undefined } },
             });
           }
         } catch (err) {
@@ -82,6 +129,7 @@ export function registerUsdaRoutes(server: FastifyInstance, prisma: PrismaClient
 
       enriched.push({ ...row, wikidataId: record.wikidataId ?? null, enrichment: record.enrichment ?? null });
     }
+    server.log.info({ kind, dataset, total: items.length, enriched: enriched.filter((e) => e.wikidataId).length }, "usda enrichment");
     return enriched;
   };
 
@@ -170,26 +218,30 @@ export function registerUsdaRoutes(server: FastifyInstance, prisma: PrismaClient
   // GATS reference endpoints
   server.get("/usda/gats/regions", auth, async (request) => {
     const payload = await fetchAndCache(prisma, "gats", "/api/gats/regions", undefined, { maxAgeMinutes: DEFAULT_MAX_AGE_MINUTES });
+    const enriched = await enrichReference("region", "gats", payload);
     await recordTelemetry(request, { eventType: "usda.gats.regions.fetch", source: "api" });
-    return payload;
+    return enriched;
   });
 
   server.get("/usda/gats/countries", auth, async (request) => {
     const payload = await fetchAndCache(prisma, "gats", "/api/gats/countries", undefined, { maxAgeMinutes: DEFAULT_MAX_AGE_MINUTES });
+    const enriched = await enrichReference("country", "gats", payload);
     await recordTelemetry(request, { eventType: "usda.gats.countries.fetch", source: "api" });
-    return payload;
+    return enriched;
   });
 
   server.get("/usda/gats/commodities", auth, async (request) => {
     const payload = await fetchAndCache(prisma, "gats", "/api/gats/commodities", undefined, { maxAgeMinutes: DEFAULT_MAX_AGE_MINUTES });
+    const enriched = await enrichReference("commodity", "gats", payload);
     await recordTelemetry(request, { eventType: "usda.gats.commodities.fetch", source: "api" });
-    return payload;
+    return enriched;
   });
 
   server.get("/usda/gats/hs6-commodities", auth, async (request) => {
     const payload = await fetchAndCache(prisma, "gats", "/api/gats/HS6Commodities", undefined, { maxAgeMinutes: DEFAULT_MAX_AGE_MINUTES });
+    const enriched = await enrichReference("commodity", "gats", payload);
     await recordTelemetry(request, { eventType: "usda.gats.hs6.fetch", source: "api" });
-    return payload;
+    return enriched;
   });
 
   server.get("/usda/gats/units", auth, async (request) => {
@@ -325,32 +377,37 @@ export function registerUsdaRoutes(server: FastifyInstance, prisma: PrismaClient
 
   server.get("/usda/psd/regions", auth, async (request) => {
     const payload = await fetchAndCache(prisma, "psd", "/api/psd/regions", undefined, { maxAgeMinutes: DEFAULT_MAX_AGE_MINUTES });
+    const enriched = await enrichReference("region", "psd", payload);
     await recordTelemetry(request, { eventType: "usda.psd.regions.fetch", source: "api" });
-    return payload;
+    return enriched;
   });
 
   server.get("/usda/psd/countries", auth, async (request) => {
     const payload = await fetchAndCache(prisma, "psd", "/api/psd/countries", undefined, { maxAgeMinutes: DEFAULT_MAX_AGE_MINUTES });
+    const enriched = await enrichReference("country", "psd", payload);
     await recordTelemetry(request, { eventType: "usda.psd.countries.fetch", source: "api" });
-    return payload;
+    return enriched;
   });
 
   server.get("/usda/psd/commodities", auth, async (request) => {
     const payload = await fetchAndCache(prisma, "psd", "/api/psd/commodities", undefined, { maxAgeMinutes: DEFAULT_MAX_AGE_MINUTES });
+    const enriched = await enrichReference("commodity", "psd", payload);
     await recordTelemetry(request, { eventType: "usda.psd.commodities.fetch", source: "api" });
-    return payload;
+    return enriched;
   });
 
   server.get("/usda/psd/units", auth, async (request) => {
     const payload = await fetchAndCache(prisma, "psd", "/api/psd/unitsOfMeasure", undefined, { maxAgeMinutes: DEFAULT_MAX_AGE_MINUTES });
+    const enriched = await enrichReference("unit", "psd", payload);
     await recordTelemetry(request, { eventType: "usda.psd.units.fetch", source: "api" });
-    return payload;
+    return enriched;
   });
 
   server.get("/usda/psd/commodity-attributes", auth, async (request) => {
     const payload = await fetchAndCache(prisma, "psd", "/api/psd/commodityAttributes", undefined, { maxAgeMinutes: DEFAULT_MAX_AGE_MINUTES });
+    const enriched = await enrichReference("attribute", "psd", payload);
     await recordTelemetry(request, { eventType: "usda.psd.attributes.fetch", source: "api" });
-    return payload;
+    return enriched;
   });
 
   server.get("/usda/psd/commodity/all-countries", auth, async (request, reply) => {

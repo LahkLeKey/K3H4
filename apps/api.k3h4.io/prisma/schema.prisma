@@ -1092,6 +1092,8 @@ model UsdaUnit {
   dataset   String
   code      String
   name      String?
+  wikidataId String?
+  enrichment Json?
   extra     Json?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -1112,6 +1114,21 @@ model UsdaRelease {
 
   @@unique([dataset, scope])
   @@index([dataset, releasedOn])
+}
+
+model UsdaCommodityAttribute {
+  id        String   @id @default(cuid())
+  dataset   String
+  code      String
+  name      String?
+  wikidataId String?
+  enrichment Json?
+  extra     Json?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([dataset, code])
+  @@index([dataset])
 }
 
 model UsdaCacheEntry {
