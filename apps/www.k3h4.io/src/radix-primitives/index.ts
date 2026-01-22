@@ -35,3 +35,5 @@ export * from "./PoiDetailCard";
 export * from "./MapStatusOverlay";
 export * from "./MapLocateButton";
 export * from "./PoiErrorBanner";
+export * from "./Sparkline";
+export * from "./Histogram";
