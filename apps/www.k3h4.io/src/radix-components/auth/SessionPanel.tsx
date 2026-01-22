@@ -1,8 +1,8 @@
 import { useMemo, useState } from "react";
 
-import { useAuthStore, type Session } from "../react-hooks/auth";
-import { useGeoState } from "../zustand-stores/geo";
-import { ExploreBar } from "../radix-primitives/ExploreBar";
+import { useAuthStore, type Session } from "../../react-hooks/auth";
+import { useGeoState } from "../../zustand-stores/geo";
+import { ExploreBar } from "../../radix-primitives/ExploreBar";
 
 type Decoded = {
     sub?: string;
