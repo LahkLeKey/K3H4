@@ -54,7 +54,9 @@ export function StarfieldLayout({
 
             <div className="relative z-10 flex min-h-screen flex-col">
                 {showHeader ? <PageHeader className="sticky top-0 z-20" /> : null}
-                <main className={contentClassName}>{children}</main>
+                <R3FErrorBoundary>
+                    <main className={contentClassName}>{children}</main>
+                </R3FErrorBoundary>
             </div>
         </div>
     );

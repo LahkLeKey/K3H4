@@ -1,3 +1,4 @@
+import { Children, isValidElement } from "react";
 import type { ComponentPropsWithoutRef, ReactNode } from "react";
 import * as RadixSelect from "@radix-ui/react-select";
 
@@ -5,22 +6,60 @@ export type SelectProps = ComponentPropsWithoutRef<typeof RadixSelect.Root> & {
     placeholder?: ReactNode;
     contentClassName?: string;
     triggerClassName?: string;
+    // Keep compatibility with native <select> usage in callers
+    onChange?: (event: { target: { value: string } }) => void;
 };
 
 const baseTrigger = "inline-flex w-full items-center justify-between gap-2 rounded-xl border border-white/15 bg-slate-950/70 px-3 py-2 text-sm text-slate-100 shadow-sm backdrop-blur transition hover:border-white/30 focus:outline-none focus:ring-2 focus:ring-emerald-300/60 focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed";
 const baseContent = "z-50 min-w-[180px] overflow-hidden rounded-xl border border-white/10 bg-slate-900/95 text-sm text-slate-100 shadow-2xl backdrop-blur";
 const baseItem = "flex cursor-pointer select-none items-center gap-2 px-3 py-2 text-sm text-slate-100 outline-none transition data-[highlighted]:bg-white/10 data-[state=checked]:text-emerald-200";
 
-export function Select({ children, placeholder, contentClassName = "", triggerClassName = "", ...props }: SelectProps) {
+export function Select({
+    children,
+    placeholder,
+    contentClassName = "",
+    triggerClassName = "",
+    onValueChange,
+    onChange,
+    value,
+    defaultValue,
+    ...props
+}: SelectProps) {
+    const handleValueChange = (next: string) => {
+        onValueChange?.(next);
+        onChange?.({ target: { value: next } });
+    };
+
+    const rendered = Children.map(children, (child) => {
+        if (!isValidElement(child)) return child;
+        if (child.type === "option") {
+            const valueProp = (child.props as any).value ?? "";
+            const disabled = Boolean((child.props as any).disabled);
+            const label = child.props.children ?? String(valueProp);
+            return (
+                <RadixSelect.Item value={valueProp} disabled={disabled} className={baseItem}>
+                    <RadixSelect.ItemIndicator className="text-emerald-300">•</RadixSelect.ItemIndicator>
+                    <RadixSelect.ItemText>{label}</RadixSelect.ItemText>
+                </RadixSelect.Item>
+            );
+        }
+        return child;
+    });
+
     return (
-        <RadixSelect.Root {...props}>
+        <RadixSelect.Root
+            {...props}
+            value={value}
+            defaultValue={defaultValue}
+            onValueChange={handleValueChange}
+        >
             <RadixSelect.Trigger className={`${baseTrigger} ${triggerClassName}`.trim()}>
                 <RadixSelect.Value placeholder={placeholder} />
                 <RadixSelect.Icon aria-hidden>▾</RadixSelect.Icon>
             </RadixSelect.Trigger>
             <RadixSelect.Portal>
                 <RadixSelect.Content className={`${baseContent} ${contentClassName}`.trim()} position="popper" sideOffset={8}>
-                    <RadixSelect.Viewport className="p-1">{children}</RadixSelect.Viewport>
+                    <RadixSelect.Viewport className="p-1">{rendered}</RadixSelect.Viewport>
                 </RadixSelect.Content>
             </RadixSelect.Portal>
         </RadixSelect.Root>

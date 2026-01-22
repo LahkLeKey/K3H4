@@ -1,4 +1,4 @@
-import { Select } from "../../radix-primitives";
+import { Select, SelectItem } from "../../radix-primitives";
 import type { TableColumn } from "../../components/ui";
 import type { Persona } from "../../zustand-stores/persona";
 import { Badge, Button, Card, Grid, Input, Pill, SectionHeader, Stack, Surface, Table, Textarea } from "../../components/ui";
@@ -88,8 +88,8 @@ export function PersonaRosterTab({
                     className="min-w-[220px]"
                 />
                 <Select value={sortKey} onChange={(e) => onSortKeyChange(e.target.value as "alias" | "attributes")}>
-                    <option value="attributes">Sort by attributes</option>
-                    <option value="alias">Sort by alias</option>
+                    <SelectItem value="attributes">Sort by attributes</SelectItem>
+                    <SelectItem value="alias">Sort by alias</SelectItem>
                 </Select>
                 {error ? <span className="text-amber-300">{error}</span> : null}
             </Stack>

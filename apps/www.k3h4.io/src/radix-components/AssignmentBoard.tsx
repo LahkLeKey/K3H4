@@ -1,9 +1,13 @@
 import { useEffect, useMemo, useState } from "react";
 
 import { Badge, Button, Card, Input, StatChip, Table } from "../components/ui";
+import { Select, SelectItem } from "../radix-primitives";
 import { useAuthStore } from "../zustand-stores/auth";
 import { useAssignmentState } from "../react-hooks/assignments";
 import { usePersonaState } from "../react-hooks/persona";
+
+const emptySelectValue = "__empty";
+const normalizeEmpty = (value: string) => (value === emptySelectValue ? "" : value);
 
 export function AssignmentBoard() {
     const { session } = useAuthStore();
@@ -47,18 +51,18 @@ export function AssignmentBoard() {
                 <div className="grid gap-3 md:grid-cols-4">
                     <Input placeholder="Title" value={title} onChange={(e) => setTitle(e.target.value)} />
                     <Input placeholder="Hourly rate" value={rate} onChange={(e) => setRate(e.target.value)} />
-                    <select
-                        className="rounded-xl border border-white/10 bg-slate-900 px-3 py-2 text-sm text-slate-100"
-                        value={personaId}
-                        onChange={(e) => setPersonaId(e.target.value)}
+                    <Select
+                        value={personaId || emptySelectValue}
+                        placeholder="Select persona"
+                        onChange={(e) => setPersonaId(normalizeEmpty(e.target.value))}
                     >
-                        <option value="">Select persona</option>
+                        <SelectItem value={emptySelectValue}>Select persona</SelectItem>
                         {personaOptions.map((p) => (
-                            <option key={p.id} value={p.id}>
+                            <SelectItem key={p.id} value={p.id}>
                                 {p.label}
-                            </option>
+                            </SelectItem>
                         ))}
-                    </select>
+                    </Select>
                     <Button
                         accent="#22c55e"
                         disabled={disabled || !title.trim() || !personaId}

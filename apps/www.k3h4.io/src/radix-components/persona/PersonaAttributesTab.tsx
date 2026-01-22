@@ -1,4 +1,4 @@
-import { Select } from "../../radix-primitives";
+import { Select, SelectItem } from "../../radix-primitives";
 import { Button, FormField, Grid, Pill, Stack, Textarea } from "../../components/ui";
 
 export type PersonaOption = { value: string; label: string };
@@ -13,6 +13,9 @@ export type PersonaAttributesTabProps = {
     onSave: () => void;
 };
 
+const emptySelectValue = "__empty";
+const normalizeEmpty = (value: string) => (value === emptySelectValue ? "" : value);
+
 export function PersonaAttributesTab({
     personaOptions,
     selectedPersonaId,
@@ -26,14 +29,16 @@ export function PersonaAttributesTab({
         <Grid gap="md" mdCols={3}>
             <Stack gap="sm">
                 <FormField label="Persona" hint="Replace all attributes for the selected persona.">
-                    <Select value={selectedPersonaId || ""} onChange={(e) => onSelectPersona(e.target.value)}>
-                        <option value="" disabled>
-                            Select persona
-                        </option>
+                    <Select
+                        value={selectedPersonaId || emptySelectValue}
+                        placeholder="Select persona"
+                        onChange={(e) => onSelectPersona(normalizeEmpty(e.target.value))}
+                    >
+                        <SelectItem value={emptySelectValue}>Select persona</SelectItem>
                         {personaOptions.map((opt) => (
-                            <option key={opt.value} value={opt.value}>
+                            <SelectItem key={opt.value} value={opt.value}>
                                 {opt.label}
-                            </option>
+                            </SelectItem>
                         ))}
                     </Select>
                 </FormField>

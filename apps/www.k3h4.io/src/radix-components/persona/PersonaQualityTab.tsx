@@ -1,4 +1,4 @@
-import { Select } from "../../radix-primitives";
+import { Select, SelectItem } from "../../radix-primitives";
 import { Button, FormField, Grid, Input, Pill, Stack, Surface } from "../../components/ui";
 import type { PersonaConfusionResult } from "../../zustand-stores/persona";
 import type { PairRow } from "../../zustand-stores/persona-dashboard";
@@ -21,6 +21,9 @@ export type PersonaQualityTabProps = {
     onAddPair: () => void;
     onUpdatePairRow: (id: string, updates: Partial<PairRow>) => void;
 };
+
+const emptySelectValue = "__empty";
+const normalizeEmpty = (value: string) => (value === emptySelectValue ? "" : value);
 
 export function PersonaQualityTab({
     threshold,
@@ -80,27 +83,29 @@ export function PersonaQualityTab({
                         {pairRows.map((row) => (
                             <Surface key={row.id} radius="xl" padding="sm" className="grid grid-cols-5 items-center gap-2 text-sm text-white">
                                 <Select
-                                    value={row.sourceId || ""}
-                                    onChange={(e) => onUpdatePairRow(row.id, { sourceId: e.target.value })}
+                                    value={row.sourceId || emptySelectValue}
+                                    placeholder="Source"
+                                    onChange={(e) => onUpdatePairRow(row.id, { sourceId: normalizeEmpty(e.target.value) })}
                                     className="col-span-2"
                                 >
-                                    <option value="">Source</option>
+                                    <SelectItem value={emptySelectValue}>Source</SelectItem>
                                     {personaOptions.map((opt) => (
-                                        <option key={`s-${opt.value}`} value={opt.value}>
+                                        <SelectItem key={`s-${opt.value}`} value={opt.value}>
                                             {opt.label}
-                                        </option>
+                                        </SelectItem>
                                     ))}
                                 </Select>
                                 <Select
-                                    value={row.targetId || ""}
-                                    onChange={(e) => onUpdatePairRow(row.id, { targetId: e.target.value })}
+                                    value={row.targetId || emptySelectValue}
+                                    placeholder="Target"
+                                    onChange={(e) => onUpdatePairRow(row.id, { targetId: normalizeEmpty(e.target.value) })}
                                     className="col-span-2"
                                 >
-                                    <option value="">Target</option>
+                                    <SelectItem value={emptySelectValue}>Target</SelectItem>
                                     {personaOptions.map((opt) => (
-                                        <option key={`t-${opt.value}`} value={opt.value}>
+                                        <SelectItem key={`t-${opt.value}`} value={opt.value}>
                                             {opt.label}
-                                        </option>
+                                        </SelectItem>
                                     ))}
                                 </Select>
                                 <label className="flex items-center gap-2 text-xs text-slate-200">
