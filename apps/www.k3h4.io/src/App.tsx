@@ -9,6 +9,7 @@ import { useAuthStore } from "./react-hooks/auth";
 import { PersonaPage } from "./pages/PersonaPage";
 import { LogisticsPage } from "./pages/LogisticsPage";
 import { StorefrontsPage } from "./pages/StorefrontsPage";
+import { EnginePage } from "./pages/EnginePage";
 
 const queryClient = new QueryClient();
 
@@ -26,6 +27,7 @@ export default function App() {
                     <Route path="/logistics" element={session ? <LogisticsPage /> : <Navigate to="/" replace />} />
                     <Route path="/storefronts" element={session ? <StorefrontsPage /> : <Navigate to="/" replace />} />
                     <Route path="/telemetry" element={session ? <TelemetryPage /> : <Navigate to="/" replace />} />
+                    <Route path="/engine" element={session ? <EnginePage /> : <Navigate to="/" replace />} />
                     <Route path="/auth/*" element={<MapPage showNav={false} />} />
                     <Route path="*" element={<Navigate to="/" replace />} />
                 </Routes>
