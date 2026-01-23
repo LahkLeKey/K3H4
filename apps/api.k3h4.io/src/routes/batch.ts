@@ -89,13 +89,18 @@ type MaptilerResult = {
 
 const badRequest = (reply: FastifyReply, message: string) => reply.status(400).send({ error: message });
 
+type BatchRequestBody = {
+  ops?: BatchOp[];
+  warmOnly?: boolean;
+};
+
 export function registerBatchRoutes(server: FastifyInstance, prisma: PrismaClient, recordTelemetry: RecordTelemetryFn) {
   server.post(
     "/api/batch",
     { ...optionalAuth, rateLimit: { max: 120, timeWindow: "1 minute" } } as any,
     async (request: FastifyRequest, reply: FastifyReply) => {
       const rt = withTelemetryBase(recordTelemetry, request);
-      const body = request.body as { ops?: BatchOp[] } | undefined;
+      const body = request.body as BatchRequestBody | undefined;
       if (!body || !Array.isArray(body.ops) || body.ops.length === 0) return badRequest(reply, "ops array is required");
       if (body.ops.length > MAX_OPS) return badRequest(reply, `max ${MAX_OPS} ops`);
 
@@ -109,10 +114,11 @@ export function registerBatchRoutes(server: FastifyInstance, prisma: PrismaClien
       let maptilerCount = 0;
       let invalidOps = 0;
       let unsupportedOps = 0;
+      const warmOnly = body.warmOnly === true;
 
       const recordInvalidOp = async (id: string, raw: BatchOp | undefined, reason: string) => {
         const opName = typeof raw?.op === "string" ? raw.op : null;
-        const path = typeof raw?.path === "string" ? raw.path : null;
+        const path = raw && isMaptilerOp(raw) ? raw.path : null;
         await rt({
           eventType: "batch.invalid",
           source: "api",
@@ -129,9 +135,11 @@ export function registerBatchRoutes(server: FastifyInstance, prisma: PrismaClien
         durationMs: number,
       ) => {
         const eventType = raw.op === "maptiler.json" ? "batch.maptiler.json" : "batch.maptiler.tile";
+        const isError = !result.ok;
         await rt({
           eventType,
           source: "api",
+          error: isError,
           payload: {
             id,
             path: telemetryPath,
