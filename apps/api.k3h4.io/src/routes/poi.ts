@@ -25,6 +25,8 @@ const DEFAULT_LIMIT = 1500;
 const MAX_FETCH = 5000;
 const MAX_CLUSTER_IDS = 25;
 const VIEW_STALE_MINUTES = 45;
+const POI_LIST_CACHE_TTL_MS = 1000 * 45;
+const POI_LIST_STALE_MAX_MS = 1000 * 60 * 10;
 
 const clampZoom = (value: number | undefined) => {
   if (!Number.isFinite(value)) return 14;
@@ -204,60 +206,200 @@ export function registerPoiRoutes(server: FastifyInstance, prisma: PrismaClient,
     if (!bounds) return reply.status(400).send({ error: "bbox is required as minLon,minLat,maxLon,maxLat" });
 
     const zoom = clampZoom(Number((request.query as Record<string, unknown>).zoom));
+    const limitParam = Number((request.query as Record<string, unknown>).limit);
+    const normalizedLimit = Number.isFinite(limitParam) ? Math.trunc(limitParam) : DEFAULT_LIMIT;
+    const takeLimit = Math.max(1, Math.min(normalizedLimit, MAX_FETCH));
+    const cacheSignature = `poi.list:${viewSignature(bounds, zoom)}:limit=${takeLimit}`;
+    const now = new Date();
 
     const where = {
       latitude: { gte: bounds.minLat, lte: bounds.maxLat },
       longitude: { gte: bounds.minLng, lte: bounds.maxLng },
     };
+    const cachedQuery = await prisma.geoQueryCache.findFirst({
+      where: { signature: cacheSignature, type: "poi.list" },
+      orderBy: { expiresAt: "desc" },
+    });
 
-    const loadPois = async () => {
+    const cachedPayload = cachedQuery?.payload as
+      | {
+          items?: any[];
+          total?: number;
+          returned?: number;
+          clustered?: boolean;
+          bbox?: Bbox;
+          zoom?: number;
+          etag?: string;
+        }
+      | undefined;
+
+    const cacheAgeMs = cachedQuery?.expiresAt ? now.getTime() - new Date(cachedQuery.expiresAt).getTime() : null;
+    const hasFreshCache = cachedQuery?.expiresAt && cachedQuery.expiresAt > now;
+    const hasStaleCache = !hasFreshCache && cachedPayload && cacheAgeMs !== null && cacheAgeMs <= POI_LIST_STALE_MAX_MS;
+
+    const refreshCache = async (allowOverpass: boolean) => {
       const total = await prisma.poi.count({ where });
-      const limit = Number((request.query as Record<string, unknown>).limit);
-      const normalizedLimit = Number.isFinite(limit) ? Math.trunc(limit) : DEFAULT_LIMIT;
-      const take = total === 0 ? 0 : Math.max(1, Math.min(normalizedLimit, MAX_FETCH, total));
-      const pois = await prisma.poi.findMany({
-        where,
-        orderBy: { updatedAt: "desc" },
-        take,
-        select: { id: true, osmId: true, osmType: true, name: true, category: true, latitude: true, longitude: true, updatedAt: true },
+      const take = total === 0 ? 0 : Math.min(takeLimit, total);
+      const pois = take
+        ? await prisma.poi.findMany({
+            where,
+            orderBy: { updatedAt: "desc" },
+            take,
+            select: { id: true, osmId: true, osmType: true, name: true, category: true, latitude: true, longitude: true, updatedAt: true },
+          })
+        : [];
+
+      const markers: PoiMarker[] = pois.map((poi) => ({
+        id: poi.id,
+        osmId: poi.osmId.toString(),
+        osmType: poi.osmType,
+        name: poi.name,
+        category: poi.category,
+        lat: Number(poi.latitude),
+        lng: Number(poi.longitude),
+        updatedAt: poi.updatedAt.toISOString(),
+      }));
+
+      const { items, clustered } = clusterize(markers, zoom);
+      const newest = pois[0]?.updatedAt ?? null;
+      const etagBase = `${bounds.minLat}:${bounds.minLng}:${bounds.maxLat}:${bounds.maxLng}:${zoom}:${total}:${newest?.getTime() ?? 0}`;
+      const etag = createHash("sha1").update(etagBase).digest("hex");
+      const payload = { items, total, returned: items.length, clustered, bbox: bounds, zoom, etag };
+      const expiresAt = new Date(Date.now() + POI_LIST_CACHE_TTL_MS);
+      const userId = (request.user as { sub?: string } | undefined)?.sub ?? null;
+
+      await prisma.geoQueryCache.upsert({
+        where: { signature: cacheSignature },
+        update: {
+          type: "poi.list",
+          params: { bbox: bounds, zoom, limit: takeLimit },
+          payload,
+          count: total,
+          expiresAt,
+          userId,
+        },
+        create: {
+          type: "poi.list",
+          signature: cacheSignature,
+          params: { bbox: bounds, zoom, limit: takeLimit },
+          payload,
+          count: total,
+          expiresAt,
+          userId,
+        },
       });
-      return { total, pois } as const;
+
+      if (total === 0 && allowOverpass) {
+        void coalesce(`overpass:${cacheSignature}`, async () => {
+          try {
+            const kinds = DEFAULT_KINDS;
+            const { body: overpassBody } = buildOverpassQuery(bounds, kinds);
+            const data = await enqueueOverpass(OVERPASS_URL, overpassBody, `pois:${cacheSignature}`);
+            const elements = Array.isArray((data as any)?.elements) ? ((data as any).elements as any[]) : [];
+            if (elements.length > 0) {
+              await upsertOverpassElements(prisma, elements, new Date());
+              await refreshCache(false);
+            }
+          } catch (err) {
+            request.log.warn({ err }, "overpass sync after empty poi result failed");
+          }
+        });
+      }
+
+      return payload;
     };
 
-    let { total, pois } = await loadPois();
+    if (hasFreshCache || hasStaleCache) {
+      const cachedItems = Array.isArray(cachedPayload?.items) ? cachedPayload?.items ?? [] : [];
+      const cachedTotal = typeof cachedPayload?.total === "number" ? cachedPayload.total : cachedQuery?.count ?? 0;
+      const cachedClustered = cachedPayload?.clustered === true;
+      const cachedEtag = typeof cachedPayload?.etag === "string" ? cachedPayload.etag : null;
 
-    if (total === 0) {
-      try {
-        const kinds = DEFAULT_KINDS;
-        const { body: overpassBody, signature: overpassSig } = buildOverpassQuery(bounds, kinds);
-        const data = await enqueueOverpass(OVERPASS_URL, overpassBody, overpassSig);
-        const elements = Array.isArray((data as any)?.elements) ? ((data as any).elements as any[]) : [];
-        if (elements.length > 0) {
-          await upsertOverpassElements(prisma, elements, new Date());
-          ({ total, pois } = await loadPois());
-        }
-      } catch (err) {
-        request.log.warn({ err }, "overpass sync after empty poi result failed");
+      if (cachedEtag && request.headers["if-none-match"] === cachedEtag) return reply.status(304).send();
+
+      if (cachedEtag) reply.header("ETag", cachedEtag);
+      reply.header("Cache-Control", "public, max-age=120, stale-while-revalidate=900");
+
+      if (hasStaleCache) {
+        void coalesce(cacheSignature, () => refreshCache(true));
       }
+
+      const userId = (request.user as { sub?: string } | undefined)?.sub ?? null;
+      if (userId) {
+        const now = new Date();
+        const sig = viewSignature(bounds, zoom);
+        const zoomBand = Math.round(zoom ?? 0);
+        const poiIds = cachedItems.filter((i) => !("cluster" in i && i.cluster)).map((i) => i.id).slice(0, 500);
+        const staleAfter = new Date(now.getTime() + VIEW_STALE_MINUTES * 60 * 1000);
+
+        const existingView = await prisma.geoViewHistory.findUnique({ where: { geo_view_user_signature: { userId, signature: sig } } });
+
+        await prisma.geoViewHistory.upsert({
+          where: { geo_view_user_signature: { userId, signature: sig } },
+          update: {
+            lastViewedAt: now,
+            viewCount: { increment: 1 },
+            lastPoiIds: poiIds,
+            lastPoiCount: cachedItems.length,
+            staleAfter,
+            zoomBand,
+          },
+          create: {
+            userId,
+            signature: sig,
+            zoomBand,
+            bboxMinLat: new Prisma.Decimal(bounds.minLat.toFixed(6)),
+            bboxMinLng: new Prisma.Decimal(bounds.minLng.toFixed(6)),
+            bboxMaxLat: new Prisma.Decimal(bounds.maxLat.toFixed(6)),
+            bboxMaxLng: new Prisma.Decimal(bounds.maxLng.toFixed(6)),
+            lastPoiIds: poiIds,
+            lastPoiCount: cachedItems.length,
+            firstViewedAt: now,
+            lastViewedAt: now,
+            staleAfter,
+            viewCount: 1,
+          },
+        });
+
+        const isStale = existingView?.staleAfter ? existingView.staleAfter < now : true;
+        if (isStale) {
+          void (async () => {
+            try {
+              const kinds = DEFAULT_KINDS;
+              const { body: overpassBody } = buildOverpassQuery(bounds, kinds);
+              const data = await enqueueOverpass(OVERPASS_URL, overpassBody, `pois:${sig}`);
+              const elements = Array.isArray(data?.elements) ? (data.elements as any[]) : [];
+              await upsertOverpassElements(prisma, elements, now);
+            } catch (err) {
+              request.log.debug({ err }, "stale poi refresh failed");
+            }
+          })();
+        }
+      }
+
+      await rt({
+        eventType: "poi.list",
+        source: "api",
+        payload: { zoom, total: cachedTotal, returned: cachedItems.length, clustered: cachedClustered, cache: hasFreshCache ? "hit" : "stale" },
+      });
+
+      return {
+        items: cachedItems,
+        total: cachedTotal,
+        returned: cachedItems.length,
+        clustered: cachedClustered,
+        bbox: cachedPayload?.bbox ?? bounds,
+        zoom: cachedPayload?.zoom ?? zoom,
+      };
     }
 
-    const markers: PoiMarker[] = pois.map((poi) => ({
-      id: poi.id,
-      osmId: poi.osmId.toString(),
-      osmType: poi.osmType,
-      name: poi.name,
-      category: poi.category,
-      lat: Number(poi.latitude),
-      lng: Number(poi.longitude),
-      updatedAt: poi.updatedAt.toISOString(),
-    }));
+    const payload = await coalesce(cacheSignature, () => refreshCache(true));
+    const items = Array.isArray(payload.items) ? payload.items : [];
+    const total = typeof payload.total === "number" ? payload.total : 0;
+    const clustered = payload.clustered === true;
+    const etag = typeof payload.etag === "string" ? payload.etag : "";
 
-    const { items, clustered } = clusterize(markers, zoom);
-    const newest = pois[0]?.updatedAt ?? null;
-    const etagBase = `${bounds.minLat}:${bounds.minLng}:${bounds.maxLat}:${bounds.maxLng}:${zoom}:${total}:${newest?.getTime() ?? 0}`;
-    const etag = createHash("sha1").update(etagBase).digest("hex");
-
-    if (request.headers["if-none-match"] === etag) return reply.status(304).send();
+    if (etag && request.headers["if-none-match"] === etag) return reply.status(304).send();
 
     reply.header("ETag", etag);
     reply.header("Cache-Control", "public, max-age=120, stale-while-revalidate=900");
@@ -315,7 +457,7 @@ export function registerPoiRoutes(server: FastifyInstance, prisma: PrismaClient,
       }
     }
 
-    await rt({ eventType: "poi.list", source: "api", payload: { zoom, total, returned: items.length, clustered } });
+    await rt({ eventType: "poi.list", source: "api", payload: { zoom, total, returned: items.length, clustered, cache: "miss" } });
 
     return {
       items,
