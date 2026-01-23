@@ -57,3 +57,10 @@ Deploy steps:
 1. `cd apps/api.k3h4.io`
 2. `fly deploy --remote-only --app api-k3h4-io`
 3. Attach domain: `fly certs add api.k3h4.dev --app api-k3h4-io` and point DNS (CNAME) to `api-k3h4-io.fly.dev`.
+
+## LLM sidecar
+
+- The repo now includes `sidecars/ollama`, which runs the official `ollama/ollama:latest` image as a sidecar for `api.k3h4.io`.
+- Docker Compose brings the sidecar up automatically and exposes it at `http://localhost:11434`. The Fastify server reads `OLLAMA_URL` (default `http://ollama:11434`) so you can exercise `/api/chat` locally without extra networking.
+- For Fly, deploy the sidecar app with `fly deploy --config sidecars/ollama/fly.toml --app api-k3h4-io-ollama`. The configuration currently targets a shared-cpu-1x slice with 2 GB of RAM.
+- Before deploying or running `fly secrets set`, point the API app to the sidecar over Fly’s internal network: `fly secrets set OLLAMA_URL=http://api-k3h4-io-ollama.internal:11434` (replace the host if you rename the sidecar app).

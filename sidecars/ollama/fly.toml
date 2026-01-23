@@ -1,0 +1,26 @@
+app = "api-k3h4-io-ollama"
+primary_region = "iad"
+
+[build]
+  image = "ollama/ollama:latest"
+
+[vm]
+  memory = "2048mb"
+  cpu_kind = "shared"
+  cpus = 1
+
+[env]
+  OLLAMA_HOST = "0.0.0.0"
+  OLLAMA_HTTP_PORT = "11434"
+
+[[services]]
+  internal_port = 11434
+  protocol = "tcp"
+  auto_stop_machines = true
+  auto_start_machines = true
+  min_machines_running = 0
+  max_machines_running = 1
+
+  [[services.ports]]
+    handlers = ["http"]
+    port = 11434
