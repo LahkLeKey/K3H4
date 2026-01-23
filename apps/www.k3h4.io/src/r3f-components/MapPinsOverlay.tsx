@@ -1,5 +1,5 @@
 import { Canvas, useFrame } from "@react-three/fiber";
-import { useLayoutEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import type maplibregl from "maplibre-gl";
 import * as THREE from "three";
 
@@ -42,9 +42,10 @@ function PinMesh({ color, phase }: { color: string; phase: number }) {
     );
 }
 
-export function MapPinsOverlay({ map, pois, frame }: { map: maplibregl.Map | null; pois: Poi[]; frame: number }) {
+export function MapPinsOverlay({ map, pois, frame, loading }: { map: maplibregl.Map | null; pois: Poi[]; frame: number; loading?: boolean }) {
     const [size, setSize] = useState<{ w: number; h: number }>({ w: 0, h: 0 });
     const phaseCache = useRef<Record<string, number>>({});
+    const fallbackPoisRef = useRef<Poi[]>([]);
 
     useLayoutEffect(() => {
         if (!map) return;
@@ -56,10 +57,22 @@ export function MapPinsOverlay({ map, pois, frame }: { map: maplibregl.Map | nul
         return () => ro.disconnect();
     }, [map]);
 
+    useEffect(() => {
+        if (pois.length) {
+            fallbackPoisRef.current = pois;
+            return;
+        }
+        if (!loading) {
+            fallbackPoisRef.current = [];
+        }
+    }, [loading, pois]);
+
+    const displayPois = loading && !pois.length && fallbackPoisRef.current.length ? fallbackPoisRef.current : pois;
+
     const projected = useMemo(() => {
         if (!map || !size.w || !size.h)
             return [] as Array<{ poi: Poi; x: number; y: number; color: string; phase: number; isCluster: boolean }>;
-        return pois
+        return displayPois
             .map((poi) => {
                 const p = map.project([poi.lng, poi.lat]);
                 const color = PIN_COLORS[poi.kind ?? ""] ?? "#e2e8f0";
@@ -68,7 +81,7 @@ export function MapPinsOverlay({ map, pois, frame }: { map: maplibregl.Map | nul
                 return { poi, x: p.x, y: p.y, color, phase: phaseCache.current[poi.id], isCluster };
             })
             .filter((p) => p.x >= -64 && p.x <= size.w + 64 && p.y >= -64 && p.y <= size.h + 64);
-    }, [frame, map, pois, size.h, size.w]);
+    }, [frame, map, pois, loading, size.h, size.w]);
 
     // No pins to display
     if (!map || !size.w || !size.h) return null;

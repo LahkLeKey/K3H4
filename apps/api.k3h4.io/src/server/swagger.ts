@@ -80,9 +80,9 @@ export const buildOpenApiOptions = (resolveServerUrl: () => string): SwaggerOpti
         "API for K3H4 services. To authorize, sign in at https://www.k3h4.dev (or the dev frontend), open devtools > Application > Local Storage, and copy the value of k3h4.accessToken. Paste the token in Authorize; the UI will send it as a Bearer token automatically.",
       version: "0.1.0",
       contact: {
-        name: "K3H4 Platform",
+        name: "Contact Kyle",
         url: "https://www.k3h4.dev",
-        email: "support@k3h4.dev",
+        email: "Zephrym.MN@gmail.com",
       },
       license: {
         name: "MIT",
