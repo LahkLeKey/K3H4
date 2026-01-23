@@ -273,23 +273,47 @@ export function registerBatchRoutes(server: FastifyInstance, prisma: PrismaClien
         }
       };
 
-      for (let i = 0; i < maptilerTasks.length; i += MAPTILER_CONCURRENCY) {
-        const chunk = maptilerTasks.slice(i, i + MAPTILER_CONCURRENCY);
-        await Promise.all(chunk.map(executeMaptilerTask));
+      const summaryPayload = {
+        total: body.ops.length,
+        maptiler: maptilerCount,
+        invalid: invalidOps,
+        unsupported: unsupportedOps,
+      };
+
+      const runBatch = async () => {
+        for (let i = 0; i < maptilerTasks.length; i += MAPTILER_CONCURRENCY) {
+          const chunk = maptilerTasks.slice(i, i + MAPTILER_CONCURRENCY);
+          await Promise.all(chunk.map(executeMaptilerTask));
+        }
+        return results;
+      };
+
+      if (warmOnly) {
+        void (async () => {
+          try {
+            await runBatch();
+          } catch (err) {
+            request.log.error({ err }, "batch prewarm background failed");
+          }
+        })();
+
+        await rt({
+          eventType: "batch.summary",
+          source: "api",
+          payload: summaryPayload,
+        });
+
+        return reply.status(200).send({ ok: true, warming: true, summary: summaryPayload });
       }
 
+      const finalResults = await runBatch();
       await rt({
         eventType: "batch.summary",
         source: "api",
-        payload: {
-          total: body.ops.length,
-          maptiler: maptilerCount,
-          invalid: invalidOps,
-          unsupported: unsupportedOps,
-        },
+        payload: summaryPayload,
       });
 
-      return { ok: true, results };
+      return { ok: true, results: finalResults };
     },
   );
 }
