@@ -15,6 +15,8 @@ const PIN_COLORS: Record<string, string> = {
     train_station: "#0ea5e9",
 };
 
+const MAX_VISIBLE_PINS = 420;
+
 function PinMesh({ color, phase }: { color: string; phase: number }) {
     const groupRef = useRef<THREE.Group>(null);
 
@@ -72,7 +74,7 @@ export function MapPinsOverlay({ map, pois, frame, loading }: { map: maplibregl.
     const projected = useMemo(() => {
         if (!map || !size.w || !size.h)
             return [] as Array<{ poi: Poi; x: number; y: number; color: string; phase: number; isCluster: boolean }>;
-        return displayPois
+        const projectedPins = displayPois
             .map((poi) => {
                 const p = map.project([poi.lng, poi.lat]);
                 const color = PIN_COLORS[poi.kind ?? ""] ?? "#e2e8f0";
@@ -81,6 +83,19 @@ export function MapPinsOverlay({ map, pois, frame, loading }: { map: maplibregl.
                 return { poi, x: p.x, y: p.y, color, phase: phaseCache.current[poi.id], isCluster };
             })
             .filter((p) => p.x >= -64 && p.x <= size.w + 64 && p.y >= -64 && p.y <= size.h + 64);
+
+        if (projectedPins.length <= MAX_VISIBLE_PINS) return projectedPins;
+
+        const centerX = size.w / 2;
+        const centerY = size.h / 2;
+        return projectedPins
+            .map((entry) => ({
+                entry,
+                score: (entry.x - centerX) ** 2 + (entry.y - centerY) ** 2,
+            }))
+            .sort((a, b) => a.score - b.score)
+            .slice(0, MAX_VISIBLE_PINS)
+            .map(({ entry }) => entry);
     }, [frame, map, pois, loading, size.h, size.w]);
 
     // No pins to display
