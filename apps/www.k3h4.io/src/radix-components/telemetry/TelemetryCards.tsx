@@ -221,7 +221,7 @@ export function TelemetrySlowestEventsCard({ rows }: { rows: TelemetryEvent[] })
                                 render: (row) => fmtDuration(row.durationMs ?? undefined),
                             },
                             {
-                                key: "optimize" as const,
+                                key: "id" as const,
                                 label: "",
                                 render: (row) => {
                                     const prompt = buildOptimizePrompt(row);
