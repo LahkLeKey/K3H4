@@ -4,33 +4,18 @@ import { type RecordTelemetryFn, type TelemetryParams } from "../routes/types";
 import { normalizeDurationMs, warnOnSuspiciousDuration } from "../routes/telemetry";
 import { createTelemetryBuffer } from "../lib/telemetry-buffer";
 
-const TELEMETRY_MAX_EVENTS = 200;
-const TELEMETRY_PRUNE_BATCH = 32;
+const TELEMETRY_RETENTION_MS = 1000 * 60 * 30;
+let lastPruneAt = 0;
 
 const pruneTelemetry = async (prisma: PrismaClient) => {
-  const staleEvents = await prisma.telemetryEvent.findMany({
-    select: { id: true },
-    orderBy: [
-      { createdAt: "desc" },
-      { id: "desc" },
-    ],
-    skip: TELEMETRY_MAX_EVENTS,
-    take: TELEMETRY_PRUNE_BATCH,
-  });
-
-  if (!staleEvents.length) return;
-
-  await prisma.telemetryEvent.deleteMany({ where: { id: { in: staleEvents.map((event) => event.id) } } });
+  const cutoff = new Date(Date.now() - TELEMETRY_RETENTION_MS);
+  await prisma.telemetryEvent.deleteMany({ where: { createdAt: { lt: cutoff } } });
 };
 
-const TELEMETRY_PRUNE_FREQUENCY = TELEMETRY_PRUNE_BATCH * 2;
-
-let telemetryWritesSincePrune = 0;
-
 const maybeSchedulePrune = (prisma: PrismaClient, log: FastifyBaseLogger) => {
-  telemetryWritesSincePrune += 1;
-  if (telemetryWritesSincePrune < TELEMETRY_PRUNE_FREQUENCY) return;
-  telemetryWritesSincePrune = 0;
+  const now = Date.now();
+  if (now - lastPruneAt < TELEMETRY_RETENTION_MS) return;
+  lastPruneAt = now;
   void pruneTelemetry(prisma).catch((err) => log.warn({ err }, "telemetry prune failed"));
 };
 export const createTelemetryRecorder = (prisma: PrismaClient): RecordTelemetryFn => {
