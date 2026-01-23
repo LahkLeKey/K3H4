@@ -2,7 +2,8 @@ app = "api-k3h4-io-ollama"
 primary_region = "iad"
 
 [build]
-  image = "ollama/ollama:latest"
+  dockerfile = "Dockerfile"
+  context = "."
 
 [vm]
   memory = "2048mb"

@@ -14,6 +14,11 @@ This folder packages the Ollama HTTP server that runs alongside `api.k3h4.io` in
 - Deploy with `fly deploy --config sidecars/ollama/fly.toml --app api-k3h4-io-ollama`. The Fly config relies on the image’s default `ollama serve` entrypoint while the env var `OLLAMA_HTTP_PORT=11434` keeps the HTTP service on the expected port, so Fastify can reach the sidecar at `http://api-k3h4-io-ollama.internal:11434`.
 - The API app should set `OLLAMA_URL=http://api-k3h4-io-ollama.internal:11434` (e.g. via `fly secrets set OLLAMA_URL=...` or your preferred vault) so requests route through the sidecar.
 
+## Preloading models
+
+- The sidecar image now wraps `ollama` with a tiny entrypoint script that pulls the models listed in `sidecars/ollama/preload-models.txt` before starting the HTTP server. The default file seeds `llama2`, `llama3`, and `llama3.1`, and the script is idempotent because `ollama pull` is a no-op when a model is already downloaded.
+- If you need a different curated set, either edit `preload-models.txt` (one model per line) or override the comma-separated environment variable `OLLAMA_PRELOAD_MODELS` (e.g. `OLLAMA_PRELOAD_MODELS="llama2,llama3.1"`) so the entrypoint pulls exactly what you want on boot.
+
 ## Scaling notes
 
 - The Fly VM is intentionally sized to 2 GB of RAM on a `shared-cpu-1x` slice. Increase `memory` here if usage grows (e.g., bump to 4 GB for heavier models).

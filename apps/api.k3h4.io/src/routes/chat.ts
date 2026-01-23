@@ -47,7 +47,9 @@ type SessionCreateBody = {
 const CHAT_HISTORY_LIMIT = clampNumber(Number(process.env.OLLAMA_CHAT_HISTORY_LIMIT ?? 32), 32, 8, 64);
 const DEFAULT_MODEL = "llama2";
 const DEFAULT_TEMPERATURE = clampFloat(Number(process.env.OLLAMA_CHAT_TEMPERATURE ?? NaN), 0.2, 0, 1);
-const OLLAMA_CHAT_URL = resolveOllamaChatUrl();
+const OLLAMA_BASE_URL = resolveOllamaBaseUrl();
+const OLLAMA_CHAT_URL = `${OLLAMA_BASE_URL}/api/chat`;
+const OLLAMA_MODELS_URL = `${OLLAMA_BASE_URL}/api/models`;
 
 export function registerChatRoutes(server: FastifyInstance, prisma: PrismaClient, recordTelemetry: RecordTelemetryFn) {
   const authenticate = server.authenticate;
@@ -83,6 +85,59 @@ export function registerChatRoutes(server: FastifyInstance, prisma: PrismaClient
         payload: { count: sessions.length, limit },
       });
       return { sessions: sessions.map(mapSessionSummary) };
+    },
+  );
+
+  server.get(
+    "/chat/models",
+    { preHandler: [authenticate] },
+    async (request, reply) => {
+      const telemetry = withTelemetryBase(recordTelemetry, request);
+      try {
+        const response = await fetch(OLLAMA_MODELS_URL, { method: "GET" });
+        const textPayload = await response.text();
+        if (!response.ok) {
+          throw new Error(textPayload || `Ollama responded ${response.status}`);
+        }
+        const payload = textPayload ? JSON.parse(textPayload) : {};
+        let entries: unknown[] = [];
+        if (Array.isArray(payload)) {
+          entries = payload;
+        } else {
+          const payloadRecord = payload as Record<string, unknown> | null;
+          if (payloadRecord && Array.isArray(payloadRecord.models)) {
+            entries = payloadRecord.models;
+          }
+        }
+        const names = Array.from(
+          new Set(
+            entries
+              .map((entry) => {
+                if (!entry) return "";
+                if (typeof entry === "string") return entry;
+                if (typeof entry === "object") {
+                  return (entry as Record<string, unknown>).name ?? (entry as Record<string, unknown>).model ?? "";
+                }
+                return "";
+              })
+              .filter((value): value is string => Boolean(value?.trim())),
+          ),
+        );
+        await telemetry({
+          eventType: "chat.models.list",
+          source: "chat",
+          payload: { count: names.length },
+        });
+        return { models: names };
+      } catch (err) {
+        await telemetry({
+          eventType: "chat.models.list",
+          source: "chat",
+          payload: { error: true },
+        });
+        request.log.error({ err }, "failed to list ollama models");
+        return reply.status(502).send({ error: err instanceof Error ? err.message : "Unable to list Ollama models" });
+      }
     },
   );
 
@@ -349,12 +404,12 @@ function clampFloat(value: number, fallback: number, min = 0, max = 1): number {
   return Math.max(min, Math.min(max, value));
 }
 
-function resolveOllamaChatUrl() {
+function resolveOllamaBaseUrl() {
   const base = process.env.OLLAMA_URL?.trim();
   if (!base) {
     throw new Error("OLLAMA_URL is required to reach the Ollama sidecar");
   }
-  return `${base.replace(/\/+$/, "")}/api/chat`;
+  return base.replace(/\/+$, "");
 }
 
 function deriveSessionTitle(message: string): string {

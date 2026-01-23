@@ -26,7 +26,9 @@ services:
       - ollama
 
   ollama:
-    image: ollama/ollama:latest
+    build:
+      context: ./sidecars/ollama
+      dockerfile: Dockerfile
     restart: unless-stopped
     environment:
       - OLLAMA_HOST=0.0.0.0
