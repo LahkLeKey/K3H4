@@ -3,6 +3,7 @@ import { type FastifyBaseLogger, type FastifyInstance, type FastifyReply, type F
 import { type RecordTelemetryFn, type TelemetryParams } from "../routes/types";
 import { normalizeDurationMs, warnOnSuspiciousDuration } from "../routes/telemetry";
 import { createTelemetryBuffer } from "../lib/telemetry-buffer";
+import { run } from "node:test";
 
 const MILLISECONDS_IN_SECOND = 1000;
 const SECONDS_IN_MINUTE = 60;
@@ -15,11 +16,23 @@ const pruneTelemetry = async (prisma: PrismaClient) => {
   await prisma.telemetryEvent.deleteMany({ where: { createdAt: { lt: cutoff } } });
 };
 
+const runPruneTelemetry = (prisma: PrismaClient, log: FastifyBaseLogger, reply: FastifyReply) => {
+  void pruneTelemetry(prisma).catch((err) => log.warn({ err }, "telemetry prune failed"));
+};
+
 const maybeSchedulePrune = (prisma: PrismaClient, log: FastifyBaseLogger) => {
   const now = Date.now();
+  // Prune during first telemetry call after fresh server start
+  if (lastPruneAt === 0) {
+    lastPruneAt = now;
+    runPruneTelemetry(prisma, log, null as any);
+    return;
+  };
+
+  // Prune per retention period
   if (now - lastPruneAt < TELEMETRY_RETENTION_MS) return;
   lastPruneAt = now;
-  void pruneTelemetry(prisma).catch((err) => log.warn({ err }, "telemetry prune failed"));
+  runPruneTelemetry(prisma, log, null as any);
 };
 export const createTelemetryRecorder = (prisma: PrismaClient): RecordTelemetryFn => {
   const bufferedTelemetry = createTelemetryBuffer(prisma);
