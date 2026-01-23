@@ -29,8 +29,9 @@ export function usePoiViewportSync(
         }, 80);
     }, [updatePoiViewport]);
 
+    const map = mapRef.current;
+
     useEffect(() => {
-        const map = mapRef.current;
         if (!map || readonly) return;
 
         const onMoveEnd = () => { scheduleUpdate(); };
@@ -45,5 +46,5 @@ export function usePoiViewportSync(
             map.off("zoomend", onMoveEnd);
             if (debounceRef.current) clearTimeout(debounceRef.current);
         };
-    }, [mapRef, readonly, scheduleUpdate, updatePoiViewport]);
+    }, [map, readonly, scheduleUpdate, updatePoiViewport]);
 }

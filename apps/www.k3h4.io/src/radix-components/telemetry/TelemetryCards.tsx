@@ -194,6 +194,12 @@ export function TelemetryWorstTypesCard({ rows }: { rows: WorstTypeRow[] }) {
 }
 
 export function TelemetrySlowestEventsCard({ rows }: { rows: TelemetryEvent[] }) {
+    const buildOptimizePrompt = (event: TelemetryEvent) => {
+        const duration = typeof event.durationMs === "number" ? Math.round(event.durationMs) : null;
+        const detail = duration ? `p95 ${duration} ms` : "duration unknown";
+        return `Optimize telemetry event type "${event.eventType}": ${detail}. Investigate payload size, batching, caching, or backend path.`;
+    };
+
     return (
         <Card title="Slowest recent events" actions={<span className="text-xs text-slate-400">Top 10</span>}>
             <Stack gap="sm" className="mt-2">
@@ -213,6 +219,23 @@ export function TelemetrySlowestEventsCard({ rows }: { rows: TelemetryEvent[] })
                                 key: "durationMs" as const,
                                 label: "Duration",
                                 render: (row) => fmtDuration(row.durationMs ?? undefined),
+                            },
+                            {
+                                key: "id" as const,
+                                label: "",
+                                render: (row) => {
+                                    const prompt = buildOptimizePrompt(row);
+                                    return (
+                                        <Button
+                                            accent="#22d3ee"
+                                            variant="subtle"
+                                            className="px-2 py-1 text-[11px]"
+                                            onClick={() => navigator.clipboard?.writeText(prompt)}
+                                        >
+                                            Copy optimize prompt
+                                        </Button>
+                                    );
+                                },
                             },
                         ]}
                         rows={rows}

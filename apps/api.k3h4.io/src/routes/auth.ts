@@ -20,6 +20,56 @@ type DeleteJobStatus = {
 const deletionJobs = new Map<string, DeleteJobStatus>();
 const linkedinStates = new Map<string, number>();
 
+type GitHubUserProfile = {
+  id?: number;
+  login?: string;
+  name?: string;
+  avatar_url?: string;
+  email?: string;
+  message?: string;
+};
+
+const wait = (duration: number) => new Promise<void>((resolve) => setTimeout(resolve, duration));
+
+const fetchGithubUserProfileWithRetry = async (
+  accessToken: string,
+  logger: FastifyInstance["log"],
+  maxAttempts = 3,
+  baseDelayMs = 400,
+): Promise<{ userRes: Response; ghUser: GitHubUserProfile }> => {
+  let lastResponse: Response | null = null;
+  let lastUser: GitHubUserProfile | null = null;
+
+  for (let attempt = 0; attempt < maxAttempts; attempt++) {
+    const userRes = await fetch("https://api.github.com/user", {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        Accept: "application/json",
+        "User-Agent": "k3h4-api",
+      },
+    });
+    const ghUser = (await userRes.json().catch(() => ({}))) as GitHubUserProfile;
+    lastResponse = userRes;
+    lastUser = ghUser;
+
+    const badCredentials = userRes.status === 401 && ghUser.message === "Bad credentials";
+    if (userRes.ok && ghUser.id) {
+      if (attempt > 0) {
+        logger.debug({ attempt: attempt + 1 }, "github user fetch succeeded after retry");
+      }
+      return { userRes, ghUser };
+    }
+    if (!badCredentials || attempt + 1 === maxAttempts) {
+      return { userRes, ghUser };
+    }
+
+    logger.debug({ attempt: attempt + 1 }, "github user fetch bad credentials, retrying");
+    await wait(baseDelayMs * (attempt + 1));
+  }
+
+  return { userRes: lastResponse!, ghUser: lastUser ?? ({} as GitHubUserProfile) };
+};
+
 const createState = (map: Map<string, number>) => {
   const state = randomBytes(12).toString("hex");
   map.set(state, Date.now());
@@ -150,14 +200,8 @@ export function registerAuthRoutes(server: FastifyInstance, prisma: PrismaClient
         });
       }
 
-      const userRes = await fetch("https://api.github.com/user", {
-        headers: {
-          Authorization: `Bearer ${tokenData.access_token}`,
-          Accept: "application/json",
-          "User-Agent": "k3h4-api",
-        },
-      });
-      const ghUser = (await userRes.json()) as { id?: number; login?: string; name?: string; avatar_url?: string; email?: string; message?: string };
+      const accessToken = tokenData.access_token ?? "";
+      const { userRes, ghUser } = await fetchGithubUserProfileWithRetry(accessToken, request.log);
       if (!userRes.ok || !ghUser.id) {
         await rt({ eventType: "auth.github.callback.failed", source: "api", payload: { code: body.code, detail: ghUser.message ?? null, status: userRes.status } });
         return reply

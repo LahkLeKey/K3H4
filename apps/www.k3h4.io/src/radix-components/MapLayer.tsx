@@ -545,7 +545,7 @@ export function MapLayer({ readonly }: { readonly?: boolean }) {
                     "Content-Type": "application/json",
                 },
                 credentials: "include",
-                body: JSON.stringify({ ops }),
+                body: JSON.stringify({ ops, warmOnly: true }),
             });
         } catch {
             // ignore prewarm errors

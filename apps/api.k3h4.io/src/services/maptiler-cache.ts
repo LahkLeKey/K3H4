@@ -78,6 +78,8 @@ export type MaptilerCacheResult = {
   queryId?: string | null;
 };
 
+const inflightFetches = new Map<string, Promise<MaptilerCacheResult>>();
+
 export async function fetchMaptilerCacheOnly(
   prisma: PrismaWithMaptiler,
   request: MaptilerRequestWithKind,
@@ -148,68 +150,82 @@ export async function fetchMaptilerWithCache(
     }
   }
 
-  const kind = deriveKind(request.path, request.kind);
-  const response = await fetchMaptiler({ ...request, responseType });
-  const expiresAt = options?.expiresAt ?? deriveExpiresAt(response.cacheControl, options?.maxAgeMinutes);
-  const nowDate = new Date();
+  const inflight = inflightFetches.get(signature);
+  if (inflight) {
+    return await inflight;
+  }
 
-  const query = await prisma.maptilerQuery.upsert({
-    where: { signature },
-    create: {
-      signature,
-      userId: options?.userId ?? null,
-      kind,
-      path: request.path,
-      params: request.params ?? {},
-      lastUsedAt: nowDate,
-    },
-    update: {
-      kind,
-      path: request.path,
-      params: request.params ?? {},
-      lastUsedAt: nowDate,
-    },
-  });
+  const fetchPromise = (async () => {
+    const kind = deriveKind(request.path, request.kind);
+    const response = await fetchMaptiler({ ...request, responseType });
+    const expiresAt = options?.expiresAt ?? deriveExpiresAt(response.cacheControl, options?.maxAgeMinutes);
+    const nowDate = new Date();
 
-  await prisma.maptilerCacheEntry.upsert({
-    where: { signature },
-    create: {
-      userId: options?.userId ?? null,
-      queryId: query?.id ?? null,
-      kind,
-      path: request.path,
-      params: request.params ?? {},
-      paramsHash,
-      signature,
-      method: request.method ?? "GET",
-      responseType,
-      url: response.url,
-      statusCode: response.status,
-      payload: responseType === "arrayBuffer" ? null : response.body,
-      data: responseType === "arrayBuffer" ? response.data ?? null : null,
-      contentType: response.contentType,
-      cacheControl: response.cacheControl,
-      fetchedAt: nowDate,
-      expiresAt,
-    },
-    update: {
-      queryId: query?.id ?? null,
-      kind,
-      path: request.path,
-      params: request.params ?? {},
-      paramsHash,
-      method: request.method ?? "GET",
-      responseType,
-      url: response.url,
-      statusCode: response.status,
-      payload: responseType === "arrayBuffer" ? null : response.body,
-      data: responseType === "arrayBuffer" ? response.data ?? null : null,
-      contentType: response.contentType,
-      cacheControl: response.cacheControl,
-      fetchedAt: nowDate,
-      expiresAt,
-    },
-  });
+    const query = await prisma.maptilerQuery.upsert({
+      where: { signature },
+      create: {
+        signature,
+        userId: options?.userId ?? null,
+        kind,
+        path: request.path,
+        params: request.params ?? {},
+        lastUsedAt: nowDate,
+      },
+      update: {
+        kind,
+        path: request.path,
+        params: request.params ?? {},
+        lastUsedAt: nowDate,
+      },
+    });
 
-  return { cached: false, response, signature, kind, queryId: query?.id };
+    await prisma.maptilerCacheEntry.upsert({
+      where: { signature },
+      create: {
+        userId: options?.userId ?? null,
+        queryId: query?.id ?? null,
+        kind,
+        path: request.path,
+        params: request.params ?? {},
+        paramsHash,
+        signature,
+        method: request.method ?? "GET",
+        responseType,
+        url: response.url,
+        statusCode: response.status,
+        payload: responseType === "arrayBuffer" ? null : response.body,
+        data: responseType === "arrayBuffer" ? response.data ?? null : null,
+        contentType: response.contentType,
+        cacheControl: response.cacheControl,
+        fetchedAt: nowDate,
+        expiresAt,
+      },
+      update: {
+        queryId: query?.id ?? null,
+        kind,
+        path: request.path,
+        params: request.params ?? {},
+        paramsHash,
+        method: request.method ?? "GET",
+        responseType,
+        url: response.url,
+        statusCode: response.status,
+        payload: responseType === "arrayBuffer" ? null : response.body,
+        data: responseType === "arrayBuffer" ? response.data ?? null : null,
+        contentType: response.contentType,
+        cacheControl: response.cacheControl,
+        fetchedAt: nowDate,
+        expiresAt,
+      },
+    });
+
+    return { cached: false, response, signature, kind, queryId: query?.id };
+  })();
+
+  inflightFetches.set(signature, fetchPromise);
+  try {
+    return await fetchPromise;
+  } finally {
+    inflightFetches.delete(signature);
+  }
 }

@@ -264,6 +264,25 @@ export function TelemetryDashboard() {
     const pagedErrorEvents = errorEvents.slice(errorPage * errorPageSize, errorPage * errorPageSize + errorPageSize);
     const overviewContent = (
         <Stack gap="md">
+            <SectionHeader
+                kicker="Telemetry"
+                title="Observability Dashboard"
+                description="Live ingestion, latency, error rate, and refresh cadence across the last 24 hours."
+                status={summary ? `Last updated ${summary.lastUpdated}` : "Awaiting telemetry stream..."}
+                actions={(
+                    <div className="flex flex-wrap items-center gap-2">
+                        <Badge accent="#22d3ee">{events.length ? `${events.length} cached` : "No events"}</Badge>
+                        <Badge accent="#38bdf8">Window: {windowHours}h • limit {limit}</Badge>
+                        <Button accent="#22d3ee" variant="outline" onClick={() => refetch()} disabled={isLoading}>
+                            {isLoading ? "Refreshing…" : "Refresh"}
+                        </Button>
+                        <Button accent="#a78bfa" variant="outline" onClick={() => fetchNextPage()} disabled={!hasNextPage || isFetchingNextPage}>
+                            {isFetchingNextPage ? "Loading…" : hasNextPage ? "Load more" : "All loaded"}
+                        </Button>
+                        {error ? <Badge accent="#f59e0b">{error instanceof Error ? error.message : "Error"}</Badge> : null}
+                    </div>
+                )}
+            />
             <TelemetrySummaryTiles summary={summary} isLoading={isLoading} />
 
             <div className="grid gap-4 lg:grid-cols-2">
@@ -369,26 +388,6 @@ export function TelemetryDashboard() {
 
     return (
         <div className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-6 px-6 py-10">
-            <SectionHeader
-                kicker="Telemetry"
-                title="Observability cockpit"
-                description="Live ingestion, latency, error rate, and map refresh cadence across the last 24 hours."
-                status={summary ? `Last updated ${summary.lastUpdated}` : "Awaiting telemetry stream..."}
-                actions={(
-                    <div className="flex flex-wrap items-center gap-2">
-                        <Badge accent="#22d3ee">{events.length ? `${events.length} cached` : "No events"}</Badge>
-                        <Badge accent="#38bdf8">Window: {windowHours}h • limit {limit}</Badge>
-                        <Button accent="#22d3ee" variant="outline" onClick={() => refetch()} disabled={isLoading}>
-                            {isLoading ? "Refreshing…" : "Refresh"}
-                        </Button>
-                        <Button accent="#a78bfa" variant="outline" onClick={() => fetchNextPage()} disabled={!hasNextPage || isFetchingNextPage}>
-                            {isFetchingNextPage ? "Loading…" : hasNextPage ? "Load more" : "All loaded"}
-                        </Button>
-                        {error ? <Badge accent="#f59e0b">{error instanceof Error ? error.message : "Error"}</Badge> : null}
-                    </div>
-                )}
-            />
-
             <Tabs
                 value={activeTab}
                 onValueChange={(key) => setActiveTab(key as typeof activeTab)}
