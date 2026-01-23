@@ -9,6 +9,7 @@ Bun/TypeScript workspace with a React/Three.js frontend and a Fastify + Prisma A
 - apps/www.k3h4.io – Bun + React + R3F frontend
 - apps/api.k3h4.io – Fastify API with Prisma/Postgres
 - scripts/ – shared scripts and tooling
+- sidecars/ollama – Ollama-based LLM sidecar for `api.k3h4.io` (Docker Compose + Fly)
 
 ## Requirements
 - Bun (for both apps)
@@ -34,6 +35,12 @@ cd apps/www.k3h4.io
 bun run dev
 ```
 API docs available at `${API_URL}/docs`.
+
+## LLM sidecar
+
+- `docker compose up --build` now also brings up `sidecars/ollama`. The Fastify server hits `OLLAMA_URL=http://ollama:11434`, so the stacking works locally without extra networking.
+- Production deploys the sidecar as its own Fly app (`api-k3h4-io-ollama`) using the configuration in `sidecars/ollama/fly.toml`, which currently targets a shared-cpu-1x slice with 2 GB of RAM.
+- Point the API app at `http://api-k3h4-io-ollama.internal:11434` (e.g. via `fly secrets set OLLAMA_URL=...`) to reach the sidecar over Fly’s internal network.
 
 ## Useful Tasks (VS Code)
 - compose:up / compose:down – bring stack up/down
