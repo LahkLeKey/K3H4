@@ -42,20 +42,7 @@ function PinMesh({ color, phase }: { color: string; phase: number }) {
     );
 }
 
-function Spinner() {
-    const ref = useRef<THREE.Mesh>(null);
-    useFrame((_, delta) => {
-        if (ref.current) ref.current.rotation.z += delta * 2.2;
-    });
-    return (
-        <mesh ref={ref}>
-            <torusGeometry args={[12, 3, 16, 32]} />
-            <meshStandardMaterial color="#38bdf8" emissive="#38bdf8" emissiveIntensity={0.7} roughness={0.25} metalness={0.2} />
-        </mesh>
-    );
-}
-
-export function MapPinsOverlay({ map, pois, frame, loading }: { map: maplibregl.Map | null; pois: Poi[]; frame: number; loading?: boolean }) {
+export function MapPinsOverlay({ map, pois, frame }: { map: maplibregl.Map | null; pois: Poi[]; frame: number }) {
     const [size, setSize] = useState<{ w: number; h: number }>({ w: 0, h: 0 });
     const phaseCache = useRef<Record<string, number>>({});
 
@@ -83,30 +70,9 @@ export function MapPinsOverlay({ map, pois, frame, loading }: { map: maplibregl.
             .filter((p) => p.x >= -64 && p.x <= size.w + 64 && p.y >= -64 && p.y <= size.h + 64);
     }, [frame, map, pois, size.h, size.w]);
 
-    const showSpinner = loading && (!map || !size.w || !size.h || projected.length === 0);
-    if (!map || !size.w || !size.h) {
-        return showSpinner ? (
-            <div className="pointer-events-none absolute inset-0 z-20 flex items-center justify-center">
-                <Canvas orthographic camera={{ position: [0, 0, 200], zoom: 4, left: -50, right: 50, top: 50, bottom: -50, near: -200, far: 200 }} dpr={1} events={undefined}>
-                    <ambientLight intensity={0.6} />
-                    <directionalLight position={[60, 60, 80]} intensity={0.8} />
-                    <Spinner />
-                </Canvas>
-            </div>
-        ) : null;
-    }
-
-    if (projected.length === 0) {
-        return showSpinner ? (
-            <div className="pointer-events-none absolute inset-0 z-20 flex items-center justify-center">
-                <Canvas orthographic camera={{ position: [0, 0, 200], zoom: 4, left: -50, right: 50, top: 50, bottom: -50, near: -200, far: 200 }} dpr={1} events={undefined}>
-                    <ambientLight intensity={0.6} />
-                    <directionalLight position={[60, 60, 80]} intensity={0.8} />
-                    <Spinner />
-                </Canvas>
-            </div>
-        ) : null;
-    }
+    // No pins to display
+    if (!map || !size.w || !size.h) return null;
+    if (projected.length === 0) return null;
 
     const left = -size.w / 2;
     const right = size.w / 2;
