@@ -177,7 +177,18 @@ export function TelemetryDashboard() {
             });
     }, [events]);
 
-    const durationEvents = useMemo(() => events.filter((evt) => typeof evt.durationMs === "number" && evt.durationMs !== null && evt.durationMs > 0), [events]);
+    const durationEvents = useMemo(() => {
+        const normalized: TelemetryEvent[] = [];
+        for (const evt of events) {
+            const explicitDuration = typeof evt.durationMs === "number" && Number.isFinite(evt.durationMs) ? evt.durationMs : null;
+            const inferredDuration = extractLatencyMs(evt.payload);
+            const duration = explicitDuration && explicitDuration > 0 ? explicitDuration : inferredDuration;
+            if (duration && duration > 0) {
+                normalized.push({ ...evt, durationMs: duration });
+            }
+        }
+        return normalized;
+    }, [events]);
 
     const slowestEvents = useMemo(() => {
         return durationEvents
