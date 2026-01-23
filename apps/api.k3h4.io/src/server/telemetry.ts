@@ -4,7 +4,10 @@ import { type RecordTelemetryFn, type TelemetryParams } from "../routes/types";
 import { normalizeDurationMs, warnOnSuspiciousDuration } from "../routes/telemetry";
 import { createTelemetryBuffer } from "../lib/telemetry-buffer";
 
-const TELEMETRY_RETENTION_MS = 1000 * 60 * 30;
+const MILLISECONDS_IN_SECOND = 1000;
+const SECONDS_IN_MINUTE = 60;
+const TELEMETRY_RETENTION_MINUTES = 5;
+const TELEMETRY_RETENTION_MS = MILLISECONDS_IN_SECOND * SECONDS_IN_MINUTE * TELEMETRY_RETENTION_MINUTES;
 let lastPruneAt = 0;
 
 const pruneTelemetry = async (prisma: PrismaClient) => {
