@@ -52,7 +52,8 @@ export const UserAggregateResultSchema = z.object({  _count: z.object({
     geoDemTileCaches: z.number(),
     personaAttributes: z.number(),
     personaCompatibilities: z.number(),
-    geoViewHistories: z.number()
+    geoViewHistories: z.number(),
+    chatSessions: z.number()
   }).optional(),
   _sum: z.object({
     k3h4CoinBalance: z.number().nullable()

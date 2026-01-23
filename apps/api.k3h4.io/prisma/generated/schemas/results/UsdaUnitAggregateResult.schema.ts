@@ -4,6 +4,8 @@ export const UsdaUnitAggregateResultSchema = z.object({  _count: z.object({
     dataset: z.number(),
     code: z.number(),
     name: z.number(),
+    wikidataId: z.number(),
+    enrichment: z.number(),
     extra: z.number(),
     createdAt: z.number(),
     updatedAt: z.number()
@@ -13,6 +15,7 @@ export const UsdaUnitAggregateResultSchema = z.object({  _count: z.object({
     dataset: z.string().nullable(),
     code: z.string().nullable(),
     name: z.string().nullable(),
+    wikidataId: z.string().nullable(),
     createdAt: z.date().nullable(),
     updatedAt: z.date().nullable()
   }).nullable().optional(),
@@ -21,6 +24,7 @@ export const UsdaUnitAggregateResultSchema = z.object({  _count: z.object({
     dataset: z.string().nullable(),
     code: z.string().nullable(),
     name: z.string().nullable(),
+    wikidataId: z.string().nullable(),
     createdAt: z.date().nullable(),
     updatedAt: z.date().nullable()
   }).nullable().optional()});

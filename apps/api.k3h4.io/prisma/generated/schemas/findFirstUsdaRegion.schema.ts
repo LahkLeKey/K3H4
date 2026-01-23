@@ -13,6 +13,8 @@ export const UsdaRegionFindFirstSelectSchema: z.ZodType<Prisma.UsdaRegionSelect>
     dataset: z.boolean().optional(),
     code: z.boolean().optional(),
     name: z.boolean().optional(),
+    wikidataId: z.boolean().optional(),
+    enrichment: z.boolean().optional(),
     extra: z.boolean().optional(),
     createdAt: z.boolean().optional(),
     updatedAt: z.boolean().optional()
@@ -23,6 +25,8 @@ export const UsdaRegionFindFirstSelectZodSchema = z.object({
     dataset: z.boolean().optional(),
     code: z.boolean().optional(),
     name: z.boolean().optional(),
+    wikidataId: z.boolean().optional(),
+    enrichment: z.boolean().optional(),
     extra: z.boolean().optional(),
     createdAt: z.boolean().optional(),
     updatedAt: z.boolean().optional()

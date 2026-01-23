@@ -7,6 +7,8 @@ const makeSchema = () => z.object({
   dataset: SortOrderSchema.optional(),
   code: SortOrderSchema.optional(),
   name: SortOrderSchema.optional(),
+  wikidataId: SortOrderSchema.optional(),
+  enrichment: SortOrderSchema.optional(),
   extra: SortOrderSchema.optional(),
   createdAt: SortOrderSchema.optional(),
   updatedAt: SortOrderSchema.optional()

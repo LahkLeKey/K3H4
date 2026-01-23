@@ -7,6 +7,7 @@ const makeSchema = () => z.object({
   dataset: z.literal(true).optional(),
   code: z.literal(true).optional(),
   name: z.literal(true).optional(),
+  wikidataId: z.literal(true).optional(),
   createdAt: z.literal(true).optional(),
   updatedAt: z.literal(true).optional()
 }).strict();

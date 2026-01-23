@@ -8,6 +8,7 @@ export const TelemetryEventGroupByResultSchema = z.array(z.object({
   path: z.string(),
   payload: z.unknown(),
   durationMs: z.number().int(),
+  error: z.boolean(),
   createdAt: z.date(),
   _count: z.object({
     id: z.number(),
@@ -19,6 +20,7 @@ export const TelemetryEventGroupByResultSchema = z.array(z.object({
     path: z.number(),
     payload: z.number(),
     durationMs: z.number(),
+    error: z.number(),
     createdAt: z.number()
   }).optional(),
   _sum: z.object({

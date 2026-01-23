@@ -10,6 +10,7 @@ const makeSchema = () => z.object({
   source: z.literal(true).optional(),
   path: z.literal(true).optional(),
   durationMs: z.literal(true).optional(),
+  error: z.literal(true).optional(),
   createdAt: z.literal(true).optional()
 }).strict();
 export const TelemetryEventMinAggregateInputObjectSchema: z.ZodType<Prisma.TelemetryEventMinAggregateInputType> = makeSchema() as unknown as z.ZodType<Prisma.TelemetryEventMinAggregateInputType>;

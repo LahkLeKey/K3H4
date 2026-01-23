@@ -4,6 +4,7 @@ import { StringWithAggregatesFilterObjectSchema as StringWithAggregatesFilterObj
 import { StringNullableWithAggregatesFilterObjectSchema as StringNullableWithAggregatesFilterObjectSchema } from './StringNullableWithAggregatesFilter.schema';
 import { JsonNullableWithAggregatesFilterObjectSchema as JsonNullableWithAggregatesFilterObjectSchema } from './JsonNullableWithAggregatesFilter.schema';
 import { IntNullableWithAggregatesFilterObjectSchema as IntNullableWithAggregatesFilterObjectSchema } from './IntNullableWithAggregatesFilter.schema';
+import { BoolWithAggregatesFilterObjectSchema as BoolWithAggregatesFilterObjectSchema } from './BoolWithAggregatesFilter.schema';
 import { DateTimeWithAggregatesFilterObjectSchema as DateTimeWithAggregatesFilterObjectSchema } from './DateTimeWithAggregatesFilter.schema'
 
 const telemetryeventscalarwherewithaggregatesinputSchema = z.object({
@@ -18,6 +19,7 @@ const telemetryeventscalarwherewithaggregatesinputSchema = z.object({
   path: z.union([z.lazy(() => StringNullableWithAggregatesFilterObjectSchema), z.string()]).optional().nullable(),
   payload: z.lazy(() => JsonNullableWithAggregatesFilterObjectSchema).optional(),
   durationMs: z.union([z.lazy(() => IntNullableWithAggregatesFilterObjectSchema), z.number().int()]).optional().nullable(),
+  error: z.union([z.lazy(() => BoolWithAggregatesFilterObjectSchema), z.boolean()]).optional(),
   createdAt: z.union([z.lazy(() => DateTimeWithAggregatesFilterObjectSchema), z.coerce.date()]).optional()
 }).strict();
 export const TelemetryEventScalarWhereWithAggregatesInputObjectSchema: z.ZodType<Prisma.TelemetryEventScalarWhereWithAggregatesInput> = telemetryeventscalarwherewithaggregatesinputSchema as unknown as z.ZodType<Prisma.TelemetryEventScalarWhereWithAggregatesInput>;

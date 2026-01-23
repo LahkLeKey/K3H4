@@ -6,6 +6,8 @@ export const UsdaCountryFindManyResultSchema = z.object({
   code: z.string(),
   name: z.string().optional(),
   regionCode: z.string().optional(),
+  wikidataId: z.string().optional(),
+  enrichment: z.unknown().optional(),
   extra: z.unknown().optional(),
   createdAt: z.date(),
   updatedAt: z.date()

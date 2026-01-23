@@ -45,7 +45,8 @@ import { GeoStatusLogOrderByRelationAggregateInputObjectSchema as GeoStatusLogOr
 import { GeoDemTileCacheOrderByRelationAggregateInputObjectSchema as GeoDemTileCacheOrderByRelationAggregateInputObjectSchema } from './GeoDemTileCacheOrderByRelationAggregateInput.schema';
 import { PersonaAttributeOrderByRelationAggregateInputObjectSchema as PersonaAttributeOrderByRelationAggregateInputObjectSchema } from './PersonaAttributeOrderByRelationAggregateInput.schema';
 import { PersonaCompatibilityOrderByRelationAggregateInputObjectSchema as PersonaCompatibilityOrderByRelationAggregateInputObjectSchema } from './PersonaCompatibilityOrderByRelationAggregateInput.schema';
-import { GeoViewHistoryOrderByRelationAggregateInputObjectSchema as GeoViewHistoryOrderByRelationAggregateInputObjectSchema } from './GeoViewHistoryOrderByRelationAggregateInput.schema'
+import { GeoViewHistoryOrderByRelationAggregateInputObjectSchema as GeoViewHistoryOrderByRelationAggregateInputObjectSchema } from './GeoViewHistoryOrderByRelationAggregateInput.schema';
+import { ChatSessionOrderByRelationAggregateInputObjectSchema as ChatSessionOrderByRelationAggregateInputObjectSchema } from './ChatSessionOrderByRelationAggregateInput.schema'
 
 const makeSchema = () => z.object({
   id: SortOrderSchema.optional(),
@@ -100,7 +101,8 @@ const makeSchema = () => z.object({
   geoDemTileCaches: z.lazy(() => GeoDemTileCacheOrderByRelationAggregateInputObjectSchema).optional(),
   personaAttributes: z.lazy(() => PersonaAttributeOrderByRelationAggregateInputObjectSchema).optional(),
   personaCompatibilities: z.lazy(() => PersonaCompatibilityOrderByRelationAggregateInputObjectSchema).optional(),
-  geoViewHistories: z.lazy(() => GeoViewHistoryOrderByRelationAggregateInputObjectSchema).optional()
+  geoViewHistories: z.lazy(() => GeoViewHistoryOrderByRelationAggregateInputObjectSchema).optional(),
+  chatSessions: z.lazy(() => ChatSessionOrderByRelationAggregateInputObjectSchema).optional()
 }).strict();
 export const UserOrderByWithRelationInputObjectSchema: z.ZodType<Prisma.UserOrderByWithRelationInput> = makeSchema() as unknown as z.ZodType<Prisma.UserOrderByWithRelationInput>;
 export const UserOrderByWithRelationInputObjectZodSchema = makeSchema();

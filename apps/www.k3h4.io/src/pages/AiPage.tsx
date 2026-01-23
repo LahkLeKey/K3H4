@@ -116,7 +116,7 @@ export function AiPage() {
             const payload = await res.json().catch(() => ({}));
             if (!res.ok) throw new Error(payload.error || "Unable to list Ollama models");
             const raw = Array.isArray(payload.models) ? payload.models : [];
-            const normalizedNames = raw
+            const normalizedNames: string[] = raw
                 .map((item: unknown) => {
                     if (typeof item === "string") return item;
                     if (typeof item === "object" && item !== null) {
@@ -126,8 +126,8 @@ export function AiPage() {
                     }
                     return "";
                 })
-                .map((name) => name.trim())
-                .filter((name): name is string => name.length > 0);
+                .map((name: string) => name.trim())
+                .filter((name: string): name is string => name.length > 0);
 
             const normalized = Array.from(new Set(normalizedNames));
             setInstalledModels(normalized);

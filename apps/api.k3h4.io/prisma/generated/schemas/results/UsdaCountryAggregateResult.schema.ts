@@ -5,6 +5,8 @@ export const UsdaCountryAggregateResultSchema = z.object({  _count: z.object({
     code: z.number(),
     name: z.number(),
     regionCode: z.number(),
+    wikidataId: z.number(),
+    enrichment: z.number(),
     extra: z.number(),
     createdAt: z.number(),
     updatedAt: z.number()
@@ -15,6 +17,7 @@ export const UsdaCountryAggregateResultSchema = z.object({  _count: z.object({
     code: z.string().nullable(),
     name: z.string().nullable(),
     regionCode: z.string().nullable(),
+    wikidataId: z.string().nullable(),
     createdAt: z.date().nullable(),
     updatedAt: z.date().nullable()
   }).nullable().optional(),
@@ -24,6 +27,7 @@ export const UsdaCountryAggregateResultSchema = z.object({  _count: z.object({
     code: z.string().nullable(),
     name: z.string().nullable(),
     regionCode: z.string().nullable(),
+    wikidataId: z.string().nullable(),
     createdAt: z.date().nullable(),
     updatedAt: z.date().nullable()
   }).nullable().optional()});

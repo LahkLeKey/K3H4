@@ -109,19 +109,17 @@ export function registerChatRoutes(server: FastifyInstance, prisma: PrismaClient
             entries = payloadRecord.models;
           }
         }
+        const normalizedEntries: string[] = entries.map((entry): string => {
+          if (typeof entry === "string") return entry;
+          if (entry && typeof entry === "object") {
+            const record = entry as Record<string, unknown>;
+            const candidate = record.name ?? record.model;
+            if (typeof candidate === "string") return candidate;
+          }
+          return "";
+        });
         const names = Array.from(
-          new Set(
-            entries
-              .map((entry) => {
-                if (!entry) return "";
-                if (typeof entry === "string") return entry;
-                if (typeof entry === "object") {
-                  return (entry as Record<string, unknown>).name ?? (entry as Record<string, unknown>).model ?? "";
-                }
-                return "";
-              })
-              .filter((value): value is string => Boolean(value?.trim())),
-          ),
+          new Set(normalizedEntries.map((value) => value.trim()).filter((value): value is string => value.length > 0)),
         );
         await telemetry({
           eventType: "chat.models.list",
@@ -148,10 +146,13 @@ export function registerChatRoutes(server: FastifyInstance, prisma: PrismaClient
       const telemetry = withTelemetryBase(recordTelemetry, request);
       const body = request.body as SessionCreateBody | undefined;
       const userId = (request.user as { sub: string }).sub;
-      const sanitizedTitle = typeof body?.title === "string" && body.title.trim().length ? body.title.trim() : null;
-      const sanitizedPrompt = typeof body?.systemPrompt === "string" && body.systemPrompt.trim().length ? body.systemPrompt.trim() : null;
+      const rawTitle = body?.title;
+      const sanitizedTitle = typeof rawTitle === "string" && rawTitle.trim().length ? rawTitle.trim() : null;
+      const rawPrompt = body?.systemPrompt;
+      const sanitizedPrompt = typeof rawPrompt === "string" && rawPrompt.trim().length ? rawPrompt.trim() : null;
       const modelOverride = normalizeModel(body?.model);
-      const temperatureOverride = body?.temperature !== undefined ? clampFloat(body.temperature, DEFAULT_TEMPERATURE) : null;
+      const rawTemperature = body?.temperature;
+      const temperatureOverride = typeof rawTemperature === "number" ? clampFloat(rawTemperature, DEFAULT_TEMPERATURE) : null;
       const session = await prisma.chatSession.create({
         data: {
           userId,
@@ -409,7 +410,7 @@ function resolveOllamaBaseUrl() {
   if (!base) {
     throw new Error("OLLAMA_URL is required to reach the Ollama sidecar");
   }
-  return base.replace(/\/+$, "");
+  return base.replace(/\/+$/, "");
 }
 
 function deriveSessionTitle(message: string): string {
@@ -428,19 +429,20 @@ function flattenMessageContent(value: unknown): string | null {
   if (typeof value === "string") return value.trim();
   if (Array.isArray(value)) return value.map(flattenMessageContent).filter(Boolean).join("");
   if (value && typeof value === "object") {
-    const candidate = (value as Record<string, unknown>).content ?? (value as Record<string, unknown>).text ?? (value as Record<string, unknown>).message ?? (value as Record<string, unknown>).delta;
+    const record = value as Record<string, unknown>;
+    const candidate = record.content ?? record.text ?? record.message ?? record.delta;
     if (candidate !== undefined) return flattenMessageContent(candidate);
-    if (Array.isArray((value as Record<string, unknown>).choices)) {
-      return flattenMessageContent((value as Record<string, unknown>).choices![0]);
+    const choices = record.choices;
+    if (Array.isArray(choices) && choices.length) {
+      return flattenMessageContent(choices[0]);
     }
   }
   return null;
 }
 
 function extractAssistantContent(payload: unknown): string {
-  const choice = Array.isArray((payload as Record<string, unknown>)?.choices)
-    ? (payload as Record<string, unknown>).choices![0]
-    : payload;
+  const record = payload as Record<string, unknown>;
+  const choice = Array.isArray(record.choices) && record.choices.length ? record.choices[0] : payload;
   const assistant = (choice as Record<string, unknown>)?.message ?? choice;
   const flattened = flattenMessageContent(assistant);
   if (flattened) return flattened;

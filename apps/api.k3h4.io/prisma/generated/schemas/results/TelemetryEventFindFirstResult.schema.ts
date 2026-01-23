@@ -9,5 +9,6 @@ export const TelemetryEventFindFirstResultSchema = z.nullable(z.object({
   path: z.string().optional(),
   payload: z.unknown().optional(),
   durationMs: z.number().int().optional(),
+  error: z.boolean(),
   createdAt: z.date()
 }));
