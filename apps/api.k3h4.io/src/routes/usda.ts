@@ -7,6 +7,8 @@ import { buildTelemetryBase } from "./telemetry";
 import { type RecordTelemetryFn } from "./types";
 
 const DEFAULT_MAX_AGE_MINUTES = 60;
+const REFERENCE_CACHE_MAX_AGE_MINUTES = 24 * 60;
+const REFERENCE_CACHE_OPTIONS = { maxAgeMinutes: REFERENCE_CACHE_MAX_AGE_MINUTES, staleWhileRevalidate: true } as const;
 const PSD_REFERENCE_MAX_AGE_MINUTES = 7 * 24 * 60;
 const ENRICH_CACHE_TTL_MINUTES = 7 * 24 * 60;
 const ENRICH_ERROR_CACHE_TTL_MINUTES = 30;
@@ -253,7 +255,7 @@ export function registerUsdaRoutes(server: FastifyInstance, prisma: PrismaClient
     const withTiming = withApiTiming(request);
     const fast = Boolean((request.query as any)?.fast);
     return withTiming("usda.esr.regions.fetch", { payload: { fast } }, async () => {
-      const payload = await fetchAndCache(prisma, "esr", "/api/esr/regions", undefined, { maxAgeMinutes: DEFAULT_MAX_AGE_MINUTES });
+      const payload = await fetchAndCache(prisma, "esr", "/api/esr/regions", undefined, REFERENCE_CACHE_OPTIONS);
       const enriched = await enrichReference("region", "esr", payload, { skipEnrichment: fast });
       return enriched;
     });
@@ -263,7 +265,7 @@ export function registerUsdaRoutes(server: FastifyInstance, prisma: PrismaClient
     const withTiming = withApiTiming(request);
     const fast = Boolean((request.query as any)?.fast);
     return withTiming("usda.esr.countries.fetch", { payload: { fast } }, async () => {
-      const payload = await fetchAndCache(prisma, "esr", "/api/esr/countries", undefined, { maxAgeMinutes: DEFAULT_MAX_AGE_MINUTES });
+      const payload = await fetchAndCache(prisma, "esr", "/api/esr/countries", undefined, REFERENCE_CACHE_OPTIONS);
       const enriched = await enrichReference("country", "esr", payload, { skipEnrichment: fast });
       return enriched;
     });
@@ -273,7 +275,7 @@ export function registerUsdaRoutes(server: FastifyInstance, prisma: PrismaClient
     const withTiming = withApiTiming(request);
     const fast = Boolean((request.query as any)?.fast);
     return withTiming("usda.esr.commodities.fetch", { payload: { fast } }, async () => {
-      const payload = await fetchAndCache(prisma, "esr", "/api/esr/commodities", undefined, { maxAgeMinutes: DEFAULT_MAX_AGE_MINUTES });
+      const payload = await fetchAndCache(prisma, "esr", "/api/esr/commodities", undefined, REFERENCE_CACHE_OPTIONS);
       const enriched = await enrichReference("commodity", "esr", payload, { skipEnrichment: fast });
       return enriched;
     });
