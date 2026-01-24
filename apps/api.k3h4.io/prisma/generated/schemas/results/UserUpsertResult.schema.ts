@@ -52,5 +52,6 @@ export const UserUpsertResultSchema = z.object({
   geoDemTileCaches: z.array(z.unknown()),
   personaAttributes: z.array(z.unknown()),
   personaCompatibilities: z.array(z.unknown()),
-  geoViewHistories: z.array(z.unknown())
+  geoViewHistories: z.array(z.unknown()),
+  chatSessions: z.array(z.unknown())
 });

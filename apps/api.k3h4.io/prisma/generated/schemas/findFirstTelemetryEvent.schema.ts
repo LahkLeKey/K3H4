@@ -19,6 +19,7 @@ export const TelemetryEventFindFirstSelectSchema: z.ZodType<Prisma.TelemetryEven
     path: z.boolean().optional(),
     payload: z.boolean().optional(),
     durationMs: z.boolean().optional(),
+    error: z.boolean().optional(),
     createdAt: z.boolean().optional()
   }).strict() as unknown as z.ZodType<Prisma.TelemetryEventSelect>;
 
@@ -32,6 +33,7 @@ export const TelemetryEventFindFirstSelectZodSchema = z.object({
     path: z.boolean().optional(),
     payload: z.boolean().optional(),
     durationMs: z.boolean().optional(),
+    error: z.boolean().optional(),
     createdAt: z.boolean().optional()
   }).strict();
 

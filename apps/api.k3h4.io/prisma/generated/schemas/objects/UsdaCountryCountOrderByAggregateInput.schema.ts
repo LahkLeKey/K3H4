@@ -8,6 +8,8 @@ const makeSchema = () => z.object({
   code: SortOrderSchema.optional(),
   name: SortOrderSchema.optional(),
   regionCode: SortOrderSchema.optional(),
+  wikidataId: SortOrderSchema.optional(),
+  enrichment: SortOrderSchema.optional(),
   extra: SortOrderSchema.optional(),
   createdAt: SortOrderSchema.optional(),
   updatedAt: SortOrderSchema.optional()

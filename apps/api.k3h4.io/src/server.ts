@@ -66,6 +66,8 @@ const prisma = new PrismaClient({
   adapter: new PrismaPg({ connectionString: databaseUrl }),
 });
 
+await prisma.$connect();
+
 // Periodic DEM cache cleanup (expired tiles + size cap)
 const demCleanupHandle = scheduleDemCacheCleanup(prisma, server.log);
 
@@ -149,6 +151,7 @@ await registerAllRoutes(server, prisma, recordTelemetry);
 
 server.addHook("onClose", async () => {
   clearInterval(demCleanupHandle);
+  await prisma.$disconnect();
 });
 
 const port = Number(process.env.PORT || 8080);

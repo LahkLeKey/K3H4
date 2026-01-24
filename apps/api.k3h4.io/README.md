@@ -64,3 +64,9 @@ Deploy steps:
 - Docker Compose brings the sidecar up automatically and exposes it at `http://localhost:11434`. The Fastify server reads `OLLAMA_URL` (default `http://ollama:11434`) so you can exercise `/api/chat` locally without extra networking.
 - For Fly, deploy the sidecar app with `fly deploy --config sidecars/ollama/fly.toml --app api-k3h4-io-ollama`. The configuration currently targets a shared-cpu-1x slice with 2 GB of RAM.
 - Before deploying or running `fly secrets set`, point the API app to the sidecar over Fly’s internal network: `fly secrets set OLLAMA_URL=http://api-k3h4-io-ollama.internal:11434` (replace the host if you rename the sidecar app).
+- Chat uses the `llama2` model bundled with the Ollama sidecar; tweak temperature and context depth via `OLLAMA_CHAT_TEMPERATURE` and `OLLAMA_CHAT_HISTORY_LIMIT` (defaults: `0.2`, `32`).
+
+### Chat API
+
+- The API now exposes `/chat/sessions` and `/chat/sessions/:id/messages` to persist conversation history and proxy user prompts through the Ollama sidecar.
+- You must still set `OLLAMA_URL` so the proxy can reach the sidecar, but the chat-specific env vars above let you fine-tune temperature and context depth without rebuilding the app.

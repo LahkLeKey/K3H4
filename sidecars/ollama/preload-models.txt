@@ -1,0 +1,2 @@
+# Models pulled when the Ollama sidecar starts. Keep one entry per line.
+llama3

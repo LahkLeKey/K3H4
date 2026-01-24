@@ -9,6 +9,8 @@ const makeSchema = () => z.object({
   dataset: z.string(),
   code: z.string(),
   name: z.string().optional().nullable(),
+  wikidataId: z.string().optional().nullable(),
+  enrichment: z.union([NullableJsonNullValueInputSchema, jsonSchema]).optional(),
   extra: z.union([NullableJsonNullValueInputSchema, jsonSchema]).optional(),
   createdAt: z.coerce.date().optional()
 }).strict();

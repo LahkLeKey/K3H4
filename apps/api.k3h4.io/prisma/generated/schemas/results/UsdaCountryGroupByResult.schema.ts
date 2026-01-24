@@ -5,6 +5,8 @@ export const UsdaCountryGroupByResultSchema = z.array(z.object({
   code: z.string(),
   name: z.string(),
   regionCode: z.string(),
+  wikidataId: z.string(),
+  enrichment: z.unknown(),
   extra: z.unknown(),
   createdAt: z.date(),
   updatedAt: z.date(),
@@ -14,6 +16,8 @@ export const UsdaCountryGroupByResultSchema = z.array(z.object({
     code: z.number(),
     name: z.number(),
     regionCode: z.number(),
+    wikidataId: z.number(),
+    enrichment: z.number(),
     extra: z.number(),
     createdAt: z.number(),
     updatedAt: z.number()
@@ -24,6 +28,7 @@ export const UsdaCountryGroupByResultSchema = z.array(z.object({
     code: z.string().nullable(),
     name: z.string().nullable(),
     regionCode: z.string().nullable(),
+    wikidataId: z.string().nullable(),
     createdAt: z.date().nullable(),
     updatedAt: z.date().nullable()
   }).nullable().optional(),
@@ -33,6 +38,7 @@ export const UsdaCountryGroupByResultSchema = z.array(z.object({
     code: z.string().nullable(),
     name: z.string().nullable(),
     regionCode: z.string().nullable(),
+    wikidataId: z.string().nullable(),
     createdAt: z.date().nullable(),
     updatedAt: z.date().nullable()
   }).nullable().optional()

@@ -6,6 +6,8 @@ export const UsdaCountryInputSchema = z.object({
     code: z.string(),
     name: z.string().optional().nullable(),
     regionCode: z.string().optional().nullable(),
+    wikidataId: z.string().optional().nullable(),
+    enrichment: z.unknown().optional().nullable(),
     extra: z.unknown().optional().nullable(),
     createdAt: z.date(),
     updatedAt: z.date()

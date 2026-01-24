@@ -9,6 +9,7 @@ export const TelemetryEventAggregateResultSchema = z.object({  _count: z.object(
     path: z.number(),
     payload: z.number(),
     durationMs: z.number(),
+    error: z.number(),
     createdAt: z.number()
   }).optional(),
   _sum: z.object({

@@ -10,6 +10,7 @@ export const TelemetryEventInputSchema = z.object({
     path: z.string().optional().nullable(),
     payload: z.unknown().optional().nullable(),
     durationMs: z.number().int().optional().nullable(),
+    error: z.boolean(),
     createdAt: z.date()
 }).strict();
 

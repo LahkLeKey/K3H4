@@ -8,6 +8,8 @@ const makeSchema = () => z.object({
   code: z.literal(true).optional(),
   name: z.literal(true).optional(),
   regionCode: z.literal(true).optional(),
+  wikidataId: z.literal(true).optional(),
+  enrichment: z.literal(true).optional(),
   extra: z.literal(true).optional(),
   createdAt: z.literal(true).optional(),
   updatedAt: z.literal(true).optional(),

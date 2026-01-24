@@ -48,7 +48,8 @@ import { GeoStatusLogListRelationFilterObjectSchema as GeoStatusLogListRelationF
 import { GeoDemTileCacheListRelationFilterObjectSchema as GeoDemTileCacheListRelationFilterObjectSchema } from './GeoDemTileCacheListRelationFilter.schema';
 import { PersonaAttributeListRelationFilterObjectSchema as PersonaAttributeListRelationFilterObjectSchema } from './PersonaAttributeListRelationFilter.schema';
 import { PersonaCompatibilityListRelationFilterObjectSchema as PersonaCompatibilityListRelationFilterObjectSchema } from './PersonaCompatibilityListRelationFilter.schema';
-import { GeoViewHistoryListRelationFilterObjectSchema as GeoViewHistoryListRelationFilterObjectSchema } from './GeoViewHistoryListRelationFilter.schema'
+import { GeoViewHistoryListRelationFilterObjectSchema as GeoViewHistoryListRelationFilterObjectSchema } from './GeoViewHistoryListRelationFilter.schema';
+import { ChatSessionListRelationFilterObjectSchema as ChatSessionListRelationFilterObjectSchema } from './ChatSessionListRelationFilter.schema'
 
 import { DecimalJSLikeSchema, isValidDecimalInput } from '../../helpers/decimal-helpers';
 const userwhereinputSchema = z.object({
@@ -114,7 +115,8 @@ const userwhereinputSchema = z.object({
   geoDemTileCaches: z.lazy(() => GeoDemTileCacheListRelationFilterObjectSchema).optional(),
   personaAttributes: z.lazy(() => PersonaAttributeListRelationFilterObjectSchema).optional(),
   personaCompatibilities: z.lazy(() => PersonaCompatibilityListRelationFilterObjectSchema).optional(),
-  geoViewHistories: z.lazy(() => GeoViewHistoryListRelationFilterObjectSchema).optional()
+  geoViewHistories: z.lazy(() => GeoViewHistoryListRelationFilterObjectSchema).optional(),
+  chatSessions: z.lazy(() => ChatSessionListRelationFilterObjectSchema).optional()
 }).strict();
 export const UserWhereInputObjectSchema: z.ZodType<Prisma.UserWhereInput> = userwhereinputSchema as unknown as z.ZodType<Prisma.UserWhereInput>;
 export const UserWhereInputObjectZodSchema = userwhereinputSchema;

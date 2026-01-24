@@ -17,6 +17,7 @@ const makeSchema = () => z.object({
   path: z.union([SortOrderSchema, z.lazy(() => SortOrderInputObjectSchema)]).optional(),
   payload: z.union([SortOrderSchema, z.lazy(() => SortOrderInputObjectSchema)]).optional(),
   durationMs: z.union([SortOrderSchema, z.lazy(() => SortOrderInputObjectSchema)]).optional(),
+  error: SortOrderSchema.optional(),
   createdAt: SortOrderSchema.optional(),
   _count: z.lazy(() => TelemetryEventCountOrderByAggregateInputObjectSchema).optional(),
   _avg: z.lazy(() => TelemetryEventAvgOrderByAggregateInputObjectSchema).optional(),
