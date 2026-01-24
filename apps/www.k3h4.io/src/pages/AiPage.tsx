@@ -447,31 +447,49 @@ export function AiPage() {
                         <div className="rounded-2xl border border-dashed border-white/20 bg-white/5 px-4 py-6 text-center text-sm text-slate-300">
                             Loading transcript…
                         </div>
-                    ) : messages.length === 0 ? (
-                        <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-6 text-center text-sm text-slate-300">
-                            No prompts yet. Send one to begin the exchange.
-                        </div>
                     ) : (
                         <div className="space-y-4">
-                            {messages.map((message) => (
-                                <div
-                                    key={message.id}
-                                    className={`rounded-2xl border px-4 py-3 shadow-lg backdrop-blur ${message.role === "USER"
-                                        ? "border-emerald-400/50 bg-emerald-500/10 text-white"
-                                        : "border-white/10 bg-white/5 text-slate-100"
-                                        }`}
-                                >
-                                    <div className="flex items-center justify-between text-[11px] uppercase tracking-[0.3em]">
-                                        <span className="text-slate-400">
-                                            {message.role === "USER" ? "You" : message.role === "ASSISTANT" ? "Assistant" : "System"}
-                                        </span>
-                                        <span className="text-slate-500">{new Date(message.createdAt).toLocaleTimeString()}</span>
+                            {messages.length === 0 ? (
+                                <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-6 text-center text-sm text-slate-300">
+                                    No prompts yet. Send one to begin the exchange.
+                                </div>
+                            ) : (
+                                messages.map((message) => (
+                                    <div
+                                        key={message.id}
+                                        className={`rounded-2xl border px-4 py-3 shadow-lg backdrop-blur ${message.role === "USER"
+                                            ? "border-emerald-400/50 bg-emerald-500/10 text-white"
+                                            : "border-white/10 bg-white/5 text-slate-100"
+                                            }`}
+                                    >
+                                        <div className="flex items-center justify-between text-[11px] uppercase tracking-[0.3em]">
+                                            <span className="text-slate-400">
+                                                {message.role === "USER" ? "You" : message.role === "ASSISTANT" ? "Assistant" : "System"}
+                                            </span>
+                                            <span className="text-slate-500">{new Date(message.createdAt).toLocaleTimeString()}</span>
+                                        </div>
+                                        <p className="mt-2 whitespace-pre-line text-sm leading-relaxed">
+                                            {message.content}
+                                        </p>
                                     </div>
-                                    <p className="mt-2 whitespace-pre-line text-sm leading-relaxed">
-                                        {message.content}
+                                ))
+                            )}
+                            {sending && (
+                                <div className="rounded-2xl border border-white/20 bg-white/5 px-4 py-3 text-sm text-slate-300">
+                                    <div className="flex items-center justify-between text-xs uppercase tracking-[0.3em] text-slate-400">
+                                        <span>Assistant</span>
+                                        <span>thinking</span>
+                                    </div>
+                                    <p className="mt-2 flex items-center gap-2 text-white">
+                                        Crafting a reply
+                                        <span className="inline-flex h-2 w-6 items-center justify-between space-x-0.5">
+                                            <span className="inline-block h-2 w-2 animate-pulse rounded-full bg-emerald-400" />
+                                            <span className="inline-block h-2 w-2 animate-pulse rounded-full bg-emerald-400 delay-150" />
+                                            <span className="inline-block h-2 w-2 animate-pulse rounded-full bg-emerald-400 delay-300" />
+                                        </span>
                                     </p>
                                 </div>
-                            ))}
+                            )}
                             <div ref={messagesEndRef} />
                         </div>
                     )}
