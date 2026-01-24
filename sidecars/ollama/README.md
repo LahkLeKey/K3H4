@@ -13,6 +13,8 @@ This folder packages the Ollama HTTP server that runs alongside `api.k3h4.io` in
 - The sidecar runs as its own Fly app named `api-k3h4-io-ollama`. The configuration in this folder pins the official `ollama/ollama:latest` image and keeps a shared vCPU at ~2 GB of RAM.
 - Deploy with `fly deploy --config sidecars/ollama/fly.toml --app api-k3h4-io-ollama`. The Fly config relies on the image’s default `ollama serve` entrypoint while the env var `OLLAMA_HTTP_PORT=11434` keeps the HTTP service on the expected port, so Fastify can reach the sidecar at `http://api-k3h4-io-ollama.internal:11434`.
 - The API app should set `OLLAMA_URL=http://api-k3h4-io-ollama.internal:11434` (e.g. via `fly secrets set OLLAMA_URL=...` or your preferred vault) so requests route through the sidecar.
+- Before deploying, create or attach a persistent Fly volume (the config now mounts `ollama_models` at `/ollama/data`) so the entrypoint can cache downloads in `OLLAMA_MODEL_CACHE_DIR` and new machines reuse the artifacts instead of pulling 5 GB each boot. For example, run `fly volumes create ollama_models --size 25 --region iad --app api-k3h4-io-ollama` and keep the same name in `fly.toml`’s `[[mounts]]` so every machine attaches to the shared cache.
+- The Fly config now allows the Ollama app to scale down to zero (`min_machines_running = 0`, `auto_stop_machines = true`) so you only pay for warm machines when there’s demand; the `auto_start_machines = true` flag will bring machines up automatically when traffic arrives.
 
 ## Preloading models
 
