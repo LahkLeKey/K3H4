@@ -3,6 +3,7 @@ WORKDIR /root
 
 COPY preload-models.txt /etc/ollama/preload-models.txt
 COPY entrypoint/preload-and-serve.sh /entrypoint/preload-and-serve.sh
+RUN sed -i 's/\r$//' /entrypoint/preload-and-serve.sh
 RUN chmod +x /entrypoint/preload-and-serve.sh
 
 ENTRYPOINT ["/bin/bash", "/entrypoint/preload-and-serve.sh"]

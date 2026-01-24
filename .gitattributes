@@ -1,0 +1,1 @@
+sidecars/ollama/entrypoint/preload-and-serve.sh text eol=lf
