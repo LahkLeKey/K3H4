@@ -25,3 +25,7 @@ primary_region = "iad"
   [[services.ports]]
     handlers = ["http"]
     port = 11434
+
+  [[mounts]]
+    source = "ollama_models"
+    destination = "/ollama/data"

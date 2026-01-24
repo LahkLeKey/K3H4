@@ -3,6 +3,18 @@ set -euo pipefail
 
 MODEL_FILE="/etc/ollama/preload-models.txt"
 
+MODEL_CACHE_DIR="${OLLAMA_MODEL_CACHE_DIR:-/ollama/data}"
+OLLAMA_DATA_DIR="${OLLAMA_DATA_DIR:-/root/.ollama}"
+
+prepare_model_volume() {
+  mkdir -p "$MODEL_CACHE_DIR"
+  if [ "$MODEL_CACHE_DIR" != "$OLLAMA_DATA_DIR" ]; then
+    rm -rf "$OLLAMA_DATA_DIR"
+    ln -sfn "$MODEL_CACHE_DIR" "$OLLAMA_DATA_DIR"
+  fi
+  export OLLAMA_DATA_DIR="$MODEL_CACHE_DIR"
+}
+
 default_model_list() {
   if [ ! -f "$MODEL_FILE" ]; then
     return
@@ -51,6 +63,8 @@ pull_models() {
 if [ $# -eq 0 ]; then
   set -- serve
 fi
+
+prepare_model_volume
 
 start_ollama_server "$@"
 if ! wait_for_ollama; then

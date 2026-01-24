@@ -103,6 +103,37 @@ export function registerChatRoutes(server: FastifyInstance, prisma: PrismaClient
     },
   );
 
+  server.get(
+    "/chat/keep-alive",
+    { preHandler: [authenticate] },
+    async (request, reply) => {
+      const telemetry = withTelemetryBase(recordTelemetry, request);
+      try {
+        const response = await fetch(OLLAMA_MODELS_URL);
+        const status = response.status;
+        if (!response.ok) {
+          const textPayload = await response.text();
+          throw new Error(textPayload || `Ollama responded ${status}`);
+        }
+        await telemetry({
+          eventType: "chat.keepalive",
+          source: "chat",
+          payload: { status },
+        });
+        return { status: "ok" };
+      } catch (err) {
+        await telemetry({
+          eventType: "chat.keepalive",
+          source: "chat",
+          payload: { error: true },
+          error: true,
+        });
+        request.log.error({ err }, "keep-alive ping failed");
+        return reply.status(502).send({ error: err instanceof Error ? err.message : "Keep-alive failed" });
+      }
+    },
+  );
+
   server.post(
     "/chat/sessions",
     { preHandler: [authenticate] },
