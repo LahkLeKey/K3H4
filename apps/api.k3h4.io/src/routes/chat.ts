@@ -91,51 +91,15 @@ export function registerChatRoutes(server: FastifyInstance, prisma: PrismaClient
   server.get(
     "/chat/models",
     { preHandler: [authenticate] },
-    async (request, reply) => {
+    async (request) => {
       const telemetry = withTelemetryBase(recordTelemetry, request);
-      try {
-        const response = await fetch(OLLAMA_MODELS_URL, { method: "GET" });
-        const textPayload = await response.text();
-        if (!response.ok) {
-          throw new Error(textPayload || `Ollama responded ${response.status}`);
-        }
-        const payload = textPayload ? JSON.parse(textPayload) : {};
-        let entries: unknown[] = [];
-        if (Array.isArray(payload)) {
-          entries = payload;
-        } else {
-          const payloadRecord = payload as Record<string, unknown> | null;
-          if (payloadRecord && Array.isArray(payloadRecord.models)) {
-            entries = payloadRecord.models;
-          }
-        }
-        const normalizedEntries: string[] = entries.map((entry): string => {
-          if (typeof entry === "string") return entry;
-          if (entry && typeof entry === "object") {
-            const record = entry as Record<string, unknown>;
-            const candidate = record.name ?? record.model;
-            if (typeof candidate === "string") return candidate;
-          }
-          return "";
-        });
-        const names = Array.from(
-          new Set(normalizedEntries.map((value) => value.trim()).filter((value): value is string => value.length > 0)),
-        );
-        await telemetry({
-          eventType: "chat.models.list",
-          source: "chat",
-          payload: { count: names.length },
-        });
-        return { models: names };
-      } catch (err) {
-        await telemetry({
-          eventType: "chat.models.list",
-          source: "chat",
-          payload: { error: true },
-        });
-        request.log.error({ err }, "failed to list ollama models");
-        return reply.status(502).send({ error: err instanceof Error ? err.message : "Unable to list Ollama models" });
-      }
+      const models = ["llama3"];
+      await telemetry({
+        eventType: "chat.models.list",
+        source: "chat",
+        payload: { count: models.length },
+      });
+      return { models };
     },
   );
 
