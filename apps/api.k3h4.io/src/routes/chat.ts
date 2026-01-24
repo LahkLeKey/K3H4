@@ -42,7 +42,7 @@ type SessionCreateBody = {
 
 const CHAT_HISTORY_LIMIT =
     clampNumber(Number(process.env.OLLAMA_CHAT_HISTORY_LIMIT ?? 32), 32, 8, 64);
-const DEFAULT_MODEL = 'llama2';
+const DEFAULT_MODEL = 'llama3.2:1b';
 const DEFAULT_TEMPERATURE =
     clampFloat(Number(process.env.OLLAMA_CHAT_TEMPERATURE ?? NaN), 0.2, 0, 1);
 const OLLAMA_BASE_URL = resolveOllamaBaseUrl();
@@ -100,7 +100,7 @@ export function registerChatRoutes(
       {preHandler: [authenticate]},
       async (request) => {
         const telemetry = withTelemetryBase(recordTelemetry, request);
-        const models = ['llama3'];
+        const models = ['llama3.2:1b'];
         await telemetry({
           eventType: 'chat.models.list',
           source: 'chat',
