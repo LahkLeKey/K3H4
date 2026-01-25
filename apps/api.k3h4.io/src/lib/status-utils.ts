@@ -1,4 +1,4 @@
-import type {CoverageStatus, EngagementPriority, LifecycleStatus} from '@prisma/client';
+import {CoverageStatus, EngagementPriority, LifecycleStatus} from '@prisma/client';
 
 const normalizeValue = (value?: string) => value?.trim().toLowerCase();
 

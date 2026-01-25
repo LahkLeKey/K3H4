@@ -39,6 +39,7 @@ API docs available at `${API_URL}/docs`.
 ## LLM sidecar
 
 - `docker compose up --build` now also brings up `sidecars/ollama`. The Fastify server hits `OLLAMA_URL=http://ollama:11434`, so the stacking works locally without extra networking.
+- Docker Compose now binds the host-side `./sidecars/ollama/data` directory so the mount exists automatically and caches the models that the entrypoint pulls from `sidecars/ollama/preload-models.txt`.
 - Production deploys the sidecar as its own Fly app (`api-k3h4-io-ollama`) using the configuration in `sidecars/ollama/fly.toml`, which currently targets a shared-cpu-1x slice with 2 GB of RAM.
 - Point the API app at `http://api-k3h4-io-ollama.internal:11434` (e.g. via `fly secrets set OLLAMA_URL=...`) to reach the sidecar over Fly’s internal network.
 
