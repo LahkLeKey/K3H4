@@ -3,6 +3,10 @@ import { Prisma } from '@prisma/client';
 import { StringFilterObjectSchema as StringFilterObjectSchema } from './StringFilter.schema';
 import { StringNullableFilterObjectSchema as StringNullableFilterObjectSchema } from './StringNullableFilter.schema';
 import { IntFilterObjectSchema as IntFilterObjectSchema } from './IntFilter.schema';
+import { EnumEngagementPriorityFilterObjectSchema as EnumEngagementPriorityFilterObjectSchema } from './EnumEngagementPriorityFilter.schema';
+import { EngagementPrioritySchema } from '../enums/EngagementPriority.schema';
+import { EnumLifecycleStatusFilterObjectSchema as EnumLifecycleStatusFilterObjectSchema } from './EnumLifecycleStatusFilter.schema';
+import { LifecycleStatusSchema } from '../enums/LifecycleStatus.schema';
 import { DecimalNullableFilterObjectSchema as DecimalNullableFilterObjectSchema } from './DecimalNullableFilter.schema';
 import { JsonNullableFilterObjectSchema as JsonNullableFilterObjectSchema } from './JsonNullableFilter.schema';
 import { DateTimeFilterObjectSchema as DateTimeFilterObjectSchema } from './DateTimeFilter.schema'
@@ -20,8 +24,8 @@ const staffingrolescalarwhereinputSchema = z.object({
   modality: z.union([z.lazy(() => StringNullableFilterObjectSchema), z.string()]).optional().nullable(),
   openings: z.union([z.lazy(() => IntFilterObjectSchema), z.number().int()]).optional(),
   filled: z.union([z.lazy(() => IntFilterObjectSchema), z.number().int()]).optional(),
-  priority: z.union([z.lazy(() => StringFilterObjectSchema), z.string()]).optional(),
-  status: z.union([z.lazy(() => StringFilterObjectSchema), z.string()]).optional(),
+  priority: z.union([z.lazy(() => EnumEngagementPriorityFilterObjectSchema), EngagementPrioritySchema]).optional(),
+  status: z.union([z.lazy(() => EnumLifecycleStatusFilterObjectSchema), LifecycleStatusSchema]).optional(),
   rateMin: z.union([z.lazy(() => DecimalNullableFilterObjectSchema), z.union([
   z.number(),
   z.string(),

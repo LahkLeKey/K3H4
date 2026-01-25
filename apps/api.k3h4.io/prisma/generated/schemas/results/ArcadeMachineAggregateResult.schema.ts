@@ -16,7 +16,6 @@ export const ArcadeMachineAggregateResultSchema = z.object({  _count: z.object({
     userId: z.string().nullable(),
     name: z.string().nullable(),
     gameTitle: z.string().nullable(),
-    status: z.string().nullable(),
     location: z.string().nullable(),
     createdAt: z.date().nullable(),
     updatedAt: z.date().nullable()
@@ -26,7 +25,6 @@ export const ArcadeMachineAggregateResultSchema = z.object({  _count: z.object({
     userId: z.string().nullable(),
     name: z.string().nullable(),
     gameTitle: z.string().nullable(),
-    status: z.string().nullable(),
     location: z.string().nullable(),
     createdAt: z.date().nullable(),
     updatedAt: z.date().nullable()

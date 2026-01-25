@@ -6,6 +6,8 @@ import { IntFilterObjectSchema as IntFilterObjectSchema } from './IntFilter.sche
 import { JsonNullableFilterObjectSchema as JsonNullableFilterObjectSchema } from './JsonNullableFilter.schema';
 import { DateTimeFilterObjectSchema as DateTimeFilterObjectSchema } from './DateTimeFilter.schema';
 import { StringNullableFilterObjectSchema as StringNullableFilterObjectSchema } from './StringNullableFilter.schema';
+import { EnumLifecycleStatusFilterObjectSchema as EnumLifecycleStatusFilterObjectSchema } from './EnumLifecycleStatusFilter.schema';
+import { LifecycleStatusSchema } from '../enums/LifecycleStatus.schema';
 import { UserScalarRelationFilterObjectSchema as UserScalarRelationFilterObjectSchema } from './UserScalarRelationFilter.schema';
 import { UserWhereInputObjectSchema as UserWhereInputObjectSchema } from './UserWhereInput.schema';
 import { PersonaScalarRelationFilterObjectSchema as PersonaScalarRelationFilterObjectSchema } from './PersonaScalarRelationFilter.schema';
@@ -25,7 +27,7 @@ const personacompatibilitywhereinputSchema = z.object({
   overlappingTokens: z.lazy(() => JsonNullableFilterObjectSchema).optional(),
   computedAt: z.union([z.lazy(() => DateTimeFilterObjectSchema), z.coerce.date()]).optional(),
   rationale: z.union([z.lazy(() => StringNullableFilterObjectSchema), z.string()]).optional().nullable(),
-  status: z.union([z.lazy(() => StringFilterObjectSchema), z.string()]).optional(),
+  status: z.union([z.lazy(() => EnumLifecycleStatusFilterObjectSchema), LifecycleStatusSchema]).optional(),
   user: z.union([z.lazy(() => UserScalarRelationFilterObjectSchema), z.lazy(() => UserWhereInputObjectSchema)]).optional(),
   source: z.union([z.lazy(() => PersonaScalarRelationFilterObjectSchema), z.lazy(() => PersonaWhereInputObjectSchema)]).optional(),
   target: z.union([z.lazy(() => PersonaScalarRelationFilterObjectSchema), z.lazy(() => PersonaWhereInputObjectSchema)]).optional()

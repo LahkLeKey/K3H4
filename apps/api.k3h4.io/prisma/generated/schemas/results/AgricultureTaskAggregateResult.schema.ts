@@ -33,7 +33,6 @@ export const AgricultureTaskAggregateResultSchema = z.object({  _count: z.object
     priority: z.number().int().nullable(),
     notes: z.string().nullable(),
     dueDate: z.date().nullable(),
-    status: z.string().nullable(),
     createdAt: z.date().nullable(),
     updatedAt: z.date().nullable()
   }).nullable().optional(),
@@ -47,7 +46,6 @@ export const AgricultureTaskAggregateResultSchema = z.object({  _count: z.object
     priority: z.number().int().nullable(),
     notes: z.string().nullable(),
     dueDate: z.date().nullable(),
-    status: z.string().nullable(),
     createdAt: z.date().nullable(),
     updatedAt: z.date().nullable()
   }).nullable().optional()});

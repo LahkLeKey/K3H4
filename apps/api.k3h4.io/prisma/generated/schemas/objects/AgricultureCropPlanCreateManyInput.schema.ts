@@ -1,6 +1,6 @@
 import * as z from 'zod';
 import type { Prisma } from '@prisma/client';
-
+import { LifecycleStatusSchema } from '../enums/LifecycleStatus.schema'
 
 const makeSchema = () => z.object({
   id: z.string().optional(),
@@ -8,7 +8,7 @@ const makeSchema = () => z.object({
   plotId: z.string(),
   crop: z.string(),
   phase: z.string().optional(),
-  status: z.string().optional(),
+  status: LifecycleStatusSchema.optional(),
   startDate: z.coerce.date(),
   targetHarvestDate: z.coerce.date().optional().nullable(),
   endDate: z.coerce.date().optional().nullable(),

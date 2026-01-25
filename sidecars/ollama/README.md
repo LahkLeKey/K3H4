@@ -5,7 +5,7 @@ This folder packages the Ollama HTTP server that runs alongside `api.k3h4.io` in
 ## Development (Docker Compose)
 
 - `docker compose up --build` now brings up `ollama` in addition to the API, Postgres, and frontend.
-- `api` already depends on `ollama`, and the compose service sets `OLLAMA_URL=http://ollama:11434`. Keep the `sidecars/ollama/data` volume mounted so downloaded models survive container restarts.
+- `api` already depends on `ollama`, and the compose service sets `OLLAMA_URL=http://ollama:11434`. The compose service now binds `./sidecars/ollama/data` (the directory is in `.gitignore` so the cache stays local) so the directory is created automatically and retains downloaded models between runs.
 - If you need to inspect the LLM service from your host, it is published on `localhost:11434`.
 
 ## Production (Fly.io)
@@ -18,7 +18,7 @@ This folder packages the Ollama HTTP server that runs alongside `api.k3h4.io` in
 
 ## Preloading models
 
-- The sidecar image now wraps `ollama` with a tiny entrypoint script that pulls the models listed in `sidecars/ollama/preload-models.txt` before starting the HTTP server. The default file now seeds `llama3.2:1b` (≈1.3 GB), which is a light enough working set to fit on the shared-cpu-1x slice, and the script is idempotent because `ollama pull` is a no-op when a model is already downloaded.
+- The sidecar image now wraps `ollama` with a tiny entrypoint script that pulls the models listed in `sidecars/ollama/preload-models.txt` before starting the HTTP server. In Docker Compose the same file is mounted into the container so you can tweak the list without rebuilding the image. The default file now seeds `llama3.2:1b` (≈1.3 GB), which is a light enough working set to fit on the shared-cpu-1x slice, and the script is idempotent because `ollama pull` is a no-op when a model is already downloaded.
 - If you prefer an even smaller footprint, point `OLLAMA_PRELOAD_MODELS` or `preload-models.txt` at a quantized tag such as `llama3.2:1b-q4_0` or `llama3.2:1b-q3` to shave the download closer to 600 MB. That same override is the place to bring back any heavier models when you later scale to beefier VMs.
 
 ## Scaling notes

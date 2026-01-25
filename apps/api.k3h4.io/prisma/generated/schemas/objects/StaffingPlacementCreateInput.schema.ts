@@ -1,5 +1,6 @@
 import * as z from 'zod';
 import { Prisma } from '@prisma/client';
+import { LifecycleStatusSchema } from '../enums/LifecycleStatus.schema';
 import { UserCreateNestedOneWithoutStaffingPlacementsInputObjectSchema as UserCreateNestedOneWithoutStaffingPlacementsInputObjectSchema } from './UserCreateNestedOneWithoutStaffingPlacementsInput.schema';
 import { StaffingEngagementCreateNestedOneWithoutPlacementsInputObjectSchema as StaffingEngagementCreateNestedOneWithoutPlacementsInputObjectSchema } from './StaffingEngagementCreateNestedOneWithoutPlacementsInput.schema';
 import { StaffingRoleCreateNestedOneWithoutPlacementsInputObjectSchema as StaffingRoleCreateNestedOneWithoutPlacementsInputObjectSchema } from './StaffingRoleCreateNestedOneWithoutPlacementsInput.schema';
@@ -11,7 +12,7 @@ const makeSchema = () => z.object({
   id: z.string().optional(),
   startDate: z.coerce.date(),
   endDate: z.coerce.date().optional().nullable(),
-  status: z.string().optional(),
+  status: LifecycleStatusSchema.optional(),
   billRate: z.union([
   z.number(),
   z.string(),

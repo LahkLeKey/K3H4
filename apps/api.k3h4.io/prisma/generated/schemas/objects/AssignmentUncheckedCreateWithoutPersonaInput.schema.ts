@@ -1,5 +1,6 @@
 import * as z from 'zod';
 import { Prisma } from '@prisma/client';
+import { LifecycleStatusSchema } from '../enums/LifecycleStatus.schema';
 import { AssignmentTimecardUncheckedCreateNestedManyWithoutAssignmentInputObjectSchema as AssignmentTimecardUncheckedCreateNestedManyWithoutAssignmentInputObjectSchema } from './AssignmentTimecardUncheckedCreateNestedManyWithoutAssignmentInput.schema';
 import { AssignmentPayoutUncheckedCreateNestedManyWithoutAssignmentInputObjectSchema as AssignmentPayoutUncheckedCreateNestedManyWithoutAssignmentInputObjectSchema } from './AssignmentPayoutUncheckedCreateNestedManyWithoutAssignmentInput.schema'
 
@@ -16,7 +17,7 @@ const makeSchema = () => z.object({
 ]).refine((v) => isValidDecimalInput(v), {
   message: "Field 'hourlyRate' must be a Decimal",
 }),
-  status: z.string().optional(),
+  status: LifecycleStatusSchema.optional(),
   createdAt: z.coerce.date().optional(),
   updatedAt: z.coerce.date().optional(),
   timecards: z.lazy(() => AssignmentTimecardUncheckedCreateNestedManyWithoutAssignmentInputObjectSchema).optional(),

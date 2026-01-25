@@ -8,7 +8,7 @@ export const PosTicketFindUniqueResultSchema = z.nullable(z.object({
   total: z.number(),
   itemsCount: z.number().int(),
   channel: z.string(),
-  status: z.string(),
+  status: z.unknown(),
   createdAt: z.date(),
   updatedAt: z.date(),
   lineItems: z.array(z.unknown())

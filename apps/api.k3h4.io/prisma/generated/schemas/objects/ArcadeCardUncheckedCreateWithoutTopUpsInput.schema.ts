@@ -1,5 +1,6 @@
 import * as z from 'zod';
 import { Prisma } from '@prisma/client';
+import { LifecycleStatusSchema } from '../enums/LifecycleStatus.schema';
 import { ArcadeSessionUncheckedCreateNestedManyWithoutCardInputObjectSchema as ArcadeSessionUncheckedCreateNestedManyWithoutCardInputObjectSchema } from './ArcadeSessionUncheckedCreateNestedManyWithoutCardInput.schema';
 import { ArcadeRedemptionUncheckedCreateNestedManyWithoutCardInputObjectSchema as ArcadeRedemptionUncheckedCreateNestedManyWithoutCardInputObjectSchema } from './ArcadeRedemptionUncheckedCreateNestedManyWithoutCardInput.schema'
 
@@ -16,7 +17,7 @@ const makeSchema = () => z.object({
 ]).refine((v) => isValidDecimalInput(v), {
   message: "Field 'balance' must be a Decimal",
 }).optional(),
-  status: z.string().optional(),
+  status: LifecycleStatusSchema.optional(),
   createdAt: z.coerce.date().optional(),
   updatedAt: z.coerce.date().optional(),
   sessions: z.lazy(() => ArcadeSessionUncheckedCreateNestedManyWithoutCardInputObjectSchema).optional(),

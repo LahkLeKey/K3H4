@@ -1,4 +1,6 @@
 import * as z from 'zod';
+import { EngagementPrioritySchema } from '../../enums/EngagementPriority.schema';
+import { LifecycleStatusSchema } from '../../enums/LifecycleStatus.schema';
 // prettier-ignore
 export const StaffingRoleResultSchema = z.object({
     id: z.string(),
@@ -11,8 +13,8 @@ export const StaffingRoleResultSchema = z.object({
     modality: z.string().nullable(),
     openings: z.number().int(),
     filled: z.number().int(),
-    priority: z.string(),
-    status: z.string(),
+    priority: EngagementPrioritySchema,
+    status: LifecycleStatusSchema,
     rateMin: z.number().nullable(),
     rateMax: z.number().nullable(),
     billRate: z.number().nullable(),

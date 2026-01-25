@@ -25,7 +25,6 @@ export const AssignmentAggregateResultSchema = z.object({  _count: z.object({
     personaId: z.string().nullable(),
     title: z.string().nullable(),
     hourlyRate: z.number().nullable(),
-    status: z.string().nullable(),
     createdAt: z.date().nullable(),
     updatedAt: z.date().nullable()
   }).nullable().optional(),
@@ -35,7 +34,6 @@ export const AssignmentAggregateResultSchema = z.object({  _count: z.object({
     personaId: z.string().nullable(),
     title: z.string().nullable(),
     hourlyRate: z.number().nullable(),
-    status: z.string().nullable(),
     createdAt: z.date().nullable(),
     updatedAt: z.date().nullable()
   }).nullable().optional()});

@@ -5,7 +5,6 @@ export const AssignmentGroupByResultSchema = z.array(z.object({
   personaId: z.string(),
   title: z.string(),
   hourlyRate: z.number(),
-  status: z.string(),
   createdAt: z.date(),
   updatedAt: z.date(),
   _count: z.object({
@@ -34,7 +33,6 @@ export const AssignmentGroupByResultSchema = z.array(z.object({
     personaId: z.string().nullable(),
     title: z.string().nullable(),
     hourlyRate: z.number().nullable(),
-    status: z.string().nullable(),
     createdAt: z.date().nullable(),
     updatedAt: z.date().nullable()
   }).nullable().optional(),
@@ -44,7 +42,6 @@ export const AssignmentGroupByResultSchema = z.array(z.object({
     personaId: z.string().nullable(),
     title: z.string().nullable(),
     hourlyRate: z.number().nullable(),
-    status: z.string().nullable(),
     createdAt: z.date().nullable(),
     updatedAt: z.date().nullable()
   }).nullable().optional()

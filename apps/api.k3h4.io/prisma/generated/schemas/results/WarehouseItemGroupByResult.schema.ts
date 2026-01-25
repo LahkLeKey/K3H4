@@ -6,7 +6,6 @@ export const WarehouseItemGroupByResultSchema = z.array(z.object({
   description: z.string(),
   quantity: z.number().int(),
   location: z.string(),
-  status: z.string(),
   freightLoadId: z.string(),
   createdAt: z.date(),
   updatedAt: z.date(),
@@ -37,7 +36,6 @@ export const WarehouseItemGroupByResultSchema = z.array(z.object({
     description: z.string().nullable(),
     quantity: z.number().int().nullable(),
     location: z.string().nullable(),
-    status: z.string().nullable(),
     freightLoadId: z.string().nullable(),
     createdAt: z.date().nullable(),
     updatedAt: z.date().nullable()
@@ -49,7 +47,6 @@ export const WarehouseItemGroupByResultSchema = z.array(z.object({
     description: z.string().nullable(),
     quantity: z.number().int().nullable(),
     location: z.string().nullable(),
-    status: z.string().nullable(),
     freightLoadId: z.string().nullable(),
     createdAt: z.date().nullable(),
     updatedAt: z.date().nullable()

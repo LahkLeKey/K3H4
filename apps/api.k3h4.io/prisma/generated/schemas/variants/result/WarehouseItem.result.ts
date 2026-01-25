@@ -1,4 +1,5 @@
 import * as z from 'zod';
+import { LifecycleStatusSchema } from '../../enums/LifecycleStatus.schema';
 // prettier-ignore
 export const WarehouseItemResultSchema = z.object({
     id: z.string(),
@@ -8,7 +9,7 @@ export const WarehouseItemResultSchema = z.object({
     description: z.string().nullable(),
     quantity: z.number().int(),
     location: z.string(),
-    status: z.string(),
+    status: LifecycleStatusSchema,
     freightLoadId: z.string().nullable(),
     freightLoad: z.unknown().nullable(),
     createdAt: z.date(),

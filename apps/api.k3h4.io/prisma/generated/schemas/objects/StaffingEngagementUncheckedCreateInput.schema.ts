@@ -1,5 +1,7 @@
 import * as z from 'zod';
 import { Prisma } from '@prisma/client';
+import { EngagementPrioritySchema } from '../enums/EngagementPriority.schema';
+import { LifecycleStatusSchema } from '../enums/LifecycleStatus.schema';
 import { StaffingRoleUncheckedCreateNestedManyWithoutEngagementInputObjectSchema as StaffingRoleUncheckedCreateNestedManyWithoutEngagementInputObjectSchema } from './StaffingRoleUncheckedCreateNestedManyWithoutEngagementInput.schema';
 import { StaffingCandidateUncheckedCreateNestedManyWithoutEngagementInputObjectSchema as StaffingCandidateUncheckedCreateNestedManyWithoutEngagementInputObjectSchema } from './StaffingCandidateUncheckedCreateNestedManyWithoutEngagementInput.schema';
 import { StaffingPlacementUncheckedCreateNestedManyWithoutEngagementInputObjectSchema as StaffingPlacementUncheckedCreateNestedManyWithoutEngagementInputObjectSchema } from './StaffingPlacementUncheckedCreateNestedManyWithoutEngagementInput.schema'
@@ -10,8 +12,8 @@ const makeSchema = () => z.object({
   userId: z.string(),
   name: z.string(),
   client: z.string().optional().nullable(),
-  priority: z.string().optional(),
-  status: z.string().optional(),
+  priority: EngagementPrioritySchema.optional(),
+  status: LifecycleStatusSchema.optional(),
   startDate: z.coerce.date().optional().nullable(),
   endDate: z.coerce.date().optional().nullable(),
   budget: z.union([

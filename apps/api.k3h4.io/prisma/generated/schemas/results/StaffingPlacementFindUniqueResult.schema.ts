@@ -13,7 +13,7 @@ export const StaffingPlacementFindUniqueResultSchema = z.nullable(z.object({
   persona: z.unknown().optional(),
   startDate: z.date(),
   endDate: z.date().optional(),
-  status: z.string(),
+  status: z.unknown(),
   billRate: z.number().optional(),
   payRate: z.number().optional(),
   margin: z.number().optional(),

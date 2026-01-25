@@ -1,5 +1,6 @@
 import * as z from 'zod';
 import type { Prisma } from '@prisma/client';
+import { LifecycleStatusSchema } from '../enums/LifecycleStatus.schema';
 import { UserCreateNestedOneWithoutCulinaryPrepTasksInputObjectSchema as UserCreateNestedOneWithoutCulinaryPrepTasksInputObjectSchema } from './UserCreateNestedOneWithoutCulinaryPrepTasksInput.schema'
 
 const makeSchema = () => z.object({
@@ -7,7 +8,7 @@ const makeSchema = () => z.object({
   task: z.string(),
   station: z.string(),
   dueAt: z.coerce.date().optional().nullable(),
-  status: z.string().optional(),
+  status: LifecycleStatusSchema.optional(),
   createdAt: z.coerce.date().optional(),
   user: z.lazy(() => UserCreateNestedOneWithoutCulinaryPrepTasksInputObjectSchema)
 }).strict();

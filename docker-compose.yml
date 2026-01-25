@@ -36,7 +36,8 @@ services:
     ports:
       - "11434:11434"
     volumes:
-      - ollama_models:/ollama/data
+      - ./sidecars/ollama/data:/ollama/data
+      - ./sidecars/ollama/preload-models.txt:/etc/ollama/preload-models.txt:ro
 
   web:
     image: oven/bun:1.3.5
@@ -54,5 +55,3 @@ services:
     ports:
       - "5173:5173"
 
-volumes:
-  ollama_models:

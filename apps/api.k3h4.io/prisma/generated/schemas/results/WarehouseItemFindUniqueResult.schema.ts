@@ -7,7 +7,7 @@ export const WarehouseItemFindUniqueResultSchema = z.nullable(z.object({
   description: z.string().optional(),
   quantity: z.number().int(),
   location: z.string(),
-  status: z.string(),
+  status: z.unknown(),
   freightLoadId: z.string().optional(),
   freightLoad: z.unknown().optional(),
   createdAt: z.date(),

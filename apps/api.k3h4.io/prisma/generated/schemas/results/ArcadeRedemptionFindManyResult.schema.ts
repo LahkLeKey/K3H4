@@ -8,7 +8,7 @@ export const ArcadeRedemptionFindManyResultSchema = z.object({
   card: z.unknown().optional(),
   prizeId: z.string(),
   prize: z.unknown(),
-  status: z.string(),
+  status: z.unknown(),
   fulfilledAt: z.date().optional(),
   createdAt: z.date(),
   sessions: z.array(z.unknown())

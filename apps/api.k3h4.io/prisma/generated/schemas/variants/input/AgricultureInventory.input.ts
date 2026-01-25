@@ -1,4 +1,5 @@
 import * as z from 'zod';
+import { LifecycleStatusSchema } from '../../enums/LifecycleStatus.schema';
 // prettier-ignore
 export const AgricultureInventoryInputSchema = z.object({
     id: z.string(),
@@ -9,7 +10,7 @@ export const AgricultureInventoryInputSchema = z.object({
     totalQuantity: z.number(),
     unit: z.string(),
     location: z.string().optional().nullable(),
-    status: z.string(),
+    status: LifecycleStatusSchema,
     createdAt: z.date(),
     updatedAt: z.date(),
     movements: z.array(z.unknown())

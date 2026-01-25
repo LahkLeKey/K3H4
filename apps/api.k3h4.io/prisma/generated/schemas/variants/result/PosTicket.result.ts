@@ -1,4 +1,5 @@
 import * as z from 'zod';
+import { LifecycleStatusSchema } from '../../enums/LifecycleStatus.schema';
 // prettier-ignore
 export const PosTicketResultSchema = z.object({
     id: z.string(),
@@ -9,7 +10,7 @@ export const PosTicketResultSchema = z.object({
     total: z.number(),
     itemsCount: z.number().int(),
     channel: z.string(),
-    status: z.string(),
+    status: LifecycleStatusSchema,
     createdAt: z.date(),
     updatedAt: z.date(),
     lineItems: z.array(z.unknown())

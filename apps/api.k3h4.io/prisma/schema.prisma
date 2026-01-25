@@ -22,6 +22,34 @@ enum ChatRole {
   ASSISTANT
 }
 
+enum LifecycleStatus {
+  ACTIVE     @map("active")
+  INACTIVE   @map("inactive")
+  OPEN       @map("open")
+  CLOSED     @map("closed")
+  PENDING    @map("pending")
+  PLANNING   @map("planning")
+  COMPLETED  @map("completed")
+  STORED     @map("stored")
+  IDLE       @map("idle")
+  SCHEDULED  @map("scheduled")
+  UNFILLED   @map("unfilled")
+}
+
+enum EngagementPriority {
+  LOW    @map("low")
+  NORMAL @map("normal")
+  MEDIUM @map("medium")
+  HIGH   @map("high")
+  URGENT @map("urgent")
+}
+
+enum CoverageStatus {
+  UNFILLED @map("unfilled")
+  FILLED   @map("filled")
+  PARTIAL  @map("partial")
+}
+
 model Building {
   id                 Int          @id @default(autoincrement())
   osmId              BigInt?      @unique
@@ -150,7 +178,7 @@ model PersonaCompatibility {
   overlappingTokens  Json?
   computedAt         DateTime @default(now())
   rationale          String?
-  status             String   @default("active")
+  status             LifecycleStatus @default(ACTIVE)
 
   @@unique([userId, sourceId, targetId])
   @@index([userId, computedAt])
@@ -470,7 +498,7 @@ model Assignment {
   persona      Persona   @relation(fields: [personaId], references: [id], onDelete: Cascade)
   title        String
   hourlyRate   Decimal   @db.Decimal(18, 2)
-  status       String    @default("open")
+  status       LifecycleStatus @default(OPEN)
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
   timecards    AssignmentTimecard[]
@@ -485,8 +513,8 @@ model StaffingEngagement {
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   name      String
   client    String?
-  priority  String   @default("medium")
-  status    String   @default("active")
+  priority  EngagementPriority @default(MEDIUM)
+  status    LifecycleStatus     @default(ACTIVE)
   startDate DateTime?
   endDate   DateTime?
   budget    Decimal? @db.Decimal(18, 2)
@@ -510,7 +538,7 @@ model AgricultureCropPlan {
   plot            AgriculturePlot @relation(fields: [plotId], references: [id], onDelete: Cascade)
   crop            String
   phase           String          @default("planned")
-  status          String          @default("active")
+  status          LifecycleStatus @default(ACTIVE)
   startDate       DateTime
   targetHarvestDate DateTime?
   endDate         DateTime?
@@ -550,7 +578,7 @@ model AgricultureInventory {
   totalQuantity Decimal                       @db.Decimal(18, 2) @default("0")
   unit          String
   location      String?
-  status        String                        @default("active")
+  status        LifecycleStatus               @default(ACTIVE)
   createdAt     DateTime                      @default(now())
   updatedAt     DateTime                      @updatedAt
   movements     AgricultureInventoryMovement[]
@@ -616,8 +644,8 @@ model StaffingRole {
   modality     String?  // remote, hybrid, onsite
   openings     Int      @default(1)
   filled       Int      @default(0)
-  priority     String   @default("normal")
-  status       String   @default("open")
+  priority     EngagementPriority @default(NORMAL)
+  status       LifecycleStatus     @default(OPEN)
   rateMin      Decimal? @db.Decimal(18, 2)
   rateMax      Decimal? @db.Decimal(18, 2)
   billRate     Decimal? @db.Decimal(18, 2)
@@ -674,8 +702,8 @@ model StaffingShift {
   location            String?
   startsAt            DateTime
   endsAt              DateTime
-  status              String   @default("scheduled")
-  coverageStatus      String   @default("unfilled")
+  status              LifecycleStatus @default(SCHEDULED)
+  coverageStatus      CoverageStatus  @default(UNFILLED)
   assignedPersonaId   String?
   assignedPersona     Persona? @relation("StaffingShiftAssignedPersona", fields: [assignedPersonaId], references: [id], onDelete: SetNull)
   assignedCandidateId String?
@@ -701,7 +729,7 @@ model StaffingPlacement {
   persona      Persona? @relation("StaffingPlacementPersona", fields: [personaId], references: [id], onDelete: SetNull)
   startDate    DateTime
   endDate      DateTime?
-  status       String   @default("active")
+  status       LifecycleStatus @default(ACTIVE)
   billRate     Decimal? @db.Decimal(18, 2)
   payRate      Decimal? @db.Decimal(18, 2)
   margin       Decimal? @db.Decimal(18, 2)
@@ -726,7 +754,7 @@ model FreightLoad {
   distanceKm      Decimal  @db.Decimal(10, 2)
   durationMinutes Int
   cost            Decimal  @db.Decimal(18, 2)
-  status          String   @default("planning")
+  status          LifecycleStatus @default(PLANNING)
   routeGeoJson    Json?
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
@@ -745,7 +773,7 @@ model WarehouseItem {
   description   String?
   quantity      Int           @default(0)
   location      String
-  status        String        @default("stored")
+  status        LifecycleStatus @default(STORED)
   freightLoadId String?
   freightLoad   FreightLoad?  @relation(fields: [freightLoadId], references: [id], onDelete: SetNull)
   createdAt     DateTime      @default(now())
@@ -778,7 +806,7 @@ model PosTicket {
   total      Decimal  @db.Decimal(18, 2)
   itemsCount Int      @default(0)
   channel    String
-  status     String   @default("open")
+  status     LifecycleStatus @default(OPEN)
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
   lineItems  PosLineItem[]
@@ -854,7 +882,7 @@ model AgricultureTask {
   tags      Json?
   notes     String?
   dueDate   DateTime?
-  status    String   @default("pending")
+  status    LifecycleStatus @default(PENDING)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -929,7 +957,7 @@ model CulinaryPrepTask {
   task      String
   station   String
   dueAt     DateTime?
-  status    String   @default("pending")
+  status    LifecycleStatus @default(PENDING)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -942,7 +970,7 @@ model CulinarySupplierNeed {
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   item      String
   quantity  String
-  status    String   @default("open")
+  status    LifecycleStatus @default(OPEN)
   dueDate   DateTime?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -956,7 +984,7 @@ model ArcadeMachine {
   user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   name        String
   gameTitle   String
-  status      String   @default("idle")
+  status      LifecycleStatus @default(IDLE)
   location    String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
@@ -972,7 +1000,7 @@ model ArcadeCard {
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   label     String?
   balance   Decimal  @db.Decimal(18, 2) @default("0")
-  status    String   @default("active")
+  status    LifecycleStatus @default(ACTIVE)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -1039,7 +1067,7 @@ model ArcadeRedemption {
   card      ArcadeCard? @relation(fields: [cardId], references: [id], onDelete: SetNull)
   prizeId   String
   prize     ArcadePrize @relation(fields: [prizeId], references: [id], onDelete: Cascade)
-  status    String   @default("pending")
+  status    LifecycleStatus @default(PENDING)
   fulfilledAt DateTime?
   createdAt DateTime @default(now())
 

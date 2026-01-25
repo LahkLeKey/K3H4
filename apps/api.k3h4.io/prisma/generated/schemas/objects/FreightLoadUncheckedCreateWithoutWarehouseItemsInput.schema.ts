@@ -1,5 +1,6 @@
 import * as z from 'zod';
 import { Prisma } from '@prisma/client';
+import { LifecycleStatusSchema } from '../enums/LifecycleStatus.schema';
 import { NullableJsonNullValueInputSchema } from '../enums/NullableJsonNullValueInput.schema';
 import { AgricultureShipmentUncheckedCreateNestedManyWithoutFreightLoadInputObjectSchema as AgricultureShipmentUncheckedCreateNestedManyWithoutFreightLoadInputObjectSchema } from './AgricultureShipmentUncheckedCreateNestedManyWithoutFreightLoadInput.schema'
 
@@ -33,7 +34,7 @@ const makeSchema = () => z.object({
 ]).refine((v) => isValidDecimalInput(v), {
   message: "Field 'cost' must be a Decimal",
 }),
-  status: z.string().optional(),
+  status: LifecycleStatusSchema.optional(),
   routeGeoJson: z.union([NullableJsonNullValueInputSchema, jsonSchema]).optional(),
   createdAt: z.coerce.date().optional(),
   updatedAt: z.coerce.date().optional(),

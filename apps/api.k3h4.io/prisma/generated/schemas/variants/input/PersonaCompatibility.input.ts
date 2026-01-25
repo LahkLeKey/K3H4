@@ -1,4 +1,5 @@
 import * as z from 'zod';
+import { LifecycleStatusSchema } from '../../enums/LifecycleStatus.schema';
 // prettier-ignore
 export const PersonaCompatibilityInputSchema = z.object({
     id: z.string(),
@@ -14,7 +15,7 @@ export const PersonaCompatibilityInputSchema = z.object({
     overlappingTokens: z.unknown().optional().nullable(),
     computedAt: z.date(),
     rationale: z.string().optional().nullable(),
-    status: z.string()
+    status: LifecycleStatusSchema
 }).strict();
 
 export type PersonaCompatibilityInputType = z.infer<typeof PersonaCompatibilityInputSchema>;

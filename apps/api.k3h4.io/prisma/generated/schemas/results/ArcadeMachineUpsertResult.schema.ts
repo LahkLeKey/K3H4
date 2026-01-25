@@ -5,7 +5,7 @@ export const ArcadeMachineUpsertResultSchema = z.object({
   user: z.unknown(),
   name: z.string(),
   gameTitle: z.string(),
-  status: z.string(),
+  status: z.unknown(),
   location: z.string().optional(),
   createdAt: z.date(),
   updatedAt: z.date(),

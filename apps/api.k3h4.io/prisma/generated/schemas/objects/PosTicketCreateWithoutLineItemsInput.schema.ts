@@ -1,5 +1,6 @@
 import * as z from 'zod';
 import { Prisma } from '@prisma/client';
+import { LifecycleStatusSchema } from '../enums/LifecycleStatus.schema';
 import { UserCreateNestedOneWithoutPosTicketsInputObjectSchema as UserCreateNestedOneWithoutPosTicketsInputObjectSchema } from './UserCreateNestedOneWithoutPosTicketsInput.schema';
 import { PosStoreCreateNestedOneWithoutTicketsInputObjectSchema as PosStoreCreateNestedOneWithoutTicketsInputObjectSchema } from './PosStoreCreateNestedOneWithoutTicketsInput.schema'
 
@@ -16,7 +17,7 @@ const makeSchema = () => z.object({
 }),
   itemsCount: z.number().int().optional(),
   channel: z.string(),
-  status: z.string().optional(),
+  status: LifecycleStatusSchema.optional(),
   createdAt: z.coerce.date().optional(),
   updatedAt: z.coerce.date().optional(),
   user: z.lazy(() => UserCreateNestedOneWithoutPosTicketsInputObjectSchema),

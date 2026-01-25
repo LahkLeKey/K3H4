@@ -26,7 +26,6 @@ export const WarehouseItemAggregateResultSchema = z.object({  _count: z.object({
     description: z.string().nullable(),
     quantity: z.number().int().nullable(),
     location: z.string().nullable(),
-    status: z.string().nullable(),
     freightLoadId: z.string().nullable(),
     createdAt: z.date().nullable(),
     updatedAt: z.date().nullable()
@@ -38,7 +37,6 @@ export const WarehouseItemAggregateResultSchema = z.object({  _count: z.object({
     description: z.string().nullable(),
     quantity: z.number().int().nullable(),
     location: z.string().nullable(),
-    status: z.string().nullable(),
     freightLoadId: z.string().nullable(),
     createdAt: z.date().nullable(),
     updatedAt: z.date().nullable()

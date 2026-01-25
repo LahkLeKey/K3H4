@@ -1,6 +1,7 @@
 import * as z from 'zod';
 import type { Prisma } from '@prisma/client';
-
+import { LifecycleStatusSchema } from '../enums/LifecycleStatus.schema';
+import { CoverageStatusSchema } from '../enums/CoverageStatus.schema'
 
 const makeSchema = () => z.object({
   id: z.string().optional(),
@@ -10,8 +11,8 @@ const makeSchema = () => z.object({
   location: z.string().optional().nullable(),
   startsAt: z.coerce.date(),
   endsAt: z.coerce.date(),
-  status: z.string().optional(),
-  coverageStatus: z.string().optional(),
+  status: LifecycleStatusSchema.optional(),
+  coverageStatus: CoverageStatusSchema.optional(),
   assignedCandidateId: z.string().optional().nullable(),
   notes: z.string().optional().nullable(),
   createdAt: z.coerce.date().optional(),

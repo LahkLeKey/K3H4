@@ -4,7 +4,6 @@ export const ArcadeMachineGroupByResultSchema = z.array(z.object({
   userId: z.string(),
   name: z.string(),
   gameTitle: z.string(),
-  status: z.string(),
   location: z.string(),
   createdAt: z.date(),
   updatedAt: z.date(),
@@ -25,7 +24,6 @@ export const ArcadeMachineGroupByResultSchema = z.array(z.object({
     userId: z.string().nullable(),
     name: z.string().nullable(),
     gameTitle: z.string().nullable(),
-    status: z.string().nullable(),
     location: z.string().nullable(),
     createdAt: z.date().nullable(),
     updatedAt: z.date().nullable()
@@ -35,7 +33,6 @@ export const ArcadeMachineGroupByResultSchema = z.array(z.object({
     userId: z.string().nullable(),
     name: z.string().nullable(),
     gameTitle: z.string().nullable(),
-    status: z.string().nullable(),
     location: z.string().nullable(),
     createdAt: z.date().nullable(),
     updatedAt: z.date().nullable()

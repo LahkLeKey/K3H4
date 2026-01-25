@@ -5,7 +5,6 @@ export const CulinaryPrepTaskGroupByResultSchema = z.array(z.object({
   task: z.string(),
   station: z.string(),
   dueAt: z.date(),
-  status: z.string(),
   createdAt: z.date(),
   updatedAt: z.date(),
   _count: z.object({
@@ -25,7 +24,6 @@ export const CulinaryPrepTaskGroupByResultSchema = z.array(z.object({
     task: z.string().nullable(),
     station: z.string().nullable(),
     dueAt: z.date().nullable(),
-    status: z.string().nullable(),
     createdAt: z.date().nullable(),
     updatedAt: z.date().nullable()
   }).nullable().optional(),
@@ -35,7 +33,6 @@ export const CulinaryPrepTaskGroupByResultSchema = z.array(z.object({
     task: z.string().nullable(),
     station: z.string().nullable(),
     dueAt: z.date().nullable(),
-    status: z.string().nullable(),
     createdAt: z.date().nullable(),
     updatedAt: z.date().nullable()
   }).nullable().optional()

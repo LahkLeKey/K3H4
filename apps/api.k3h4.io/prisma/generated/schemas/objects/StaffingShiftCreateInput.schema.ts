@@ -1,5 +1,7 @@
 import * as z from 'zod';
 import type { Prisma } from '@prisma/client';
+import { LifecycleStatusSchema } from '../enums/LifecycleStatus.schema';
+import { CoverageStatusSchema } from '../enums/CoverageStatus.schema';
 import { UserCreateNestedOneWithoutStaffingShiftsInputObjectSchema as UserCreateNestedOneWithoutStaffingShiftsInputObjectSchema } from './UserCreateNestedOneWithoutStaffingShiftsInput.schema';
 import { StaffingRoleCreateNestedOneWithoutShiftsInputObjectSchema as StaffingRoleCreateNestedOneWithoutShiftsInputObjectSchema } from './StaffingRoleCreateNestedOneWithoutShiftsInput.schema';
 import { PersonaCreateNestedOneWithoutStaffingShiftsAssignedInputObjectSchema as PersonaCreateNestedOneWithoutStaffingShiftsAssignedInputObjectSchema } from './PersonaCreateNestedOneWithoutStaffingShiftsAssignedInput.schema';
@@ -11,8 +13,8 @@ const makeSchema = () => z.object({
   location: z.string().optional().nullable(),
   startsAt: z.coerce.date(),
   endsAt: z.coerce.date(),
-  status: z.string().optional(),
-  coverageStatus: z.string().optional(),
+  status: LifecycleStatusSchema.optional(),
+  coverageStatus: CoverageStatusSchema.optional(),
   notes: z.string().optional().nullable(),
   createdAt: z.coerce.date().optional(),
   user: z.lazy(() => UserCreateNestedOneWithoutStaffingShiftsInputObjectSchema),

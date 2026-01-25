@@ -6,7 +6,7 @@ export const ArcadeCardFindManyResultSchema = z.object({
   user: z.unknown(),
   label: z.string().optional(),
   balance: z.number(),
-  status: z.string(),
+  status: z.unknown(),
   createdAt: z.date(),
   updatedAt: z.date(),
   topUps: z.array(z.unknown()),

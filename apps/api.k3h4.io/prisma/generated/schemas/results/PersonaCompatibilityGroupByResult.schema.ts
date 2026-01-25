@@ -10,7 +10,6 @@ export const PersonaCompatibilityGroupByResultSchema = z.array(z.object({
   overlappingTokens: z.unknown(),
   computedAt: z.date(),
   rationale: z.string(),
-  status: z.string(),
   _count: z.object({
     id: z.number(),
     userId: z.number(),
@@ -46,8 +45,7 @@ export const PersonaCompatibilityGroupByResultSchema = z.array(z.object({
     intersectionCount: z.number().int().nullable(),
     unionCount: z.number().int().nullable(),
     computedAt: z.date().nullable(),
-    rationale: z.string().nullable(),
-    status: z.string().nullable()
+    rationale: z.string().nullable()
   }).nullable().optional(),
   _max: z.object({
     id: z.string().nullable(),
@@ -58,7 +56,6 @@ export const PersonaCompatibilityGroupByResultSchema = z.array(z.object({
     intersectionCount: z.number().int().nullable(),
     unionCount: z.number().int().nullable(),
     computedAt: z.date().nullable(),
-    rationale: z.string().nullable(),
-    status: z.string().nullable()
+    rationale: z.string().nullable()
   }).nullable().optional()
 }));

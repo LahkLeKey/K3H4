@@ -5,7 +5,9 @@ import { FloatFilterObjectSchema as FloatFilterObjectSchema } from './FloatFilte
 import { IntFilterObjectSchema as IntFilterObjectSchema } from './IntFilter.schema';
 import { JsonNullableFilterObjectSchema as JsonNullableFilterObjectSchema } from './JsonNullableFilter.schema';
 import { DateTimeFilterObjectSchema as DateTimeFilterObjectSchema } from './DateTimeFilter.schema';
-import { StringNullableFilterObjectSchema as StringNullableFilterObjectSchema } from './StringNullableFilter.schema'
+import { StringNullableFilterObjectSchema as StringNullableFilterObjectSchema } from './StringNullableFilter.schema';
+import { EnumLifecycleStatusFilterObjectSchema as EnumLifecycleStatusFilterObjectSchema } from './EnumLifecycleStatusFilter.schema';
+import { LifecycleStatusSchema } from '../enums/LifecycleStatus.schema'
 
 const personacompatibilityscalarwhereinputSchema = z.object({
   AND: z.union([z.lazy(() => PersonaCompatibilityScalarWhereInputObjectSchema), z.lazy(() => PersonaCompatibilityScalarWhereInputObjectSchema).array()]).optional(),
@@ -21,7 +23,7 @@ const personacompatibilityscalarwhereinputSchema = z.object({
   overlappingTokens: z.lazy(() => JsonNullableFilterObjectSchema).optional(),
   computedAt: z.union([z.lazy(() => DateTimeFilterObjectSchema), z.coerce.date()]).optional(),
   rationale: z.union([z.lazy(() => StringNullableFilterObjectSchema), z.string()]).optional().nullable(),
-  status: z.union([z.lazy(() => StringFilterObjectSchema), z.string()]).optional()
+  status: z.union([z.lazy(() => EnumLifecycleStatusFilterObjectSchema), LifecycleStatusSchema]).optional()
 }).strict();
 export const PersonaCompatibilityScalarWhereInputObjectSchema: z.ZodType<Prisma.PersonaCompatibilityScalarWhereInput> = personacompatibilityscalarwhereinputSchema as unknown as z.ZodType<Prisma.PersonaCompatibilityScalarWhereInput>;
 export const PersonaCompatibilityScalarWhereInputObjectZodSchema = personacompatibilityscalarwhereinputSchema;
