@@ -1,4 +1,5 @@
 import * as z from 'zod';
+import { LifecycleStatusSchema } from '../../enums/LifecycleStatus.schema';
 // prettier-ignore
 export const AgricultureTaskInputSchema = z.object({
     id: z.string(),
@@ -14,7 +15,7 @@ export const AgricultureTaskInputSchema = z.object({
     tags: z.unknown().optional().nullable(),
     notes: z.string().optional().nullable(),
     dueDate: z.date().optional().nullable(),
-    status: z.string(),
+    status: LifecycleStatusSchema,
     createdAt: z.date(),
     updatedAt: z.date()
 }).strict();

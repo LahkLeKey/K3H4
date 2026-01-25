@@ -4,7 +4,6 @@ export const ArcadeRedemptionGroupByResultSchema = z.array(z.object({
   userId: z.string(),
   cardId: z.string(),
   prizeId: z.string(),
-  status: z.string(),
   fulfilledAt: z.date(),
   createdAt: z.date(),
   _count: z.object({
@@ -25,7 +24,6 @@ export const ArcadeRedemptionGroupByResultSchema = z.array(z.object({
     userId: z.string().nullable(),
     cardId: z.string().nullable(),
     prizeId: z.string().nullable(),
-    status: z.string().nullable(),
     fulfilledAt: z.date().nullable(),
     createdAt: z.date().nullable()
   }).nullable().optional(),
@@ -34,7 +32,6 @@ export const ArcadeRedemptionGroupByResultSchema = z.array(z.object({
     userId: z.string().nullable(),
     cardId: z.string().nullable(),
     prizeId: z.string().nullable(),
-    status: z.string().nullable(),
     fulfilledAt: z.date().nullable(),
     createdAt: z.date().nullable()
   }).nullable().optional()

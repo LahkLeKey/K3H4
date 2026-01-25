@@ -12,7 +12,6 @@ export const FreightLoadGroupByResultSchema = z.array(z.object({
   distanceKm: z.number(),
   durationMinutes: z.number().int(),
   cost: z.number(),
-  status: z.string(),
   routeGeoJson: z.unknown(),
   createdAt: z.date(),
   updatedAt: z.date(),
@@ -68,7 +67,6 @@ export const FreightLoadGroupByResultSchema = z.array(z.object({
     distanceKm: z.number().nullable(),
     durationMinutes: z.number().int().nullable(),
     cost: z.number().nullable(),
-    status: z.string().nullable(),
     createdAt: z.date().nullable(),
     updatedAt: z.date().nullable()
   }).nullable().optional(),
@@ -85,7 +83,6 @@ export const FreightLoadGroupByResultSchema = z.array(z.object({
     distanceKm: z.number().nullable(),
     durationMinutes: z.number().int().nullable(),
     cost: z.number().nullable(),
-    status: z.string().nullable(),
     createdAt: z.date().nullable(),
     updatedAt: z.date().nullable()
   }).nullable().optional()

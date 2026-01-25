@@ -5,7 +5,9 @@ import { FloatWithAggregatesFilterObjectSchema as FloatWithAggregatesFilterObjec
 import { IntWithAggregatesFilterObjectSchema as IntWithAggregatesFilterObjectSchema } from './IntWithAggregatesFilter.schema';
 import { JsonNullableWithAggregatesFilterObjectSchema as JsonNullableWithAggregatesFilterObjectSchema } from './JsonNullableWithAggregatesFilter.schema';
 import { DateTimeWithAggregatesFilterObjectSchema as DateTimeWithAggregatesFilterObjectSchema } from './DateTimeWithAggregatesFilter.schema';
-import { StringNullableWithAggregatesFilterObjectSchema as StringNullableWithAggregatesFilterObjectSchema } from './StringNullableWithAggregatesFilter.schema'
+import { StringNullableWithAggregatesFilterObjectSchema as StringNullableWithAggregatesFilterObjectSchema } from './StringNullableWithAggregatesFilter.schema';
+import { EnumLifecycleStatusWithAggregatesFilterObjectSchema as EnumLifecycleStatusWithAggregatesFilterObjectSchema } from './EnumLifecycleStatusWithAggregatesFilter.schema';
+import { LifecycleStatusSchema } from '../enums/LifecycleStatus.schema'
 
 const personacompatibilityscalarwherewithaggregatesinputSchema = z.object({
   AND: z.union([z.lazy(() => PersonaCompatibilityScalarWhereWithAggregatesInputObjectSchema), z.lazy(() => PersonaCompatibilityScalarWhereWithAggregatesInputObjectSchema).array()]).optional(),
@@ -21,7 +23,7 @@ const personacompatibilityscalarwherewithaggregatesinputSchema = z.object({
   overlappingTokens: z.lazy(() => JsonNullableWithAggregatesFilterObjectSchema).optional(),
   computedAt: z.union([z.lazy(() => DateTimeWithAggregatesFilterObjectSchema), z.coerce.date()]).optional(),
   rationale: z.union([z.lazy(() => StringNullableWithAggregatesFilterObjectSchema), z.string()]).optional().nullable(),
-  status: z.union([z.lazy(() => StringWithAggregatesFilterObjectSchema), z.string()]).optional()
+  status: z.union([z.lazy(() => EnumLifecycleStatusWithAggregatesFilterObjectSchema), LifecycleStatusSchema]).optional()
 }).strict();
 export const PersonaCompatibilityScalarWhereWithAggregatesInputObjectSchema: z.ZodType<Prisma.PersonaCompatibilityScalarWhereWithAggregatesInput> = personacompatibilityscalarwherewithaggregatesinputSchema as unknown as z.ZodType<Prisma.PersonaCompatibilityScalarWhereWithAggregatesInput>;
 export const PersonaCompatibilityScalarWhereWithAggregatesInputObjectZodSchema = personacompatibilityscalarwherewithaggregatesinputSchema;

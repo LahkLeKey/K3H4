@@ -1,4 +1,6 @@
 import * as z from 'zod';
+import { LifecycleStatusSchema } from '../../enums/LifecycleStatus.schema';
+import { CoverageStatusSchema } from '../../enums/CoverageStatus.schema';
 // prettier-ignore
 export const StaffingShiftModelSchema = z.object({
     id: z.string(),
@@ -10,8 +12,8 @@ export const StaffingShiftModelSchema = z.object({
     location: z.string().nullable(),
     startsAt: z.date(),
     endsAt: z.date(),
-    status: z.string(),
-    coverageStatus: z.string(),
+    status: LifecycleStatusSchema,
+    coverageStatus: CoverageStatusSchema,
     assignedPersonaId: z.string().nullable(),
     assignedPersona: z.unknown().nullable(),
     assignedCandidateId: z.string().nullable(),

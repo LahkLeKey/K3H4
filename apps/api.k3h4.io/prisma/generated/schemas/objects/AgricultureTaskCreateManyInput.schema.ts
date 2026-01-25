@@ -1,6 +1,7 @@
 import * as z from 'zod';
 import type { Prisma } from '@prisma/client';
-import { NullableJsonNullValueInputSchema } from '../enums/NullableJsonNullValueInput.schema'
+import { NullableJsonNullValueInputSchema } from '../enums/NullableJsonNullValueInput.schema';
+import { LifecycleStatusSchema } from '../enums/LifecycleStatus.schema'
 
 import { JsonValueSchema as jsonSchema } from '../../helpers/json-helpers';
 
@@ -15,7 +16,7 @@ const makeSchema = () => z.object({
   tags: z.union([NullableJsonNullValueInputSchema, jsonSchema]).optional(),
   notes: z.string().optional().nullable(),
   dueDate: z.coerce.date().optional().nullable(),
-  status: z.string().optional(),
+  status: LifecycleStatusSchema.optional(),
   createdAt: z.coerce.date().optional(),
   updatedAt: z.coerce.date().optional()
 }).strict();

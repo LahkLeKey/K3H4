@@ -8,7 +8,7 @@ export const AgricultureInventoryUpsertResultSchema = z.object({
   totalQuantity: z.number(),
   unit: z.string(),
   location: z.string().optional(),
-  status: z.string(),
+  status: z.unknown(),
   createdAt: z.date(),
   updatedAt: z.date(),
   movements: z.array(z.unknown())

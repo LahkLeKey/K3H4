@@ -10,7 +10,6 @@ export const AgricultureTaskGroupByResultSchema = z.array(z.object({
   tags: z.unknown(),
   notes: z.string(),
   dueDate: z.date(),
-  status: z.string(),
   createdAt: z.date(),
   updatedAt: z.date(),
   _count: z.object({
@@ -47,7 +46,6 @@ export const AgricultureTaskGroupByResultSchema = z.array(z.object({
     priority: z.number().int().nullable(),
     notes: z.string().nullable(),
     dueDate: z.date().nullable(),
-    status: z.string().nullable(),
     createdAt: z.date().nullable(),
     updatedAt: z.date().nullable()
   }).nullable().optional(),
@@ -61,7 +59,6 @@ export const AgricultureTaskGroupByResultSchema = z.array(z.object({
     priority: z.number().int().nullable(),
     notes: z.string().nullable(),
     dueDate: z.date().nullable(),
-    status: z.string().nullable(),
     createdAt: z.date().nullable(),
     updatedAt: z.date().nullable()
   }).nullable().optional()

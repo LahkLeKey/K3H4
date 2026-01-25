@@ -14,7 +14,7 @@ export const FreightLoadFindManyResultSchema = z.object({
   distanceKm: z.number(),
   durationMinutes: z.number().int(),
   cost: z.number(),
-  status: z.string(),
+  status: z.unknown(),
   routeGeoJson: z.unknown().optional(),
   createdAt: z.date(),
   updatedAt: z.date(),

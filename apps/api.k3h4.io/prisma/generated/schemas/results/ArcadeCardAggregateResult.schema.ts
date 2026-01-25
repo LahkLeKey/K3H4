@@ -23,7 +23,6 @@ export const ArcadeCardAggregateResultSchema = z.object({  _count: z.object({
     userId: z.string().nullable(),
     label: z.string().nullable(),
     balance: z.number().nullable(),
-    status: z.string().nullable(),
     createdAt: z.date().nullable(),
     updatedAt: z.date().nullable()
   }).nullable().optional(),
@@ -32,7 +31,6 @@ export const ArcadeCardAggregateResultSchema = z.object({  _count: z.object({
     userId: z.string().nullable(),
     label: z.string().nullable(),
     balance: z.number().nullable(),
-    status: z.string().nullable(),
     createdAt: z.date().nullable(),
     updatedAt: z.date().nullable()
   }).nullable().optional()});

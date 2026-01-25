@@ -1,5 +1,7 @@
 import * as z from 'zod';
 import { Prisma } from '@prisma/client';
+import { EngagementPrioritySchema } from '../enums/EngagementPriority.schema';
+import { LifecycleStatusSchema } from '../enums/LifecycleStatus.schema';
 import { NullableJsonNullValueInputSchema } from '../enums/NullableJsonNullValueInput.schema'
 
 import { JsonValueSchema as jsonSchema } from '../../helpers/json-helpers';
@@ -13,8 +15,8 @@ const makeSchema = () => z.object({
   modality: z.string().optional().nullable(),
   openings: z.number().int().optional(),
   filled: z.number().int().optional(),
-  priority: z.string().optional(),
-  status: z.string().optional(),
+  priority: EngagementPrioritySchema.optional(),
+  status: LifecycleStatusSchema.optional(),
   rateMin: z.union([
   z.number(),
   z.string(),

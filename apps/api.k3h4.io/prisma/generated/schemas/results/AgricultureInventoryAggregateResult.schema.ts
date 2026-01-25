@@ -27,7 +27,6 @@ export const AgricultureInventoryAggregateResultSchema = z.object({  _count: z.o
     totalQuantity: z.number().nullable(),
     unit: z.string().nullable(),
     location: z.string().nullable(),
-    status: z.string().nullable(),
     createdAt: z.date().nullable(),
     updatedAt: z.date().nullable()
   }).nullable().optional(),
@@ -39,7 +38,6 @@ export const AgricultureInventoryAggregateResultSchema = z.object({  _count: z.o
     totalQuantity: z.number().nullable(),
     unit: z.string().nullable(),
     location: z.string().nullable(),
-    status: z.string().nullable(),
     createdAt: z.date().nullable(),
     updatedAt: z.date().nullable()
   }).nullable().optional()});

@@ -7,7 +7,7 @@ export const AgricultureCropPlanFindFirstResultSchema = z.nullable(z.object({
   plot: z.unknown(),
   crop: z.string(),
   phase: z.string(),
-  status: z.string(),
+  status: z.unknown(),
   startDate: z.date(),
   targetHarvestDate: z.date().optional(),
   endDate: z.date().optional(),

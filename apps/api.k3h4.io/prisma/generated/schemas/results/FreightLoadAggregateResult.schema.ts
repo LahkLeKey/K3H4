@@ -51,7 +51,6 @@ export const FreightLoadAggregateResultSchema = z.object({  _count: z.object({
     distanceKm: z.number().nullable(),
     durationMinutes: z.number().int().nullable(),
     cost: z.number().nullable(),
-    status: z.string().nullable(),
     createdAt: z.date().nullable(),
     updatedAt: z.date().nullable()
   }).nullable().optional(),
@@ -68,7 +67,6 @@ export const FreightLoadAggregateResultSchema = z.object({  _count: z.object({
     distanceKm: z.number().nullable(),
     durationMinutes: z.number().int().nullable(),
     cost: z.number().nullable(),
-    status: z.string().nullable(),
     createdAt: z.date().nullable(),
     updatedAt: z.date().nullable()
   }).nullable().optional()});

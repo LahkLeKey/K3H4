@@ -13,7 +13,7 @@ export const AgricultureTaskUpsertResultSchema = z.object({
   tags: z.unknown().optional(),
   notes: z.string().optional(),
   dueDate: z.date().optional(),
-  status: z.string(),
+  status: z.unknown(),
   createdAt: z.date(),
   updatedAt: z.date()
 });

@@ -17,7 +17,6 @@ export const ArcadeRedemptionAggregateResultSchema = z.object({  _count: z.objec
     userId: z.string().nullable(),
     cardId: z.string().nullable(),
     prizeId: z.string().nullable(),
-    status: z.string().nullable(),
     fulfilledAt: z.date().nullable(),
     createdAt: z.date().nullable()
   }).nullable().optional(),
@@ -26,7 +25,6 @@ export const ArcadeRedemptionAggregateResultSchema = z.object({  _count: z.objec
     userId: z.string().nullable(),
     cardId: z.string().nullable(),
     prizeId: z.string().nullable(),
-    status: z.string().nullable(),
     fulfilledAt: z.date().nullable(),
     createdAt: z.date().nullable()
   }).nullable().optional()});

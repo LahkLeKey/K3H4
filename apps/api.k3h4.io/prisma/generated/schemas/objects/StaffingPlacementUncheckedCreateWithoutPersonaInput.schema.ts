@@ -1,6 +1,6 @@
 import * as z from 'zod';
 import { Prisma } from '@prisma/client';
-
+import { LifecycleStatusSchema } from '../enums/LifecycleStatus.schema'
 
 import { DecimalJSLikeSchema, isValidDecimalInput } from '../../helpers/decimal-helpers';
 const makeSchema = () => z.object({
@@ -11,7 +11,7 @@ const makeSchema = () => z.object({
   candidateId: z.string().optional().nullable(),
   startDate: z.coerce.date(),
   endDate: z.coerce.date().optional().nullable(),
-  status: z.string().optional(),
+  status: LifecycleStatusSchema.optional(),
   billRate: z.union([
   z.number(),
   z.string(),

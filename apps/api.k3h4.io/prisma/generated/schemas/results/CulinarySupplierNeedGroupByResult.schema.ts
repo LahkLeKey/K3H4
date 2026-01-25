@@ -4,7 +4,6 @@ export const CulinarySupplierNeedGroupByResultSchema = z.array(z.object({
   userId: z.string(),
   item: z.string(),
   quantity: z.string(),
-  status: z.string(),
   dueDate: z.date(),
   createdAt: z.date(),
   updatedAt: z.date(),
@@ -24,7 +23,6 @@ export const CulinarySupplierNeedGroupByResultSchema = z.array(z.object({
     userId: z.string().nullable(),
     item: z.string().nullable(),
     quantity: z.string().nullable(),
-    status: z.string().nullable(),
     dueDate: z.date().nullable(),
     createdAt: z.date().nullable(),
     updatedAt: z.date().nullable()
@@ -34,7 +32,6 @@ export const CulinarySupplierNeedGroupByResultSchema = z.array(z.object({
     userId: z.string().nullable(),
     item: z.string().nullable(),
     quantity: z.string().nullable(),
-    status: z.string().nullable(),
     dueDate: z.date().nullable(),
     createdAt: z.date().nullable(),
     updatedAt: z.date().nullable()

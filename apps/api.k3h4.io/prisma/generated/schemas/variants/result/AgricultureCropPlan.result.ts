@@ -1,4 +1,5 @@
 import * as z from 'zod';
+import { LifecycleStatusSchema } from '../../enums/LifecycleStatus.schema';
 // prettier-ignore
 export const AgricultureCropPlanResultSchema = z.object({
     id: z.string(),
@@ -8,7 +9,7 @@ export const AgricultureCropPlanResultSchema = z.object({
     plot: z.unknown(),
     crop: z.string(),
     phase: z.string(),
-    status: z.string(),
+    status: LifecycleStatusSchema,
     startDate: z.date(),
     targetHarvestDate: z.date().nullable(),
     endDate: z.date().nullable(),

@@ -1,6 +1,7 @@
 import * as z from 'zod';
 import type { Prisma } from '@prisma/client';
-import { NullableJsonNullValueInputSchema } from '../enums/NullableJsonNullValueInput.schema'
+import { NullableJsonNullValueInputSchema } from '../enums/NullableJsonNullValueInput.schema';
+import { LifecycleStatusSchema } from '../enums/LifecycleStatus.schema'
 
 import { JsonValueSchema as jsonSchema } from '../../helpers/json-helpers';
 
@@ -14,7 +15,7 @@ const makeSchema = () => z.object({
   overlappingTokens: z.union([NullableJsonNullValueInputSchema, jsonSchema]).optional(),
   computedAt: z.coerce.date().optional(),
   rationale: z.string().optional().nullable(),
-  status: z.string().optional()
+  status: LifecycleStatusSchema.optional()
 }).strict();
 export const PersonaCompatibilityCreateManyTargetInputObjectSchema: z.ZodType<Prisma.PersonaCompatibilityCreateManyTargetInput> = makeSchema() as unknown as z.ZodType<Prisma.PersonaCompatibilityCreateManyTargetInput>;
 export const PersonaCompatibilityCreateManyTargetInputObjectZodSchema = makeSchema();

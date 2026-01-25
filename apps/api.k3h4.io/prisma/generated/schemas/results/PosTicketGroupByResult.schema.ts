@@ -6,7 +6,6 @@ export const PosTicketGroupByResultSchema = z.array(z.object({
   total: z.number(),
   itemsCount: z.number().int(),
   channel: z.string(),
-  status: z.string(),
   createdAt: z.date(),
   updatedAt: z.date(),
   _count: z.object({
@@ -38,7 +37,6 @@ export const PosTicketGroupByResultSchema = z.array(z.object({
     total: z.number().nullable(),
     itemsCount: z.number().int().nullable(),
     channel: z.string().nullable(),
-    status: z.string().nullable(),
     createdAt: z.date().nullable(),
     updatedAt: z.date().nullable()
   }).nullable().optional(),
@@ -49,7 +47,6 @@ export const PosTicketGroupByResultSchema = z.array(z.object({
     total: z.number().nullable(),
     itemsCount: z.number().int().nullable(),
     channel: z.string().nullable(),
-    status: z.string().nullable(),
     createdAt: z.date().nullable(),
     updatedAt: z.date().nullable()
   }).nullable().optional()

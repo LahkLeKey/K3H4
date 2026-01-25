@@ -1,6 +1,8 @@
 import * as z from 'zod';
 import type { Prisma } from '@prisma/client';
 import { StringFilterObjectSchema as StringFilterObjectSchema } from './StringFilter.schema';
+import { EnumLifecycleStatusFilterObjectSchema as EnumLifecycleStatusFilterObjectSchema } from './EnumLifecycleStatusFilter.schema';
+import { LifecycleStatusSchema } from '../enums/LifecycleStatus.schema';
 import { DateTimeFilterObjectSchema as DateTimeFilterObjectSchema } from './DateTimeFilter.schema';
 import { DateTimeNullableFilterObjectSchema as DateTimeNullableFilterObjectSchema } from './DateTimeNullableFilter.schema';
 import { StringNullableFilterObjectSchema as StringNullableFilterObjectSchema } from './StringNullableFilter.schema';
@@ -19,7 +21,7 @@ const agriculturecropplanwhereinputSchema = z.object({
   plotId: z.union([z.lazy(() => StringFilterObjectSchema), z.string()]).optional(),
   crop: z.union([z.lazy(() => StringFilterObjectSchema), z.string()]).optional(),
   phase: z.union([z.lazy(() => StringFilterObjectSchema), z.string()]).optional(),
-  status: z.union([z.lazy(() => StringFilterObjectSchema), z.string()]).optional(),
+  status: z.union([z.lazy(() => EnumLifecycleStatusFilterObjectSchema), LifecycleStatusSchema]).optional(),
   startDate: z.union([z.lazy(() => DateTimeFilterObjectSchema), z.coerce.date()]).optional(),
   targetHarvestDate: z.union([z.lazy(() => DateTimeNullableFilterObjectSchema), z.coerce.date()]).optional().nullable(),
   endDate: z.union([z.lazy(() => DateTimeNullableFilterObjectSchema), z.coerce.date()]).optional().nullable(),

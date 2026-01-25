@@ -16,7 +16,6 @@ export const CulinaryPrepTaskAggregateResultSchema = z.object({  _count: z.objec
     task: z.string().nullable(),
     station: z.string().nullable(),
     dueAt: z.date().nullable(),
-    status: z.string().nullable(),
     createdAt: z.date().nullable(),
     updatedAt: z.date().nullable()
   }).nullable().optional(),
@@ -26,7 +25,6 @@ export const CulinaryPrepTaskAggregateResultSchema = z.object({  _count: z.objec
     task: z.string().nullable(),
     station: z.string().nullable(),
     dueAt: z.date().nullable(),
-    status: z.string().nullable(),
     createdAt: z.date().nullable(),
     updatedAt: z.date().nullable()
   }).nullable().optional()});

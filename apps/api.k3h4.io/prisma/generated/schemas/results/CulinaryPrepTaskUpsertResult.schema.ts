@@ -6,7 +6,7 @@ export const CulinaryPrepTaskUpsertResultSchema = z.object({
   task: z.string(),
   station: z.string(),
   dueAt: z.date().optional(),
-  status: z.string(),
+  status: z.unknown(),
   createdAt: z.date(),
   updatedAt: z.date()
 });

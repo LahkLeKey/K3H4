@@ -7,7 +7,6 @@ export const AgricultureInventoryGroupByResultSchema = z.array(z.object({
   totalQuantity: z.number(),
   unit: z.string(),
   location: z.string(),
-  status: z.string(),
   createdAt: z.date(),
   updatedAt: z.date(),
   _count: z.object({
@@ -38,7 +37,6 @@ export const AgricultureInventoryGroupByResultSchema = z.array(z.object({
     totalQuantity: z.number().nullable(),
     unit: z.string().nullable(),
     location: z.string().nullable(),
-    status: z.string().nullable(),
     createdAt: z.date().nullable(),
     updatedAt: z.date().nullable()
   }).nullable().optional(),
@@ -50,7 +48,6 @@ export const AgricultureInventoryGroupByResultSchema = z.array(z.object({
     totalQuantity: z.number().nullable(),
     unit: z.string().nullable(),
     location: z.string().nullable(),
-    status: z.string().nullable(),
     createdAt: z.date().nullable(),
     updatedAt: z.date().nullable()
   }).nullable().optional()

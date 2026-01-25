@@ -2,6 +2,8 @@ import * as z from 'zod';
 import { Prisma } from '@prisma/client';
 import { StringFieldUpdateOperationsInputObjectSchema as StringFieldUpdateOperationsInputObjectSchema } from './StringFieldUpdateOperationsInput.schema';
 import { DecimalFieldUpdateOperationsInputObjectSchema as DecimalFieldUpdateOperationsInputObjectSchema } from './DecimalFieldUpdateOperationsInput.schema';
+import { LifecycleStatusSchema } from '../enums/LifecycleStatus.schema';
+import { EnumLifecycleStatusFieldUpdateOperationsInputObjectSchema as EnumLifecycleStatusFieldUpdateOperationsInputObjectSchema } from './EnumLifecycleStatusFieldUpdateOperationsInput.schema';
 import { DateTimeFieldUpdateOperationsInputObjectSchema as DateTimeFieldUpdateOperationsInputObjectSchema } from './DateTimeFieldUpdateOperationsInput.schema';
 import { AssignmentTimecardUncheckedUpdateManyWithoutAssignmentNestedInputObjectSchema as AssignmentTimecardUncheckedUpdateManyWithoutAssignmentNestedInputObjectSchema } from './AssignmentTimecardUncheckedUpdateManyWithoutAssignmentNestedInput.schema';
 import { AssignmentPayoutUncheckedUpdateManyWithoutAssignmentNestedInputObjectSchema as AssignmentPayoutUncheckedUpdateManyWithoutAssignmentNestedInputObjectSchema } from './AssignmentPayoutUncheckedUpdateManyWithoutAssignmentNestedInput.schema'
@@ -19,7 +21,7 @@ const makeSchema = () => z.object({
 ]).refine((v) => isValidDecimalInput(v), {
   message: "Field 'hourlyRate' must be a Decimal",
 }), z.lazy(() => DecimalFieldUpdateOperationsInputObjectSchema)]).optional(),
-  status: z.union([z.string(), z.lazy(() => StringFieldUpdateOperationsInputObjectSchema)]).optional(),
+  status: z.union([LifecycleStatusSchema, z.lazy(() => EnumLifecycleStatusFieldUpdateOperationsInputObjectSchema)]).optional(),
   createdAt: z.union([z.coerce.date(), z.lazy(() => DateTimeFieldUpdateOperationsInputObjectSchema)]).optional(),
   updatedAt: z.union([z.coerce.date(), z.lazy(() => DateTimeFieldUpdateOperationsInputObjectSchema)]).optional(),
   timecards: z.lazy(() => AssignmentTimecardUncheckedUpdateManyWithoutAssignmentNestedInputObjectSchema).optional(),

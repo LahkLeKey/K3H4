@@ -1,5 +1,6 @@
 import * as z from 'zod';
 import { Prisma } from '@prisma/client';
+import { LifecycleStatusSchema } from '../enums/LifecycleStatus.schema';
 import { AgricultureInventoryMovementCreateNestedManyWithoutInventoryInputObjectSchema as AgricultureInventoryMovementCreateNestedManyWithoutInventoryInputObjectSchema } from './AgricultureInventoryMovementCreateNestedManyWithoutInventoryInput.schema'
 
 import { DecimalJSLikeSchema, isValidDecimalInput } from '../../helpers/decimal-helpers';
@@ -17,7 +18,7 @@ const makeSchema = () => z.object({
 }).optional(),
   unit: z.string(),
   location: z.string().optional().nullable(),
-  status: z.string().optional(),
+  status: LifecycleStatusSchema.optional(),
   createdAt: z.coerce.date().optional(),
   updatedAt: z.coerce.date().optional(),
   movements: z.lazy(() => AgricultureInventoryMovementCreateNestedManyWithoutInventoryInputObjectSchema).optional()

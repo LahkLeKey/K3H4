@@ -34,8 +34,7 @@ export const PersonaCompatibilityAggregateResultSchema = z.object({  _count: z.o
     intersectionCount: z.number().int().nullable(),
     unionCount: z.number().int().nullable(),
     computedAt: z.date().nullable(),
-    rationale: z.string().nullable(),
-    status: z.string().nullable()
+    rationale: z.string().nullable()
   }).nullable().optional(),
   _max: z.object({
     id: z.string().nullable(),
@@ -46,6 +45,5 @@ export const PersonaCompatibilityAggregateResultSchema = z.object({  _count: z.o
     intersectionCount: z.number().int().nullable(),
     unionCount: z.number().int().nullable(),
     computedAt: z.date().nullable(),
-    rationale: z.string().nullable(),
-    status: z.string().nullable()
+    rationale: z.string().nullable()
   }).nullable().optional()});

@@ -1,12 +1,13 @@
 import * as z from 'zod';
 import type { Prisma } from '@prisma/client';
+import { LifecycleStatusSchema } from '../enums/LifecycleStatus.schema';
 import { ArcadeCardCreateNestedOneWithoutRedemptionsInputObjectSchema as ArcadeCardCreateNestedOneWithoutRedemptionsInputObjectSchema } from './ArcadeCardCreateNestedOneWithoutRedemptionsInput.schema';
 import { ArcadePrizeCreateNestedOneWithoutRedemptionsInputObjectSchema as ArcadePrizeCreateNestedOneWithoutRedemptionsInputObjectSchema } from './ArcadePrizeCreateNestedOneWithoutRedemptionsInput.schema';
 import { ArcadeSessionCreateNestedManyWithoutRewardRedemptionInputObjectSchema as ArcadeSessionCreateNestedManyWithoutRewardRedemptionInputObjectSchema } from './ArcadeSessionCreateNestedManyWithoutRewardRedemptionInput.schema'
 
 const makeSchema = () => z.object({
   id: z.string().optional(),
-  status: z.string().optional(),
+  status: LifecycleStatusSchema.optional(),
   fulfilledAt: z.coerce.date().optional().nullable(),
   createdAt: z.coerce.date().optional(),
   card: z.lazy(() => ArcadeCardCreateNestedOneWithoutRedemptionsInputObjectSchema).optional(),

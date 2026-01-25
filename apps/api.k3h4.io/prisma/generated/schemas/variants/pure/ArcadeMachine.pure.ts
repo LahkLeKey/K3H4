@@ -1,4 +1,5 @@
 import * as z from 'zod';
+import { LifecycleStatusSchema } from '../../enums/LifecycleStatus.schema';
 // prettier-ignore
 export const ArcadeMachineModelSchema = z.object({
     id: z.string(),
@@ -6,7 +7,7 @@ export const ArcadeMachineModelSchema = z.object({
     user: z.unknown(),
     name: z.string(),
     gameTitle: z.string(),
-    status: z.string(),
+    status: LifecycleStatusSchema,
     location: z.string().nullable(),
     createdAt: z.date(),
     updatedAt: z.date(),

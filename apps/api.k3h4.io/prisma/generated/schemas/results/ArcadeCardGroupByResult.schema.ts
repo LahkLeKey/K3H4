@@ -4,7 +4,6 @@ export const ArcadeCardGroupByResultSchema = z.array(z.object({
   userId: z.string(),
   label: z.string(),
   balance: z.number(),
-  status: z.string(),
   createdAt: z.date(),
   updatedAt: z.date(),
   _count: z.object({
@@ -31,7 +30,6 @@ export const ArcadeCardGroupByResultSchema = z.array(z.object({
     userId: z.string().nullable(),
     label: z.string().nullable(),
     balance: z.number().nullable(),
-    status: z.string().nullable(),
     createdAt: z.date().nullable(),
     updatedAt: z.date().nullable()
   }).nullable().optional(),
@@ -40,7 +38,6 @@ export const ArcadeCardGroupByResultSchema = z.array(z.object({
     userId: z.string().nullable(),
     label: z.string().nullable(),
     balance: z.number().nullable(),
-    status: z.string().nullable(),
     createdAt: z.date().nullable(),
     updatedAt: z.date().nullable()
   }).nullable().optional()

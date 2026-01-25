@@ -28,7 +28,6 @@ export const PosTicketAggregateResultSchema = z.object({  _count: z.object({
     total: z.number().nullable(),
     itemsCount: z.number().int().nullable(),
     channel: z.string().nullable(),
-    status: z.string().nullable(),
     createdAt: z.date().nullable(),
     updatedAt: z.date().nullable()
   }).nullable().optional(),
@@ -39,7 +38,6 @@ export const PosTicketAggregateResultSchema = z.object({  _count: z.object({
     total: z.number().nullable(),
     itemsCount: z.number().int().nullable(),
     channel: z.string().nullable(),
-    status: z.string().nullable(),
     createdAt: z.date().nullable(),
     updatedAt: z.date().nullable()
   }).nullable().optional()});

@@ -7,7 +7,7 @@ export const AssignmentUpdateResultSchema = z.nullable(z.object({
   persona: z.unknown(),
   title: z.string(),
   hourlyRate: z.number(),
-  status: z.string(),
+  status: z.unknown(),
   createdAt: z.date(),
   updatedAt: z.date(),
   timecards: z.array(z.unknown()),

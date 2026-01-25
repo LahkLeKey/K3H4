@@ -1,4 +1,5 @@
 import * as z from 'zod';
+import { LifecycleStatusSchema } from '../../enums/LifecycleStatus.schema';
 // prettier-ignore
 export const FreightLoadResultSchema = z.object({
     id: z.string(),
@@ -14,7 +15,7 @@ export const FreightLoadResultSchema = z.object({
     distanceKm: z.number(),
     durationMinutes: z.number().int(),
     cost: z.number(),
-    status: z.string(),
+    status: LifecycleStatusSchema,
     routeGeoJson: z.unknown().nullable(),
     createdAt: z.date(),
     updatedAt: z.date(),

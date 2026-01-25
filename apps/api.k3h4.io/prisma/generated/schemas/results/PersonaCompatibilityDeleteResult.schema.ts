@@ -13,5 +13,5 @@ export const PersonaCompatibilityDeleteResultSchema = z.nullable(z.object({
   overlappingTokens: z.unknown().optional(),
   computedAt: z.date(),
   rationale: z.string().optional(),
-  status: z.string()
+  status: z.unknown()
 }));

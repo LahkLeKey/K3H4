@@ -1,4 +1,5 @@
 import * as z from 'zod';
+import { LifecycleStatusSchema } from '../../enums/LifecycleStatus.schema';
 // prettier-ignore
 export const ArcadeCardModelSchema = z.object({
     id: z.string(),
@@ -6,7 +7,7 @@ export const ArcadeCardModelSchema = z.object({
     user: z.unknown(),
     label: z.string().nullable(),
     balance: z.number(),
-    status: z.string(),
+    status: LifecycleStatusSchema,
     createdAt: z.date(),
     updatedAt: z.date(),
     topUps: z.array(z.unknown()),
