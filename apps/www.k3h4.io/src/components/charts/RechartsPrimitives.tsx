@@ -13,7 +13,7 @@ import {
 } from "recharts";
 
 import { Card } from "../ui";
-import { R3FErrorBoundary } from "../../r3f-components/R3FErrorBoundary";
+import { R3FErrorBoundary } from "../r3f-components/R3FErrorBoundary";
 
 export const axisStyle = { fill: "#cbd5e1", fontSize: 11 };
 

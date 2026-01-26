@@ -2,13 +2,13 @@ import { useMemo, type ReactNode } from "react";
 import { Canvas, type CanvasProps } from "@react-three/fiber";
 import { OrbitControls } from "@react-three/drei";
 
-import { Tabs } from "../radix-primitives";
+import { Tabs } from "../components/radix-primitives";
 import { Badge, Card, SectionHeader } from "../components/ui";
-import { StarfieldLayout } from "../radix-components/StarfieldLayout";
-import { R3FErrorBoundary } from "../r3f-components/R3FErrorBoundary";
-import { CampfireFlame } from "../r3f-components/CampfireFlame";
-import { FireExplosion } from "../r3f-components/FireExplosion";
-import { Html as R3FHtml, NodeLinkGraph } from "../r3f-primitives";
+import { StarfieldLayout } from "../components/radix-components/StarfieldLayout";
+import { R3FErrorBoundary } from "../components/r3f-components/R3FErrorBoundary";
+import { CampfireFlame } from "../components/r3f-components/CampfireFlame";
+import { FireExplosion } from "../components/r3f-components/FireExplosion";
+import { Html as R3FHtml, NodeLinkGraph } from "../components/r3f-primitives";
 
 const NODE_LINK_NODES = [
     { id: "gateway", label: "Gateway", weight: 1.1 },

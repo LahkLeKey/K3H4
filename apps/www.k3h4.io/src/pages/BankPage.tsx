@@ -1,5 +1,5 @@
-import { BankDashboard } from "../radix-components/BankDashboard";
-import { StarfieldLayout } from "../radix-components/StarfieldLayout";
+import { BankDashboard } from "../components/radix-components/BankDashboard";
+import { StarfieldLayout } from "../components/radix-components/StarfieldLayout";
 
 export function BankPage() {
     const gradient = "bg-[radial-gradient(circle_at_20%_20%,rgba(16,185,129,0.12),transparent_45%),radial-gradient(circle_at_80%_10%,rgba(59,130,246,0.12),transparent_40%),radial-gradient(circle_at_70%_80%,rgba(236,72,153,0.12),transparent_40%)]";

@@ -1,17 +1,17 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 
-import { MapLayer } from "../../radix-components/MapLayer";
+import { MapLayer } from "../radix-components/MapLayer";
 import { MapViewProvider } from "../../react-hooks/useMapView";
 import { UiErrorBoundary } from "./UiErrorBoundary";
-import { PageHeader } from "../../radix-components/PageHeader";
+import { PageHeader } from "../radix-components/PageHeader";
 import { useAuthStore } from "../../react-hooks/auth";
 import { useAuthOverlay } from "../../react-hooks/useAuthOverlay";
-import { LoginMenu } from "../../radix-components/auth/LoginMenu";
-import { CallbackScreen } from "../../radix-components/auth/CallbackScreen";
+import { LoginMenu } from "../radix-components/auth/LoginMenu";
+import { CallbackScreen } from "../radix-components/auth/CallbackScreen";
 import { useGeoState } from "../../zustand-stores/geo";
 import { useMapView } from "../../react-hooks/useMapView";
-import { SessionPanel } from "../../radix-components/auth/SessionPanel";
+import { SessionPanel } from "../radix-components/auth/SessionPanel";
 import { primeHistoryCache, usePoiStore } from "../../zustand-stores/poi";
 
 const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));
