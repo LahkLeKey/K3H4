@@ -1,5 +1,5 @@
-import { LogisticsDashboard } from "../radix-components/LogisticsDashboard";
-import { StarfieldLayout } from "../radix-components/StarfieldLayout";
+import { LogisticsDashboard } from "../components/radix-components/LogisticsDashboard";
+import { StarfieldLayout } from "../components/radix-components/StarfieldLayout";
 
 export function LogisticsPage() {
     return (

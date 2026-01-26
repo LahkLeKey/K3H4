@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Tabs } from "../radix-primitives";
+import { Tabs } from "../components/radix-primitives";
 import { Badge, Button, Card, SectionHeader, Textarea } from "../components/ui";
-import { StarfieldLayout } from "../radix-components/StarfieldLayout";
+import { StarfieldLayout } from "../components/radix-components/StarfieldLayout";
 import { useAuthStore } from "../react-hooks/auth";
 import type { FormEvent } from "react";
 

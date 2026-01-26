@@ -1,5 +1,5 @@
-import { StorefrontsDashboard } from "../radix-components/storefronts/StorefrontsDashboard";
-import { StarfieldLayout } from "../radix-components/StarfieldLayout";
+import { StorefrontsDashboard } from "../components/radix-components/storefronts/StorefrontsDashboard";
+import { StarfieldLayout } from "../components/radix-components/StarfieldLayout";
 
 export function StorefrontsPage() {
     return (
