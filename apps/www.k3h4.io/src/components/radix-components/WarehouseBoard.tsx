@@ -8,7 +8,6 @@ import { useWarehouseState, type WarehouseItem } from "../../zustand-stores/ware
 
 const columns: TableColumn<WarehouseItem>[] = [
     { key: "sku", label: "SKU" },
-    { key: "userId", label: "Owner" },
     {
         key: "description",
         label: "Description",
@@ -132,6 +131,7 @@ export function WarehouseBoard() {
                 columns={columns}
                 rows={items}
                 rowKey={(row) => row.id}
+                ownerAccessor={(row) => row.userId}
                 idAccessor={(row) => row.id}
                 noDataMessage={noDataMessage}
                 rowFeedback={rowFeedback}

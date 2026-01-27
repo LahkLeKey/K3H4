@@ -1,8 +1,9 @@
 import { Fragment, useMemo, useRef, useState } from "react";
 import type { ReactNode } from "react";
 import { Popover } from "../radix-primitives/Popover";
+import { Tooltip } from "../radix-primitives/Tooltip";
 import { Button } from "./Button";
-import { Info } from "lucide-react";
+import { Info, User } from "lucide-react";
 
 export type TableColumn<T> = {
     key: keyof T;
@@ -32,6 +33,8 @@ export type TableProps<T> = {
     rowKey: (row: T, idx: number) => string;
     idAccessor?: (row: T) => string;
     idLabel?: string;
+    ownerAccessor?: (row: T) => string | undefined | null;
+    ownerLabel?: string;
     className?: string;
     noDataMessage?: string;
     title?: string;
@@ -58,12 +61,17 @@ export function Table<T>({
     rowActionItems,
     idAccessor,
     idLabel = "ID",
+    ownerAccessor,
+    ownerLabel = "Owner",
 }: TableProps<T>) {
     const hasActionBar = Boolean(title || actions);
     const hasRowActions = Boolean(rowActions || rowActionItems);
     const rowKeys = useMemo(() => rows.map((row, idx) => rowKey(row, idx)), [rows, rowKey]);
     const hasIdColumn = typeof idAccessor === "function";
-    const columnSpan = columns.length + (hasIdColumn ? 1 : 0) + (hasRowActions ? 1 : 0);
+    const hasOwnerColumn = typeof ownerAccessor === "function";
+    const showCombinedColumn = hasIdColumn && hasOwnerColumn;
+    const extraColumns = showCombinedColumn ? 1 : (hasOwnerColumn ? 1 : 0) + (hasIdColumn ? 1 : 0);
+    const columnSpan = columns.length + extraColumns + (hasRowActions ? 1 : 0);
     const [confirmingAction, setConfirmingAction] = useState<{ rowKey: string; actionId: string } | null>(null);
     const [loadingActionKey, setLoadingActionKey] = useState<string | null>(null);
     const pendingActionRef = useRef<string | null>(null);
@@ -87,7 +95,19 @@ export function Table<T>({
             <table className="w-full border-collapse text-sm text-slate-100">
                 <thead className="bg-white/5 text-xs uppercase tracking-[0.2em] text-slate-300">
                     <tr>
-                        {hasIdColumn ? (
+                        {showCombinedColumn ? (
+                            <th className="px-4 py-3 text-left font-semibold">
+                                <span className="text-xs uppercase tracking-[0.2em] text-slate-300">{`${idLabel}/${ownerLabel}`}</span>
+                            </th>
+                        ) : null}
+                        {!showCombinedColumn && hasOwnerColumn ? (
+                            <th className="px-4 py-3 text-left font-semibold">
+                                <span className="text-xs uppercase tracking-[0.2em] text-slate-300">
+                                    {ownerLabel}
+                                </span>
+                            </th>
+                        ) : null}
+                        {!showCombinedColumn && hasIdColumn ? (
                             <th className="px-4 py-3 text-left font-semibold">
                                 <span className="text-xs uppercase tracking-[0.2em] text-slate-300">
                                     {idLabel}
@@ -119,7 +139,58 @@ export function Table<T>({
                             return (
                                 <Fragment key={key}>
                                     <tr key={`${key}-row`} className="border-t border-white/5">
-                                        {hasIdColumn ? (
+                                        {showCombinedColumn ? (
+                                            <td className="px-4 py-3">
+                                                {(() => {
+                                                    const ownerValue = ownerAccessor!(row);
+                                                    const ownerDisplay = ownerValue ?? "Unassigned";
+                                                    const idValue = idAccessor!(row);
+                                                    const idDisplay = idValue ?? "";
+                                                    return (
+                                                        <div className="inline-flex h-8 items-stretch rounded-full border border-white/10 bg-slate-900 text-slate-200 shadow-inner">
+                                                            <Tooltip content={ownerDisplay}>
+                                                                <button
+                                                                    type="button"
+                                                                    title={ownerDisplay}
+                                                                    aria-label={`${ownerLabel} ${ownerDisplay}`}
+                                                                    className="flex items-center justify-center px-3 text-[11px] font-semibold tracking-wide transition hover:bg-white/5"
+                                                                >
+                                                                    <User className="h-4 w-4" />
+                                                                </button>
+                                                            </Tooltip>
+                                                            <button
+                                                                type="button"
+                                                                title={idDisplay}
+                                                                aria-label={`${idLabel} ${idDisplay}`}
+                                                                className="flex items-center justify-center px-3 text-[11px] font-semibold tracking-wide border-l border-white/10 transition hover:bg-white/5"
+                                                            >
+                                                                <Info className="h-4 w-4" />
+                                                            </button>
+                                                        </div>
+                                                    );
+                                                })()}
+                                            </td>
+                                        ) : hasOwnerColumn ? (
+                                            <td className="px-4 py-3">
+                                                {(() => {
+                                                    const ownerValue = ownerAccessor!(row);
+                                                    const ownerDisplay = ownerValue ?? "Unassigned";
+                                                    return (
+                                                        <Tooltip content={ownerDisplay}>
+                                                            <button
+                                                                type="button"
+                                                                title={ownerDisplay}
+                                                                aria-label={`${ownerLabel} ${ownerDisplay}`}
+                                                                className="inline-flex h-6 w-6 items-center justify-center rounded-full border border-white/10 bg-slate-900 text-slate-200 transition hover:border-white/40"
+                                                            >
+                                                                <User className="h-4 w-4" />
+                                                            </button>
+                                                        </Tooltip>
+                                                    );
+                                                })()}
+                                            </td>
+                                        ) : null}
+                                        {!showCombinedColumn && hasIdColumn ? (
                                             <td className="px-4 py-3">
                                                 {(() => {
                                                     const idValue = idAccessor!(row);
