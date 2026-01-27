@@ -121,6 +121,7 @@ model User {
   geoViewHistories GeoViewHistory[]
   chatSessions ChatSession[]
   aiInsights     AiInsight[]
+  ollamaOperations OllamaOperation[]
 
   @@unique([provider, providerId])
 }
@@ -1268,6 +1269,7 @@ model ChatSession {
   updatedAt    DateTime   @updatedAt
 
   messages     ChatMessage[]
+  ollamaOperations OllamaOperation[]
 
   @@index([userId, updatedAt])
 }
@@ -1282,4 +1284,28 @@ model ChatMessage {
   createdAt DateTime   @default(now())
 
   @@index([sessionId, createdAt])
+}
+
+model OllamaOperation {
+  id           String    @id @default(cuid())
+  userId       String
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  source       String
+  sessionId    String?
+  session      ChatSession? @relation(fields: [sessionId], references: [id], onDelete: SetNull)
+  model        String
+  temperature  Float?
+  systemPrompt String?
+  requestBody  Json
+  responseBody Json?
+  statusCode   Int?
+  errorMessage String?
+  metadata     Json?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  @@index([userId])
+  @@index([sessionId])
+  @@index([source])
+  @@index([createdAt])
 }

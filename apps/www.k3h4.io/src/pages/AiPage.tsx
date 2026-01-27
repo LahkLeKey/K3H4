@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { faker } from "@faker-js/faker";
 import { Tabs } from "../components/radix-primitives";
-import { Badge, Button, Card, FormField, Input, SectionHeader, Textarea } from "../components/ui";
+import { Badge, Button, Card, FormField, Input, SectionHeader, Table, TableCard, Textarea } from "../components/ui";
+import type { TableColumn } from "../components/ui";
 import { StarfieldLayout } from "../components/radix-components/StarfieldLayout";
 import { useAuthStore } from "../react-hooks/auth";
 import type { FormEvent } from "react";
@@ -39,6 +40,56 @@ type AiInsight = {
     updatedAt: string;
 };
 
+type OperationSourceFilter = 'all' | 'chat' | 'insights';
+type SessionFilter = 'all' | 'active';
+
+type OllamaOperationRecord = {
+    id: string;
+    source: OperationSourceFilter;
+    model: string;
+    temperature: number | null;
+    systemPrompt: string | null;
+    requestBody: unknown;
+    responseBody: unknown;
+    metadata: unknown;
+    statusCode: number | null;
+    errorMessage: string | null;
+    sessionId: string | null;
+    sessionTitle: string | null;
+    createdAt: string;
+    updatedAt: string;
+};
+
+type OperationStatus = 'success' | 'error';
+
+type OllamaOperationRow = {
+    id: string;
+    createdAt: string;
+    source: string;
+    model: string;
+    sessionLabel: string;
+    status: OperationStatus;
+    statusLabel: string;
+    systemPrompt: string | null;
+    requestPreview: string | null;
+    responsePreview: string | null;
+    metadataPreview: string | null;
+    errorMessage: string | null;
+};
+
+const PROXY_OPERATION_LIMIT = 40;
+const FILTER_SELECT_CLASS =
+    'rounded-2xl border border-white/10 bg-slate-900/80 px-3 py-1.5 text-[11px] text-slate-200 outline-none transition focus:border-emerald-400/60 focus:ring-2 focus:ring-emerald-500/30';
+const SOURCE_FILTER_OPTIONS: Array<{ label: string; value: OperationSourceFilter }> = [
+    { label: 'All sources', value: 'all' },
+    { label: 'Chat', value: 'chat' },
+    { label: 'Insights', value: 'insights' },
+];
+const SESSION_FILTER_OPTIONS: Array<{ label: string; value: SessionFilter }> = [
+    { label: 'All operations', value: 'all' },
+    { label: 'Active session', value: 'active' },
+];
+
 const gradient = "bg-[radial-gradient(circle_at_15%_10%,rgba(16,185,129,0.15),transparent_35%),radial-gradient(circle_at_85%_20%,rgba(249,115,22,0.18),transparent_40%),radial-gradient(circle_at_50%_80%,rgba(37,99,235,0.12),transparent_45%)]";
 const FALLBACK_MODEL = "llama2";
 const OLLAMA_LIBRARY_SOURCE_URL = "https://ollama.com/library";
@@ -74,6 +125,11 @@ export function AiPage() {
     const [creatingInsight, setCreatingInsight] = useState(false);
     const [createInsightError, setCreateInsightError] = useState<string | null>(null);
     const [insightStatus, setInsightStatus] = useState<string | null>(null);
+    const [operations, setOperations] = useState<OllamaOperationRow[]>([]);
+    const [loadingOperations, setLoadingOperations] = useState(false);
+    const [operationsError, setOperationsError] = useState<string | null>(null);
+    const [sourceFilter, setSourceFilter] = useState<OperationSourceFilter>('all');
+    const [sessionFilter, setSessionFilter] = useState<SessionFilter>('active');
 
     const activeSession = useMemo(
         () => sessions.find((item) => item.id === activeSessionId) ?? sessions[0] ?? null,
@@ -183,6 +239,32 @@ export function AiPage() {
             setLoadingInsights(false);
         }
     }, [apiBase, handleUnauthorized, token]);
+
+    const fetchProxyOperations = useCallback(async () => {
+        if (!token) return;
+        setLoadingOperations(true);
+        try {
+            setOperationsError(null);
+            const params = new URLSearchParams();
+            params.set("limit", PROXY_OPERATION_LIMIT.toString());
+            if (sourceFilter !== "all") params.set("source", sourceFilter);
+            const sessionQueryId = sessionFilter === "active" ? activeSession?.id ?? null : null;
+            if (sessionQueryId) params.set("sessionId", sessionQueryId);
+            const res = await fetch(`${apiBase}/ai/ollama/operations?${params.toString()}`, {
+                method: "GET",
+                headers: buildHeaders(false),
+            });
+            if (handleUnauthorized(res)) return;
+            const payload = await res.json().catch(() => ({}));
+            if (!res.ok) throw new Error(payload.error || "Unable to load Ollama operations");
+            const raw = Array.isArray(payload.operations) ? payload.operations : [];
+            setOperations(raw.map(buildOperationRow));
+        } catch (err) {
+            setOperationsError(err instanceof Error ? err.message : "Unable to load Ollama operations");
+        } finally {
+            setLoadingOperations(false);
+        }
+    }, [activeSession?.id, apiBase, handleUnauthorized, sessionFilter, sourceFilter, token]);
 
     const handleSaveInsight = useCallback(async () => {
         if (!token) return;
@@ -370,6 +452,20 @@ export function AiPage() {
             fetchInsights();
         }
     }, [fetchSessions, fetchInstalledModels, fetchInsights, session]);
+
+    useEffect(() => {
+        if (session) {
+            fetchProxyOperations();
+        } else {
+            setOperations([]);
+        }
+    }, [fetchProxyOperations, session]);
+
+    useEffect(() => {
+        if (sessionFilter === 'active' && !activeSession) {
+            setSessionFilter('all');
+        }
+    }, [activeSession, sessionFilter]);
 
     useEffect(() => {
         if (!installedModels.length) return;
@@ -821,6 +917,106 @@ export function AiPage() {
         </div>
     );
 
+    const operationColumns = useMemo<TableColumn<OllamaOperationRow>[]>(
+        () => [
+            {
+                key: "createdAt",
+                label: "Time",
+                render: (row) => formatOperationTimestamp(row.createdAt),
+            },
+            {
+                key: "source",
+                label: "Source",
+                render: (row) => (
+                    <Badge accent={getSourceBadgeAccent(row.source)}>
+                        {row.source}
+                    </Badge>
+                ),
+            },
+            { key: "model", label: "Model" },
+            { key: "sessionLabel", label: "Session" },
+            {
+                key: "statusLabel",
+                label: "Status",
+                render: (row) => (
+                    <Badge accent={getStatusBadgeAccent(row.status)}>
+                        {row.statusLabel}
+                    </Badge>
+                ),
+            },
+            {
+                key: "context",
+                label: "Context",
+                render: (row) => renderOperationPreview(row),
+            },
+        ],
+        [],
+    );
+
+    const proxyPanel = (
+        <div className="space-y-5">
+            <TableCard
+                title="Ollama proxy"
+                subtitle="Captured Ollama requests and responses"
+                actions={
+                    <div className="flex flex-wrap items-center gap-2">
+                        <select
+                            value={sourceFilter}
+                            onChange={(event) => setSourceFilter(event.target.value as OperationSourceFilter)}
+                            className={FILTER_SELECT_CLASS}
+                        >
+                            {SOURCE_FILTER_OPTIONS.map((option) => (
+                                <option key={option.value} value={option.value}>
+                                    {option.label}
+                                </option>
+                            ))}
+                        </select>
+                        <select
+                            value={sessionFilter}
+                            onChange={(event) => setSessionFilter(event.target.value as SessionFilter)}
+                            className={FILTER_SELECT_CLASS}
+                        >
+                            {SESSION_FILTER_OPTIONS.map((option) => (
+                                <option
+                                    key={option.value}
+                                    value={option.value}
+                                    disabled={option.value === "active" && !activeSession}
+                                >
+                                    {option.label}
+                                </option>
+                            ))}
+                        </select>
+                        <Button
+                            variant="ghost"
+                            className="text-[11px]"
+                            onClick={fetchProxyOperations}
+                            disabled={loadingOperations}
+                        >
+                            {loadingOperations ? "Refreshing…" : "Refresh history"}
+                        </Button>
+                    </div>
+                }
+            >
+                {operationsError ? (
+                    <div className="rounded-2xl border border-rose-500/30 bg-rose-500/10 px-4 py-3 text-sm text-rose-100">
+                        {operationsError}
+                    </div>
+                ) : null}
+                {loadingOperations ? (
+                    <div className="rounded-2xl border border-dashed border-white/15 bg-white/5 px-4 py-6 text-center text-sm text-slate-300">
+                        Syncing operations…
+                    </div>
+                ) : operations.length === 0 ? (
+                    <div className="rounded-2xl border border-white/15 bg-white/5 px-4 py-6 text-center text-sm text-slate-300">
+                        Ollama requests sent through the API will appear here.
+                    </div>
+                ) : (
+                    <Table columns={operationColumns} rows={operations} rowKey={(row) => row.id} />
+                )}
+            </TableCard>
+        </div>
+    );
+
     const signalsPanel = (
         <div className="grid gap-5 lg:grid-cols-2">
             <Card className="space-y-3 rounded-3xl border border-white/10 bg-white/5 px-5 py-6 shadow-2xl">
@@ -853,6 +1049,7 @@ export function AiPage() {
     const tabs = [
         { key: "chat", label: "Chat", content: chatContent },
         { key: "insights", label: "Insights", content: insightsPanel },
+        { key: "proxy", label: "Ollama proxy", content: proxyPanel },
         { key: "signals", label: "Signals", content: signalsPanel },
     ];
 
@@ -963,4 +1160,114 @@ function parseMissingModelName(message?: string | null): string | null {
     if (!message) return null;
     const match = message.match(/model '?([^']+)'? not found/i);
     return match?.[1] ?? null;
+}
+
+function buildOperationRow(record: OllamaOperationRecord): OllamaOperationRow {
+    const status: OperationStatus = record.errorMessage ? "error" : "success";
+    return {
+        id: record.id,
+        createdAt: record.createdAt,
+        source: record.source,
+        model: record.model,
+        sessionLabel: describeOperationSession(record),
+        status,
+        statusLabel: status === "error" ? "Error" : "Success",
+        systemPrompt: record.systemPrompt ? shorten(record.systemPrompt, 140) : null,
+        requestPreview: previewFromRequest(record.requestBody),
+        responsePreview: previewFromResponse(record.responseBody),
+        metadataPreview: previewFromMetadata(record.metadata),
+        errorMessage: record.errorMessage,
+    };
+}
+
+function describeOperationSession(record: OllamaOperationRecord): string {
+    if (record.sessionTitle) return record.sessionTitle;
+    if (record.sessionId) return `Session ${record.sessionId.slice(0, 8)}`;
+    return "General";
+}
+
+function previewFromRequest(value: unknown): string | null {
+    if (!value) return null;
+    if (typeof value === "object" && value !== null) {
+        const record = value as Record<string, unknown>;
+        const messages = record.messages;
+        if (Array.isArray(messages) && messages.length) {
+            const last = messages[messages.length - 1] as { content?: unknown };
+            if (typeof last?.content === "string") return shorten(last.content, 180);
+        }
+    }
+    const preview = formatJsonPreview(value);
+    return preview ? shorten(preview, 200) : null;
+}
+
+function previewFromResponse(value: unknown): string | null {
+    if (!value) return null;
+    if (typeof value === "string") return shorten(value, 200);
+    if (typeof value === "object" && value !== null) {
+        const record = value as Record<string, unknown>;
+        const candidate = record.choices ?? record.message ?? record.content ?? record.delta;
+        if (typeof candidate === "string") return shorten(candidate, 200);
+        if (Array.isArray(candidate)) {
+            const flattened = candidate
+                .map((item) => (typeof item === "string" ? item : ""))
+                .filter(Boolean)
+                .join(" ");
+            if (flattened) return shorten(flattened, 200);
+        }
+    }
+    const preview = formatJsonPreview(value);
+    return preview ? shorten(preview, 200) : null;
+}
+
+function previewFromMetadata(value: unknown): string | null {
+    return formatJsonPreview(value);
+}
+
+function shorten(value: string, limit = 120): string {
+    return value.length > limit ? `${value.slice(0, limit)}…` : value;
+}
+
+function formatOperationTimestamp(value: string): string {
+    return new Date(value).toLocaleString();
+}
+
+function getSourceBadgeAccent(source: string): string {
+    if (source === "chat") return "#34d399";
+    if (source === "insights") return "#c084fc";
+    return "#94a3b8";
+}
+
+function getStatusBadgeAccent(status: OperationStatus): string {
+    return status === "error" ? "#fb7185" : "#22c55e";
+}
+
+function renderOperationPreview(row: OllamaOperationRow) {
+    return (
+        <div className="space-y-1 text-[11px] text-slate-300">
+            {row.systemPrompt ? (
+                <div>
+                    <span className="text-[10px] uppercase tracking-[0.3em] text-slate-500">Prompt</span>
+                    <p className="truncate text-slate-100">{row.systemPrompt}</p>
+                </div>
+            ) : null}
+            {row.requestPreview ? (
+                <p className="text-slate-300">
+                    <span className="text-[10px] uppercase tracking-[0.3em] text-slate-500">Request</span> {row.requestPreview}
+                </p>
+            ) : null}
+            {row.responsePreview ? (
+                <p className="text-slate-200">
+                    <span className="text-[10px] uppercase tracking-[0.3em] text-slate-500">Response</span> {row.responsePreview}
+                </p>
+            ) : null}
+            {row.metadataPreview ? (
+                <p className="text-slate-400">
+                    <span className="text-[10px] uppercase tracking-[0.3em] text-slate-500">Metadata</span> {row.metadataPreview}
+                </p>
+            ) : null}
+            {row.errorMessage ? (
+                <p className="text-[10px] uppercase tracking-[0.3em] text-rose-300">Error: {row.errorMessage}</p>
+            ) : null}
+        </div>
+    );
 }
