@@ -38,6 +38,7 @@ export type WarehouseState = {
     error: string | null;
     fetchItems: () => Promise<void>;
     deleteItem: (id: string) => Promise<void>;
+    createItem: (payload: { sku: string; location: string; quantity?: number; description?: string }) => Promise<void>;
 };
 
 export const useWarehouseStore = create<WarehouseState>((set) => ({
@@ -75,6 +76,20 @@ export const useWarehouseStore = create<WarehouseState>((set) => ({
             baseUrl: apiBase,
         });
         set((state) => ({ items: state.items.filter((item) => item.id !== id) }));
+    },
+    createItem: async (payload) => {
+        const { session, apiBase } = useAuthStore.getState();
+        if (!session?.accessToken) {
+            throw new Error("Sign in to add items.");
+        }
+        const res = await apiFetch("/warehouse/items", {
+            method: "POST",
+            token: session.accessToken,
+            baseUrl: apiBase,
+            schema: z.object({ item: WarehouseItemSchema }),
+            body: payload,
+        });
+        set((state) => ({ items: [res.item, ...state.items] }));
     },
 }));
 

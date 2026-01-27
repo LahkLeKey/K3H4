@@ -8,6 +8,7 @@ import { useWarehouseState, type WarehouseItem } from "../../zustand-stores/ware
 
 const columns: TableColumn<WarehouseItem>[] = [
     { key: "sku", label: "SKU" },
+    { key: "userId", label: "Owner" },
     {
         key: "description",
         label: "Description",
@@ -16,6 +17,23 @@ const columns: TableColumn<WarehouseItem>[] = [
     { key: "quantity", label: "Quantity" },
     { key: "location", label: "Location" },
     { key: "status", label: "Status" },
+    { key: "freightLoadId", label: "Freight Load" },
+    { key: "category", label: "Category" },
+    {
+        key: "metadataSummary",
+        label: "Metadata",
+        render: (row) => (row.metadata ? JSON.stringify(row.metadata) : "—"),
+    },
+    {
+        key: "createdAt",
+        label: "Created",
+        render: (row) => (row.createdAt ? new Date(row.createdAt).toLocaleString() : "—"),
+    },
+    {
+        key: "updatedAt",
+        label: "Updated",
+        render: (row) => (row.updatedAt ? new Date(row.updatedAt).toLocaleString() : "—"),
+    },
     {
         key: "metadata",
         label: "Notes",
@@ -25,11 +43,12 @@ const columns: TableColumn<WarehouseItem>[] = [
 
 export function WarehouseBoard() {
     const { session } = useAuthStore();
-    const { items, status, error, fetchItems, deleteItem } = useWarehouseState();
+    const { items, status, error, fetchItems, deleteItem, createItem } = useWarehouseState();
     const navigate = useNavigate();
     const [selectedRowKeys, setSelectedRowKeys] = useState<string[]>([]);
     const [rowFeedback, setRowFeedback] = useState<Record<string, ReactNode>>({});
     const [deletingId, setDeletingId] = useState<string | null>(null);
+    const [isAdding, setIsAdding] = useState(false);
 
     const noDataMessage =
         status === "loading"
@@ -81,6 +100,19 @@ export function WarehouseBoard() {
         }
     }, [deleteItem]);
 
+    const handleAddRow = useCallback(async () => {
+        setIsAdding(true);
+        try {
+            const timestamp = Math.floor(Date.now() / 1000);
+            const sku = `NEW-${timestamp}`;
+            await createItem({ sku, location: "Manual addition", quantity: 1 });
+        } catch (err) {
+            console.error(err);
+        } finally {
+            setIsAdding(false);
+        }
+    }, [createItem]);
+
     const handleBulkAction = useCallback((actionId: string) => {
         if (actionId === "clear") {
             setSelectedRowKeys([]);
@@ -116,14 +148,24 @@ export function WarehouseBoard() {
                 ]}
                 onBulkAction={handleBulkAction}
                 actions={
-                    <Button
-                        accent="#a855f7"
-                        variant="outline"
-                        disabled={status === "loading"}
-                        onClick={() => fetchItems()}
-                    >
-                        Refresh
-                    </Button>
+                    <div className="flex flex-wrap items-center gap-2">
+                        <Button
+                            accent="#22d3ee"
+                            variant="outline"
+                            disabled={isAdding}
+                            onClick={handleAddRow}
+                        >
+                            {isAdding ? "Adding…" : "Add row"}
+                        </Button>
+                        <Button
+                            accent="#a855f7"
+                            variant="outline"
+                            disabled={status === "loading"}
+                            onClick={() => fetchItems()}
+                        >
+                            Refresh
+                        </Button>
+                    </div>
                 }
                 columns={columns}
                 rows={items}
