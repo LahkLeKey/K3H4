@@ -134,6 +134,26 @@ export function registerWarehouseRoutes(
       },
   );
 
+  server.delete(
+      '/warehouse/items/:id',
+      {preHandler: [server.authenticate]},
+      async (request, reply) => {
+        const userId = (request.user as {sub: string}).sub;
+        const id = (request.params as {id: string}).id;
+        const item =
+            await prisma.warehouseItem.findFirst({where: {id, userId}});
+        if (!item) return reply.status(404).send({error: 'Item not found'});
+        await prisma.warehouseItem.delete({where: {id}});
+        await recordTelemetry(request, {
+          ...buildTelemetryBase(request),
+          eventType: 'warehouse.delete',
+          source: 'api',
+          payload: {id},
+        });
+        return {success: true};
+      },
+  );
+
   server.patch(
       '/warehouse/items/:id',
       {preHandler: [server.authenticate]},

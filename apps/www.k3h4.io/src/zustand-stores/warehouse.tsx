@@ -37,6 +37,7 @@ export type WarehouseState = {
     status: "idle" | "loading" | "ready" | "error";
     error: string | null;
     fetchItems: () => Promise<void>;
+    deleteItem: (id: string) => Promise<void>;
 };
 
 export const useWarehouseStore = create<WarehouseState>((set) => ({
@@ -62,6 +63,18 @@ export const useWarehouseStore = create<WarehouseState>((set) => ({
             const message = err instanceof Error ? err.message : "Unable to fetch warehouse";
             set({ status: "error", error: message });
         }
+    },
+    deleteItem: async (id: string) => {
+        const { session, apiBase } = useAuthStore.getState();
+        if (!session?.accessToken) {
+            throw new Error("Sign in to delete items.");
+        }
+        await apiFetch(`/warehouse/items/${id}`, {
+            method: "DELETE",
+            token: session.accessToken,
+            baseUrl: apiBase,
+        });
+        set((state) => ({ items: state.items.filter((item) => item.id !== id) }));
     },
 }));
 
