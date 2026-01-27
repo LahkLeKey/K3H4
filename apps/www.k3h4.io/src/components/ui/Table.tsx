@@ -204,9 +204,9 @@ export function Table<T>({
                                                             type="button"
                                                             title={idValue}
                                                             aria-label={`${idLabel} ${idValue}`}
-                                                            className="inline-flex h-5 w-5 items-center justify-center rounded-full border border-white/10 bg-slate-900 text-slate-200 transition hover:border-white/40"
+                                                            className="inline-flex h-6 w-8 items-center justify-center rounded-full border border-white/10 bg-slate-900 text-slate-200 transition hover:border-white/40"
                                                         >
-                                                            <Info className="h-3 w-3" />
+                                                            <Info className="h-4 w-4" />
                                                         </button>
                                                     );
                                                 })()}
