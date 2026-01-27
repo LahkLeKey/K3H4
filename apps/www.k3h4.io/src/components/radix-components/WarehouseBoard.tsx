@@ -61,8 +61,6 @@ export function WarehouseBoard() {
     }, [items, selectedRowKeys.length]);
 
     const handleDelete = useCallback(async (row: WarehouseItem) => {
-        const confirmed = window.confirm(`Delete ${row.sku}?`);
-        if (!confirmed) return;
         setDeletingId(row.id);
         try {
             await deleteItem(row.id);
@@ -139,12 +137,19 @@ export function WarehouseBoard() {
                     id: "delete",
                     label: <Trash2 className="h-4 w-4" />,
                     disabled: deletingId === row.id,
+                    confirmation: {
+                        title: "Confirm delete",
+                        description: (
+                            <span>
+                                Delete {row.sku}? This action cannot be undone.
+                            </span>
+                        ),
+                        confirmLabel: "Delete",
+                        loadingLabel: "Deleting…",
+                        accent: "#ef4444",
+                    },
                 }]}
-                onRowAction={(row, actionId) => {
-                    if (actionId === "delete") {
-                        handleDelete(row);
-                    }
-                }}
+                onRowAction={(row) => handleDelete(row)}
             />
         </Stack>
     );

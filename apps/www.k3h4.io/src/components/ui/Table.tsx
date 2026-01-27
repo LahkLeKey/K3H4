@@ -1,10 +1,28 @@
 import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import type { ReactNode } from "react";
+import { Popover } from "../radix-primitives/Popover";
+import { Button } from "./Button";
 
 export type TableColumn<T> = {
     key: keyof T;
     label: string;
     render?: (row: T) => ReactNode;
+};
+
+export type TableRowActionConfirmation = {
+    title?: ReactNode;
+    description?: ReactNode;
+    confirmLabel?: ReactNode;
+    loadingLabel?: ReactNode;
+    cancelLabel?: ReactNode;
+    accent?: string;
+};
+
+export type TableRowActionItem = {
+    id: string;
+    label: ReactNode;
+    disabled?: boolean;
+    confirmation?: TableRowActionConfirmation;
 };
 
 export type TableProps<T> = {
@@ -23,10 +41,10 @@ export type TableProps<T> = {
     onSelectionChange?: (keys: string[]) => void;
     rowActions?: (row: T) => ReactNode;
     rowFeedback?: Record<string, ReactNode>;
-    onRowAction?: (row: T, action: string) => void;
+    onRowAction?: (row: T, action: string) => Promise<void> | void;
     bulkActionItems?: Array<{ id: string; label: ReactNode; disabled?: boolean }>;
     onBulkAction?: (actionId: string) => void;
-    rowActionItems?: (row: T) => Array<{ id: string; label: ReactNode; disabled?: boolean }>;
+    rowActionItems?: (row: T) => TableRowActionItem[];
 };
 
 export function Table<T>({
@@ -79,6 +97,9 @@ export function Table<T>({
         updateSelection(allSelected ? [] : rowKeys);
     };
     const columnSpan = columns.length + (selectable ? 1 : 0) + (hasRowActions ? 1 : 0);
+    const [confirmingAction, setConfirmingAction] = useState<{ rowKey: string; actionId: string } | null>(null);
+    const [loadingActionKey, setLoadingActionKey] = useState<string | null>(null);
+    const pendingActionRef = useRef<string | null>(null);
 
     return (
         <div className={`overflow-hidden rounded-2xl border border-white/10 bg-slate-950 shadow-xl ${className}`.trim()}>
@@ -168,17 +189,111 @@ export function Table<T>({
                                         ))}
                                         {hasRowActions ? (
                                             <td className="px-4 py-3 text-right text-slate-200">
-                                                {rowActionItems?.(row)?.map((action) => (
-                                                    <button
-                                                        key={`${key}-action-${action.id}`}
-                                                        type="button"
-                                                        disabled={action.disabled}
-                                                        onClick={() => onRowAction?.(row, action.id)}
-                                                        className="inline-flex items-center gap-1 rounded-full border border-white/20 px-2 py-1 text-[11px] font-semibold text-slate-100 transition hover:border-white/40 disabled:border-white/10 disabled:text-slate-500"
-                                                    >
-                                                        {action.label}
-                                                    </button>
-                                                ))}
+                                                {rowActionItems?.(row)?.map((action) => {
+                                                    const actionKey = `${key}-action-${action.id}`;
+                                                    const confirmation = action.confirmation;
+                                                    const isConfirming =
+                                                        confirmingAction?.rowKey === key && confirmingAction?.actionId === action.id;
+                                                    const isLoading = loadingActionKey === actionKey;
+                                                    const confirmLabel = confirmation?.confirmLabel ?? action.label;
+                                                    const loadingLabel = confirmation?.loadingLabel ?? confirmLabel;
+                                                    const cancelLabel = confirmation?.cancelLabel ?? "Cancel";
+                                                    const confirmAccent = confirmation?.accent ?? "#ef4444";
+                                                    const handleConfirm = () => {
+                                                        pendingActionRef.current = actionKey;
+                                                        const result = onRowAction?.(row, action.id);
+                                                        const isPromise = result && typeof (result as Promise<void>).then === "function";
+                                                        if (isPromise) {
+                                                            setLoadingActionKey(actionKey);
+                                                            (result as Promise<void>)
+                                                                .finally(() => {
+                                                                    setLoadingActionKey(null);
+                                                                    pendingActionRef.current = null;
+                                                                    setConfirmingAction(null);
+                                                                });
+                                                        } else {
+                                                            pendingActionRef.current = null;
+                                                            setConfirmingAction(null);
+                                                        }
+                                                    };
+                                                    if (confirmation) {
+                                                        return (
+                                                            <Popover
+                                                                key={actionKey}
+                                                                open={isConfirming || isLoading}
+                                                                modal
+                                                                onOpenChange={(open) => {
+                                                                    if (!open &&
+                                                                        (loadingActionKey === actionKey || pendingActionRef.current === actionKey)
+                                                                    ) {
+                                                                        return;
+                                                                    }
+                                                                    setConfirmingAction(open ? { rowKey: key, actionId: action.id } : null);
+                                                                }}
+                                                                trigger={
+                                                                    <button
+                                                                        type="button"
+                                                                        disabled={action.disabled || isLoading}
+                                                                        className="inline-flex items-center gap-1 rounded-full border border-white/20 px-2 py-1 text-[11px] font-semibold text-slate-100 transition hover:border-white/40 disabled:border-white/10 disabled:text-slate-500"
+                                                                    >
+                                                                        {action.label}
+                                                                    </button>
+                                                                }
+                                                                content={
+                                                                    <div className="flex w-64 flex-col gap-3">
+                                                                        {confirmation.title ? (
+                                                                            <p className="text-[10px] uppercase tracking-[0.4em] text-slate-400">
+                                                                                {confirmation.title}
+                                                                            </p>
+                                                                        ) : null}
+                                                                        {confirmation.description ? (
+                                                                            <p className="text-sm text-slate-200">
+                                                                                {confirmation.description}
+                                                                            </p>
+                                                                        ) : null}
+                                                                        <div className="flex justify-end gap-2">
+                                                                            <button
+                                                                                type="button"
+                                                                                className="rounded-full border border-white/20 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-200 transition hover:border-white/40"
+                                                                                onClick={() => setConfirmingAction(null)}
+                                                                                disabled={isLoading}
+                                                                            >
+                                                                                {cancelLabel}
+                                                                            </button>
+                                                                            <Button
+                                                                                accent={confirmAccent}
+                                                                                variant="solid"
+                                                                                disabled={isLoading}
+                                                                                onClick={handleConfirm}
+                                                                            >
+                                                                                {isLoading ? (
+                                                                                    <span className="inline-flex items-center gap-2">
+                                                                                        <span className="h-2 w-2 animate-spin rounded-full border-2 border-white/60 border-t-transparent" />
+                                                                                        {loadingLabel}
+                                                                                    </span>
+                                                                                ) : (
+                                                                                    confirmLabel
+                                                                                )}
+                                                                            </Button>
+                                                                        </div>
+                                                                    </div>
+                                                                }
+                                                                contentClassName="w-72"
+                                                            />
+                                                        );
+                                                    }
+                                                    return (
+                                                        <button
+                                                            key={actionKey}
+                                                            type="button"
+                                                            disabled={action.disabled}
+                                                            onClick={() => onRowAction?.(row, action.id)}
+                                                            className="inline-flex items-center gap-1 rounded-full border border-white/20 px-2 py-1 text-[11px] font-semibold text-slate-100 transition hover:border-white/40 disabled:border-white/10 disabled:text-slate-500"
+                                                        >
+                                                            {action.label}
+                                                        </button>
+                                                    );
+                                                })}
                                                 {rowActions?.(row)}
                                             </td>
                                         ) : null}
