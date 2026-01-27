@@ -9,34 +9,6 @@ export type LogisticsFieldKey =|'freightTitle'|'freightRate'|'warehouseSku'|
     'warehouseSlotId'|'agricultureSlotId'|'agricultureInvName'|
     'agricultureInvQty'|'agricultureFormStatus'|'status';
 
-const defaultState = {
-  activeTab: 'freight' as LogisticsTab,
-  freightTitle: 'Austin -> Dallas',
-  freightRate: '2.1',
-  warehouseSku: 'SKU-123',
-  warehouseQty: '10',
-  freightCustomTitle: 'Austin -> Dallas',
-  freightCustomRate: '2.1',
-  freightActionStatus: '',
-  warehouseLocation: 'A1',
-  warehouseCreateStatus: '',
-  warehouseCategory: 'agriculture',
-  warehouseDescription: '',
-  warehouseMetadata: '',
-  warehouseSlotId: '',
-  agricultureSlotId: 'slot-1',
-  agricultureInvName: 'Seeds',
-  agricultureInvQty: '5',
-  agricultureFormStatus: '',
-  status: '',
-  usdaDetail: null as {
-    title: string;
-    code?: string;
-    wikidataId?: string;
-    enrichment: any
-  } | null,
-};
-
 export type LogisticsState = {
   activeTab: LogisticsTab; freightTitle: string; freightRate: string;
   warehouseSku: string;
@@ -67,6 +39,34 @@ export type LogisticsState = {
            {title: string; code?: string; wikidataId?: string; enrichment: any}|
        null) => void;
   reset: () => void;
+};
+
+type LogisticsValueState = Omit<
+    LogisticsState,
+    |'setActiveTab'|'updateField'|'setStatus'|'resetStatus'|'setUsdaDetail'|
+    'reset'>;
+
+const defaultState: LogisticsValueState = {
+  activeTab: 'warehouse',
+  freightTitle: 'Austin -> Dallas',
+  freightRate: '2.1',
+  warehouseSku: 'SKU-123',
+  warehouseQty: '10',
+  freightCustomTitle: 'Austin -> Dallas',
+  freightCustomRate: '2.1',
+  freightActionStatus: '',
+  warehouseLocation: 'A1',
+  warehouseCreateStatus: '',
+  warehouseCategory: 'agriculture',
+  warehouseDescription: '',
+  warehouseMetadata: '',
+  warehouseSlotId: '',
+  agricultureSlotId: 'slot-1',
+  agricultureInvName: 'Seeds',
+  agricultureInvQty: '5',
+  agricultureFormStatus: '',
+  status: '',
+  usdaDetail: null,
 };
 
 export const useLogisticsStore = create<LogisticsState>(
