@@ -1,5 +1,5 @@
-import {type OllamaOperation, type PrismaClient} from '@prisma/client';
-import {type FastifyInstance} from 'fastify';
+import {type OllamaOperation, Prisma, type PrismaClient} from '@prisma/client';
+import {type FastifyInstance, type FastifyRequest} from 'fastify';
 
 import {withTelemetryBase} from './telemetry';
 import type {RecordTelemetryFn} from './types';
@@ -55,11 +55,11 @@ export async function recordOllamaOperation(
       model,
       temperature: temperature ?? undefined,
       systemPrompt: systemPrompt?.trim() || undefined,
-      requestBody,
-      responseBody,
+      requestBody: toJsonValue(requestBody),
+      responseBody: toNullableJsonValue(responseBody),
       statusCode: statusCode ?? undefined,
       errorMessage: errorMessage ?? undefined,
-      metadata: metadata ?? undefined,
+      metadata: toNullableJsonValue(metadata),
     },
   });
 }
@@ -77,7 +77,7 @@ export function registerOllamaProxyRoutes(
         preHandler: [authenticate],
         schema: operationsListSchema,
       },
-      async (request) => {
+      async (request: FastifyRequest) => {
         const telemetry = withTelemetryBase(recordTelemetry, request);
         const userId = (request.user as {sub: string}).sub;
         const query = request.query as {
@@ -112,6 +112,23 @@ export function registerOllamaProxyRoutes(
         return {operations: operations.map(mapOllamaOperation)};
       },
   );
+}
+
+function toJsonValue(value: unknown): Prisma.InputJsonValue {
+  if (value === null) return null as unknown as Prisma.InputJsonValue;
+  const type = typeof value;
+  if (type === 'string' || type === 'number' || type === 'boolean') {
+    return value as Prisma.InputJsonValue;
+  }
+  if (Array.isArray(value) || type === 'object') {
+    return value as Prisma.InputJsonValue;
+  }
+  return String(value);
+}
+
+function toNullableJsonValue(value?: unknown): Prisma.InputJsonValue|undefined {
+  if (value === undefined) return undefined;
+  return toJsonValue(value);
 }
 
 type OllamaOperationWithSession =

@@ -945,7 +945,7 @@ export function AiPage() {
                 ),
             },
             {
-                key: "context",
+                key: "requestPreview",
                 label: "Context",
                 render: (row) => renderOperationPreview(row),
             },
