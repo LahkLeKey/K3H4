@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { faker } from "@faker-js/faker";
 import { Tabs } from "../components/radix-primitives";
-import { Badge, Button, Card, SectionHeader, Textarea } from "../components/ui";
+import { Badge, Button, Card, FormField, Input, SectionHeader, Textarea } from "../components/ui";
 import { StarfieldLayout } from "../components/radix-components/StarfieldLayout";
 import { useAuthStore } from "../react-hooks/auth";
 import type { FormEvent } from "react";
@@ -26,6 +27,18 @@ type ChatMessage = {
     createdAt: string;
 };
 
+type AiInsight = {
+    id: string;
+    description: string;
+    targetType: string | null;
+    targetId: string | null;
+    targetLabel: string | null;
+    metadata: unknown;
+    payload: unknown;
+    createdAt: string;
+    updatedAt: string;
+};
+
 const gradient = "bg-[radial-gradient(circle_at_15%_10%,rgba(16,185,129,0.15),transparent_35%),radial-gradient(circle_at_85%_20%,rgba(249,115,22,0.18),transparent_40%),radial-gradient(circle_at_50%_80%,rgba(37,99,235,0.12),transparent_45%)]";
 const FALLBACK_MODEL = "llama2";
 const OLLAMA_LIBRARY_SOURCE_URL = "https://ollama.com/library";
@@ -49,6 +62,18 @@ export function AiPage() {
     const [loadingInstalledModels, setLoadingInstalledModels] = useState(false);
     const [modelFetchError, setModelFetchError] = useState<string | null>(null);
     const [missingModel, setMissingModel] = useState<string | null>(null);
+    const [insights, setInsights] = useState<AiInsight[]>([]);
+    const [loadingInsights, setLoadingInsights] = useState(false);
+    const [insightsError, setInsightsError] = useState<string | null>(null);
+    const [insightDescription, setInsightDescription] = useState("");
+    const [insightTargetType, setInsightTargetType] = useState("");
+    const [insightTargetId, setInsightTargetId] = useState("");
+    const [insightTargetLabel, setInsightTargetLabel] = useState("");
+    const [metadataDraft, setMetadataDraft] = useState("");
+    const [payloadDraft, setPayloadDraft] = useState("");
+    const [creatingInsight, setCreatingInsight] = useState(false);
+    const [createInsightError, setCreateInsightError] = useState<string | null>(null);
+    const [insightStatus, setInsightStatus] = useState<string | null>(null);
 
     const activeSession = useMemo(
         () => sessions.find((item) => item.id === activeSessionId) ?? sessions[0] ?? null,
@@ -138,6 +163,103 @@ export function AiPage() {
             setLoadingInstalledModels(false);
         }
     }, [apiBase, handleUnauthorized, token]);
+
+    const fetchInsights = useCallback(async () => {
+        if (!token) return;
+        setLoadingInsights(true);
+        try {
+            setInsightsError(null);
+            const res = await fetch(`${apiBase}/ai/insights?limit=20`, {
+                method: "GET",
+                headers: buildHeaders(false),
+            });
+            if (handleUnauthorized(res)) return;
+            const payload = await res.json().catch(() => ({}));
+            if (!res.ok) throw new Error(payload.error || "Unable to load insights");
+            setInsights(Array.isArray(payload.insights) ? payload.insights : []);
+        } catch (err) {
+            setInsightsError(err instanceof Error ? err.message : "Unable to load insights");
+        } finally {
+            setLoadingInsights(false);
+        }
+    }, [apiBase, handleUnauthorized, token]);
+
+    const handleSaveInsight = useCallback(async () => {
+        if (!token) return;
+        const trimmedDescription = insightDescription.trim();
+        if (!trimmedDescription) {
+            setCreateInsightError("Describe the enrichment before saving");
+            setInsightStatus(null);
+            return;
+        }
+        let parsedMetadata: unknown | null = null;
+        let parsedPayload: unknown | null = null;
+        try {
+            parsedMetadata = parseJsonInput(metadataDraft, "Metadata");
+            parsedPayload = parseJsonInput(payloadDraft, "Payload");
+        } catch (err) {
+            const message = err instanceof Error ? err.message : "Invalid JSON";
+            setCreateInsightError(message);
+            setInsightStatus(null);
+            return;
+        }
+        setCreatingInsight(true);
+        setCreateInsightError(null);
+        try {
+            const response = await fetch(`${apiBase}/ai/insights`, {
+                method: "POST",
+                headers: buildHeaders(true),
+                body: JSON.stringify({
+                    description: trimmedDescription,
+                    metadata: parsedMetadata ?? undefined,
+                    payload: parsedPayload ?? undefined,
+                    targetType: insightTargetType.trim() || undefined,
+                    targetId: insightTargetId.trim() || undefined,
+                    targetLabel: insightTargetLabel.trim() || undefined,
+                }),
+            });
+            if (handleUnauthorized(response)) return;
+            const payload = await response.json().catch(() => ({}));
+            if (!response.ok) throw new Error(payload.error || "Unable to store insight");
+            setInsightDescription("");
+            setInsightTargetType("");
+            setInsightTargetId("");
+            setInsightTargetLabel("");
+            setMetadataDraft("");
+            setPayloadDraft("");
+            setInsightStatus("Insight recorded");
+            await fetchInsights();
+        } catch (err) {
+            const message = err instanceof Error ? err.message : "Unable to record insight";
+            setCreateInsightError(message);
+            setInsightStatus(null);
+        } finally {
+            setCreatingInsight(false);
+        }
+    }, [
+        apiBase,
+        fetchInsights,
+        handleUnauthorized,
+        insightDescription,
+        insightTargetId,
+        insightTargetLabel,
+        insightTargetType,
+        metadataDraft,
+        payloadDraft,
+        token,
+    ]);
+
+    const seedInsightFields = useCallback(() => {
+        const seed = buildInsightSeed();
+        setInsightDescription(seed.description);
+        setInsightTargetType(seed.targetType);
+        setInsightTargetId(seed.targetId);
+        setInsightTargetLabel(seed.targetLabel);
+        setMetadataDraft(JSON.stringify(seed.metadata, null, 2));
+        setPayloadDraft(JSON.stringify(seed.payload, null, 2));
+        setInsightStatus("Seeded faker data");
+        setCreateInsightError(null);
+    }, []);
 
     const fetchMessages = useCallback(
         async (sessionId?: string) => {
@@ -245,8 +367,9 @@ export function AiPage() {
         if (session) {
             fetchSessions();
             fetchInstalledModels();
+            fetchInsights();
         }
-    }, [fetchSessions, fetchInstalledModels, session]);
+    }, [fetchSessions, fetchInstalledModels, fetchInsights, session]);
 
     useEffect(() => {
         if (!installedModels.length) return;
@@ -520,7 +643,185 @@ export function AiPage() {
         </div>
     );
 
-    const insightContent = (
+    const insightsPanel = (
+        <div className="grid gap-5 lg:grid-cols-[1.05fr_0.95fr]">
+            <Card className="space-y-4 rounded-3xl border border-white/10 bg-gradient-to-br from-slate-950/80 to-slate-900/70 p-5 shadow-2xl">
+                <div className="flex flex-wrap items-center justify-between gap-4">
+                    <div>
+                        <p className="text-xs uppercase tracking-[0.3em] text-slate-400">AI insights</p>
+                        <p className="text-3xl font-semibold text-white">{insights.length} stored</p>
+                    </div>
+                    <Button
+                        variant="ghost"
+                        className="text-[11px]"
+                        onClick={fetchInsights}
+                        disabled={loadingInsights}
+                    >
+                        {loadingInsights ? "Refreshing…" : "Refresh history"}
+                    </Button>
+                </div>
+                {insightsError ? (
+                    <div className="rounded-2xl border border-rose-500/30 bg-rose-500/10 px-4 py-3 text-sm text-rose-100">
+                        {insightsError}
+                    </div>
+                ) : null}
+                <div className="max-h-[52vh] space-y-3 overflow-y-auto pr-1">
+                    {loadingInsights ? (
+                        <div className="rounded-2xl border border-dashed border-white/15 bg-white/5 px-4 py-6 text-center text-sm text-slate-300">
+                            Syncing insights…
+                        </div>
+                    ) : insights.length === 0 ? (
+                        <div className="rounded-2xl border border-white/15 bg-white/5 px-4 py-6 text-center text-sm text-slate-300">
+                            Document what the AI enrichments mean and they will appear here.
+                        </div>
+                    ) : (
+                        insights.map((insight) => {
+                            const metadataPreview = formatJsonPreview(insight.metadata);
+                            const payloadPreview = formatJsonPreview(insight.payload);
+                            const targetLabel = describeInsightTarget(insight);
+                            return (
+                                <div
+                                    key={insight.id}
+                                    className="space-y-2 rounded-2xl border border-white/10 bg-slate-900/70 p-4"
+                                >
+                                    <div className="flex items-center justify-between gap-3">
+                                        <p className="text-sm font-semibold text-white">{insight.description}</p>
+                                        <span className="text-[11px] uppercase tracking-[0.3em] text-slate-500">
+                                            {new Date(insight.createdAt).toLocaleTimeString()}
+                                        </span>
+                                    </div>
+                                    <div className="flex flex-wrap items-center gap-2 text-[11px] uppercase tracking-[0.2em] text-slate-400">
+                                        <Badge accent={insight.targetType ? "#c084fc" : "#94a3b8"}>
+                                            {insight.targetType ?? "general"}
+                                        </Badge>
+                                        <span className="truncate text-[11px] text-slate-400">{targetLabel}</span>
+                                    </div>
+                                    {metadataPreview ? (
+                                        <pre className="mt-2 max-h-36 overflow-auto rounded-2xl border border-white/10 bg-slate-950/60 px-3 py-2 text-[11px] text-slate-200">
+                                            {metadataPreview}
+                                        </pre>
+                                    ) : null}
+                                    {payloadPreview ? (
+                                        <pre className="max-h-36 overflow-auto rounded-2xl border border-white/10 bg-slate-950/60 px-3 py-2 text-[11px] text-slate-200">
+                                            {payloadPreview}
+                                        </pre>
+                                    ) : null}
+                                </div>
+                            );
+                        })
+                    )}
+                </div>
+            </Card>
+            <Card className="space-y-4 rounded-3xl border border-white/10 bg-gradient-to-b from-slate-900/90 via-slate-900/80 to-slate-950/90 p-6 shadow-2xl">
+                <div>
+                    <p className="text-xs uppercase tracking-[0.3em] text-slate-400">Record enrichment</p>
+                    <h3 className="text-2xl font-semibold text-white">Insights builder</h3>
+                </div>
+                <FormField
+                    label="Description"
+                    description="Summarize what the enrichment produced or why it exists."
+                    required
+                >
+                    <Textarea
+                        value={insightDescription}
+                        onChange={(event) => {
+                            setInsightDescription(event.target.value);
+                            setInsightStatus(null);
+                        }}
+                        rows={3}
+                        placeholder="Highlight context, tone, or rationale."
+                    />
+                </FormField>
+                <div className="grid gap-3 md:grid-cols-2">
+                    <FormField label="Target type">
+                        <Input
+                            value={insightTargetType}
+                            onChange={(event) => {
+                                setInsightTargetType(event.target.value);
+                                setInsightStatus(null);
+                            }}
+                            placeholder="e.g. poi, order, persona"
+                        />
+                    </FormField>
+                    <FormField label="Target id">
+                        <Input
+                            value={insightTargetId}
+                            onChange={(event) => {
+                                setInsightTargetId(event.target.value);
+                                setInsightStatus(null);
+                            }}
+                            placeholder="ID being enriched"
+                        />
+                    </FormField>
+                </div>
+                <FormField label="Target label" description="Friendly name used by other UIs">
+                    <Input
+                        value={insightTargetLabel}
+                        onChange={(event) => {
+                            setInsightTargetLabel(event.target.value);
+                            setInsightStatus(null);
+                        }}
+                        placeholder="Display copy for the record"
+                    />
+                </FormField>
+                <FormField label="Metadata (JSON)" description="Structured hints that describe the insight">
+                    <Textarea
+                        value={metadataDraft}
+                        onChange={(event) => {
+                            setMetadataDraft(event.target.value);
+                            setInsightStatus(null);
+                        }}
+                        rows={4}
+                        placeholder='{"action":"tagged","confidence":0.9}'
+                    />
+                </FormField>
+                <FormField label="Payload (JSON)" description="Full enrichment payload captured from the AI">
+                    <Textarea
+                        value={payloadDraft}
+                        onChange={(event) => {
+                            setPayloadDraft(event.target.value);
+                            setInsightStatus(null);
+                        }}
+                        rows={4}
+                        placeholder='{"summary":"...","delta":{...}}'
+                    />
+                </FormField>
+                {createInsightError ? (
+                    <div className="rounded-2xl border border-rose-500/30 bg-rose-500/10 px-4 py-2 text-sm text-rose-100">
+                        {createInsightError}
+                    </div>
+                ) : null}
+                {insightStatus ? (
+                    <p className="text-xs text-emerald-300">{insightStatus}</p>
+                ) : null}
+                <div className="flex flex-wrap items-center justify-between gap-4">
+                    <div className="flex flex-wrap gap-3">
+                        <Button
+                            variant="solid"
+                            className="text-[11px]"
+                            onClick={handleSaveInsight}
+                            disabled={creatingInsight || !insightDescription.trim()}
+                        >
+                            {creatingInsight ? "Saving…" : "Record insight"}
+                        </Button>
+                        <Button
+                            variant="ghost"
+                            className="text-[11px]"
+                            onClick={seedInsightFields}
+                            disabled={creatingInsight}
+                        >
+                            Seed faker data
+                        </Button>
+                    </div>
+                    <span className="text-[11px] uppercase tracking-[0.3em] text-slate-500">
+                        {creatingInsight ? "Persisting..." : "Ready when you are"}
+                    </span>
+                </div>
+            </Card>
+        </div>
+    );
+
+    const signalsPanel = (
         <div className="grid gap-5 lg:grid-cols-2">
             <Card className="space-y-3 rounded-3xl border border-white/10 bg-white/5 px-5 py-6 shadow-2xl">
                 <div className="flex items-center justify-between">
@@ -551,14 +852,15 @@ export function AiPage() {
 
     const tabs = [
         { key: "chat", label: "Chat", content: chatContent },
-        { key: "signals", label: "Signals", content: insightContent },
+        { key: "insights", label: "Insights", content: insightsPanel },
+        { key: "signals", label: "Signals", content: signalsPanel },
     ];
 
     if (!session) {
         return (
             <StarfieldLayout gradientClassName={gradient} contentClassName="flex h-screen items-center justify-center">
                 <div className="rounded-3xl border border-white/10 bg-slate-900/80 px-8 py-6 text-center text-xs uppercase tracking-[0.4em] text-white shadow-2xl">
-                    Sign in to open the AI cockpit
+                    Sign in to open the AI page
                 </div>
             </StarfieldLayout>
         );
@@ -567,7 +869,7 @@ export function AiPage() {
     return (
         <StarfieldLayout gradientClassName={gradient} contentClassName="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-6 px-6 py-10">
             <SectionHeader
-                kicker="AI cockpit"
+                kicker="AI tools"
                 title="Conversational lab"
                 description="Pair session history with Ollama chat responses, tune your system instructions, and keep everything fresh inside a dedicated tabbed experience."
                 status={<span className="text-xs uppercase tracking-[0.28em] text-slate-400">Connected</span>}
@@ -575,6 +877,86 @@ export function AiPage() {
             <Tabs tabs={tabs} className="w-full" />
         </StarfieldLayout>
     );
+}
+
+const INSIGHT_PREVIEW_LIMIT = 360;
+
+function formatJsonPreview(value: unknown): string | null {
+    if (value === null || value === undefined) return null;
+    try {
+        const text = JSON.stringify(value, null, 2);
+        return text.length > INSIGHT_PREVIEW_LIMIT ? `${text.slice(0, INSIGHT_PREVIEW_LIMIT)}…` : text;
+    } catch {
+        const fallback = String(value ?? "");
+        return fallback.length > INSIGHT_PREVIEW_LIMIT ? `${fallback.slice(0, INSIGHT_PREVIEW_LIMIT)}…` : fallback;
+    }
+}
+
+function describeInsightTarget(insight: AiInsight): string {
+    if (insight.targetLabel) return insight.targetLabel;
+    if (!insight.targetType) return "Unlinked insight";
+    return insight.targetId ? `${insight.targetType} · ${insight.targetId}` : insight.targetType;
+}
+
+type InsightSeed = {
+    description: string;
+    targetType: string;
+    targetId: string;
+    targetLabel: string;
+    metadata: Record<string, unknown>;
+    payload: Record<string, unknown>;
+};
+
+const INSIGHT_SEED_TARGET_TYPES = ["order", "persona", "poi", "shipment", "provider", "assignment"];
+const INSIGHT_SEED_ACTIONS = ["tagged", "validated", "enriched", "reviewed", "escalated"];
+const INSIGHT_SEED_SOURCES = ["automation", "manual review", "analytics", "sensor input"];
+const INSIGHT_SEED_STATUSES = ["updated", "created", "resolved", "flagged", "deprecated"];
+const INSIGHT_SEED_SEVERITIES = ["low", "medium", "high"];
+const INSIGHT_SEED_TAG_POOL = ["latency", "capacity", "quality", "risk", "supply", "signal"];
+
+function buildInsightSeed(): InsightSeed {
+    const targetType = faker.helpers.arrayElement(INSIGHT_SEED_TARGET_TYPES);
+    const confidence = Number((faker.number.int({ min: 65, max: 99 }) / 100).toFixed(2));
+    const tags = faker.helpers.shuffle(INSIGHT_SEED_TAG_POOL).slice(0, 3);
+    return {
+        description: faker.hacker.phrase(),
+        targetType,
+        targetId: `${targetType.toUpperCase()}-${faker.string.numeric({ length: 6 })}`,
+        targetLabel: `${faker.company.name()} ${faker.commerce.department()}`,
+        metadata: {
+            action: faker.helpers.arrayElement(INSIGHT_SEED_ACTIONS),
+            confidence,
+            source: faker.helpers.arrayElement(INSIGHT_SEED_SOURCES),
+            reviewer: faker.person.fullName(),
+        },
+        payload: {
+            summary: faker.company.catchPhrase(),
+            delta: {
+                status: faker.helpers.arrayElement(INSIGHT_SEED_STATUSES),
+                severity: faker.helpers.arrayElement(INSIGHT_SEED_SEVERITIES),
+                note: faker.hacker.phrase(),
+            },
+            context: {
+                tags,
+                actor: faker.person.fullName(),
+                location: faker.location.city(),
+            },
+            reference: {
+                id: faker.string.alphanumeric({ length: 8 }).toUpperCase(),
+                url: faker.internet.url(),
+            },
+        },
+    };
+}
+
+function parseJsonInput(value: string, label: string): unknown | null {
+    const trimmed = value.trim();
+    if (!trimmed) return null;
+    try {
+        return JSON.parse(trimmed);
+    } catch {
+        throw new Error(`${label} must be valid JSON`);
+    }
 }
 
 function parseMissingModelName(message?: string | null): string | null {

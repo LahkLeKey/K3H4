@@ -120,8 +120,27 @@ model User {
   personaCompatibilities PersonaCompatibility[]
   geoViewHistories GeoViewHistory[]
   chatSessions ChatSession[]
+  aiInsights     AiInsight[]
 
   @@unique([provider, providerId])
+}
+
+model AiInsight {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  targetType  String?
+  targetId    String?
+  targetLabel String?
+  description String
+  metadata    Json?
+  payload     Json?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([userId])
+  @@index([targetType])
+  @@index([userId, createdAt])
 }
 
 model Persona {
