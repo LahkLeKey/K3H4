@@ -108,7 +108,7 @@ export function registerWarehouseRoutes(
 
         const metadataPayload = Object.keys(baseMetadata).length ?
             (baseMetadata as Prisma.InputJsonValue) :
-            null;
+            Prisma.JsonNull;
         const item = await prisma.warehouseItem.create({
           data: {
             userId,
@@ -234,7 +234,7 @@ export function registerWarehouseRoutes(
 
         const metadataPayload = Object.keys(metadataSource).length ?
             (metadataSource as Prisma.InputJsonValue) :
-            null;
+            Prisma.JsonNull;
         const updated = await prisma.warehouseItem.update({
           where: {id},
           data: {
