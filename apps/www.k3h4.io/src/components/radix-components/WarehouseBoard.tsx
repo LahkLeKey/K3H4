@@ -7,7 +7,6 @@ import { useAuthStore } from "../../zustand-stores/auth";
 import { useWarehouseState, type WarehouseItem } from "../../zustand-stores/warehouse";
 
 const columns: TableColumn<WarehouseItem>[] = [
-    { key: "id", label: "ID" },
     { key: "sku", label: "SKU" },
     { key: "userId", label: "Owner" },
     {
@@ -175,6 +174,7 @@ export function WarehouseBoard() {
                 columns={columns}
                 rows={items}
                 rowKey={(row) => row.id}
+                idAccessor={(row) => row.id}
                 noDataMessage={noDataMessage}
                 selectable
                 selectedRowKeys={selectedRowKeys}

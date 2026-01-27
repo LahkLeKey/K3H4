@@ -2,6 +2,7 @@ import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import type { ReactNode } from "react";
 import { Popover } from "../radix-primitives/Popover";
 import { Button } from "./Button";
+import { Info } from "lucide-react";
 
 export type TableColumn<T> = {
     key: keyof T;
@@ -29,6 +30,8 @@ export type TableProps<T> = {
     columns: TableColumn<T>[];
     rows: T[];
     rowKey: (row: T, idx: number) => string;
+    idAccessor?: (row: T) => string;
+    idLabel?: string;
     className?: string;
     noDataMessage?: string;
     title?: string;
@@ -67,6 +70,8 @@ export function Table<T>({
     bulkActionItems,
     onBulkAction,
     rowActionItems,
+    idAccessor,
+    idLabel = "ID",
 }: TableProps<T>) {
     const hasActionBar = Boolean(title || actions || bulkActions || bulkActionItems);
     const hasRowActions = Boolean(rowActions || rowActionItems);
@@ -96,7 +101,8 @@ export function Table<T>({
     const toggleAll = () => {
         updateSelection(allSelected ? [] : rowKeys);
     };
-    const columnSpan = columns.length + (selectable ? 1 : 0) + (hasRowActions ? 1 : 0);
+    const hasIdColumn = typeof idAccessor === "function";
+    const columnSpan = columns.length + (selectable ? 1 : 0) + (hasIdColumn ? 1 : 0) + (hasRowActions ? 1 : 0);
     const [confirmingAction, setConfirmingAction] = useState<{ rowKey: string; actionId: string } | null>(null);
     const [loadingActionKey, setLoadingActionKey] = useState<string | null>(null);
     const pendingActionRef = useRef<string | null>(null);
@@ -147,6 +153,13 @@ export function Table<T>({
                                 />
                             </th>
                         ) : null}
+                        {hasIdColumn ? (
+                            <th className="px-4 py-3 text-left font-semibold">
+                                <span className="text-xs uppercase tracking-[0.2em] text-slate-300">
+                                    {idLabel}
+                                </span>
+                            </th>
+                        ) : null}
                         {columns.map((col) => (
                             <th key={String(col.key)} className="px-4 py-3 text-left font-semibold">
                                 {col.label}
@@ -180,6 +193,23 @@ export function Table<T>({
                                                     onChange={() => toggleRow(key)}
                                                     className="h-4 w-4 accent-slate-200"
                                                 />
+                                            </td>
+                                        ) : null}
+                                        {hasIdColumn ? (
+                                            <td className="px-4 py-3">
+                                                {(() => {
+                                                    const idValue = idAccessor!(row);
+                                                    return (
+                                                        <button
+                                                            type="button"
+                                                            title={idValue}
+                                                            aria-label={`${idLabel} ${idValue}`}
+                                                            className="inline-flex h-5 w-5 items-center justify-center rounded-full border border-white/10 bg-slate-900 text-slate-200 transition hover:border-white/40"
+                                                        >
+                                                            <Info className="h-3 w-3" />
+                                                        </button>
+                                                    );
+                                                })()}
                                             </td>
                                         ) : null}
                                         {columns.map((col) => (
