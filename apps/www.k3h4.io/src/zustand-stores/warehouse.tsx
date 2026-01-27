@@ -4,10 +4,14 @@ import { z } from "zod";
 import { apiFetch } from "../react-hooks/lib/api-client";
 import { useAuthStore } from "./auth";
 
-const WarehouseCategorySchema = z.enum(["agriculture", "other"]);
+const WarehouseCategoryOptions = ["agriculture", "other"] as const;
+const WarehouseCategorySchema = z.enum(WarehouseCategoryOptions);
 const NormalizedWarehouseCategory = z.preprocess(
     (value) => {
-        if (typeof value === "string" && WarehouseCategorySchema.options.includes(value)) {
+        if (
+            typeof value === "string" &&
+            WarehouseCategoryOptions.includes(value as (typeof WarehouseCategoryOptions)[number])
+        ) {
             return value;
         }
         return "other";

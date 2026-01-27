@@ -14,6 +14,12 @@ type FreightRouteMapProps = {
     isLoading?: boolean;
 };
 
+type StopProperties = {
+    role: string;
+    label: string | null;
+    sequence: number;
+};
+
 export function FreightRouteMap({ direction, placeholderCenter, className = "", isLoading = false }: FreightRouteMapProps) {
     const containerRef = useRef<HTMLDivElement>(null);
     const mapRef = useRef<maplibregl.Map | null>(null);
@@ -109,21 +115,28 @@ export function FreightRouteMap({ direction, placeholderCenter, className = "", 
         const routeData: FeatureCollection = geometry
             ? {
                 type: "FeatureCollection",
-                features: [{ type: "Feature", geometry, properties: null } as Feature],
+                features: [
+                    {
+                        type: "Feature",
+                        geometry,
+                        properties: null,
+                    },
+                ],
             }
             : emptyCollection;
 
         routeSource?.setData(routeData);
 
-        const stopFeatures = direction?.stops?.map((stop) => ({
-            type: "Feature",
-            geometry: { type: "Point", coordinates: [stop.longitude, stop.latitude] } as Point,
-            properties: {
-                role: stop.metadata?.role ?? (stop.sequence === 0 ? "origin" : stop.sequence === 1 ? "destination" : "stop"),
-                label: stop.label,
-                sequence: stop.sequence,
-            },
-        })) ?? [];
+        const stopFeatures: Feature<Point, StopProperties>[] =
+            direction?.stops?.map((stop) => ({
+                type: "Feature",
+                geometry: { type: "Point", coordinates: [stop.longitude, stop.latitude] },
+                properties: {
+                    role: stop.metadata?.role ?? (stop.sequence === 0 ? "origin" : stop.sequence === 1 ? "destination" : "stop"),
+                    label: stop.label,
+                    sequence: stop.sequence,
+                },
+            })) ?? [];
         stopSource?.setData({ type: "FeatureCollection", features: stopFeatures });
 
         const polylineCoords = (() => {
@@ -163,9 +176,10 @@ export function FreightRouteMap({ direction, placeholderCenter, className = "", 
                     linear: true,
                 });
         } else if (direction) {
-            const center = direction.originLat && direction.originLng
-                ? [direction.originLng, direction.originLat]
-                : [initialCenterRef.current.lng, initialCenterRef.current.lat];
+            const center: [number, number] =
+                direction.originLat != null && direction.originLng != null
+                    ? [direction.originLng, direction.originLat]
+                    : [initialCenterRef.current.lng, initialCenterRef.current.lat];
             map.flyTo({ center, zoom: 10, duration: 450 });
         }
     }, [direction, ready]);

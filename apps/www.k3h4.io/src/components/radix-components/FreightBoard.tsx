@@ -4,10 +4,12 @@ import { z } from "zod";
 import { Badge, Button, Card, StatChip, Table } from "../ui";
 import { FreightRouteMap } from "./FreightRouteMap";
 import { useAuthStore } from "../../zustand-stores/auth";
-import { useFreightState } from "../../react-hooks/freight";
+import { useFreightState, type FreightLoad } from "../../react-hooks/freight";
 import { useFreightDirections } from "../../react-hooks/freight-directions";
 import { apiFetch } from "../../react-hooks/lib/api-client";
 import { useLogisticsStore } from "../../zustand-stores/logistics";
+
+type FreightTableRow = FreightLoad & { preview?: boolean };
 
 export function FreightBoard() {
     const { session, apiBase } = useAuthStore();
@@ -42,6 +44,7 @@ export function FreightBoard() {
     }, [loads, selectedLoadId, selectLoad]);
 
     const actionDisabled = !session?.accessToken || status === "loading";
+    const tableRows: FreightTableRow[] = loads;
 
     const handlePlanCustom = async () => {
         if (!session?.accessToken) return;
@@ -266,7 +269,7 @@ export function FreightBoard() {
                                 ),
                             },
                         ]}
-                        rows={loads}
+                        rows={tableRows}
                         rowKey={(row) => row.id}
                     />
                 )}
