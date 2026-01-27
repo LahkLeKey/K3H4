@@ -50,6 +50,11 @@ enum CoverageStatus {
   PARTIAL  @map("partial")
 }
 
+enum WarehouseCategory {
+  AGRICULTURE @map("agriculture")
+  OTHER       @map("other")
+}
+
 model Building {
   id                 Int          @id @default(autoincrement())
   osmId              BigInt?      @unique
@@ -868,11 +873,14 @@ model WarehouseItem {
   status        LifecycleStatus @default(STORED)
   freightLoadId String?
   freightLoad   FreightLoad?  @relation(fields: [freightLoadId], references: [id], onDelete: SetNull)
+  category      WarehouseCategory @default(OTHER)
+  metadata      Json?
   createdAt     DateTime      @default(now())
   updatedAt     DateTime      @updatedAt
 
   @@index([userId, status])
   @@index([userId, freightLoadId])
+  @@index([userId, category])
 }
 
 model PosStore {

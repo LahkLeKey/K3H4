@@ -9,9 +9,10 @@ export type TableProps<T> = {
     rows: T[];
     rowKey: (row: T, idx: number) => string;
     className?: string;
+    noDataMessage?: string;
 };
 
-export function Table<T>({ columns, rows, rowKey, className = "" }: TableProps<T>) {
+export function Table<T>({ columns, rows, rowKey, className = "", noDataMessage = "No data to display." }: TableProps<T>) {
     return (
         <div className={`overflow-hidden rounded-2xl border border-white/10 bg-slate-950 shadow-xl ${className}`.trim()}>
             <table className="w-full border-collapse text-sm text-slate-100">
@@ -25,15 +26,23 @@ export function Table<T>({ columns, rows, rowKey, className = "" }: TableProps<T
                     </tr>
                 </thead>
                 <tbody>
-                    {rows.map((row, idx) => (
-                        <tr key={rowKey(row, idx)} className="border-t border-white/5">
-                            {columns.map((col) => (
-                                <td key={`${rowKey(row, idx)}-${String(col.key)}`} className="px-4 py-3 text-slate-200">
-                                    {col.render ? col.render(row) : (row as any)[col.key]}
-                                </td>
-                            ))}
+                    {rows.length === 0 ? (
+                        <tr className="border-t border-white/5">
+                            <td colSpan={columns.length} className="px-4 py-8 text-center text-xs uppercase tracking-[0.2em] text-slate-400">
+                                {noDataMessage}
+                            </td>
                         </tr>
-                    ))}
+                    ) : (
+                        rows.map((row, idx) => (
+                            <tr key={rowKey(row, idx)} className="border-t border-white/5">
+                                {columns.map((col) => (
+                                    <td key={`${rowKey(row, idx)}-${String(col.key)}`} className="px-4 py-3 text-slate-200">
+                                        {col.render ? col.render(row) : (row as any)[col.key]}
+                                    </td>
+                                ))}
+                            </tr>
+                        ))
+                    )}
                 </tbody>
             </table>
         </div>

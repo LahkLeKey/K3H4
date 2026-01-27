@@ -4,6 +4,17 @@ import { z } from "zod";
 import { apiFetch } from "../react-hooks/lib/api-client";
 import { useAuthStore } from "./auth";
 
+const WarehouseCategorySchema = z.enum(["agriculture", "other"]);
+const NormalizedWarehouseCategory = z.preprocess(
+    (value) => {
+        if (typeof value === "string" && WarehouseCategorySchema.options.includes(value)) {
+            return value;
+        }
+        return "other";
+    },
+    WarehouseCategorySchema,
+);
+
 const WarehouseItemSchema = z.object({
     id: z.string(),
     sku: z.string(),
@@ -11,6 +22,8 @@ const WarehouseItemSchema = z.object({
     quantity: z.number(),
     location: z.string(),
     status: z.string(),
+    category: NormalizedWarehouseCategory,
+    metadata: z.any().nullable(),
     freightLoadId: z.string().nullish(),
     createdAt: z.string().nullish(),
 });

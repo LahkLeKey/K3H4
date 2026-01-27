@@ -1,4 +1,4 @@
-import {LifecycleStatus, Prisma, type PrismaClient} from '@prisma/client';
+import {LifecycleStatus, Prisma, type PrismaClient, WarehouseCategory} from '@prisma/client';
 import {type FastifyInstance} from 'fastify';
 
 import {lifecycleStatusOrDefault, parseLifecycleStatus} from '../lib/status-utils';
@@ -9,7 +9,20 @@ import {type RecordTelemetryFn} from './types';
 const serializeItem = (item: any) => ({
   ...item,
   quantity: Number(item.quantity),
+  category: item.category,
+  metadata: item.metadata ?? null,
 });
+
+const buildAgricultureSlotSnapshot = (slot: any) => ({
+  id: slot.id,
+  slotIndex: slot.slotIndex,
+  plotId: slot.plotId,
+  slug: slot.plot ? `${slot.plot.name} (${slot.plot.crop})` : null,
+});
+
+const normalizeCategory = (value?: string) =>
+    value === WarehouseCategory.AGRICULTURE ? WarehouseCategory.AGRICULTURE :
+                                              WarehouseCategory.OTHER;
 
 export function registerWarehouseRoutes(
     server: FastifyInstance, prisma: PrismaClient,
@@ -43,6 +56,9 @@ export function registerWarehouseRoutes(
           location?: string;
           status?: string;
           freightLoadId?: string;
+          category?: string;
+          metadata?: Record<string, unknown>;
+          agricultureSlotId?: string;
         }
         |undefined;
 
@@ -64,6 +80,35 @@ export function registerWarehouseRoutes(
             return reply.status(404).send({error: 'Freight load not found'});
         }
 
+        const category = normalizeCategory(body?.category);
+        let agricultureSlot: any|null = null;
+        if (category === WarehouseCategory.AGRICULTURE &&
+            body?.agricultureSlotId) {
+          agricultureSlot = await prisma.agricultureSlot.findFirst({
+            where: {id: body.agricultureSlotId, userId},
+            include: {plot: {select: {id: true, name: true, crop: true}}},
+          });
+          if (!agricultureSlot) {
+            return reply.status(404).send(
+                {error: 'Agriculture slot not found'});
+          }
+        }
+        const baseMetadata = body?.metadata &&
+                typeof body.metadata === 'object' &&
+                !Array.isArray(body.metadata) ?
+            {...body.metadata} :
+            {} as Record<string, unknown>;
+        if (category === WarehouseCategory.AGRICULTURE) {
+          baseMetadata.source = 'agriculture';
+          if (agricultureSlot)
+            baseMetadata.slot = buildAgricultureSlotSnapshot(agricultureSlot);
+        } else {
+          baseMetadata.source = 'manual';
+        }
+
+        const metadataPayload = Object.keys(baseMetadata).length ?
+            (baseMetadata as Prisma.InputJsonValue) :
+            null;
         const item = await prisma.warehouseItem.create({
           data: {
             userId,
@@ -74,6 +119,8 @@ export function registerWarehouseRoutes(
             status:
                 lifecycleStatusOrDefault(body.status, LifecycleStatus.STORED),
             freightLoadId,
+            category,
+            metadata: metadataPayload,
           },
         });
 
@@ -99,6 +146,9 @@ export function registerWarehouseRoutes(
           location?: string;
           status?: string;
           freightLoadId?: string|null;
+          category?: string;
+          metadata?: Record<string, unknown>|null;
+          agricultureSlotId?: string|null;
         }
         |undefined;
 
@@ -121,6 +171,39 @@ export function registerWarehouseRoutes(
             return reply.status(404).send({error: 'Freight load not found'});
         }
 
+        const category =
+            body?.category ? normalizeCategory(body.category) : item.category;
+        let agricultureSlot: any|null = null;
+        if (category === WarehouseCategory.AGRICULTURE &&
+            body?.agricultureSlotId) {
+          agricultureSlot = await prisma.agricultureSlot.findFirst({
+            where: {id: body.agricultureSlotId, userId},
+            include: {plot: {select: {id: true, name: true, crop: true}}},
+          });
+          if (!agricultureSlot) {
+            return reply.status(404).send(
+                {error: 'Agriculture slot not found'});
+          }
+        }
+        const existingMetadata = item.metadata &&
+                typeof item.metadata === 'object' &&
+                !Array.isArray(item.metadata) ?
+            {...item.metadata} :
+            {};
+        const metadataSource = body?.metadata &&
+                typeof body.metadata === 'object' &&
+                !Array.isArray(body.metadata) ?
+            {...body.metadata} :
+            existingMetadata;
+        if (category === WarehouseCategory.AGRICULTURE) {
+          metadataSource.source = 'agriculture';
+          if (agricultureSlot) {
+            metadataSource.slot = buildAgricultureSlotSnapshot(agricultureSlot);
+          }
+        } else {
+          metadataSource.source = 'manual';
+        }
+
         let nextStatus = item.status;
         if (body?.status !== undefined) {
           const parsedStatus = parseLifecycleStatus(body.status);
@@ -129,6 +212,9 @@ export function registerWarehouseRoutes(
           nextStatus = parsedStatus;
         }
 
+        const metadataPayload = Object.keys(metadataSource).length ?
+            (metadataSource as Prisma.InputJsonValue) :
+            null;
         const updated = await prisma.warehouseItem.update({
           where: {id},
           data: {
@@ -139,6 +225,8 @@ export function registerWarehouseRoutes(
             freightLoadId: body?.freightLoadId === null ?
                 null :
                 freightLoadId ?? item.freightLoadId,
+            category,
+            metadata: metadataPayload,
           },
         });
 
