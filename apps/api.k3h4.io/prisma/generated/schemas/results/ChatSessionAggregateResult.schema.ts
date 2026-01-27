@@ -10,7 +10,8 @@ export const ChatSessionAggregateResultSchema = z.object({  _count: z.object({
     metadata: z.number(),
     createdAt: z.number(),
     updatedAt: z.number(),
-    messages: z.number()
+    messages: z.number(),
+    ollamaOperations: z.number()
   }).optional(),
   _sum: z.object({
     temperature: z.number().nullable()

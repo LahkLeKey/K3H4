@@ -5,6 +5,7 @@
 
 export { BuildingInputSchema } from './Building.input';
 export { UserInputSchema } from './User.input';
+export { AiInsightInputSchema } from './AiInsight.input';
 export { PersonaInputSchema } from './Persona.input';
 export { PersonaAttributeInputSchema } from './PersonaAttribute.input';
 export { PersonaCompatibilityInputSchema } from './PersonaCompatibility.input';
@@ -68,3 +69,4 @@ export { WikidataCacheEntryInputSchema } from './WikidataCacheEntry.input';
 export { EnrichmentCacheInputSchema } from './EnrichmentCache.input';
 export { ChatSessionInputSchema } from './ChatSession.input';
 export { ChatMessageInputSchema } from './ChatMessage.input';
+export { OllamaOperationInputSchema } from './OllamaOperation.input';

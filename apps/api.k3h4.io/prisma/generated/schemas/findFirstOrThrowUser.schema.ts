@@ -64,6 +64,8 @@ export const UserFindFirstOrThrowSelectSchema: z.ZodType<Prisma.UserSelect> = z.
     personaCompatibilities: z.boolean().optional(),
     geoViewHistories: z.boolean().optional(),
     chatSessions: z.boolean().optional(),
+    aiInsights: z.boolean().optional(),
+    ollamaOperations: z.boolean().optional(),
     _count: z.boolean().optional()
   }).strict() as unknown as z.ZodType<Prisma.UserSelect>;
 
@@ -122,6 +124,8 @@ export const UserFindFirstOrThrowSelectZodSchema = z.object({
     personaCompatibilities: z.boolean().optional(),
     geoViewHistories: z.boolean().optional(),
     chatSessions: z.boolean().optional(),
+    aiInsights: z.boolean().optional(),
+    ollamaOperations: z.boolean().optional(),
     _count: z.boolean().optional()
   }).strict();
 

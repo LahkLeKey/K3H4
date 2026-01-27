@@ -11,7 +11,8 @@ export const ChatSessionResultSchema = z.object({
     metadata: z.unknown().nullable(),
     createdAt: z.date(),
     updatedAt: z.date(),
-    messages: z.array(z.unknown())
+    messages: z.array(z.unknown()),
+    ollamaOperations: z.array(z.unknown())
 }).strict();
 
 export type ChatSessionResultType = z.infer<typeof ChatSessionResultSchema>;

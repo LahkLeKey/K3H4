@@ -49,7 +49,9 @@ import { GeoDemTileCacheListRelationFilterObjectSchema as GeoDemTileCacheListRel
 import { PersonaAttributeListRelationFilterObjectSchema as PersonaAttributeListRelationFilterObjectSchema } from './PersonaAttributeListRelationFilter.schema';
 import { PersonaCompatibilityListRelationFilterObjectSchema as PersonaCompatibilityListRelationFilterObjectSchema } from './PersonaCompatibilityListRelationFilter.schema';
 import { GeoViewHistoryListRelationFilterObjectSchema as GeoViewHistoryListRelationFilterObjectSchema } from './GeoViewHistoryListRelationFilter.schema';
-import { ChatSessionListRelationFilterObjectSchema as ChatSessionListRelationFilterObjectSchema } from './ChatSessionListRelationFilter.schema'
+import { ChatSessionListRelationFilterObjectSchema as ChatSessionListRelationFilterObjectSchema } from './ChatSessionListRelationFilter.schema';
+import { AiInsightListRelationFilterObjectSchema as AiInsightListRelationFilterObjectSchema } from './AiInsightListRelationFilter.schema';
+import { OllamaOperationListRelationFilterObjectSchema as OllamaOperationListRelationFilterObjectSchema } from './OllamaOperationListRelationFilter.schema'
 
 import { DecimalJSLikeSchema, isValidDecimalInput } from '../../helpers/decimal-helpers';
 const userwhereinputSchema = z.object({
@@ -116,7 +118,9 @@ const userwhereinputSchema = z.object({
   personaAttributes: z.lazy(() => PersonaAttributeListRelationFilterObjectSchema).optional(),
   personaCompatibilities: z.lazy(() => PersonaCompatibilityListRelationFilterObjectSchema).optional(),
   geoViewHistories: z.lazy(() => GeoViewHistoryListRelationFilterObjectSchema).optional(),
-  chatSessions: z.lazy(() => ChatSessionListRelationFilterObjectSchema).optional()
+  chatSessions: z.lazy(() => ChatSessionListRelationFilterObjectSchema).optional(),
+  aiInsights: z.lazy(() => AiInsightListRelationFilterObjectSchema).optional(),
+  ollamaOperations: z.lazy(() => OllamaOperationListRelationFilterObjectSchema).optional()
 }).strict();
 export const UserWhereInputObjectSchema: z.ZodType<Prisma.UserWhereInput> = userwhereinputSchema as unknown as z.ZodType<Prisma.UserWhereInput>;
 export const UserWhereInputObjectZodSchema = userwhereinputSchema;

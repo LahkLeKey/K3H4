@@ -5,6 +5,7 @@
 
 export { BuildingModelSchema } from './Building.pure';
 export { UserModelSchema } from './User.pure';
+export { AiInsightModelSchema } from './AiInsight.pure';
 export { PersonaModelSchema } from './Persona.pure';
 export { PersonaAttributeModelSchema } from './PersonaAttribute.pure';
 export { PersonaCompatibilityModelSchema } from './PersonaCompatibility.pure';
@@ -68,3 +69,4 @@ export { WikidataCacheEntryModelSchema } from './WikidataCacheEntry.pure';
 export { EnrichmentCacheModelSchema } from './EnrichmentCache.pure';
 export { ChatSessionModelSchema } from './ChatSession.pure';
 export { ChatMessageModelSchema } from './ChatMessage.pure';
+export { OllamaOperationModelSchema } from './OllamaOperation.pure';

@@ -53,7 +53,9 @@ export const UserAggregateResultSchema = z.object({  _count: z.object({
     personaAttributes: z.number(),
     personaCompatibilities: z.number(),
     geoViewHistories: z.number(),
-    chatSessions: z.number()
+    chatSessions: z.number(),
+    aiInsights: z.number(),
+    ollamaOperations: z.number()
   }).optional(),
   _sum: z.object({
     k3h4CoinBalance: z.number().nullable()

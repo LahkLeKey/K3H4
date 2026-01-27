@@ -53,5 +53,7 @@ export const UserUpdateResultSchema = z.nullable(z.object({
   personaAttributes: z.array(z.unknown()),
   personaCompatibilities: z.array(z.unknown()),
   geoViewHistories: z.array(z.unknown()),
-  chatSessions: z.array(z.unknown())
+  chatSessions: z.array(z.unknown()),
+  aiInsights: z.array(z.unknown()),
+  ollamaOperations: z.array(z.unknown())
 }));

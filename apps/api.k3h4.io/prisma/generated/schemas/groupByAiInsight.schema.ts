@@ -1,0 +1,13 @@
+import type { Prisma } from '@prisma/client';
+import * as z from 'zod';
+import { AiInsightWhereInputObjectSchema as AiInsightWhereInputObjectSchema } from './objects/AiInsightWhereInput.schema';
+import { AiInsightOrderByWithAggregationInputObjectSchema as AiInsightOrderByWithAggregationInputObjectSchema } from './objects/AiInsightOrderByWithAggregationInput.schema';
+import { AiInsightScalarWhereWithAggregatesInputObjectSchema as AiInsightScalarWhereWithAggregatesInputObjectSchema } from './objects/AiInsightScalarWhereWithAggregatesInput.schema';
+import { AiInsightScalarFieldEnumSchema } from './enums/AiInsightScalarFieldEnum.schema';
+import { AiInsightCountAggregateInputObjectSchema as AiInsightCountAggregateInputObjectSchema } from './objects/AiInsightCountAggregateInput.schema';
+import { AiInsightMinAggregateInputObjectSchema as AiInsightMinAggregateInputObjectSchema } from './objects/AiInsightMinAggregateInput.schema';
+import { AiInsightMaxAggregateInputObjectSchema as AiInsightMaxAggregateInputObjectSchema } from './objects/AiInsightMaxAggregateInput.schema';
+
+export const AiInsightGroupBySchema: z.ZodType<Prisma.AiInsightGroupByArgs> = z.object({ where: AiInsightWhereInputObjectSchema.optional(), orderBy: z.union([AiInsightOrderByWithAggregationInputObjectSchema, AiInsightOrderByWithAggregationInputObjectSchema.array()]).optional(), having: AiInsightScalarWhereWithAggregatesInputObjectSchema.optional(), take: z.number().optional(), skip: z.number().optional(), by: z.array(AiInsightScalarFieldEnumSchema), _count: z.union([ z.literal(true), AiInsightCountAggregateInputObjectSchema ]).optional(), _min: AiInsightMinAggregateInputObjectSchema.optional(), _max: AiInsightMaxAggregateInputObjectSchema.optional() }).strict() as unknown as z.ZodType<Prisma.AiInsightGroupByArgs>;
+
+export const AiInsightGroupByZodSchema = z.object({ where: AiInsightWhereInputObjectSchema.optional(), orderBy: z.union([AiInsightOrderByWithAggregationInputObjectSchema, AiInsightOrderByWithAggregationInputObjectSchema.array()]).optional(), having: AiInsightScalarWhereWithAggregatesInputObjectSchema.optional(), take: z.number().optional(), skip: z.number().optional(), by: z.array(AiInsightScalarFieldEnumSchema), _count: z.union([ z.literal(true), AiInsightCountAggregateInputObjectSchema ]).optional(), _min: AiInsightMinAggregateInputObjectSchema.optional(), _max: AiInsightMaxAggregateInputObjectSchema.optional() }).strict();

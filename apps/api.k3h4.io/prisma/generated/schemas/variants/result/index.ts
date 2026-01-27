@@ -5,6 +5,7 @@
 
 export { BuildingResultSchema } from './Building.result';
 export { UserResultSchema } from './User.result';
+export { AiInsightResultSchema } from './AiInsight.result';
 export { PersonaResultSchema } from './Persona.result';
 export { PersonaAttributeResultSchema } from './PersonaAttribute.result';
 export { PersonaCompatibilityResultSchema } from './PersonaCompatibility.result';
@@ -68,3 +69,4 @@ export { WikidataCacheEntryResultSchema } from './WikidataCacheEntry.result';
 export { EnrichmentCacheResultSchema } from './EnrichmentCache.result';
 export { ChatSessionResultSchema } from './ChatSession.result';
 export { ChatMessageResultSchema } from './ChatMessage.result';
+export { OllamaOperationResultSchema } from './OllamaOperation.result';
