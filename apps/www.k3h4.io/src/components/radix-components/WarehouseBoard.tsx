@@ -16,27 +16,7 @@ const columns: TableColumn<WarehouseItem>[] = [
     { key: "quantity", label: "Quantity" },
     { key: "location", label: "Location" },
     { key: "status", label: "Status" },
-    { key: "freightLoadId", label: "Freight Load" },
     { key: "category", label: "Category" },
-    {
-        key: "metadata",
-        label: "Metadata",
-        render: (row) => {
-            const slotSlug = row.metadata?.slot?.slug;
-            const notes = row.metadata?.notes;
-            if (notes || slotSlug) {
-                return notes || slotSlug;
-            }
-            return row.metadata && Object.keys(row.metadata).length
-                ? JSON.stringify(row.metadata)
-                : "—";
-        },
-    },
-    {
-        key: "createdAt",
-        label: "Created",
-        render: (row) => (row.createdAt ? new Date(row.createdAt).toLocaleString() : "—"),
-    },
     {
         key: "updatedAt",
         label: "Updated",
