@@ -1,0 +1,10 @@
+import type { Prisma } from '@prisma/client';
+import * as z from 'zod';
+import { GeoDirectionStopOrderByWithRelationInputObjectSchema as GeoDirectionStopOrderByWithRelationInputObjectSchema } from './objects/GeoDirectionStopOrderByWithRelationInput.schema';
+import { GeoDirectionStopWhereInputObjectSchema as GeoDirectionStopWhereInputObjectSchema } from './objects/GeoDirectionStopWhereInput.schema';
+import { GeoDirectionStopWhereUniqueInputObjectSchema as GeoDirectionStopWhereUniqueInputObjectSchema } from './objects/GeoDirectionStopWhereUniqueInput.schema';
+import { GeoDirectionStopCountAggregateInputObjectSchema as GeoDirectionStopCountAggregateInputObjectSchema } from './objects/GeoDirectionStopCountAggregateInput.schema';
+
+export const GeoDirectionStopCountSchema: z.ZodType<Prisma.GeoDirectionStopCountArgs> = z.object({ orderBy: z.union([GeoDirectionStopOrderByWithRelationInputObjectSchema, GeoDirectionStopOrderByWithRelationInputObjectSchema.array()]).optional(), where: GeoDirectionStopWhereInputObjectSchema.optional(), cursor: GeoDirectionStopWhereUniqueInputObjectSchema.optional(), take: z.number().optional(), skip: z.number().optional(), select: z.union([ z.literal(true), GeoDirectionStopCountAggregateInputObjectSchema ]).optional() }).strict() as unknown as z.ZodType<Prisma.GeoDirectionStopCountArgs>;
+
+export const GeoDirectionStopCountZodSchema = z.object({ orderBy: z.union([GeoDirectionStopOrderByWithRelationInputObjectSchema, GeoDirectionStopOrderByWithRelationInputObjectSchema.array()]).optional(), where: GeoDirectionStopWhereInputObjectSchema.optional(), cursor: GeoDirectionStopWhereUniqueInputObjectSchema.optional(), take: z.number().optional(), skip: z.number().optional(), select: z.union([ z.literal(true), GeoDirectionStopCountAggregateInputObjectSchema ]).optional() }).strict();

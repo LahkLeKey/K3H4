@@ -11,6 +11,7 @@ const makeSchema = () => z.object({
   location: SortOrderSchema.optional(),
   status: SortOrderSchema.optional(),
   freightLoadId: SortOrderSchema.optional(),
+  category: SortOrderSchema.optional(),
   createdAt: SortOrderSchema.optional(),
   updatedAt: SortOrderSchema.optional()
 }).strict();

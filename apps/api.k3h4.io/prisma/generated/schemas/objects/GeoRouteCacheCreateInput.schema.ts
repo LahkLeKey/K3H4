@@ -1,7 +1,8 @@
 import * as z from 'zod';
 import { Prisma } from '@prisma/client';
 import { NullableJsonNullValueInputSchema } from '../enums/NullableJsonNullValueInput.schema';
-import { UserCreateNestedOneWithoutGeoRouteCachesInputObjectSchema as UserCreateNestedOneWithoutGeoRouteCachesInputObjectSchema } from './UserCreateNestedOneWithoutGeoRouteCachesInput.schema'
+import { UserCreateNestedOneWithoutGeoRouteCachesInputObjectSchema as UserCreateNestedOneWithoutGeoRouteCachesInputObjectSchema } from './UserCreateNestedOneWithoutGeoRouteCachesInput.schema';
+import { GeoDirectionCreateNestedManyWithoutRouteCacheInputObjectSchema as GeoDirectionCreateNestedManyWithoutRouteCacheInputObjectSchema } from './GeoDirectionCreateNestedManyWithoutRouteCacheInput.schema'
 
 import { JsonValueSchema as jsonSchema } from '../../helpers/json-helpers';
 
@@ -54,7 +55,8 @@ const makeSchema = () => z.object({
   geojson: z.union([NullableJsonNullValueInputSchema, jsonSchema]).optional(),
   expiresAt: z.coerce.date(),
   createdAt: z.coerce.date().optional(),
-  user: z.lazy(() => UserCreateNestedOneWithoutGeoRouteCachesInputObjectSchema).optional()
+  user: z.lazy(() => UserCreateNestedOneWithoutGeoRouteCachesInputObjectSchema).optional(),
+  directions: z.lazy(() => GeoDirectionCreateNestedManyWithoutRouteCacheInputObjectSchema).optional()
 }).strict();
 export const GeoRouteCacheCreateInputObjectSchema: z.ZodType<Prisma.GeoRouteCacheCreateInput> = makeSchema() as unknown as z.ZodType<Prisma.GeoRouteCacheCreateInput>;
 export const GeoRouteCacheCreateInputObjectZodSchema = makeSchema();

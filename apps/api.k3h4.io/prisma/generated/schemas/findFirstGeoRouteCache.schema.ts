@@ -23,7 +23,9 @@ export const GeoRouteCacheFindFirstSelectSchema: z.ZodType<Prisma.GeoRouteCacheS
     durationMinutes: z.boolean().optional(),
     geojson: z.boolean().optional(),
     expiresAt: z.boolean().optional(),
-    createdAt: z.boolean().optional()
+    createdAt: z.boolean().optional(),
+    directions: z.boolean().optional(),
+    _count: z.boolean().optional()
   }).strict() as unknown as z.ZodType<Prisma.GeoRouteCacheSelect>;
 
 export const GeoRouteCacheFindFirstSelectZodSchema = z.object({
@@ -40,7 +42,9 @@ export const GeoRouteCacheFindFirstSelectZodSchema = z.object({
     durationMinutes: z.boolean().optional(),
     geojson: z.boolean().optional(),
     expiresAt: z.boolean().optional(),
-    createdAt: z.boolean().optional()
+    createdAt: z.boolean().optional(),
+    directions: z.boolean().optional(),
+    _count: z.boolean().optional()
   }).strict();
 
 export const GeoRouteCacheFindFirstSchema: z.ZodType<Prisma.GeoRouteCacheFindFirstArgs> = z.object({ select: GeoRouteCacheFindFirstSelectSchema.optional(), include: z.lazy(() => GeoRouteCacheIncludeObjectSchema.optional()), orderBy: z.union([GeoRouteCacheOrderByWithRelationInputObjectSchema, GeoRouteCacheOrderByWithRelationInputObjectSchema.array()]).optional(), where: GeoRouteCacheWhereInputObjectSchema.optional(), cursor: GeoRouteCacheWhereUniqueInputObjectSchema.optional(), take: z.number().optional(), skip: z.number().optional(), distinct: z.union([GeoRouteCacheScalarFieldEnumSchema, GeoRouteCacheScalarFieldEnumSchema.array()]).optional() }).strict() as unknown as z.ZodType<Prisma.GeoRouteCacheFindFirstArgs>;

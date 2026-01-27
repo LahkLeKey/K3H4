@@ -1,6 +1,7 @@
 import * as z from 'zod';
 import { Prisma } from '@prisma/client';
-import { NullableJsonNullValueInputSchema } from '../enums/NullableJsonNullValueInput.schema'
+import { NullableJsonNullValueInputSchema } from '../enums/NullableJsonNullValueInput.schema';
+import { GeoDirectionUncheckedCreateNestedManyWithoutRouteCacheInputObjectSchema as GeoDirectionUncheckedCreateNestedManyWithoutRouteCacheInputObjectSchema } from './GeoDirectionUncheckedCreateNestedManyWithoutRouteCacheInput.schema'
 
 import { JsonValueSchema as jsonSchema } from '../../helpers/json-helpers';
 
@@ -53,7 +54,8 @@ const makeSchema = () => z.object({
   durationMinutes: z.number().int().optional().nullable(),
   geojson: z.union([NullableJsonNullValueInputSchema, jsonSchema]).optional(),
   expiresAt: z.coerce.date(),
-  createdAt: z.coerce.date().optional()
+  createdAt: z.coerce.date().optional(),
+  directions: z.lazy(() => GeoDirectionUncheckedCreateNestedManyWithoutRouteCacheInputObjectSchema).optional()
 }).strict();
 export const GeoRouteCacheUncheckedCreateInputObjectSchema: z.ZodType<Prisma.GeoRouteCacheUncheckedCreateInput> = makeSchema() as unknown as z.ZodType<Prisma.GeoRouteCacheUncheckedCreateInput>;
 export const GeoRouteCacheUncheckedCreateInputObjectZodSchema = makeSchema();

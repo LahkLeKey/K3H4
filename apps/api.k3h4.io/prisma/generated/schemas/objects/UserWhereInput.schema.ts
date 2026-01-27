@@ -39,6 +39,7 @@ import { ArcadeSessionListRelationFilterObjectSchema as ArcadeSessionListRelatio
 import { ArcadeRedemptionListRelationFilterObjectSchema as ArcadeRedemptionListRelationFilterObjectSchema } from './ArcadeRedemptionListRelationFilter.schema';
 import { ProviderGrantListRelationFilterObjectSchema as ProviderGrantListRelationFilterObjectSchema } from './ProviderGrantListRelationFilter.schema';
 import { GeoRouteCacheListRelationFilterObjectSchema as GeoRouteCacheListRelationFilterObjectSchema } from './GeoRouteCacheListRelationFilter.schema';
+import { GeoDirectionListRelationFilterObjectSchema as GeoDirectionListRelationFilterObjectSchema } from './GeoDirectionListRelationFilter.schema';
 import { GeoPoiCacheListRelationFilterObjectSchema as GeoPoiCacheListRelationFilterObjectSchema } from './GeoPoiCacheListRelationFilter.schema';
 import { GeoQueryCacheListRelationFilterObjectSchema as GeoQueryCacheListRelationFilterObjectSchema } from './GeoQueryCacheListRelationFilter.schema';
 import { MaptilerQueryListRelationFilterObjectSchema as MaptilerQueryListRelationFilterObjectSchema } from './MaptilerQueryListRelationFilter.schema';
@@ -108,6 +109,7 @@ const userwhereinputSchema = z.object({
   arcadeRedemptions: z.lazy(() => ArcadeRedemptionListRelationFilterObjectSchema).optional(),
   providerGrants: z.lazy(() => ProviderGrantListRelationFilterObjectSchema).optional(),
   geoRouteCaches: z.lazy(() => GeoRouteCacheListRelationFilterObjectSchema).optional(),
+  geoDirections: z.lazy(() => GeoDirectionListRelationFilterObjectSchema).optional(),
   geoPoiCaches: z.lazy(() => GeoPoiCacheListRelationFilterObjectSchema).optional(),
   geoQueryCaches: z.lazy(() => GeoQueryCacheListRelationFilterObjectSchema).optional(),
   maptilerQueries: z.lazy(() => MaptilerQueryListRelationFilterObjectSchema).optional(),

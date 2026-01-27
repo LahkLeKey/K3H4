@@ -37,6 +37,7 @@ import { ArcadePrizeUpdateManyWithoutUserNestedInputObjectSchema as ArcadePrizeU
 import { ArcadeSessionUpdateManyWithoutUserNestedInputObjectSchema as ArcadeSessionUpdateManyWithoutUserNestedInputObjectSchema } from './ArcadeSessionUpdateManyWithoutUserNestedInput.schema';
 import { ArcadeRedemptionUpdateManyWithoutUserNestedInputObjectSchema as ArcadeRedemptionUpdateManyWithoutUserNestedInputObjectSchema } from './ArcadeRedemptionUpdateManyWithoutUserNestedInput.schema';
 import { GeoRouteCacheUpdateManyWithoutUserNestedInputObjectSchema as GeoRouteCacheUpdateManyWithoutUserNestedInputObjectSchema } from './GeoRouteCacheUpdateManyWithoutUserNestedInput.schema';
+import { GeoDirectionUpdateManyWithoutUserNestedInputObjectSchema as GeoDirectionUpdateManyWithoutUserNestedInputObjectSchema } from './GeoDirectionUpdateManyWithoutUserNestedInput.schema';
 import { GeoPoiCacheUpdateManyWithoutUserNestedInputObjectSchema as GeoPoiCacheUpdateManyWithoutUserNestedInputObjectSchema } from './GeoPoiCacheUpdateManyWithoutUserNestedInput.schema';
 import { GeoQueryCacheUpdateManyWithoutUserNestedInputObjectSchema as GeoQueryCacheUpdateManyWithoutUserNestedInputObjectSchema } from './GeoQueryCacheUpdateManyWithoutUserNestedInput.schema';
 import { MaptilerQueryUpdateManyWithoutUserNestedInputObjectSchema as MaptilerQueryUpdateManyWithoutUserNestedInputObjectSchema } from './MaptilerQueryUpdateManyWithoutUserNestedInput.schema';
@@ -102,6 +103,7 @@ const makeSchema = () => z.object({
   arcadeSessions: z.lazy(() => ArcadeSessionUpdateManyWithoutUserNestedInputObjectSchema).optional(),
   arcadeRedemptions: z.lazy(() => ArcadeRedemptionUpdateManyWithoutUserNestedInputObjectSchema).optional(),
   geoRouteCaches: z.lazy(() => GeoRouteCacheUpdateManyWithoutUserNestedInputObjectSchema).optional(),
+  geoDirections: z.lazy(() => GeoDirectionUpdateManyWithoutUserNestedInputObjectSchema).optional(),
   geoPoiCaches: z.lazy(() => GeoPoiCacheUpdateManyWithoutUserNestedInputObjectSchema).optional(),
   geoQueryCaches: z.lazy(() => GeoQueryCacheUpdateManyWithoutUserNestedInputObjectSchema).optional(),
   maptilerQueries: z.lazy(() => MaptilerQueryUpdateManyWithoutUserNestedInputObjectSchema).optional(),

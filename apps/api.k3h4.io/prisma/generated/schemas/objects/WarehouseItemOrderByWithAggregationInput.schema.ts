@@ -17,6 +17,8 @@ const makeSchema = () => z.object({
   location: SortOrderSchema.optional(),
   status: SortOrderSchema.optional(),
   freightLoadId: z.union([SortOrderSchema, z.lazy(() => SortOrderInputObjectSchema)]).optional(),
+  category: SortOrderSchema.optional(),
+  metadata: z.union([SortOrderSchema, z.lazy(() => SortOrderInputObjectSchema)]).optional(),
   createdAt: SortOrderSchema.optional(),
   updatedAt: SortOrderSchema.optional(),
   _count: z.lazy(() => WarehouseItemCountOrderByAggregateInputObjectSchema).optional(),

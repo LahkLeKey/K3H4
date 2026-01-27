@@ -7,6 +7,7 @@ export const WarehouseItemGroupByResultSchema = z.array(z.object({
   quantity: z.number().int(),
   location: z.string(),
   freightLoadId: z.string(),
+  metadata: z.unknown(),
   createdAt: z.date(),
   updatedAt: z.date(),
   _count: z.object({
@@ -20,6 +21,8 @@ export const WarehouseItemGroupByResultSchema = z.array(z.object({
     status: z.number(),
     freightLoadId: z.number(),
     freightLoad: z.number(),
+    category: z.number(),
+    metadata: z.number(),
     createdAt: z.number(),
     updatedAt: z.number()
   }).optional(),

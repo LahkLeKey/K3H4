@@ -20,6 +20,8 @@ export const WarehouseItemFindManySelectSchema: z.ZodType<Prisma.WarehouseItemSe
     status: z.boolean().optional(),
     freightLoadId: z.boolean().optional(),
     freightLoad: z.boolean().optional(),
+    category: z.boolean().optional(),
+    metadata: z.boolean().optional(),
     createdAt: z.boolean().optional(),
     updatedAt: z.boolean().optional()
   }).strict() as unknown as z.ZodType<Prisma.WarehouseItemSelect>;
@@ -35,6 +37,8 @@ export const WarehouseItemFindManySelectZodSchema = z.object({
     status: z.boolean().optional(),
     freightLoadId: z.boolean().optional(),
     freightLoad: z.boolean().optional(),
+    category: z.boolean().optional(),
+    metadata: z.boolean().optional(),
     createdAt: z.boolean().optional(),
     updatedAt: z.boolean().optional()
   }).strict();

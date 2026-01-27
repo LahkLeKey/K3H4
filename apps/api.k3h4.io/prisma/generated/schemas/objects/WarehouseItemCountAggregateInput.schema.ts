@@ -11,6 +11,8 @@ const makeSchema = () => z.object({
   location: z.literal(true).optional(),
   status: z.literal(true).optional(),
   freightLoadId: z.literal(true).optional(),
+  category: z.literal(true).optional(),
+  metadata: z.literal(true).optional(),
   createdAt: z.literal(true).optional(),
   updatedAt: z.literal(true).optional(),
   _all: z.literal(true).optional()
