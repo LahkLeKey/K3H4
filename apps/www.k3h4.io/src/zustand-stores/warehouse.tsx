@@ -17,6 +17,7 @@ const NormalizedWarehouseCategory = z.preprocess(
 
 const WarehouseItemSchema = z.object({
     id: z.string(),
+    userId: z.string(),
     sku: z.string(),
     description: z.string().nullish(),
     quantity: z.number(),
@@ -26,6 +27,7 @@ const WarehouseItemSchema = z.object({
     metadata: z.any().nullable(),
     freightLoadId: z.string().nullish(),
     createdAt: z.string().nullish(),
+    updatedAt: z.string().nullish(),
 });
 
 const WarehouseItemsSchema = z.object({ items: z.array(WarehouseItemSchema) });

@@ -7,6 +7,7 @@ import { useAuthStore } from "../../zustand-stores/auth";
 import { useWarehouseState, type WarehouseItem } from "../../zustand-stores/warehouse";
 
 const columns: TableColumn<WarehouseItem>[] = [
+    { key: "id", label: "ID" },
     { key: "sku", label: "SKU" },
     { key: "userId", label: "Owner" },
     {
@@ -20,9 +21,18 @@ const columns: TableColumn<WarehouseItem>[] = [
     { key: "freightLoadId", label: "Freight Load" },
     { key: "category", label: "Category" },
     {
-        key: "metadataSummary",
+        key: "metadata",
         label: "Metadata",
-        render: (row) => (row.metadata ? JSON.stringify(row.metadata) : "—"),
+        render: (row) => {
+            const slotSlug = row.metadata?.slot?.slug;
+            const notes = row.metadata?.notes;
+            if (notes || slotSlug) {
+                return notes || slotSlug;
+            }
+            return row.metadata && Object.keys(row.metadata).length
+                ? JSON.stringify(row.metadata)
+                : "—";
+        },
     },
     {
         key: "createdAt",
@@ -33,11 +43,6 @@ const columns: TableColumn<WarehouseItem>[] = [
         key: "updatedAt",
         label: "Updated",
         render: (row) => (row.updatedAt ? new Date(row.updatedAt).toLocaleString() : "—"),
-    },
-    {
-        key: "metadata",
-        label: "Notes",
-        render: (row) => row.metadata?.notes || row.metadata?.slot?.slug || "—",
     },
 ];
 
