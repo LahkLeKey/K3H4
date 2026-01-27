@@ -54,7 +54,9 @@ export const UserModelSchema = z.object({
     personaAttributes: z.array(z.unknown()),
     personaCompatibilities: z.array(z.unknown()),
     geoViewHistories: z.array(z.unknown()),
-    chatSessions: z.array(z.unknown())
+    chatSessions: z.array(z.unknown()),
+    aiInsights: z.array(z.unknown()),
+    ollamaOperations: z.array(z.unknown())
 }).strict();
 
 export type UserPureType = z.infer<typeof UserModelSchema>;

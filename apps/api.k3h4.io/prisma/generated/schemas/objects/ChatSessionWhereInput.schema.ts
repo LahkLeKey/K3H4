@@ -7,7 +7,8 @@ import { JsonNullableFilterObjectSchema as JsonNullableFilterObjectSchema } from
 import { DateTimeFilterObjectSchema as DateTimeFilterObjectSchema } from './DateTimeFilter.schema';
 import { UserScalarRelationFilterObjectSchema as UserScalarRelationFilterObjectSchema } from './UserScalarRelationFilter.schema';
 import { UserWhereInputObjectSchema as UserWhereInputObjectSchema } from './UserWhereInput.schema';
-import { ChatMessageListRelationFilterObjectSchema as ChatMessageListRelationFilterObjectSchema } from './ChatMessageListRelationFilter.schema'
+import { ChatMessageListRelationFilterObjectSchema as ChatMessageListRelationFilterObjectSchema } from './ChatMessageListRelationFilter.schema';
+import { OllamaOperationListRelationFilterObjectSchema as OllamaOperationListRelationFilterObjectSchema } from './OllamaOperationListRelationFilter.schema'
 
 const chatsessionwhereinputSchema = z.object({
   AND: z.union([z.lazy(() => ChatSessionWhereInputObjectSchema), z.lazy(() => ChatSessionWhereInputObjectSchema).array()]).optional(),
@@ -23,7 +24,8 @@ const chatsessionwhereinputSchema = z.object({
   createdAt: z.union([z.lazy(() => DateTimeFilterObjectSchema), z.coerce.date()]).optional(),
   updatedAt: z.union([z.lazy(() => DateTimeFilterObjectSchema), z.coerce.date()]).optional(),
   user: z.union([z.lazy(() => UserScalarRelationFilterObjectSchema), z.lazy(() => UserWhereInputObjectSchema)]).optional(),
-  messages: z.lazy(() => ChatMessageListRelationFilterObjectSchema).optional()
+  messages: z.lazy(() => ChatMessageListRelationFilterObjectSchema).optional(),
+  ollamaOperations: z.lazy(() => OllamaOperationListRelationFilterObjectSchema).optional()
 }).strict();
 export const ChatSessionWhereInputObjectSchema: z.ZodType<Prisma.ChatSessionWhereInput> = chatsessionwhereinputSchema as unknown as z.ZodType<Prisma.ChatSessionWhereInput>;
 export const ChatSessionWhereInputObjectZodSchema = chatsessionwhereinputSchema;

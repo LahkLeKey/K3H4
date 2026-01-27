@@ -1,6 +1,7 @@
 import {ChatRole, PrismaClient} from '@prisma/client';
 import {type FastifyInstance, type FastifyReply, type FastifyRequest} from 'fastify';
 
+import {recordOllamaOperation} from './ollama-operations';
 import {withTelemetryBase} from './telemetry';
 import {type RecordTelemetryFn} from './types';
 
@@ -307,24 +308,30 @@ export function registerChatRoutes(
                   []),
           ...conversation,
         ];
+        const requestBody = {
+          model,
+          temperature,
+          messages: messagesForOllama,
+          stream: false,
+        };
+        let responseBody: unknown = {};
+        let statusCode: number|null = null;
+        let errorMessage: string|null = null;
+        let success = false;
         try {
           const response = await fetch(OLLAMA_CHAT_URL, {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({
-              model,
-              temperature,
-              messages: messagesForOllama,
-              stream: false
-            }),
+            body: JSON.stringify(requestBody),
           });
+          statusCode = response.status;
           const textPayload = await response.text();
+          responseBody = textPayload ? safeParseJson(textPayload) : {};
           if (!response.ok) {
-            throw new Error(
-                textPayload || `Ollama responded ${response.status}`);
+            errorMessage = textPayload || `Ollama responded ${response.status}`;
+            throw new Error(errorMessage);
           }
-          const payload = textPayload ? JSON.parse(textPayload) : {};
-          const assistantContent = extractAssistantContent(payload);
+          const assistantContent = extractAssistantContent(responseBody);
           const assistantMessage = await prisma.chatMessage.create({
             data: {
               sessionId: session.id,
@@ -354,6 +361,7 @@ export function registerChatRoutes(
               systemPrompt: Boolean(systemPromptEntry)
             },
           });
+          success = true;
           return {
             message: {
               id: assistantMessage.id,
@@ -379,6 +387,8 @@ export function registerChatRoutes(
             },
           };
         } catch (err) {
+          errorMessage = errorMessage ??
+              (err instanceof Error ? err.message : 'Chat request failed');
           await telemetry({
             eventType: 'chat.message.send',
             source: 'chat',
@@ -395,6 +405,31 @@ export function registerChatRoutes(
           return reply.status(502).send({
             error: err instanceof Error ? err.message : 'Chat request failed'
           });
+        } finally {
+          try {
+            await recordOllamaOperation({
+              prisma,
+              userId,
+              source: 'chat',
+              sessionId: session.id,
+              model,
+              temperature,
+              systemPrompt: systemPromptEntry,
+              requestBody,
+              responseBody,
+              statusCode,
+              errorMessage: success ? null : errorMessage,
+              metadata: {
+                userMessage: text,
+                historyLength: messagesForOllama.length,
+                hasSystemPrompt: Boolean(systemPromptEntry),
+                sessionTitle: session.title ?? null,
+              },
+            });
+          } catch (recordErr) {
+            request.log.warn(
+                {err: recordErr}, 'failed to log Ollama chat operation');
+          }
         }
       },
   );
@@ -482,4 +517,12 @@ function extractAssistantContent(payload: unknown): string {
 function normalizeModel(value?: string|null): string {
   const trimmed = value?.trim();
   return trimmed && trimmed.length > 0 ? trimmed : DEFAULT_MODEL;
+}
+
+function safeParseJson(value: string): unknown {
+  try {
+    return JSON.parse(value);
+  } catch {
+    return value;
+  }
 }

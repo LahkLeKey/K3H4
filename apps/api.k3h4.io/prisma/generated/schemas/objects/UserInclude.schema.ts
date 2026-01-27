@@ -45,6 +45,8 @@ import { PersonaAttributeFindManySchema as PersonaAttributeFindManySchema } from
 import { PersonaCompatibilityFindManySchema as PersonaCompatibilityFindManySchema } from '../findManyPersonaCompatibility.schema';
 import { GeoViewHistoryFindManySchema as GeoViewHistoryFindManySchema } from '../findManyGeoViewHistory.schema';
 import { ChatSessionFindManySchema as ChatSessionFindManySchema } from '../findManyChatSession.schema';
+import { AiInsightFindManySchema as AiInsightFindManySchema } from '../findManyAiInsight.schema';
+import { OllamaOperationFindManySchema as OllamaOperationFindManySchema } from '../findManyOllamaOperation.schema';
 import { UserCountOutputTypeArgsObjectSchema as UserCountOutputTypeArgsObjectSchema } from './UserCountOutputTypeArgs.schema'
 
 const makeSchema = () => z.object({
@@ -93,6 +95,8 @@ const makeSchema = () => z.object({
   personaCompatibilities: z.union([z.boolean(), z.lazy(() => PersonaCompatibilityFindManySchema)]).optional(),
   geoViewHistories: z.union([z.boolean(), z.lazy(() => GeoViewHistoryFindManySchema)]).optional(),
   chatSessions: z.union([z.boolean(), z.lazy(() => ChatSessionFindManySchema)]).optional(),
+  aiInsights: z.union([z.boolean(), z.lazy(() => AiInsightFindManySchema)]).optional(),
+  ollamaOperations: z.union([z.boolean(), z.lazy(() => OllamaOperationFindManySchema)]).optional(),
   _count: z.union([z.boolean(), z.lazy(() => UserCountOutputTypeArgsObjectSchema)]).optional()
 }).strict();
 export const UserIncludeObjectSchema: z.ZodType<Prisma.UserInclude> = makeSchema() as unknown as z.ZodType<Prisma.UserInclude>;

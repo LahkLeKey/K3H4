@@ -21,6 +21,7 @@ export const ChatSessionFindFirstSelectSchema: z.ZodType<Prisma.ChatSessionSelec
     createdAt: z.boolean().optional(),
     updatedAt: z.boolean().optional(),
     messages: z.boolean().optional(),
+    ollamaOperations: z.boolean().optional(),
     _count: z.boolean().optional()
   }).strict() as unknown as z.ZodType<Prisma.ChatSessionSelect>;
 
@@ -36,6 +37,7 @@ export const ChatSessionFindFirstSelectZodSchema = z.object({
     createdAt: z.boolean().optional(),
     updatedAt: z.boolean().optional(),
     messages: z.boolean().optional(),
+    ollamaOperations: z.boolean().optional(),
     _count: z.boolean().optional()
   }).strict();
 

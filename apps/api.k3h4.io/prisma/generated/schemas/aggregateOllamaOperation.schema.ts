@@ -1,0 +1,14 @@
+import type { Prisma } from '@prisma/client';
+import * as z from 'zod';
+import { OllamaOperationOrderByWithRelationInputObjectSchema as OllamaOperationOrderByWithRelationInputObjectSchema } from './objects/OllamaOperationOrderByWithRelationInput.schema';
+import { OllamaOperationWhereInputObjectSchema as OllamaOperationWhereInputObjectSchema } from './objects/OllamaOperationWhereInput.schema';
+import { OllamaOperationWhereUniqueInputObjectSchema as OllamaOperationWhereUniqueInputObjectSchema } from './objects/OllamaOperationWhereUniqueInput.schema';
+import { OllamaOperationCountAggregateInputObjectSchema as OllamaOperationCountAggregateInputObjectSchema } from './objects/OllamaOperationCountAggregateInput.schema';
+import { OllamaOperationMinAggregateInputObjectSchema as OllamaOperationMinAggregateInputObjectSchema } from './objects/OllamaOperationMinAggregateInput.schema';
+import { OllamaOperationMaxAggregateInputObjectSchema as OllamaOperationMaxAggregateInputObjectSchema } from './objects/OllamaOperationMaxAggregateInput.schema';
+import { OllamaOperationAvgAggregateInputObjectSchema as OllamaOperationAvgAggregateInputObjectSchema } from './objects/OllamaOperationAvgAggregateInput.schema';
+import { OllamaOperationSumAggregateInputObjectSchema as OllamaOperationSumAggregateInputObjectSchema } from './objects/OllamaOperationSumAggregateInput.schema';
+
+export const OllamaOperationAggregateSchema: z.ZodType<Prisma.OllamaOperationAggregateArgs> = z.object({ orderBy: z.union([OllamaOperationOrderByWithRelationInputObjectSchema, OllamaOperationOrderByWithRelationInputObjectSchema.array()]).optional(), where: OllamaOperationWhereInputObjectSchema.optional(), cursor: OllamaOperationWhereUniqueInputObjectSchema.optional(), take: z.number().optional(), skip: z.number().optional(), _count: z.union([ z.literal(true), OllamaOperationCountAggregateInputObjectSchema ]).optional(), _min: OllamaOperationMinAggregateInputObjectSchema.optional(), _max: OllamaOperationMaxAggregateInputObjectSchema.optional(), _avg: OllamaOperationAvgAggregateInputObjectSchema.optional(), _sum: OllamaOperationSumAggregateInputObjectSchema.optional() }).strict() as unknown as z.ZodType<Prisma.OllamaOperationAggregateArgs>;
+
+export const OllamaOperationAggregateZodSchema = z.object({ orderBy: z.union([OllamaOperationOrderByWithRelationInputObjectSchema, OllamaOperationOrderByWithRelationInputObjectSchema.array()]).optional(), where: OllamaOperationWhereInputObjectSchema.optional(), cursor: OllamaOperationWhereUniqueInputObjectSchema.optional(), take: z.number().optional(), skip: z.number().optional(), _count: z.union([ z.literal(true), OllamaOperationCountAggregateInputObjectSchema ]).optional(), _min: OllamaOperationMinAggregateInputObjectSchema.optional(), _max: OllamaOperationMaxAggregateInputObjectSchema.optional(), _avg: OllamaOperationAvgAggregateInputObjectSchema.optional(), _sum: OllamaOperationSumAggregateInputObjectSchema.optional() }).strict();

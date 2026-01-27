@@ -1,6 +1,7 @@
 import {type AiInsight, type PrismaClient} from '@prisma/client';
 import {type FastifyInstance, type FastifyReply, type FastifyRequest} from 'fastify';
 
+import {recordOllamaOperation} from './ollama-operations';
 import {withTelemetryBase} from './telemetry';
 import type {RecordTelemetryFn} from './types';
 
@@ -118,16 +119,19 @@ export function registerAiInsightsRoutes(
         const systemPrompt = body.systemPrompt?.trim();
         let synthesizedDescription: string|null = null;
         try {
-          synthesizedDescription = await synthesizeInsight({
-            model,
-            systemPrompt,
-            description: descriptionDraft,
-            metadata: body.metadata,
-            payload: body.payload,
-            targetType,
-            targetId,
-            targetLabel,
-          });
+          synthesizedDescription = await synthesizeInsight(
+              {
+                model,
+                systemPrompt,
+                description: descriptionDraft,
+                metadata: body.metadata,
+                payload: body.payload,
+                targetType,
+                targetId,
+                targetLabel,
+              },
+              {prisma, userId, log: request.log},
+          );
         } catch (err) {
           request.log.warn({err}, 'ai insight synthesis failed');
         }
@@ -186,34 +190,81 @@ function mapInsight(row: AiInsight) {
 
 const OLLAMA_CHAT_URL = `${resolveOllamaBaseUrl()}/api/chat`;
 
-async function synthesizeInsight(params: {
-  model: string; systemPrompt: string | null | undefined; description: string;
-  metadata?: unknown;
-  payload?: unknown;
-  targetType?: string | null;
-  targetId?: string | null;
-  targetLabel?: string | null;
-}) {
+type SynthesizeInsightContext = {
+  prisma: PrismaClient; userId: string; log: FastifyRequest['log'];
+};
+
+async function synthesizeInsight(
+    params: {
+      model: string; systemPrompt: string | null | undefined;
+      description: string;
+      metadata?: unknown;
+      payload?: unknown;
+      targetType?: string | null;
+      targetId?: string | null;
+      targetLabel?: string | null;
+    },
+    context: SynthesizeInsightContext) {
   const systemContent = params.systemPrompt?.trim() || CRITICAL_SYSTEM_PROMPT;
   const userMessage = buildInsightUserMessage(params);
-  const response = await fetch(OLLAMA_CHAT_URL, {
-    method: 'POST',
-    headers: {'Content-Type': 'application/json'},
-    body: JSON.stringify({
-      model: params.model,
-      messages: [
-        {role: 'system', content: systemContent},
-        {role: 'user', content: userMessage},
-      ],
-      stream: false,
-    }),
-  });
-  const textPayload = await response.text();
-  if (!response.ok) {
-    throw new Error(textPayload || `Ollama responded ${response.status}`);
+  const requestBody = {
+    model: params.model,
+    messages: [
+      {role: 'system', content: systemContent},
+      {role: 'user', content: userMessage},
+    ],
+    stream: false,
+  };
+  let responseBody: unknown = {};
+  let statusCode: number|null = null;
+  let errorMessage: string|null = null;
+  let success = false;
+  try {
+    const response = await fetch(OLLAMA_CHAT_URL, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify(requestBody),
+    });
+    statusCode = response.status;
+    const textPayload = await response.text();
+    responseBody = textPayload ? safeParseJson(textPayload) : {};
+    if (!response.ok) {
+      errorMessage = textPayload || `Ollama responded ${response.status}`;
+      throw new Error(errorMessage);
+    }
+    const assistant = extractAssistantContent(responseBody);
+    success = true;
+    return assistant;
+  } catch (err) {
+    errorMessage = errorMessage ??
+        (err instanceof Error ? err.message : 'Ollama request failed');
+    throw err;
+  } finally {
+    try {
+      await recordOllamaOperation({
+        prisma: context.prisma,
+        userId: context.userId,
+        source: 'insights',
+        model: params.model,
+        systemPrompt: systemContent,
+        requestBody,
+        responseBody,
+        statusCode,
+        errorMessage: success ? null : errorMessage,
+        metadata: {
+          targetType: params.targetType ?? null,
+          targetId: params.targetId ?? null,
+          targetLabel: params.targetLabel ?? null,
+          description: params.description,
+          metadata: params.metadata ?? null,
+          payload: params.payload ?? null,
+        },
+      });
+    } catch (recordErr) {
+      context.log.warn(
+          {err: recordErr}, 'failed to log Ollama insight operation');
+    }
   }
-  const payload = textPayload ? JSON.parse(textPayload) : {};
-  return extractAssistantContent(payload);
 }
 
 function buildInsightUserMessage(params: {
@@ -285,4 +336,12 @@ function resolveOllamaBaseUrl(): string {
 function normalizeModel(value?: string|null): string {
   const trimmed = value?.trim();
   return trimmed && trimmed.length ? trimmed : DEFAULT_MODEL;
+}
+
+function safeParseJson(value: string): unknown {
+  try {
+    return JSON.parse(value);
+  } catch {
+    return value;
+  }
 }

@@ -3,7 +3,8 @@ import type { Prisma } from '@prisma/client';
 import { SortOrderSchema } from '../enums/SortOrder.schema';
 import { SortOrderInputObjectSchema as SortOrderInputObjectSchema } from './SortOrderInput.schema';
 import { UserOrderByWithRelationInputObjectSchema as UserOrderByWithRelationInputObjectSchema } from './UserOrderByWithRelationInput.schema';
-import { ChatMessageOrderByRelationAggregateInputObjectSchema as ChatMessageOrderByRelationAggregateInputObjectSchema } from './ChatMessageOrderByRelationAggregateInput.schema'
+import { ChatMessageOrderByRelationAggregateInputObjectSchema as ChatMessageOrderByRelationAggregateInputObjectSchema } from './ChatMessageOrderByRelationAggregateInput.schema';
+import { OllamaOperationOrderByRelationAggregateInputObjectSchema as OllamaOperationOrderByRelationAggregateInputObjectSchema } from './OllamaOperationOrderByRelationAggregateInput.schema'
 
 const makeSchema = () => z.object({
   id: SortOrderSchema.optional(),
@@ -16,7 +17,8 @@ const makeSchema = () => z.object({
   createdAt: SortOrderSchema.optional(),
   updatedAt: SortOrderSchema.optional(),
   user: z.lazy(() => UserOrderByWithRelationInputObjectSchema).optional(),
-  messages: z.lazy(() => ChatMessageOrderByRelationAggregateInputObjectSchema).optional()
+  messages: z.lazy(() => ChatMessageOrderByRelationAggregateInputObjectSchema).optional(),
+  ollamaOperations: z.lazy(() => OllamaOperationOrderByRelationAggregateInputObjectSchema).optional()
 }).strict();
 export const ChatSessionOrderByWithRelationInputObjectSchema: z.ZodType<Prisma.ChatSessionOrderByWithRelationInput> = makeSchema() as unknown as z.ZodType<Prisma.ChatSessionOrderByWithRelationInput>;
 export const ChatSessionOrderByWithRelationInputObjectZodSchema = makeSchema();
