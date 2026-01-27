@@ -49,7 +49,6 @@ export function WarehouseBoard() {
     const { session } = useAuthStore();
     const { items, status, error, fetchItems, deleteItem, createItem } = useWarehouseState();
     const navigate = useNavigate();
-    const [selectedRowKeys, setSelectedRowKeys] = useState<string[]>([]);
     const [rowFeedback, setRowFeedback] = useState<Record<string, ReactNode>>({});
     const [deletingId, setDeletingId] = useState<string | null>(null);
     const [isAdding, setIsAdding] = useState(false);
@@ -73,16 +72,10 @@ export function WarehouseBoard() {
         }
     }, [navigate, session?.accessToken]);
 
-    useEffect(() => {
-        if (selectedRowKeys.length === 0) return;
-        setSelectedRowKeys((prev) => prev.filter((key) => items.some((item) => item.id === key)));
-    }, [items, selectedRowKeys.length]);
-
     const handleDelete = useCallback(async (row: WarehouseItem) => {
         setDeletingId(row.id);
         try {
             await deleteItem(row.id);
-            setSelectedRowKeys((prev) => prev.filter((key) => key !== row.id));
             setRowFeedback((prev) => {
                 const next = { ...prev };
                 delete next[row.id];
@@ -141,9 +134,6 @@ export function WarehouseBoard() {
                 rowKey={(row) => row.id}
                 idAccessor={(row) => row.id}
                 noDataMessage={noDataMessage}
-                selectable
-                selectedRowKeys={selectedRowKeys}
-                onSelectionChange={setSelectedRowKeys}
                 rowFeedback={rowFeedback}
                 rowActionItems={(row) => [{
                     id: "delete",

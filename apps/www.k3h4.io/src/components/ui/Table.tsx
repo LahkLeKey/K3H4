@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useMemo, useRef, useState } from "react";
+import { Fragment, useMemo, useRef, useState } from "react";
 import type { ReactNode } from "react";
 import { Popover } from "../radix-primitives/Popover";
 import { Button } from "./Button";
@@ -37,10 +37,6 @@ export type TableProps<T> = {
     title?: string;
     actions?: ReactNode;
     actionBarClassName?: string;
-    selectable?: boolean;
-    selectedRowKeys?: string[];
-    defaultSelectedRowKeys?: string[];
-    onSelectionChange?: (keys: string[]) => void;
     rowActions?: (row: T) => ReactNode;
     rowFeedback?: Record<string, ReactNode>;
     onRowAction?: (row: T, action: string) => Promise<void> | void;
@@ -56,10 +52,6 @@ export function Table<T>({
     title,
     actions,
     actionBarClassName = "",
-    selectable = false,
-    selectedRowKeys,
-    defaultSelectedRowKeys = [],
-    onSelectionChange,
     rowActions,
     rowFeedback,
     onRowAction,
@@ -69,34 +61,9 @@ export function Table<T>({
 }: TableProps<T>) {
     const hasActionBar = Boolean(title || actions);
     const hasRowActions = Boolean(rowActions || rowActionItems);
-    const isControlledSelection = selectedRowKeys !== undefined;
-    const [internalSelection, setInternalSelection] = useState<string[]>(defaultSelectedRowKeys);
-    const finalSelection = isControlledSelection ? selectedRowKeys! : internalSelection;
-    const updateSelection = (next: string[]) => {
-        if (!isControlledSelection) {
-            setInternalSelection(next);
-        }
-        onSelectionChange?.(next);
-    };
     const rowKeys = useMemo(() => rows.map((row, idx) => rowKey(row, idx)), [rows, rowKey]);
-    const allSelected = selectable && rowKeys.length > 0 && rowKeys.every((key) => finalSelection.includes(key));
-    const someSelected = selectable && rowKeys.some((key) => finalSelection.includes(key));
-    const selectAllRef = useRef<HTMLInputElement>(null);
-    useEffect(() => {
-        if (!selectable || !selectAllRef.current) return;
-        selectAllRef.current.indeterminate = !allSelected && someSelected;
-    }, [selectable, allSelected, someSelected]);
-    const toggleRow = (key: string) => {
-        const next = finalSelection.includes(key)
-            ? finalSelection.filter((value) => value !== key)
-            : [...finalSelection, key];
-        updateSelection(next);
-    };
-    const toggleAll = () => {
-        updateSelection(allSelected ? [] : rowKeys);
-    };
     const hasIdColumn = typeof idAccessor === "function";
-    const columnSpan = columns.length + (selectable ? 1 : 0) + (hasIdColumn ? 1 : 0) + (hasRowActions ? 1 : 0);
+    const columnSpan = columns.length + (hasIdColumn ? 1 : 0) + (hasRowActions ? 1 : 0);
     const [confirmingAction, setConfirmingAction] = useState<{ rowKey: string; actionId: string } | null>(null);
     const [loadingActionKey, setLoadingActionKey] = useState<string | null>(null);
     const pendingActionRef = useRef<string | null>(null);
@@ -120,17 +87,6 @@ export function Table<T>({
             <table className="w-full border-collapse text-sm text-slate-100">
                 <thead className="bg-white/5 text-xs uppercase tracking-[0.2em] text-slate-300">
                     <tr>
-                        {selectable ? (
-                            <th className="px-4 py-3 text-left font-semibold">
-                                <input
-                                    ref={selectAllRef}
-                                    type="checkbox"
-                                    checked={allSelected}
-                                    onChange={toggleAll}
-                                    className="h-4 w-4 accent-slate-200"
-                                />
-                            </th>
-                        ) : null}
                         {hasIdColumn ? (
                             <th className="px-4 py-3 text-left font-semibold">
                                 <span className="text-xs uppercase tracking-[0.2em] text-slate-300">
@@ -163,16 +119,6 @@ export function Table<T>({
                             return (
                                 <Fragment key={key}>
                                     <tr key={`${key}-row`} className="border-t border-white/5">
-                                        {selectable ? (
-                                            <td className="px-4 py-3">
-                                                <input
-                                                    type="checkbox"
-                                                    checked={finalSelection.includes(key)}
-                                                    onChange={() => toggleRow(key)}
-                                                    className="h-4 w-4 accent-slate-200"
-                                                />
-                                            </td>
-                                        ) : null}
                                         {hasIdColumn ? (
                                             <td className="px-4 py-3">
                                                 {(() => {
