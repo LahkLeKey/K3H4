@@ -33,6 +33,8 @@ export type FreightState = {
     error: string | null;
     lastFetched: number | null;
     totals: { distanceKm: number; cost: number; completed: number; active: number };
+    selectedLoadId: string | null;
+    selectLoad: (id: string | null) => void;
     fetchLoads: () => Promise<void>;
     planQuickLoad: () => Promise<void>;
     completeLoad: (id: string) => Promise<void>;
@@ -82,6 +84,9 @@ export const useFreightStore = create<FreightState>((set, get) => ({
     error: null,
     lastFetched: null,
     totals: { distanceKm: 0, cost: 0, completed: 0, active: 0 },
+    selectedLoadId: null,
+
+    selectLoad: (id: string | null) => set({ selectedLoadId: id }),
 
     fetchLoads: async () => {
         const { session, apiBase } = useAuthStore.getState();
@@ -97,12 +102,15 @@ export const useFreightStore = create<FreightState>((set, get) => ({
                 baseUrl: apiBase,
                 schema: FreightListSchema,
             });
+            const currentId = get().selectedLoadId;
+            const preferredId = result.loads.find((load) => load.id === currentId)?.id ?? result.loads[0]?.id ?? null;
             set({
                 loads: result.loads,
                 status: "ready",
                 error: null,
                 lastFetched: Date.now(),
                 totals: summarize(result.loads),
+                selectedLoadId: preferredId,
             });
         } catch (err) {
             const message = err instanceof Error ? err.message : "Unable to fetch freight";
@@ -137,7 +145,7 @@ export const useFreightStore = create<FreightState>((set, get) => ({
                 },
             });
             const nextLoads = [load, ...get().loads];
-            set({ loads: nextLoads, totals: summarize(nextLoads), status: "ready", error: null });
+            set({ loads: nextLoads, totals: summarize(nextLoads), status: "ready", error: null, selectedLoadId: load.id });
         } catch (err) {
             const message = err instanceof Error ? err.message : "Unable to create load";
             set({ error: message, status: "error" });
@@ -159,7 +167,7 @@ export const useFreightStore = create<FreightState>((set, get) => ({
                 schema: FreightSingleSchema,
             });
             const nextLoads = get().loads.map((item) => (item.id === load.id ? load : item));
-            set({ loads: nextLoads, totals: summarize(nextLoads), status: "ready", error: null });
+            set({ loads: nextLoads, totals: summarize(nextLoads), status: "ready", error: null, selectedLoadId: load.id });
         } catch (err) {
             const message = err instanceof Error ? err.message : "Unable to complete load";
             set({ error: message, status: "error" });
