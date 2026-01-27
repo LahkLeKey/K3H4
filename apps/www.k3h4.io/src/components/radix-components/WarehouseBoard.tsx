@@ -48,21 +48,18 @@ export function WarehouseBoard() {
 
     return (
         <Stack gap="lg">
-            <div className="flex flex-wrap items-center justify-between gap-4">
-                <div>
-                    <div className="text-sm uppercase tracking-[0.3em] text-slate-400">Warehouse</div>
-                </div>
-                <Button
-                    accent="#a855f7"
-                    variant="outline"
-                    disabled={status === "loading"}
-                    onClick={() => fetchItems()}
-                >
-                    Refresh
-                </Button>
-            </div>
-
             <Table
+                title="Warehouse"
+                actions={
+                    <Button
+                        accent="#a855f7"
+                        variant="outline"
+                        disabled={status === "loading"}
+                        onClick={() => fetchItems()}
+                    >
+                        Refresh
+                    </Button>
+                }
                 columns={columns}
                 rows={items}
                 rowKey={(row) => row.id}
