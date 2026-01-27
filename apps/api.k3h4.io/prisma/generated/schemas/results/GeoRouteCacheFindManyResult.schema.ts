@@ -14,7 +14,8 @@ export const GeoRouteCacheFindManyResultSchema = z.object({
   durationMinutes: z.number().int().optional(),
   geojson: z.unknown().optional(),
   expiresAt: z.date(),
-  createdAt: z.date()
+  createdAt: z.date(),
+  directions: z.array(z.unknown())
 })),
   pagination: z.object({
   page: z.number().int().min(1),

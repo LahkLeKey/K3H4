@@ -33,6 +33,7 @@ import { ArcadeSessionCreateNestedManyWithoutUserInputObjectSchema as ArcadeSess
 import { ArcadeRedemptionCreateNestedManyWithoutUserInputObjectSchema as ArcadeRedemptionCreateNestedManyWithoutUserInputObjectSchema } from './ArcadeRedemptionCreateNestedManyWithoutUserInput.schema';
 import { ProviderGrantCreateNestedManyWithoutUserInputObjectSchema as ProviderGrantCreateNestedManyWithoutUserInputObjectSchema } from './ProviderGrantCreateNestedManyWithoutUserInput.schema';
 import { GeoRouteCacheCreateNestedManyWithoutUserInputObjectSchema as GeoRouteCacheCreateNestedManyWithoutUserInputObjectSchema } from './GeoRouteCacheCreateNestedManyWithoutUserInput.schema';
+import { GeoDirectionCreateNestedManyWithoutUserInputObjectSchema as GeoDirectionCreateNestedManyWithoutUserInputObjectSchema } from './GeoDirectionCreateNestedManyWithoutUserInput.schema';
 import { GeoPoiCacheCreateNestedManyWithoutUserInputObjectSchema as GeoPoiCacheCreateNestedManyWithoutUserInputObjectSchema } from './GeoPoiCacheCreateNestedManyWithoutUserInput.schema';
 import { GeoQueryCacheCreateNestedManyWithoutUserInputObjectSchema as GeoQueryCacheCreateNestedManyWithoutUserInputObjectSchema } from './GeoQueryCacheCreateNestedManyWithoutUserInput.schema';
 import { MaptilerQueryCreateNestedManyWithoutUserInputObjectSchema as MaptilerQueryCreateNestedManyWithoutUserInputObjectSchema } from './MaptilerQueryCreateNestedManyWithoutUserInput.schema';
@@ -98,6 +99,7 @@ const makeSchema = () => z.object({
   arcadeRedemptions: z.lazy(() => ArcadeRedemptionCreateNestedManyWithoutUserInputObjectSchema).optional(),
   providerGrants: z.lazy(() => ProviderGrantCreateNestedManyWithoutUserInputObjectSchema).optional(),
   geoRouteCaches: z.lazy(() => GeoRouteCacheCreateNestedManyWithoutUserInputObjectSchema).optional(),
+  geoDirections: z.lazy(() => GeoDirectionCreateNestedManyWithoutUserInputObjectSchema).optional(),
   geoPoiCaches: z.lazy(() => GeoPoiCacheCreateNestedManyWithoutUserInputObjectSchema).optional(),
   geoQueryCaches: z.lazy(() => GeoQueryCacheCreateNestedManyWithoutUserInputObjectSchema).optional(),
   maptilerQueries: z.lazy(() => MaptilerQueryCreateNestedManyWithoutUserInputObjectSchema).optional(),

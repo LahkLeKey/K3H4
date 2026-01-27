@@ -13,5 +13,6 @@ export const GeoRouteCacheUpsertResultSchema = z.object({
   durationMinutes: z.number().int().optional(),
   geojson: z.unknown().optional(),
   expiresAt: z.date(),
-  createdAt: z.date()
+  createdAt: z.date(),
+  directions: z.array(z.unknown())
 });

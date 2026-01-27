@@ -5,7 +5,8 @@ import { DecimalFieldUpdateOperationsInputObjectSchema as DecimalFieldUpdateOper
 import { NullableIntFieldUpdateOperationsInputObjectSchema as NullableIntFieldUpdateOperationsInputObjectSchema } from './NullableIntFieldUpdateOperationsInput.schema';
 import { NullableJsonNullValueInputSchema } from '../enums/NullableJsonNullValueInput.schema';
 import { DateTimeFieldUpdateOperationsInputObjectSchema as DateTimeFieldUpdateOperationsInputObjectSchema } from './DateTimeFieldUpdateOperationsInput.schema';
-import { UserUpdateOneWithoutGeoRouteCachesNestedInputObjectSchema as UserUpdateOneWithoutGeoRouteCachesNestedInputObjectSchema } from './UserUpdateOneWithoutGeoRouteCachesNestedInput.schema'
+import { UserUpdateOneWithoutGeoRouteCachesNestedInputObjectSchema as UserUpdateOneWithoutGeoRouteCachesNestedInputObjectSchema } from './UserUpdateOneWithoutGeoRouteCachesNestedInput.schema';
+import { GeoDirectionUpdateManyWithoutRouteCacheNestedInputObjectSchema as GeoDirectionUpdateManyWithoutRouteCacheNestedInputObjectSchema } from './GeoDirectionUpdateManyWithoutRouteCacheNestedInput.schema'
 
 import { JsonValueSchema as jsonSchema } from '../../helpers/json-helpers';
 
@@ -58,7 +59,8 @@ const makeSchema = () => z.object({
   geojson: z.union([NullableJsonNullValueInputSchema, jsonSchema]).optional(),
   expiresAt: z.union([z.coerce.date(), z.lazy(() => DateTimeFieldUpdateOperationsInputObjectSchema)]).optional(),
   createdAt: z.union([z.coerce.date(), z.lazy(() => DateTimeFieldUpdateOperationsInputObjectSchema)]).optional(),
-  user: z.lazy(() => UserUpdateOneWithoutGeoRouteCachesNestedInputObjectSchema).optional()
+  user: z.lazy(() => UserUpdateOneWithoutGeoRouteCachesNestedInputObjectSchema).optional(),
+  directions: z.lazy(() => GeoDirectionUpdateManyWithoutRouteCacheNestedInputObjectSchema).optional()
 }).strict();
 export const GeoRouteCacheUpdateInputObjectSchema: z.ZodType<Prisma.GeoRouteCacheUpdateInput> = makeSchema() as unknown as z.ZodType<Prisma.GeoRouteCacheUpdateInput>;
 export const GeoRouteCacheUpdateInputObjectZodSchema = makeSchema();

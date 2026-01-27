@@ -4,7 +4,8 @@ import { StringFieldUpdateOperationsInputObjectSchema as StringFieldUpdateOperat
 import { DecimalFieldUpdateOperationsInputObjectSchema as DecimalFieldUpdateOperationsInputObjectSchema } from './DecimalFieldUpdateOperationsInput.schema';
 import { NullableIntFieldUpdateOperationsInputObjectSchema as NullableIntFieldUpdateOperationsInputObjectSchema } from './NullableIntFieldUpdateOperationsInput.schema';
 import { NullableJsonNullValueInputSchema } from '../enums/NullableJsonNullValueInput.schema';
-import { DateTimeFieldUpdateOperationsInputObjectSchema as DateTimeFieldUpdateOperationsInputObjectSchema } from './DateTimeFieldUpdateOperationsInput.schema'
+import { DateTimeFieldUpdateOperationsInputObjectSchema as DateTimeFieldUpdateOperationsInputObjectSchema } from './DateTimeFieldUpdateOperationsInput.schema';
+import { GeoDirectionUpdateManyWithoutRouteCacheNestedInputObjectSchema as GeoDirectionUpdateManyWithoutRouteCacheNestedInputObjectSchema } from './GeoDirectionUpdateManyWithoutRouteCacheNestedInput.schema'
 
 import { JsonValueSchema as jsonSchema } from '../../helpers/json-helpers';
 
@@ -56,7 +57,8 @@ const makeSchema = () => z.object({
   durationMinutes: z.union([z.number().int(), z.lazy(() => NullableIntFieldUpdateOperationsInputObjectSchema)]).optional().nullable(),
   geojson: z.union([NullableJsonNullValueInputSchema, jsonSchema]).optional(),
   expiresAt: z.union([z.coerce.date(), z.lazy(() => DateTimeFieldUpdateOperationsInputObjectSchema)]).optional(),
-  createdAt: z.union([z.coerce.date(), z.lazy(() => DateTimeFieldUpdateOperationsInputObjectSchema)]).optional()
+  createdAt: z.union([z.coerce.date(), z.lazy(() => DateTimeFieldUpdateOperationsInputObjectSchema)]).optional(),
+  directions: z.lazy(() => GeoDirectionUpdateManyWithoutRouteCacheNestedInputObjectSchema).optional()
 }).strict();
 export const GeoRouteCacheUpdateWithoutUserInputObjectSchema: z.ZodType<Prisma.GeoRouteCacheUpdateWithoutUserInput> = makeSchema() as unknown as z.ZodType<Prisma.GeoRouteCacheUpdateWithoutUserInput>;
 export const GeoRouteCacheUpdateWithoutUserInputObjectZodSchema = makeSchema();

@@ -37,6 +37,7 @@ import { ArcadePrizeUncheckedUpdateManyWithoutUserNestedInputObjectSchema as Arc
 import { ArcadeSessionUncheckedUpdateManyWithoutUserNestedInputObjectSchema as ArcadeSessionUncheckedUpdateManyWithoutUserNestedInputObjectSchema } from './ArcadeSessionUncheckedUpdateManyWithoutUserNestedInput.schema';
 import { ArcadeRedemptionUncheckedUpdateManyWithoutUserNestedInputObjectSchema as ArcadeRedemptionUncheckedUpdateManyWithoutUserNestedInputObjectSchema } from './ArcadeRedemptionUncheckedUpdateManyWithoutUserNestedInput.schema';
 import { ProviderGrantUncheckedUpdateManyWithoutUserNestedInputObjectSchema as ProviderGrantUncheckedUpdateManyWithoutUserNestedInputObjectSchema } from './ProviderGrantUncheckedUpdateManyWithoutUserNestedInput.schema';
+import { GeoDirectionUncheckedUpdateManyWithoutUserNestedInputObjectSchema as GeoDirectionUncheckedUpdateManyWithoutUserNestedInputObjectSchema } from './GeoDirectionUncheckedUpdateManyWithoutUserNestedInput.schema';
 import { GeoPoiCacheUncheckedUpdateManyWithoutUserNestedInputObjectSchema as GeoPoiCacheUncheckedUpdateManyWithoutUserNestedInputObjectSchema } from './GeoPoiCacheUncheckedUpdateManyWithoutUserNestedInput.schema';
 import { GeoQueryCacheUncheckedUpdateManyWithoutUserNestedInputObjectSchema as GeoQueryCacheUncheckedUpdateManyWithoutUserNestedInputObjectSchema } from './GeoQueryCacheUncheckedUpdateManyWithoutUserNestedInput.schema';
 import { MaptilerQueryUncheckedUpdateManyWithoutUserNestedInputObjectSchema as MaptilerQueryUncheckedUpdateManyWithoutUserNestedInputObjectSchema } from './MaptilerQueryUncheckedUpdateManyWithoutUserNestedInput.schema';
@@ -102,6 +103,7 @@ const makeSchema = () => z.object({
   arcadeSessions: z.lazy(() => ArcadeSessionUncheckedUpdateManyWithoutUserNestedInputObjectSchema).optional(),
   arcadeRedemptions: z.lazy(() => ArcadeRedemptionUncheckedUpdateManyWithoutUserNestedInputObjectSchema).optional(),
   providerGrants: z.lazy(() => ProviderGrantUncheckedUpdateManyWithoutUserNestedInputObjectSchema).optional(),
+  geoDirections: z.lazy(() => GeoDirectionUncheckedUpdateManyWithoutUserNestedInputObjectSchema).optional(),
   geoPoiCaches: z.lazy(() => GeoPoiCacheUncheckedUpdateManyWithoutUserNestedInputObjectSchema).optional(),
   geoQueryCaches: z.lazy(() => GeoQueryCacheUncheckedUpdateManyWithoutUserNestedInputObjectSchema).optional(),
   maptilerQueries: z.lazy(() => MaptilerQueryUncheckedUpdateManyWithoutUserNestedInputObjectSchema).optional(),

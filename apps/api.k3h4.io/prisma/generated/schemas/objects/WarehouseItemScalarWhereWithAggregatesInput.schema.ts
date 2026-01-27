@@ -5,6 +5,9 @@ import { StringNullableWithAggregatesFilterObjectSchema as StringNullableWithAgg
 import { IntWithAggregatesFilterObjectSchema as IntWithAggregatesFilterObjectSchema } from './IntWithAggregatesFilter.schema';
 import { EnumLifecycleStatusWithAggregatesFilterObjectSchema as EnumLifecycleStatusWithAggregatesFilterObjectSchema } from './EnumLifecycleStatusWithAggregatesFilter.schema';
 import { LifecycleStatusSchema } from '../enums/LifecycleStatus.schema';
+import { EnumWarehouseCategoryWithAggregatesFilterObjectSchema as EnumWarehouseCategoryWithAggregatesFilterObjectSchema } from './EnumWarehouseCategoryWithAggregatesFilter.schema';
+import { WarehouseCategorySchema } from '../enums/WarehouseCategory.schema';
+import { JsonNullableWithAggregatesFilterObjectSchema as JsonNullableWithAggregatesFilterObjectSchema } from './JsonNullableWithAggregatesFilter.schema';
 import { DateTimeWithAggregatesFilterObjectSchema as DateTimeWithAggregatesFilterObjectSchema } from './DateTimeWithAggregatesFilter.schema'
 
 const warehouseitemscalarwherewithaggregatesinputSchema = z.object({
@@ -19,6 +22,8 @@ const warehouseitemscalarwherewithaggregatesinputSchema = z.object({
   location: z.union([z.lazy(() => StringWithAggregatesFilterObjectSchema), z.string()]).optional(),
   status: z.union([z.lazy(() => EnumLifecycleStatusWithAggregatesFilterObjectSchema), LifecycleStatusSchema]).optional(),
   freightLoadId: z.union([z.lazy(() => StringNullableWithAggregatesFilterObjectSchema), z.string()]).optional().nullable(),
+  category: z.union([z.lazy(() => EnumWarehouseCategoryWithAggregatesFilterObjectSchema), WarehouseCategorySchema]).optional(),
+  metadata: z.lazy(() => JsonNullableWithAggregatesFilterObjectSchema).optional(),
   createdAt: z.union([z.lazy(() => DateTimeWithAggregatesFilterObjectSchema), z.coerce.date()]).optional(),
   updatedAt: z.union([z.lazy(() => DateTimeWithAggregatesFilterObjectSchema), z.coerce.date()]).optional()
 }).strict();

@@ -10,6 +10,8 @@ export const WarehouseItemAggregateResultSchema = z.object({  _count: z.object({
     status: z.number(),
     freightLoadId: z.number(),
     freightLoad: z.number(),
+    category: z.number(),
+    metadata: z.number(),
     createdAt: z.number(),
     updatedAt: z.number()
   }).optional(),

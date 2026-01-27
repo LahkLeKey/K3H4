@@ -12,6 +12,9 @@ export { PersonaCompatibilityResultSchema } from './PersonaCompatibility.result'
 export { RefreshTokenResultSchema } from './RefreshToken.result';
 export { ProviderGrantResultSchema } from './ProviderGrant.result';
 export { GeoRouteCacheResultSchema } from './GeoRouteCache.result';
+export { GeoDirectionResultSchema } from './GeoDirection.result';
+export { GeoDirectionStopResultSchema } from './GeoDirectionStop.result';
+export { GeoDirectionSegmentResultSchema } from './GeoDirectionSegment.result';
 export { GeoPoiCacheResultSchema } from './GeoPoiCache.result';
 export { GeoQueryCacheResultSchema } from './GeoQueryCache.result';
 export { GeoViewHistoryResultSchema } from './GeoViewHistory.result';

@@ -10,6 +10,8 @@ export const WarehouseItemDeleteResultSchema = z.nullable(z.object({
   status: z.unknown(),
   freightLoadId: z.string().optional(),
   freightLoad: z.unknown().optional(),
+  category: z.unknown(),
+  metadata: z.unknown().optional(),
   createdAt: z.date(),
   updatedAt: z.date()
 }));

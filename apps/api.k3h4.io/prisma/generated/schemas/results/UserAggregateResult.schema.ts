@@ -43,6 +43,7 @@ export const UserAggregateResultSchema = z.object({  _count: z.object({
     arcadeRedemptions: z.number(),
     providerGrants: z.number(),
     geoRouteCaches: z.number(),
+    geoDirections: z.number(),
     geoPoiCaches: z.number(),
     geoQueryCaches: z.number(),
     maptilerQueries: z.number(),

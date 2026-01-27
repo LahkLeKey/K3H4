@@ -14,6 +14,8 @@ const makeSchema = () => z.object({
   status: z.boolean().optional(),
   freightLoadId: z.boolean().optional(),
   freightLoad: z.union([z.boolean(), z.lazy(() => FreightLoadArgsObjectSchema)]).optional(),
+  category: z.boolean().optional(),
+  metadata: z.boolean().optional(),
   createdAt: z.boolean().optional(),
   updatedAt: z.boolean().optional()
 }).strict();

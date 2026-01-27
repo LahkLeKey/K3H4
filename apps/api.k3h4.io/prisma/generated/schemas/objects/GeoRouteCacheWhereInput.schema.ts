@@ -7,7 +7,8 @@ import { IntNullableFilterObjectSchema as IntNullableFilterObjectSchema } from '
 import { JsonNullableFilterObjectSchema as JsonNullableFilterObjectSchema } from './JsonNullableFilter.schema';
 import { DateTimeFilterObjectSchema as DateTimeFilterObjectSchema } from './DateTimeFilter.schema';
 import { UserNullableScalarRelationFilterObjectSchema as UserNullableScalarRelationFilterObjectSchema } from './UserNullableScalarRelationFilter.schema';
-import { UserWhereInputObjectSchema as UserWhereInputObjectSchema } from './UserWhereInput.schema'
+import { UserWhereInputObjectSchema as UserWhereInputObjectSchema } from './UserWhereInput.schema';
+import { GeoDirectionListRelationFilterObjectSchema as GeoDirectionListRelationFilterObjectSchema } from './GeoDirectionListRelationFilter.schema'
 
 import { DecimalJSLikeSchema, isValidDecimalInput } from '../../helpers/decimal-helpers';
 const georoutecachewhereinputSchema = z.object({
@@ -62,7 +63,8 @@ const georoutecachewhereinputSchema = z.object({
   geojson: z.lazy(() => JsonNullableFilterObjectSchema).optional(),
   expiresAt: z.union([z.lazy(() => DateTimeFilterObjectSchema), z.coerce.date()]).optional(),
   createdAt: z.union([z.lazy(() => DateTimeFilterObjectSchema), z.coerce.date()]).optional(),
-  user: z.union([z.lazy(() => UserNullableScalarRelationFilterObjectSchema), z.lazy(() => UserWhereInputObjectSchema)]).optional()
+  user: z.union([z.lazy(() => UserNullableScalarRelationFilterObjectSchema), z.lazy(() => UserWhereInputObjectSchema)]).optional(),
+  directions: z.lazy(() => GeoDirectionListRelationFilterObjectSchema).optional()
 }).strict();
 export const GeoRouteCacheWhereInputObjectSchema: z.ZodType<Prisma.GeoRouteCacheWhereInput> = georoutecachewhereinputSchema as unknown as z.ZodType<Prisma.GeoRouteCacheWhereInput>;
 export const GeoRouteCacheWhereInputObjectZodSchema = georoutecachewhereinputSchema;

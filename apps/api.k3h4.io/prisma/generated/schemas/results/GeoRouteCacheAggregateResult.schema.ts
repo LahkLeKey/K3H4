@@ -13,7 +13,8 @@ export const GeoRouteCacheAggregateResultSchema = z.object({  _count: z.object({
     durationMinutes: z.number(),
     geojson: z.number(),
     expiresAt: z.number(),
-    createdAt: z.number()
+    createdAt: z.number(),
+    directions: z.number()
   }).optional(),
   _sum: z.object({
     originLat: z.number().nullable(),

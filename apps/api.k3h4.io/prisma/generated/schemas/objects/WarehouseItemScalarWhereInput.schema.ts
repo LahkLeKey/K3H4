@@ -5,6 +5,9 @@ import { StringNullableFilterObjectSchema as StringNullableFilterObjectSchema } 
 import { IntFilterObjectSchema as IntFilterObjectSchema } from './IntFilter.schema';
 import { EnumLifecycleStatusFilterObjectSchema as EnumLifecycleStatusFilterObjectSchema } from './EnumLifecycleStatusFilter.schema';
 import { LifecycleStatusSchema } from '../enums/LifecycleStatus.schema';
+import { EnumWarehouseCategoryFilterObjectSchema as EnumWarehouseCategoryFilterObjectSchema } from './EnumWarehouseCategoryFilter.schema';
+import { WarehouseCategorySchema } from '../enums/WarehouseCategory.schema';
+import { JsonNullableFilterObjectSchema as JsonNullableFilterObjectSchema } from './JsonNullableFilter.schema';
 import { DateTimeFilterObjectSchema as DateTimeFilterObjectSchema } from './DateTimeFilter.schema'
 
 const warehouseitemscalarwhereinputSchema = z.object({
@@ -19,6 +22,8 @@ const warehouseitemscalarwhereinputSchema = z.object({
   location: z.union([z.lazy(() => StringFilterObjectSchema), z.string()]).optional(),
   status: z.union([z.lazy(() => EnumLifecycleStatusFilterObjectSchema), LifecycleStatusSchema]).optional(),
   freightLoadId: z.union([z.lazy(() => StringNullableFilterObjectSchema), z.string()]).optional().nullable(),
+  category: z.union([z.lazy(() => EnumWarehouseCategoryFilterObjectSchema), WarehouseCategorySchema]).optional(),
+  metadata: z.lazy(() => JsonNullableFilterObjectSchema).optional(),
   createdAt: z.union([z.lazy(() => DateTimeFilterObjectSchema), z.coerce.date()]).optional(),
   updatedAt: z.union([z.lazy(() => DateTimeFilterObjectSchema), z.coerce.date()]).optional()
 }).strict();

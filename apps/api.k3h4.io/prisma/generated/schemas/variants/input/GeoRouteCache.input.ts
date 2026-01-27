@@ -14,7 +14,8 @@ export const GeoRouteCacheInputSchema = z.object({
     durationMinutes: z.number().int().optional().nullable(),
     geojson: z.unknown().optional().nullable(),
     expiresAt: z.date(),
-    createdAt: z.date()
+    createdAt: z.date(),
+    directions: z.array(z.unknown())
 }).strict();
 
 export type GeoRouteCacheInputType = z.infer<typeof GeoRouteCacheInputSchema>;

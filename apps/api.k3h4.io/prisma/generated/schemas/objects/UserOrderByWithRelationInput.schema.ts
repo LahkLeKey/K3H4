@@ -36,6 +36,7 @@ import { ArcadeSessionOrderByRelationAggregateInputObjectSchema as ArcadeSession
 import { ArcadeRedemptionOrderByRelationAggregateInputObjectSchema as ArcadeRedemptionOrderByRelationAggregateInputObjectSchema } from './ArcadeRedemptionOrderByRelationAggregateInput.schema';
 import { ProviderGrantOrderByRelationAggregateInputObjectSchema as ProviderGrantOrderByRelationAggregateInputObjectSchema } from './ProviderGrantOrderByRelationAggregateInput.schema';
 import { GeoRouteCacheOrderByRelationAggregateInputObjectSchema as GeoRouteCacheOrderByRelationAggregateInputObjectSchema } from './GeoRouteCacheOrderByRelationAggregateInput.schema';
+import { GeoDirectionOrderByRelationAggregateInputObjectSchema as GeoDirectionOrderByRelationAggregateInputObjectSchema } from './GeoDirectionOrderByRelationAggregateInput.schema';
 import { GeoPoiCacheOrderByRelationAggregateInputObjectSchema as GeoPoiCacheOrderByRelationAggregateInputObjectSchema } from './GeoPoiCacheOrderByRelationAggregateInput.schema';
 import { GeoQueryCacheOrderByRelationAggregateInputObjectSchema as GeoQueryCacheOrderByRelationAggregateInputObjectSchema } from './GeoQueryCacheOrderByRelationAggregateInput.schema';
 import { MaptilerQueryOrderByRelationAggregateInputObjectSchema as MaptilerQueryOrderByRelationAggregateInputObjectSchema } from './MaptilerQueryOrderByRelationAggregateInput.schema';
@@ -94,6 +95,7 @@ const makeSchema = () => z.object({
   arcadeRedemptions: z.lazy(() => ArcadeRedemptionOrderByRelationAggregateInputObjectSchema).optional(),
   providerGrants: z.lazy(() => ProviderGrantOrderByRelationAggregateInputObjectSchema).optional(),
   geoRouteCaches: z.lazy(() => GeoRouteCacheOrderByRelationAggregateInputObjectSchema).optional(),
+  geoDirections: z.lazy(() => GeoDirectionOrderByRelationAggregateInputObjectSchema).optional(),
   geoPoiCaches: z.lazy(() => GeoPoiCacheOrderByRelationAggregateInputObjectSchema).optional(),
   geoQueryCaches: z.lazy(() => GeoQueryCacheOrderByRelationAggregateInputObjectSchema).optional(),
   maptilerQueries: z.lazy(() => MaptilerQueryOrderByRelationAggregateInputObjectSchema).optional(),

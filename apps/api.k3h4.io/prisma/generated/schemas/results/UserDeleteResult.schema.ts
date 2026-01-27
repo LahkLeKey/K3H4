@@ -43,6 +43,7 @@ export const UserDeleteResultSchema = z.nullable(z.object({
   arcadeRedemptions: z.array(z.unknown()),
   providerGrants: z.array(z.unknown()),
   geoRouteCaches: z.array(z.unknown()),
+  geoDirections: z.array(z.unknown()),
   geoPoiCaches: z.array(z.unknown()),
   geoQueryCaches: z.array(z.unknown()),
   maptilerQueries: z.array(z.unknown()),
