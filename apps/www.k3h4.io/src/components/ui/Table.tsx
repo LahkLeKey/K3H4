@@ -37,7 +37,6 @@ export type TableProps<T> = {
     title?: string;
     actions?: ReactNode;
     actionBarClassName?: string;
-    bulkActions?: ReactNode;
     selectable?: boolean;
     selectedRowKeys?: string[];
     defaultSelectedRowKeys?: string[];
@@ -45,8 +44,6 @@ export type TableProps<T> = {
     rowActions?: (row: T) => ReactNode;
     rowFeedback?: Record<string, ReactNode>;
     onRowAction?: (row: T, action: string) => Promise<void> | void;
-    bulkActionItems?: Array<{ id: string; label: ReactNode; disabled?: boolean }>;
-    onBulkAction?: (actionId: string) => void;
     rowActionItems?: (row: T) => TableRowActionItem[];
 };
 
@@ -59,7 +56,6 @@ export function Table<T>({
     title,
     actions,
     actionBarClassName = "",
-    bulkActions,
     selectable = false,
     selectedRowKeys,
     defaultSelectedRowKeys = [],
@@ -67,13 +63,11 @@ export function Table<T>({
     rowActions,
     rowFeedback,
     onRowAction,
-    bulkActionItems,
-    onBulkAction,
     rowActionItems,
     idAccessor,
     idLabel = "ID",
 }: TableProps<T>) {
-    const hasActionBar = Boolean(title || actions || bulkActions || bulkActionItems);
+    const hasActionBar = Boolean(title || actions);
     const hasRowActions = Boolean(rowActions || rowActionItems);
     const isControlledSelection = selectedRowKeys !== undefined;
     const [internalSelection, setInternalSelection] = useState<string[]>(defaultSelectedRowKeys);
@@ -119,22 +113,6 @@ export function Table<T>({
                                 <div className="text-sm uppercase tracking-[0.3em] text-slate-400">{title}</div>
                             </div>
                         ) : null}
-                        {bulkActionItems ? (
-                            <div className="flex flex-wrap items-center gap-2">
-                                {bulkActionItems.map((item) => (
-                                    <button
-                                        key={item.id}
-                                        type="button"
-                                        onClick={() => onBulkAction?.(item.id)}
-                                        disabled={item.disabled}
-                                        className="inline-flex items-center gap-1 rounded-full border border-white/20 px-3 py-1 text-[11px] font-semibold text-slate-100 transition hover:border-white/40 disabled:border-white/10 disabled:text-slate-500"
-                                    >
-                                        {item.label}
-                                    </button>
-                                ))}
-                            </div>
-                        ) : null}
-                        {bulkActions ? <div className="flex flex-wrap items-center gap-2">{bulkActions}</div> : null}
                     </div>
                     {actions ? <div className="flex flex-wrap items-center gap-2">{actions}</div> : null}
                 </div>

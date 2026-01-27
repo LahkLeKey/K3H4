@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useState, type ReactNode } from "react";
 
 import { Button, Stack, Table, type TableColumn } from "../ui";
 import { Trash2 } from "lucide-react";
@@ -73,11 +73,6 @@ export function WarehouseBoard() {
         }
     }, [navigate, session?.accessToken]);
 
-    const selectionLabel = useMemo(() => {
-        if (selectedRowKeys.length === 0) return "";
-        return `${selectedRowKeys.length} selected`;
-    }, [selectedRowKeys.length]);
-
     useEffect(() => {
         if (selectedRowKeys.length === 0) return;
         setSelectedRowKeys((prev) => prev.filter((key) => items.some((item) => item.id === key)));
@@ -117,40 +112,10 @@ export function WarehouseBoard() {
         }
     }, [createItem]);
 
-    const handleBulkAction = useCallback((actionId: string) => {
-        if (actionId === "clear") {
-            setSelectedRowKeys([]);
-            return;
-        }
-        const message = actionId === "plan"
-            ? "Planning replenishment…"
-            : "Filtering inventory…";
-        setRowFeedback((prev) => {
-            const next = { ...prev };
-            selectedRowKeys.forEach((key) => {
-                next[key] = message;
-            });
-            return next;
-        });
-    }, [selectedRowKeys]);
-
     return (
         <Stack gap="lg">
             <Table<WarehouseItem>
                 title="Warehouse"
-                bulkActions={
-                    <div className="flex flex-wrap items-center gap-2">
-                        {selectionLabel ? (
-                            <div className="text-xs uppercase tracking-[0.3em] text-slate-400">{selectionLabel}</div>
-                        ) : null}
-                    </div>
-                }
-                bulkActionItems={[
-                    { id: "plan", label: "Plan replenishment", disabled: !selectedRowKeys.length },
-                    { id: "filter", label: "Filter" },
-                    { id: "clear", label: "Clear selection", disabled: !selectedRowKeys.length },
-                ]}
-                onBulkAction={handleBulkAction}
                 actions={
                     <div className="flex flex-wrap items-center gap-2">
                         <Button
