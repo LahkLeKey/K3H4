@@ -1,7 +1,7 @@
 import {Prisma, PrismaClient} from '@prisma/client';
 import {type FastifyInstance, type FastifyRequest} from 'fastify';
 
-import {BANK_ACTOR_TYPE, BANK_TRANSACTION_KIND, recordBankTransactionEntity,} from '../services/bank-actor';
+import {BANK_ACTOR_TYPE, BANK_TRANSACTION_KIND, buildBankTransactionWhere, recordBankTransactionEntity,} from '../services/bank-actor';
 
 import {withTelemetryBase} from './telemetry';
 import {type RecordTelemetryFn} from './types';
@@ -17,29 +17,35 @@ const normalizeAmount = (value: unknown) => {
   return new Prisma.Decimal(num.toFixed(2));
 };
 
-const serializeTransaction =
-    (entity:
-         {id: string; metadata: Prisma.JsonValue | null; createdAt: Date}) => {
-      const metadata = (entity.metadata as {
-                         amount?: string;
-                         balanceAfter?: string;
-                         direction?: string;
-                         kind?: string;
-                         note?: string|null;
-                       } |
-                        null) ??
-          {};
+const serializeTransaction = (entity: {
+  id: string; metadata: Prisma.JsonValue | null; createdAt: Date;
+  targetType?: string | null;
+  targetId?: string | null;
+  name?: string | null;
+}) => {
+  const metadata = (entity.metadata as {
+                     amount?: string;
+                     balanceAfter?: string;
+                     direction?: string;
+                     kind?: string;
+                     note?: string|null;
+                   } |
+                    null) ??
+      {};
 
-      return {
-        id: entity.id,
-        amount: metadata.amount ?? '0.00',
-        balanceAfter: metadata.balanceAfter ?? '0.00',
-        direction: metadata.direction ?? '',
-        kind: metadata.kind ?? '',
-        note: metadata.note ?? null,
-        createdAt: entity.createdAt,
-      };
-    };
+  return {
+    id: entity.id,
+    amount: metadata.amount ?? '0.00',
+    balanceAfter: metadata.balanceAfter ?? '0.00',
+    direction: metadata.direction ?? '',
+    kind: metadata.kind ?? '',
+    note: metadata.note ?? null,
+    createdAt: entity.createdAt,
+    targetType: entity.targetType ?? null,
+    targetId: entity.targetId ?? null,
+    name: entity.name ?? null,
+  };
+};
 
 export function registerBankRoutes(
     server: FastifyInstance, prisma: PrismaClient,
@@ -181,15 +187,11 @@ export function registerBankRoutes(
             query.direction :
             undefined;
 
-        const createdAt: Prisma.DateTimeFilter|undefined = (() => {
-          const from = query?.from ? new Date(query.from) : undefined;
-          const to = query?.to ? new Date(query.to) : undefined;
-          const validFrom =
-              from && !Number.isNaN(from.valueOf()) ? from : undefined;
-          const validTo = to && !Number.isNaN(to.valueOf()) ? to : undefined;
-          if (!validFrom && !validTo) return undefined;
-          return {gte: validFrom, lte: validTo};
-        })();
+        const from = query?.from ? new Date(query.from) : undefined;
+        const to = query?.to ? new Date(query.to) : undefined;
+        const validFrom =
+            from && !Number.isNaN(from.valueOf()) ? from : undefined;
+        const validTo = to && !Number.isNaN(to.valueOf()) ? to : undefined;
 
         const actor = await prisma.actor.findFirst(
             {where: {userId, type: BANK_ACTOR_TYPE}, select: {id: true}});
@@ -209,13 +211,11 @@ export function registerBankRoutes(
           return {transactions: [], total: 0};
         }
 
-        const where: Prisma.EntityWhereInput = {
-          actorId: actor.id,
-          kind: BANK_TRANSACTION_KIND,
-          createdAt,
-          ...(direction ? {metadata: {path: ['direction'], equals: direction}} :
-                          {}),
-        };
+        const where = buildBankTransactionWhere(actor.id, {
+          direction,
+          from: validFrom,
+          to: validTo,
+        });
 
         const [total, txns] = await Promise.all([
           prisma.entity.count({where}),

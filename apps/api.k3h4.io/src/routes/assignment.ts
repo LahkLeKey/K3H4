@@ -218,7 +218,8 @@ export function registerAssignmentRoutes(
             const nextBalance = user.k3h4CoinBalance.sub(amount);
             const savedUser = await tx.user.update(
                 {where: {id: userId}, data: {k3h4CoinBalance: nextBalance}});
-            await recordBankTransactionEntity(tx, {
+
+            const bankTxn = await recordBankTransactionEntity(tx, {
               userId,
               amount,
               direction: 'debit',
@@ -227,6 +228,9 @@ export function registerAssignmentRoutes(
                   `Payout for ${assignment.title} (${
                         assignment.persona.alias})`,
               balanceAfter: savedUser.k3h4CoinBalance,
+              targetType: 'assignment',
+              targetId: assignment.id,
+              name: assignment.title,
             });
 
             const payout = await tx.assignmentPayout.create({

@@ -316,200 +316,201 @@ export function registerFreightRoutes(
       '/freight',
       {preHandler: [server.authenticate]},
       async (request, reply) => {
-    const rt = withTelemetryBase(recordTelemetry, request);
-    const userId = (request.user as {sub: string}).sub;
-    const body = request.body as {
-      title?: string;
-      originName?: string;
-      originLat?: number;
-      originLng?: number;
-      destinationName?: string;
-      destinationLat?: number;
-      destinationLng?: number;
-      ratePerKm?: number;
-    }
-    |undefined;
+        const rt = withTelemetryBase(recordTelemetry, request);
+        const userId = (request.user as {sub: string}).sub;
+        const body = request.body as {
+          title?: string;
+          originName?: string;
+          originLat?: number;
+          originLng?: number;
+          destinationName?: string;
+          destinationLat?: number;
+          destinationLng?: number;
+          ratePerKm?: number;
+        }
+        |undefined;
 
-    const required = [body?.title, body?.originName, body?.destinationName];
-    if (required.some((v) => !v || String(v).trim().length === 0)) {
-      return reply.status(400).send(
-          {error: 'title, originName, destinationName are required'});
-    }
-    const originLat = Number(body?.originLat);
-    const originLng = Number(body?.originLng);
-    const destinationLat = Number(body?.destinationLat);
-    const destinationLng = Number(body?.destinationLng);
-    if (![originLat, originLng, destinationLat, destinationLng].every(
-            (n) => Number.isFinite(n))) {
-      return reply.status(400).send(
-          {error: 'origin/destination coordinates are required'});
-    }
-    const originLabel = body?.originName?.trim() || 'Origin';
-    const destinationLabel = body?.destinationName?.trim() || 'Destination';
+        const required = [body?.title, body?.originName, body?.destinationName];
+        if (required.some((v) => !v || String(v).trim().length === 0)) {
+          return reply.status(400).send(
+              {error: 'title, originName, destinationName are required'});
+        }
+        const originLat = Number(body?.originLat);
+        const originLng = Number(body?.originLng);
+        const destinationLat = Number(body?.destinationLat);
+        const destinationLng = Number(body?.destinationLng);
+        if (![originLat, originLng, destinationLat, destinationLng].every(
+                (n) => Number.isFinite(n))) {
+          return reply.status(400).send(
+              {error: 'origin/destination coordinates are required'});
+        }
+        const originLabel = body?.originName?.trim() || 'Origin';
+        const destinationLabel = body?.destinationName?.trim() || 'Destination';
 
-    let osrm;
-    try {
-      osrm = await fetchOsrmRoute(
-          {lat: originLat, lng: originLng},
-          {lat: destinationLat, lng: destinationLng});
-    } catch (err) {
-      request.log.error({err}, 'freight OSRM request failed');
-      return reply.status(502).send({
-        error: err instanceof Error ? err.message : 'OSRM route failed',
-      });
-    }
-    const distance = osrm.distanceKm || 0;
-    const ratePerKm = Number(body?.ratePerKm ?? 2);
-    const cost = new Prisma.Decimal((distance * ratePerKm).toFixed(2));
+        let osrm;
+        try {
+          osrm = await fetchOsrmRoute(
+              {lat: originLat, lng: originLng},
+              {lat: destinationLat, lng: destinationLng});
+        } catch (err) {
+          request.log.error({err}, 'freight OSRM request failed');
+          return reply.status(502).send({
+            error: err instanceof Error ? err.message : 'OSRM route failed',
+          });
+        }
+        const distance = osrm.distanceKm || 0;
+        const ratePerKm = Number(body?.ratePerKm ?? 2);
+        const cost = new Prisma.Decimal((distance * ratePerKm).toFixed(2));
 
-    const load = await prisma.freightLoad.create({
-      data: {
-        userId,
-        title: body?.title?.trim() || 'Freight load',
-        originName: originLabel,
-        originLat,
-        originLng,
-        destinationName: destinationLabel,
-        destinationLat,
-        destinationLng,
-        distanceKm: new Prisma.Decimal(distance.toFixed(2)),
-        durationMinutes: osrm.durationMinutes,
-        cost,
-        status: LifecycleStatus.PLANNING,
-        routeGeoJson: osrm.geometry,
+        const load = await prisma.freightLoad.create({
+          data: {
+            userId,
+            title: body?.title?.trim() || 'Freight load',
+            originName: originLabel,
+            originLat,
+            originLng,
+            destinationName: destinationLabel,
+            destinationLat,
+            destinationLng,
+            distanceKm: new Prisma.Decimal(distance.toFixed(2)),
+            durationMinutes: osrm.durationMinutes,
+            cost,
+            status: LifecycleStatus.PLANNING,
+            routeGeoJson: osrm.geometry,
+          },
+        });
+
+        const signature = routeSignature(
+            {lat: originLat, lng: originLng},
+            {lat: destinationLat, lng: destinationLng});
+        try {
+          await ensureGeoDirectionForLoad({
+            prisma,
+            userId,
+            signature,
+            origin: {lat: originLat, lng: originLng},
+            destination: {lat: destinationLat, lng: destinationLng},
+            originName: sanitizeLabel(originLabel),
+            destinationName: sanitizeLabel(destinationLabel),
+            osrmResponse: osrm,
+          });
+        } catch (err) {
+          request.log.error({err, signature}, 'freight directions failed');
+          return reply.status(502).send({
+            error: err instanceof Error ? err.message :
+                                          'Unable to cache directions',
+          });
+        }
+        await rt({
+          eventType: 'freight.create',
+          source: 'api',
+          payload: {id: load.id, title: load.title},
+        });
+        return {load: serializeLoad(load)};
       },
-    });
-
-    const signature = routeSignature(
-        {lat: originLat, lng: originLng},
-        {lat: destinationLat, lng: destinationLng});
-    try {
-      await ensureGeoDirectionForLoad({
-        prisma,
-        userId,
-        signature,
-        origin: {lat: originLat, lng: originLng},
-        destination: {lat: destinationLat, lng: destinationLng},
-        originName: sanitizeLabel(originLabel),
-        destinationName: sanitizeLabel(destinationLabel),
-        osrmResponse: osrm,
-      });
-      await recordBankTransactionEntity(tx, {
-        userId,
-        amount: cost,
-        direction: 'debit',
-        kind: 'freight_payment',
-        note: `Freight load ${load.title}`,
-        balanceAfter: savedUser.k3h4CoinBalance,
-      });
-      return {load: serializeLoad(load)};
-    },
   );
 
-    server.get(
-        '/freight/:id/directions',
-        {preHandler: [server.authenticate]},
-        async (request, reply) => {
-          const userId = (request.user as {sub: string}).sub;
-          const id = (request.params as {id: string}).id;
+  server.get(
+      '/freight/:id/directions',
+      {preHandler: [server.authenticate]},
+      async (request, reply) => {
+        const userId = (request.user as {sub: string}).sub;
+        const id = (request.params as {id: string}).id;
 
-          const load =
-              await prisma.freightLoad.findFirst({where: {id, userId}});
-          if (!load)
-            return reply.status(404).send({error: 'Freight load not found'});
+        const load = await prisma.freightLoad.findFirst({where: {id, userId}});
+        if (!load)
+          return reply.status(404).send({error: 'Freight load not found'});
 
-          const signature = routeSignature(
-              {lat: Number(load.originLat), lng: Number(load.originLng)}, {
-                lat: Number(load.destinationLat),
-                lng: Number(load.destinationLng)
-              });
-          try {
-            const direction = await ensureGeoDirectionForLoad({
-              prisma,
+        const signature = routeSignature(
+            {lat: Number(load.originLat), lng: Number(load.originLng)}, {
+              lat: Number(load.destinationLat),
+              lng: Number(load.destinationLng)
+            });
+        try {
+          const direction = await ensureGeoDirectionForLoad({
+            prisma,
+            userId,
+            signature,
+            origin: {lat: Number(load.originLat), lng: Number(load.originLng)},
+            destination: {
+              lat: Number(load.destinationLat),
+              lng: Number(load.destinationLng)
+            },
+            originName: sanitizeLabel(load.originName),
+            destinationName: sanitizeLabel(load.destinationName),
+          });
+          if (!direction) {
+            return reply.status(404).send({error: 'Directions unavailable'});
+          }
+          return {direction: mapDirectionResponse(direction)};
+        } catch (err) {
+          request.log.error({err, id, signature}, 'freight directions failed');
+          return reply.status(502).send({
+            error: err instanceof Error ? err.message :
+                                          'Unable to load directions',
+          });
+        }
+      },
+  );
+
+  server.post(
+      '/freight/:id/complete',
+      {preHandler: [server.authenticate]},
+      async (request, reply) => {
+        const rt = withTelemetryBase(recordTelemetry, request);
+        const userId = (request.user as {sub: string}).sub;
+        const id = (request.params as {id: string}).id;
+
+        const load = await prisma.freightLoad.findFirst({where: {id, userId}});
+        if (!load)
+          return reply.status(404).send({error: 'Freight load not found'});
+        if (load.status === LifecycleStatus.COMPLETED)
+          return reply.status(400).send({error: 'Load already completed'});
+
+        try {
+          const {
+            nextBalance,
+            updated
+          } = await prisma.$transaction(async (tx) => {
+            const user = await tx.user.findUnique(
+                {where: {id: userId}, select: {k3h4CoinBalance: true}});
+            if (!user) throw new Error('User not found');
+
+            const cost = new Prisma.Decimal(load.cost.toFixed(2));
+            const nextBalance = user.k3h4CoinBalance.sub(cost);
+            const savedUser = await tx.user.update(
+                {where: {id: userId}, data: {k3h4CoinBalance: nextBalance}});
+            await recordBankTransactionEntity(tx, {
               userId,
-              signature,
-              origin:
-                  {lat: Number(load.originLat), lng: Number(load.originLng)},
-              destination: {
-                lat: Number(load.destinationLat),
-                lng: Number(load.destinationLng)
-              },
-              originName: sanitizeLabel(load.originName),
-              destinationName: sanitizeLabel(load.destinationName),
-            });
-            if (!direction) {
-              return reply.status(404).send({error: 'Directions unavailable'});
-            }
-            return {direction: mapDirectionResponse(direction)};
-          } catch (err) {
-            request.log.error(
-                {err, id, signature}, 'freight directions failed');
-            return reply.status(502).send({
-              error: err instanceof Error ? err.message :
-                                            'Unable to load directions',
-            });
-          }
-        },
-    );
-
-    server.post(
-        '/freight/:id/complete',
-        {preHandler: [server.authenticate]},
-        async (request, reply) => {
-          const rt = withTelemetryBase(recordTelemetry, request);
-          const userId = (request.user as {sub: string}).sub;
-          const id = (request.params as {id: string}).id;
-
-          const load =
-              await prisma.freightLoad.findFirst({where: {id, userId}});
-          if (!load)
-            return reply.status(404).send({error: 'Freight load not found'});
-          if (load.status === LifecycleStatus.COMPLETED)
-            return reply.status(400).send({error: 'Load already completed'});
-
-          try {
-            const {
-              nextBalance,
-              updated
-            } = await prisma.$transaction(async (tx) => {
-              const user = await tx.user.findUnique(
-                  {where: {id: userId}, select: {k3h4CoinBalance: true}});
-              if (!user) throw new Error('User not found');
-
-              const cost = new Prisma.Decimal(load.cost.toFixed(2));
-              const nextBalance = user.k3h4CoinBalance.sub(cost);
-              const savedUser = await tx.user.update(
-                  {where: {id: userId}, data: {k3h4CoinBalance: nextBalance}});
-              await tx.bankTransaction.create({
-                data: {
-                  userId,
-                  amount: cost,
-                  direction: 'debit',
-                  kind: 'freight_payment',
-                  note: `Freight load ${load.title}`,
-                  balanceAfter: savedUser.k3h4CoinBalance,
-                },
-              });
-
-              const updated = await tx.freightLoad.update(
-                  {where: {id}, data: {status: LifecycleStatus.COMPLETED}});
-              return {nextBalance, updated};
+              amount: cost,
+              direction: 'debit',
+              kind: 'freight_payment',
+              note: `Freight load ${load.title}`,
+              balanceAfter: savedUser.k3h4CoinBalance,
+              targetType: 'freight_load',
+              targetId: load.id,
+              name: load.title,
             });
 
-            await rt({
-              eventType: 'freight.complete',
-              source: 'api',
-              payload: {id, cost: load.cost.toFixed(2)}
-            });
+            const updated = await tx.freightLoad.update(
+                {where: {id}, data: {status: LifecycleStatus.COMPLETED}});
+            return {nextBalance, updated};
+          });
 
-            return {load: serializeLoad(updated)};
-          } catch (err) {
-            request.log.error({err}, 'freight completion failed');
-            return reply.status(400).send({
-              error: err instanceof Error ? err.message :
-                                            'Unable to complete load'
-            });
-          }
-        },
-    );
+          await rt({
+            eventType: 'freight.complete',
+            source: 'api',
+            payload: {id, cost: load.cost.toFixed(2)}
+          });
+
+          return {load: serializeLoad(updated)};
+        } catch (err) {
+          request.log.error({err}, 'freight completion failed');
+          return reply.status(400).send({
+            error: err instanceof Error ? err.message :
+                                          'Unable to complete load'
+          });
+        }
+      },
+  );
 }
