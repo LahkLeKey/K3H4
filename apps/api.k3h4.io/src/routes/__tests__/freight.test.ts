@@ -209,6 +209,8 @@ describe('freight routes', () => {
     const txEntity = {
       create: vi.fn().mockResolvedValue({
         id: 'txn-1',
+        direction: 'DEBIT',
+        kind: 'FREIGHT_PAYMENT',
         metadata: {
           amount: '20.00',
           balanceAfter: '480.00',

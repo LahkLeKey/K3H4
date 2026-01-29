@@ -49,6 +49,8 @@ describe('bank routes', () => {
   it('updates balance with delta', async () => {
     const txEntityCreate = {
       id: 't1',
+      direction: 'CREDIT',
+      kind: 'DEPOSIT',
       metadata: {
         amount: '10.00',
         balanceAfter: '110.00',
@@ -137,6 +139,8 @@ describe('bank routes', () => {
   it('sets balance explicitly', async () => {
     const txEntityCreate = {
       id: 't2',
+      direction: 'CREDIT',
+      kind: 'SET',
       metadata: {
         amount: '40.00',
         balanceAfter: '50.00',
@@ -211,6 +215,8 @@ describe('bank routes', () => {
       findMany: vi.fn().mockResolvedValue([
         {
           id: 't1',
+          direction: 'CREDIT',
+          kind: 'DEPOSIT',
           metadata: {
             amount: '5.00',
             balanceAfter: '105.00',
@@ -262,8 +268,17 @@ describe('bank routes', () => {
         .toHaveBeenCalledWith(
             expect.objectContaining({
               where: expect.objectContaining({
-                metadata: expect.objectContaining(
-                    {path: ['direction'], equals: 'credit'}),
+                AND: expect.arrayContaining([
+                  expect.objectContaining({
+                    OR: expect.arrayContaining([
+                      expect.objectContaining({direction: 'CREDIT'}),
+                      expect.objectContaining({
+                        metadata: expect.objectContaining(
+                            {path: ['direction'], equals: 'credit'}),
+                      }),
+                    ]),
+                  }),
+                ]),
                 createdAt: expect.objectContaining(
                     {gte: expect.any(Date), lte: expect.any(Date)})
               })

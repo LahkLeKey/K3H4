@@ -3,7 +3,7 @@ import {type FastifyInstance} from 'fastify';
 import {randomBytes} from 'node:crypto';
 import {URLSearchParams} from 'node:url';
 
-import {BANK_ACTOR_TYPE, BANK_TRANSACTION_KIND} from '../services/bank-actor';
+import {deleteBankActorWithEntities} from '../services/bank-actor';
 
 import {withTelemetryBase} from './telemetry';
 import {type RecordTelemetryFn} from './types';
@@ -132,18 +132,8 @@ const runDeleteJob = async (
         action: () => prisma.telemetryEvent.deleteMany({where: {userId}})
       },
       {
-        key: 'bankEntities',
-        action: () => prisma.entity.deleteMany({
-          where: {
-            kind: BANK_TRANSACTION_KIND,
-            actor: {userId, type: BANK_ACTOR_TYPE},
-          },
-        }),
-      },
-      {
-        key: 'bankActors',
-        action: () =>
-            prisma.actor.deleteMany({where: {userId, type: BANK_ACTOR_TYPE}})
+        key: 'bankLedger',
+        action: () => deleteBankActorWithEntities(prisma, userId),
       },
       {
         key: 'personas',

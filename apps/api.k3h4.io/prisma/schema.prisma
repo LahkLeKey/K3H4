@@ -36,6 +36,24 @@ enum LifecycleStatus {
   UNFILLED  @map("unfilled")
 }
 
+enum BankActorType {
+  BANK_ACCOUNT @map("bank-account")
+}
+
+enum BankTransactionDirection {
+  CREDIT @map("credit")
+  DEBIT @map("debit")
+}
+
+enum BankTransactionKind {
+  DEPOSIT @map("deposit")
+  WITHDRAWAL @map("withdrawal")
+  SET @map("set")
+  ASSIGNMENT_PAYOUT @map("assignment_payout")
+  FREIGHT_PAYMENT @map("freight_payment")
+  ARCADE_TOPUP @map("arcade_topup")
+}
+
 enum EngagementPriority {
   LOW    @map("low")
   NORMAL @map("normal")
@@ -1381,7 +1399,7 @@ model Actor {
   userId    String?
   user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
   label     String
-  type      String
+  type      BankActorType
   note      String?
   source    String?
   metadata  Json?
@@ -1398,7 +1416,8 @@ model Entity {
   id         String   @id @default(cuid())
   actorId    String
   actor      Actor    @relation(fields: [actorId], references: [id], onDelete: Cascade)
-  kind       String
+  kind       BankTransactionKind
+  direction  BankTransactionDirection?
   name       String?
   targetType String?
   targetId   String?
@@ -1410,4 +1429,5 @@ model Entity {
   @@index([actorId])
   @@index([kind])
   @@index([targetType, targetId])
+  @@index([direction])
 }

@@ -3,6 +3,11 @@ import {type FastifyInstance} from 'fastify';
 
 import {buildTelemetryBase} from './telemetry';
 import {type RecordTelemetryFn} from './types';
+import {
+  BankTransactionDirection,
+  BankTransactionKind,
+  recordBankTransactionEntity,
+} from '../services/bank-actor';
 
 const serializeDecimal = (val: Prisma.Decimal|number|null|undefined) => {
   if (val === null || val === undefined) return '0.00';
@@ -123,15 +128,16 @@ export function registerArcadeRoutes(
               where: {id: userId},
               data: {k3h4CoinBalance: nextUserBalance}
             });
-            await tx.bankTransaction.create({
-              data: {
-                userId,
-                amount,
-                direction: 'debit',
-                kind: 'arcade_topup',
-                note: `Top-up card ${card.id}`,
-                balanceAfter: nextUserBalance,
-              },
+            await recordBankTransactionEntity(tx, {
+              userId,
+              amount,
+              direction: BankTransactionDirection.DEBIT,
+              kind: BankTransactionKind.ARCADE_TOPUP,
+              note: `Top-up card ${card.id}`,
+              balanceAfter: nextUserBalance,
+              targetType: 'arcade_card',
+              targetId: card.id,
+              name: card.label ?? card.id,
             });
 
             const updatedCard = await tx.arcadeCard.update(

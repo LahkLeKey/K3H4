@@ -1,7 +1,13 @@
 import {Prisma, PrismaClient} from '@prisma/client';
-import {type FastifyInstance, type FastifyRequest} from 'fastify';
+import {type FastifyInstance} from 'fastify';
 
-import {BANK_ACTOR_TYPE, BANK_TRANSACTION_KIND, buildBankTransactionWhere, recordBankTransactionEntity,} from '../services/bank-actor';
+import {
+  BankActorType,
+  BankTransactionDirection,
+  BankTransactionKind,
+  buildBankTransactionWhere,
+  recordBankTransactionEntity,
+} from '../services/bank-actor';
 
 import {withTelemetryBase} from './telemetry';
 import {type RecordTelemetryFn} from './types';
@@ -22,6 +28,8 @@ const serializeTransaction = (entity: {
   targetType?: string | null;
   targetId?: string | null;
   name?: string | null;
+  direction?: BankTransactionDirection | null;
+  kind?: BankTransactionKind | null;
 }) => {
   const metadata = (entity.metadata as {
                      amount?: string;
@@ -37,8 +45,8 @@ const serializeTransaction = (entity: {
     id: entity.id,
     amount: metadata.amount ?? '0.00',
     balanceAfter: metadata.balanceAfter ?? '0.00',
-    direction: metadata.direction ?? '',
-    kind: metadata.kind ?? '',
+    direction: entity.direction?.toLowerCase() ?? metadata.direction ?? '',
+    kind: entity.kind?.toLowerCase() ?? metadata.kind ?? '',
     note: metadata.note ?? null,
     createdAt: entity.createdAt,
     targetType: entity.targetType ?? null,
@@ -124,10 +132,11 @@ export function registerBankRoutes(
             const txn = await recordBankTransactionEntity(tx, {
               userId,
               amount: change.abs(),
-              direction: isCredit ? 'credit' : 'debit',
-              kind: hasSet ? 'set' :
-                  isCredit ? 'deposit' :
-                             'withdrawal',
+              direction: isCredit ? BankTransactionDirection.CREDIT :
+                                         BankTransactionDirection.DEBIT,
+              kind: hasSet ? BankTransactionKind.SET :
+                  isCredit ? BankTransactionKind.DEPOSIT :
+                             BankTransactionKind.WITHDRAWAL,
               note: body?.reason ?? null,
               balanceAfter: saved.k3h4CoinBalance,
             });
@@ -183,9 +192,10 @@ export function registerBankRoutes(
         })();
 
         const direction =
-            query?.direction === 'credit' || query?.direction === 'debit' ?
-            query.direction :
-            undefined;
+          query?.direction === 'credit' ? BankTransactionDirection.CREDIT :
+          query?.direction === 'debit' ? BankTransactionDirection.DEBIT :
+          undefined;
+        const directionLabel = direction?.toLowerCase() ?? '';
 
         const from = query?.from ? new Date(query.from) : undefined;
         const to = query?.to ? new Date(query.to) : undefined;
@@ -194,7 +204,8 @@ export function registerBankRoutes(
         const validTo = to && !Number.isNaN(to.valueOf()) ? to : undefined;
 
         const actor = await prisma.actor.findFirst(
-            {where: {userId, type: BANK_ACTOR_TYPE}, select: {id: true}});
+          {where: {userId, type: BankActorType.BANK_ACCOUNT},
+           select: {id: true}});
         if (!actor) {
           await rt({
             eventType: 'bank.transactions.list',
@@ -202,7 +213,7 @@ export function registerBankRoutes(
             payload: {
               limit,
               offset,
-              direction: direction ?? '',
+              direction: directionLabel,
               from: query?.from ?? null,
               to: query?.to ?? null,
               total: 0,
@@ -233,7 +244,7 @@ export function registerBankRoutes(
           payload: {
             limit,
             offset,
-            direction: direction ?? '',
+            direction: directionLabel,
             from: query?.from ?? null,
             to: query?.to ?? null,
             total

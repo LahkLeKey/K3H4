@@ -1,25 +1,22 @@
-import {Prisma, type PrismaClient} from '@prisma/client';
+import {Prisma, type PrismaClient, BankActorType, BankTransactionDirection, BankTransactionKind} from '@prisma/client';
 
 const BANK_ACTOR_LABEL = 'K3H4 Coin Account';
 const BANK_ACTOR_NOTE = 'Ledger that tracks k3h4 coin movements';
 const BANK_ACTOR_SOURCE = 'k3h4-api';
 
-export const BANK_ACTOR_TYPE = 'bank-account';
-export const BANK_TRANSACTION_KIND = 'bank-transaction';
+export {BankActorType, BankTransactionDirection, BankTransactionKind};
 
 type PrismaTx = PrismaClient|Prisma.TransactionClient;
 
-export type BankTransactionDirection = 'credit'|'debit';
-
 type BankEntityMetadata = {
   amount: string; balanceAfter: string; direction: BankTransactionDirection;
-  kind: string;
+  kind: BankTransactionKind;
   note: string | null;
 };
 
 export type BankTransactionRecord = {
   userId: string; amount: Prisma.Decimal; direction: BankTransactionDirection;
-  kind: string;
+  kind: BankTransactionKind;
   balanceAfter: Prisma.Decimal;
   note?: string | null;
   targetType?: string | null;
@@ -39,14 +36,14 @@ const buildMetadata = (record: BankTransactionRecord): BankEntityMetadata => ({
 });
 
 export async function ensureBankActor(tx: PrismaTx, userId: string) {
-  const existing =
-      await tx.actor.findFirst({where: {userId, type: BANK_ACTOR_TYPE}});
+  const existing = await tx.actor.findFirst(
+      {where: {userId, type: BankActorType.BANK_ACCOUNT}});
   if (existing) return existing;
   return tx.actor.create({
     data: {
       userId,
       label: BANK_ACTOR_LABEL,
-      type: BANK_ACTOR_TYPE,
+      type: BankActorType.BANK_ACCOUNT,
       note: BANK_ACTOR_NOTE,
       source: BANK_ACTOR_SOURCE,
     },
@@ -59,7 +56,8 @@ export async function recordBankTransactionEntity(
   return tx.entity.create({
     data: {
       actorId: actor.id,
-      kind: BANK_TRANSACTION_KIND,
+      kind: record.kind,
+      direction: record.direction,
       name: record.name ?? null,
       targetType: record.targetType ?? null,
       targetId: record.targetId ?? null,
@@ -73,7 +71,7 @@ type MetadataFilter = Prisma.JsonFilter;
 
 type BankTransactionWhereOptions = {
   direction?: BankTransactionDirection;
-  kind?: string;
+  kind?: BankTransactionKind;
   from?: Date;
   to?: Date;
   metadataFilters?: MetadataFilter[];
@@ -82,10 +80,7 @@ type BankTransactionWhereOptions = {
 export function buildBankTransactionWhere(
     actorId: string, options?: BankTransactionWhereOptions) {
   const {direction, kind, from, to, metadataFilters} = options ?? {};
-  const where: Prisma.EntityWhereInput = {
-    actorId,
-    kind: BANK_TRANSACTION_KIND,
-  };
+  const where: Prisma.EntityWhereInput = {actorId};
 
   if (from || to) {
     where.createdAt = {
@@ -94,21 +89,37 @@ export function buildBankTransactionWhere(
     };
   }
 
-  const metadataConditions: Prisma.EntityWhereInput[] = [];
   if (direction) {
-    metadataConditions.push(
-        {metadata: {path: ['direction'], equals: direction}});
+    where.direction = direction;
   }
   if (kind) {
-    metadataConditions.push({metadata: {path: ['kind'], equals: kind}});
+    where.kind = kind;
+  }
+
+  const filterConditions: Prisma.EntityWhereInput[] = [];
+  if (direction) {
+    filterConditions.push({
+      OR: [
+        {direction},
+        {metadata: {path: ['direction'], equals: direction}},
+      ],
+    });
+  }
+  if (kind) {
+    filterConditions.push({
+      OR: [
+        {kind},
+        {metadata: {path: ['kind'], equals: kind}},
+      ],
+    });
   }
   if (metadataFilters?.length) {
     metadataFilters.forEach(
-        (filter) => metadataConditions.push({metadata: filter}));
+        (filter) => filterConditions.push({metadata: filter}));
   }
 
-  if (metadataConditions.length) {
-    where.AND = [...(where.AND ?? []), ...metadataConditions];
+  if (filterConditions.length) {
+    where.AND = [...(where.AND ?? []), ...filterConditions];
   }
 
   return where;
@@ -118,11 +129,11 @@ export async function deleteBankActorWithEntities(
     tx: PrismaTx, userId: string) {
   const entities = await tx.entity.deleteMany({
     where: {
-      kind: BANK_TRANSACTION_KIND,
-      actor: {userId, type: BANK_ACTOR_TYPE},
+      actor: {userId, type: BankActorType.BANK_ACCOUNT},
     },
   });
-  const actors =
-      await tx.actor.deleteMany({where: {userId, type: BANK_ACTOR_TYPE}});
+  const actors = await tx.actor.deleteMany({
+    where: {userId, type: BankActorType.BANK_ACCOUNT},
+  });
   return {entities, actors};
 }

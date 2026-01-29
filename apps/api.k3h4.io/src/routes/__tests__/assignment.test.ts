@@ -104,6 +104,8 @@ describe('assignment routes', () => {
     const txEntity = {
       create: vi.fn().mockResolvedValue({
         id: 'txn-1',
+        direction: 'DEBIT',
+        kind: 'ASSIGNMENT_PAYOUT',
         metadata: {
           amount: '100.00',
           balanceAfter: '100.00',
@@ -250,6 +252,8 @@ describe('assignment routes', () => {
     const txEntity = {
       create: vi.fn().mockResolvedValue({
         id: 'txn-2',
+        direction: 'DEBIT',
+        kind: 'ASSIGNMENT_PAYOUT',
         metadata: {
           amount: '50.00',
           balanceAfter: '50.00',
