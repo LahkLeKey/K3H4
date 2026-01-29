@@ -1,7 +1,7 @@
-import {LifecycleStatus, Prisma, type PrismaClient} from '@prisma/client';
+import {Prisma, type PrismaClient} from '@prisma/client';
 import {type FastifyInstance} from 'fastify';
 
-import {BankTransactionDirection, BankTransactionKind, recordBankTransactionEntity,} from '../services/bank-actor';
+import {BankActorType, BankTransactionDirection, BankTransactionKind, recordBankTransactionEntity,} from '../services/bank-actor';
 
 import {buildTelemetryBase} from './telemetry';
 import {type RecordTelemetryFn} from './types';
@@ -13,6 +13,115 @@ const serializeDecimal = (val: Prisma.Decimal|number|null|undefined) => {
   return '0.00';
 };
 
+type PrismaTx = PrismaClient|Prisma.TransactionClient;
+
+const parseJsonObject = (value: Prisma.JsonValue|null|undefined) => {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return {};
+  return value as Record<string, unknown>;
+};
+
+const parseAmountFromMetadata = (metadata: Prisma.JsonValue|null|undefined) => {
+  const record = parseJsonObject(metadata);
+  const amount = record.amount;
+  if (typeof amount === 'string' && amount.length)
+    return new Prisma.Decimal(amount);
+  if (typeof amount === 'number') return new Prisma.Decimal(amount.toFixed(2));
+  return new Prisma.Decimal(0);
+};
+
+const computeBalance = (entries: Array<{
+  direction: BankTransactionDirection | null; metadata: Prisma.JsonValue | null;
+}>) => entries.reduce((balance, entry) => {
+  const amount = parseAmountFromMetadata(entry.metadata);
+  if (entry.direction === BankTransactionDirection.DEBIT)
+    return balance.sub(amount);
+  return balance.add(amount);
+}, new Prisma.Decimal(0));
+
+const buildMachineSummary = (actor: Prisma.Actor) => {
+  const metadata = parseJsonObject(actor.metadata);
+  return {
+    id: actor.id,
+    name: actor.label,
+    status: (metadata.status as string | undefined) ?? null,
+    createdAt: actor.createdAt.toISOString(),
+  };
+};
+
+const buildPrizeSummary = (actor: Prisma.Actor) => {
+  const metadata = parseJsonObject(actor.metadata);
+  const stockRaw = metadata.stock;
+  const stock = typeof stockRaw === 'number' ? stockRaw : Number(stockRaw ?? 0);
+  const costRaw = metadata.costCoins;
+  const cost = typeof costRaw === 'string' ? costRaw :
+      typeof costRaw === 'number'          ? costRaw.toFixed(2) :
+                                             null;
+  return {
+    id: actor.id,
+    name: actor.label,
+    sku: (metadata.sku as string | undefined) ?? null,
+    costCoins: cost,
+    stock: Number.isFinite(stock) ? Math.max(0, Math.floor(stock)) : 0,
+  };
+};
+
+const buildCardTopUp = (entity: Prisma.Entity) => {
+  const metadata = parseJsonObject(entity.metadata);
+  return {
+    id: entity.id,
+    amount: (metadata.amount as string) ?? '0.00',
+    source: entity.source ?? ((metadata.source as string | undefined) ?? null),
+    createdAt: entity.createdAt.toISOString(),
+  };
+};
+
+const buildCardSummary = (card: Prisma.Actor, entries: Prisma.Entity[]) => {
+  const balance = computeBalance(entries);
+  const topUps =
+      entries
+          .filter((entity) => entity.kind === BankTransactionKind.ARCADE_TOPUP)
+          .map(buildCardTopUp);
+  return {
+    id: card.id,
+    label: card.label,
+    balance: serializeDecimal(balance),
+    topUps,
+  };
+};
+
+const buildSessionSummary = (entity: Prisma.Entity) => {
+  const metadata = parseJsonObject(entity.metadata);
+  const scoreValue = metadata.score;
+  return {
+    id: entity.id,
+    machineId:
+        (metadata.machineId as string | undefined) ?? entity.targetId ?? '',
+    cardId: entity.actorId,
+    creditsSpent: (metadata.creditsSpent as string) ?? '0.00',
+    score: typeof scoreValue === 'number' ? Math.floor(scoreValue) : null,
+    startedAt: entity.createdAt.toISOString(),
+  };
+};
+
+const buildRedemptionSummary = (entity: Prisma.Entity) => {
+  const metadata = parseJsonObject(entity.metadata);
+  return {
+    id: entity.id,
+    prizeId: (metadata.prizeId as string | undefined) ?? '',
+    cardId: entity.actorId,
+    sessionId: (metadata.sessionId as string | undefined) ?? null,
+    createdAt: entity.createdAt.toISOString(),
+  };
+};
+
+const getActorBalance = async (tx: PrismaTx, actorId: string) => {
+  const entries = await tx.entity.findMany({
+    where: {actorId},
+    select: {direction: true, metadata: true},
+  });
+  return computeBalance(entries);
+};
+
 export function registerArcadeRoutes(
     server: FastifyInstance, prisma: PrismaClient,
     recordTelemetry: RecordTelemetryFn) {
@@ -21,49 +130,79 @@ export function registerArcadeRoutes(
       {preHandler: [server.authenticate]},
       async (request) => {
         const userId = (request.user as {sub: string}).sub;
-        const [machines, cards, prizes, sessions, redemptions] =
-            await Promise.all([
-              prisma.arcadeMachine.findMany(
-                  {where: {userId}, orderBy: {createdAt: 'desc'}}),
-              prisma.arcadeCard.findMany({
-                where: {userId},
-                orderBy: {createdAt: 'desc'},
-                include: {topUps: true}
-              }),
-              prisma.arcadePrize.findMany(
-                  {where: {userId}, orderBy: {createdAt: 'desc'}}),
-              prisma.arcadeSession.findMany(
-                  {where: {userId}, orderBy: {startedAt: 'desc'}, take: 20}),
-              prisma.arcadeRedemption.findMany(
-                  {where: {userId}, orderBy: {createdAt: 'desc'}, take: 20}),
-            ]);
+        const machinesPromise = prisma.actor.findMany({
+          where: {userId, type: BankActorType.ARCADE_MACHINE},
+          orderBy: {createdAt: 'desc'},
+        });
+        const cardsPromise = prisma.actor.findMany({
+          where: {userId, type: BankActorType.ARCADE_PLAYER_CARD},
+          orderBy: {createdAt: 'desc'},
+        });
+        const prizesPromise = prisma.actor.findMany({
+          where: {userId, type: BankActorType.ARCADE_PRIZE},
+          orderBy: {createdAt: 'desc'},
+        });
+        const [machines, cards, prizes] = await Promise.all([
+          machinesPromise,
+          cardsPromise,
+          prizesPromise,
+        ]);
+
+        const cardEntities = cards.length ? await prisma.entity.findMany({
+          where: {actorId: {in : cards.map((card) => card.id)}},
+          orderBy: {createdAt: 'desc'},
+        }) :
+                                            [];
+        const sessionsPromise = prisma.entity.findMany({
+          where: {
+            actor: {userId, type: BankActorType.ARCADE_PLAYER_CARD},
+            kind: BankTransactionKind.ARCADE_SESSION,
+          },
+          orderBy: {createdAt: 'desc'},
+          take: 20,
+        });
+        const redemptionsPromise = prisma.entity.findMany({
+          where: {
+            actor: {userId, type: BankActorType.ARCADE_PLAYER_CARD},
+            kind: BankTransactionKind.ARCADE_PRIZE_REDEMPTION,
+          },
+          orderBy: {createdAt: 'desc'},
+          take: 20,
+        });
+        const [sessions, redemptions] =
+            await Promise.all([sessionsPromise, redemptionsPromise]);
+
+        const entriesByCard = new Map<string, Prisma.Entity[]>();
+        cardEntities.forEach((entity) => {
+          const bucket = entriesByCard.get(entity.actorId) ?? [];
+          bucket.push(entity);
+          entriesByCard.set(entity.actorId, bucket);
+        });
+
+        const response = {
+          machines: machines.map(buildMachineSummary),
+          cards: cards.map((card) => {
+            return buildCardSummary(card, entriesByCard.get(card.id) ?? []);
+          }),
+          prizes: prizes.map(buildPrizeSummary),
+          sessions: sessions.map(buildSessionSummary),
+          redemptions: redemptions.map(buildRedemptionSummary),
+        };
 
         await recordTelemetry(request, {
           ...buildTelemetryBase(request),
           eventType: 'arcade.overview.fetch',
           source: 'api',
           payload: {
-            machines: machines.length,
-            cards: cards.length,
-            prizes: prizes.length,
-            sessions: sessions.length,
-            redemptions: redemptions.length,
+            machines: response.machines.length,
+            cards: response.cards.length,
+            prizes: response.prizes.length,
+            sessions: response.sessions.length,
+            redemptions: response.redemptions.length,
           },
         });
 
-        return {
-          machines,
-          cards: cards.map(
-              (card) => ({
-                ...card,
-                balance: serializeDecimal(card.balance),
-                topUps: card.topUps.map(
-                    (t) => ({...t, amount: serializeDecimal(t.amount)})),
-              })),
-          prizes,
-          sessions,
-          redemptions,
-        };
+        return response;
       },
   );
 
@@ -73,11 +212,12 @@ export function registerArcadeRoutes(
       async (request) => {
         const userId = (request.user as {sub: string}).sub;
         const body = request.body as {label?: string} | undefined;
-        const card = await prisma.arcadeCard.create({
+        const card = await prisma.actor.create({
           data: {
             userId,
+            type: BankActorType.ARCADE_PLAYER_CARD,
             label: body?.label?.trim() || 'Arcade card',
-            balance: new Prisma.Decimal(0),
+            source: 'k3h4-api',
           },
         });
         await recordTelemetry(request, {
@@ -86,7 +226,7 @@ export function registerArcadeRoutes(
           source: 'api',
           payload: {label: card.label ?? ''},
         });
-        return {card: {...card, balance: serializeDecimal(card.balance)}};
+        return {card: {...buildCardSummary(card, []), balance: '0.00'}};
       },
   );
 
@@ -98,7 +238,7 @@ export function registerArcadeRoutes(
         const id = (request.params as {id: string}).id;
         const body = request.body as {
           amount?: number|string;
-          source?: string
+          source?: string;
         }
         |undefined;
         const amountNum =
@@ -108,47 +248,51 @@ export function registerArcadeRoutes(
         const amount = new Prisma.Decimal(amountNum.toFixed(2));
 
         try {
-          const {card, nextBalance} = await prisma.$transaction(async (tx) => {
-            const user = await tx.user.findUnique(
-                {where: {id: userId}, select: {k3h4CoinBalance: true}});
+          const {balance} = await prisma.$transaction(async (tx) => {
+            const user = await tx.user.findUnique({
+              where: {id: userId},
+              select: {k3h4CoinBalance: true},
+            });
             if (!user) throw new Error('User not found');
             if (user.k3h4CoinBalance.lessThan(amount))
               throw new Error('Insufficient k3h4-coin balance');
 
-            const card = await tx.arcadeCard.findFirst({where: {id, userId}});
+            const card = await tx.actor.findFirst({
+              where: {id, userId, type: BankActorType.ARCADE_PLAYER_CARD},
+            });
             if (!card) throw new Error('Card not found');
 
+            const cardBalance = await getActorBalance(tx, card.id);
             const nextUserBalance = user.k3h4CoinBalance.sub(amount);
-            const nextCardBalance = card.balance.add(amount);
+            const nextCardBalance = cardBalance.add(amount);
 
             await tx.user.update({
               where: {id: userId},
-              data: {k3h4CoinBalance: nextUserBalance}
+              data: {k3h4CoinBalance: nextUserBalance},
             });
             await recordBankTransactionEntity(tx, {
               userId,
               amount,
               direction: BankTransactionDirection.DEBIT,
               kind: BankTransactionKind.ARCADE_TOPUP,
-              note: `Top-up card ${card.id}`,
               balanceAfter: nextUserBalance,
               targetType: 'arcade_card',
               targetId: card.id,
               name: card.label ?? card.id,
             });
 
-            const updatedCard = await tx.arcadeCard.update(
-                {where: {id}, data: {balance: nextCardBalance}});
-            await tx.arcadeTopUp.create({
-              data: {
-                userId,
-                cardId: card.id,
-                amount,
-                source: body?.source ?? 'k3h4-coin',
-              },
+            await recordBankTransactionEntity(tx, {
+              userId,
+              actorId: card.id,
+              amount,
+              direction: BankTransactionDirection.CREDIT,
+              kind: BankTransactionKind.ARCADE_TOPUP,
+              balanceAfter: nextCardBalance,
+              metadata: {source: body?.source ?? 'k3h4-coin'},
+              name: 'Arcade card top-up',
             });
 
-            return {card: updatedCard, nextBalance: nextCardBalance};
+            return {balance: nextCardBalance};
           });
 
           await recordTelemetry(request, {
@@ -157,7 +301,8 @@ export function registerArcadeRoutes(
             source: 'api',
             payload: {cardId: id, amount: amount.toFixed(2)},
           });
-          return {card: {...card, balance: serializeDecimal(nextBalance)}};
+
+          return {balance: serializeDecimal(balance)};
         } catch (err) {
           request.log.error({err}, 'arcade top-up failed');
           return reply.status(400).send(
@@ -175,27 +320,32 @@ export function registerArcadeRoutes(
           name: string;
           sku?: string;
           costCoins: number;
-          stock?: number
+          stock?: number;
         };
         const cost = new Prisma.Decimal(Number(body.costCoins).toFixed(2));
-        const prize = await prisma.arcadePrize.create({
+        const stock = Number.isFinite(body.stock) ?
+            Math.max(0, Math.floor(Number(body.stock))) :
+            0;
+        const prize = await prisma.actor.create({
           data: {
             userId,
-            name: body.name,
-            sku: body.sku ?? null,
-            costCoins: cost,
-            stock: Number.isFinite(body.stock) ?
-                Math.max(0, Math.floor(Number(body.stock))) :
-                0,
+            type: BankActorType.ARCADE_PRIZE,
+            label: body.name,
+            metadata: {
+              sku: body.sku ?? null,
+              costCoins: cost.toFixed(2),
+              stock,
+            },
+            source: 'k3h4-api',
           },
         });
         await recordTelemetry(request, {
           ...buildTelemetryBase(request),
           eventType: 'arcade.prize.create',
           source: 'api',
-          payload: {name: prize.name, stock: prize.stock},
+          payload: {name: prize.label, stock},
         });
-        return {prize};
+        return {prize: buildPrizeSummary(prize)};
       },
   );
 
@@ -208,40 +358,58 @@ export function registerArcadeRoutes(
           machineId: string;
           cardId: string;
           creditsSpent: number;
-          score?: number
+          score?: number;
         };
         const credits = Number(body.creditsSpent);
         if (!Number.isFinite(credits) || credits <= 0)
           return reply.status(400).send({error: 'creditsSpent must be > 0'});
+        const amount = new Prisma.Decimal(credits.toFixed(2));
 
         try {
-          const session = await prisma.$transaction(async (tx) => {
-            const card = await tx.arcadeCard.findFirst(
-                {where: {id: body.cardId, userId}});
+          const {entity, balance} = await prisma.$transaction(async (tx) => {
+            const card = await tx.actor.findFirst({
+              where: {
+                id: body.cardId,
+                userId,
+                type: BankActorType.ARCADE_PLAYER_CARD
+              },
+            });
             if (!card) throw new Error('Card not found');
-            if (card.balance.lessThan(credits))
-              throw new Error('Insufficient card balance');
-            const machine = await tx.arcadeMachine.findFirst(
-                {where: {id: body.machineId, userId}});
+
+            const machine = await tx.actor.findFirst({
+              where: {
+                id: body.machineId,
+                userId,
+                type: BankActorType.ARCADE_MACHINE
+              },
+            });
             if (!machine) throw new Error('Machine not found');
 
-            const nextBalance = card.balance.sub(credits);
-            await tx.arcadeCard.update(
-                {where: {id: card.id}, data: {balance: nextBalance}});
+            const cardBalance = await getActorBalance(tx, card.id);
+            if (cardBalance.lessThan(amount))
+              throw new Error('Insufficient card balance');
 
-            const session = await tx.arcadeSession.create({
-              data: {
-                userId,
+            const nextBalance = cardBalance.sub(amount);
+            const scoreValue = Number.isFinite(body.score) ?
+                Math.floor(Number(body.score)) :
+                null;
+            const session = await recordBankTransactionEntity(tx, {
+              userId,
+              actorId: card.id,
+              amount,
+              direction: BankTransactionDirection.DEBIT,
+              kind: BankTransactionKind.ARCADE_SESSION,
+              balanceAfter: nextBalance,
+              targetType: 'arcade_machine',
+              targetId: machine.id,
+              metadata: {
                 machineId: machine.id,
-                cardId: card.id,
-                creditsSpent: new Prisma.Decimal(credits.toFixed(2)),
-                score: Number.isFinite(body.score) ?
-                    Math.floor(Number(body.score)) :
-                    null,
+                creditsSpent: amount.toFixed(2),
+                score: scoreValue,
               },
             });
 
-            return {session, nextBalance};
+            return {entity: session, balance: nextBalance};
           });
 
           await recordTelemetry(request, {
@@ -252,14 +420,14 @@ export function registerArcadeRoutes(
           });
 
           return {
-            session: session.session,
-            balance: serializeDecimal(session.nextBalance)
+            session: buildSessionSummary(entity),
+            balance: serializeDecimal(balance),
           };
         } catch (err) {
           request.log.error({err}, 'arcade session failed');
           return reply.status(400).send({
             error: err instanceof Error ? err.message :
-                                          'Unable to start session'
+                                          'Unable to start session',
           });
         }
       },
@@ -277,42 +445,69 @@ export function registerArcadeRoutes(
         };
 
         try {
-          const redemption = await prisma.$transaction(async (tx) => {
-            const prize =
-                await tx.arcadePrize.findFirst({where: {id: prizeId, userId}});
-            if (!prize) throw new Error('Prize not found');
-            if (prize.stock <= 0) throw new Error('Prize out of stock');
+          const {entity, balance, stock} =
+              await prisma.$transaction(async (tx) => {
+                const prize = await tx.actor.findFirst({
+                  where:
+                      {id: prizeId, userId, type: BankActorType.ARCADE_PRIZE},
+                });
+                if (!prize) throw new Error('Prize not found');
+                const prizeMetadata = parseJsonObject(prize.metadata);
+                const stockRaw = prizeMetadata.stock;
+                const currentStock = typeof stockRaw === 'number' ?
+                    stockRaw :
+                    Number(stockRaw ?? 0);
+                if (currentStock <= 0) throw new Error('Prize out of stock');
+                const costRaw = prizeMetadata.costCoins;
+                const cost = typeof costRaw === 'string' ?
+                    new Prisma.Decimal(costRaw) :
+                    new Prisma.Decimal('0.00');
 
-            const card = await tx.arcadeCard.findFirst(
-                {where: {id: body.cardId, userId}});
-            if (!card) throw new Error('Card not found');
-            if (card.balance.lessThan(prize.costCoins))
-              throw new Error('Insufficient card balance');
+                const card = await tx.actor.findFirst({
+                  where: {
+                    id: body.cardId,
+                    userId,
+                    type: BankActorType.ARCADE_PLAYER_CARD
+                  },
+                });
+                if (!card) throw new Error('Card not found');
 
-            const nextCardBalance = card.balance.sub(prize.costCoins);
-            await tx.arcadeCard.update(
-                {where: {id: card.id}, data: {balance: nextCardBalance}});
+                const cardBalance = await getActorBalance(tx, card.id);
+                if (cardBalance.lessThan(cost))
+                  throw new Error('Insufficient card balance');
 
-            const updatedPrize = await tx.arcadePrize.update(
-                {where: {id: prize.id}, data: {stock: prize.stock - 1}});
+                const nextBalance = cardBalance.sub(cost);
+                const entity = await recordBankTransactionEntity(tx, {
+                  userId,
+                  actorId: card.id,
+                  amount: cost,
+                  direction: BankTransactionDirection.DEBIT,
+                  kind: BankTransactionKind.ARCADE_PRIZE_REDEMPTION,
+                  balanceAfter: nextBalance,
+                  targetType: 'arcade_prize',
+                  targetId: prize.id,
+                  metadata: {
+                    prizeId: prize.id,
+                    sessionId: body.sessionId ?? null,
+                  },
+                });
 
-            const redemption = await tx.arcadeRedemption.create({
-              data: {
-                userId,
-                cardId: card.id,
-                prizeId: prize.id,
-                status: LifecycleStatus.PENDING,
-                sessions: body.sessionId ? {connect: {id: body.sessionId}} :
-                                           undefined,
-              },
-            });
+                await tx.actor.update({
+                  where: {id: prize.id},
+                  data: {
+                    metadata: {
+                      ...prizeMetadata,
+                      stock: Math.max(0, currentStock - 1),
+                    },
+                  },
+                });
 
-            return {
-              redemption,
-              cardBalance: nextCardBalance,
-              prizeStock: updatedPrize.stock
-            };
-          });
+                return {
+                  entity,
+                  balance: nextBalance,
+                  stock: Math.max(0, currentStock - 1),
+                };
+              });
 
           await recordTelemetry(request, {
             ...buildTelemetryBase(request),
@@ -322,14 +517,15 @@ export function registerArcadeRoutes(
           });
 
           return {
-            redemption: redemption.redemption,
-            balance: serializeDecimal(redemption.cardBalance),
-            prizeStock: redemption.prizeStock
+            redemption: buildRedemptionSummary(entity),
+            balance: serializeDecimal(balance),
+            prizeStock: stock,
           };
         } catch (err) {
           request.log.error({err}, 'arcade redemption failed');
           return reply.status(400).send({
-            error: err instanceof Error ? err.message : 'Unable to redeem prize'
+            error: err instanceof Error ? err.message :
+                                          'Unable to redeem prize',
           });
         }
       },

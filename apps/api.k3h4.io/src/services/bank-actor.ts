@@ -12,7 +12,7 @@ type BankEntityMetadata = {
   amount: string; balanceAfter: string; direction: BankTransactionDirection;
   kind: BankTransactionKind;
   note: string | null;
-};
+}&Record<string, unknown>;
 
 export type BankTransactionRecord = {
   userId: string; amount: Prisma.Decimal; direction: BankTransactionDirection;
@@ -23,6 +23,12 @@ export type BankTransactionRecord = {
   targetId?: string | null;
   name?: string | null;
   source?: string | null;
+  actorType?: BankActorType;
+  actorLabel?: string | null;
+  actorNote?: string | null;
+  actorMetadata?: Prisma.JsonValue | null;
+  actorId?: string;
+  metadata?: Prisma.JsonValue | null;
 };
 
 const toDecimalString = (value: Prisma.Decimal) => value.toFixed(2);
@@ -33,26 +39,49 @@ const buildMetadata = (record: BankTransactionRecord): BankEntityMetadata => ({
   direction: record.direction,
   kind: record.kind,
   note: record.note ?? null,
+  ...((record.metadata ?? {}) as Record<string, unknown>),
 });
 
-export async function ensureBankActor(tx: PrismaTx, userId: string) {
-  const existing = await tx.actor.findFirst(
-      {where: {userId, type: BankActorType.BANK_ACCOUNT}});
+const ensureActor = async (
+    tx: PrismaTx, userId: string, type: BankActorType, label?: string|null,
+    note?: string|null, metadata?: Prisma.JsonValue|null) => {
+  const criteria: Prisma.ActorWhereInput = {
+    userId,
+    type,
+    ...(label ? {label} : {}),
+  };
+  const existing = await tx.actor.findFirst({where: criteria});
   if (existing) return existing;
   return tx.actor.create({
     data: {
       userId,
-      label: BANK_ACTOR_LABEL,
-      type: BankActorType.BANK_ACCOUNT,
-      note: BANK_ACTOR_NOTE,
+      type,
+      label,
+      note,
       source: BANK_ACTOR_SOURCE,
+      metadata,
     },
   });
+};
+
+export async function ensureBankActor(tx: PrismaTx, userId: string) {
+  return ensureActor(
+      tx, userId, BankActorType.BANK_ACCOUNT, BANK_ACTOR_LABEL,
+      BANK_ACTOR_NOTE);
 }
 
 export async function recordBankTransactionEntity(
     tx: PrismaTx, record: BankTransactionRecord) {
-  const actor = await ensureBankActor(tx, record.userId);
+  const actor = record.actorId ?
+      await tx.actor.findUnique({where: {id: record.actorId}}) :
+      await ensureActor(
+          tx, record.userId, record.actorType ?? BankActorType.BANK_ACCOUNT,
+          record.actorLabel ??
+              (record.actorType === BankActorType.BANK_ACCOUNT ?
+                   BANK_ACTOR_LABEL :
+                   undefined),
+          record.actorNote, record.actorMetadata);
+  if (!actor) throw new Error('Actor not found for transaction');
   return tx.entity.create({
     data: {
       actorId: actor.id,
