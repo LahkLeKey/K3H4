@@ -128,6 +128,7 @@ model User {
   chatSessions ChatSession[]
   aiInsights     AiInsight[]
   ollamaOperations OllamaOperation[]
+  actors         Actor[]
 
   @@unique([provider, providerId])
 }
@@ -1388,4 +1389,40 @@ model OllamaOperation {
   @@index([sessionId])
   @@index([source])
   @@index([createdAt])
+}
+
+model Actor {
+  id         String   @id @default(cuid())
+  userId     String?
+  user       User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  label      String
+  type       String
+  note       String?
+  source     String?
+  metadata   Json?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  entities   Entity[]
+
+  @@index([userId])
+  @@index([type])
+}
+
+model Entity {
+  id         String   @id @default(cuid())
+  actorId    String
+  actor      Actor    @relation(fields: [actorId], references: [id], onDelete: Cascade)
+  kind       String
+  name       String?
+  targetType String?
+  targetId   String?
+  source     String?
+  metadata   Json?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([actorId])
+  @@index([kind])
+  @@index([targetType, targetId])
 }
