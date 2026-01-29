@@ -22,7 +22,6 @@ export const UserFindFirstSelectSchema: z.ZodType<Prisma.UserSelect> = z.object(
     refreshTokens: z.boolean().optional(),
     preference: z.boolean().optional(),
     telemetry: z.boolean().optional(),
-    bankTransactions: z.boolean().optional(),
     personas: z.boolean().optional(),
     assignments: z.boolean().optional(),
     staffingEngagements: z.boolean().optional(),
@@ -67,6 +66,7 @@ export const UserFindFirstSelectSchema: z.ZodType<Prisma.UserSelect> = z.object(
     chatSessions: z.boolean().optional(),
     aiInsights: z.boolean().optional(),
     ollamaOperations: z.boolean().optional(),
+    actors: z.boolean().optional(),
     _count: z.boolean().optional()
   }).strict() as unknown as z.ZodType<Prisma.UserSelect>;
 
@@ -83,7 +83,6 @@ export const UserFindFirstSelectZodSchema = z.object({
     refreshTokens: z.boolean().optional(),
     preference: z.boolean().optional(),
     telemetry: z.boolean().optional(),
-    bankTransactions: z.boolean().optional(),
     personas: z.boolean().optional(),
     assignments: z.boolean().optional(),
     staffingEngagements: z.boolean().optional(),
@@ -128,6 +127,7 @@ export const UserFindFirstSelectZodSchema = z.object({
     chatSessions: z.boolean().optional(),
     aiInsights: z.boolean().optional(),
     ollamaOperations: z.boolean().optional(),
+    actors: z.boolean().optional(),
     _count: z.boolean().optional()
   }).strict();
 

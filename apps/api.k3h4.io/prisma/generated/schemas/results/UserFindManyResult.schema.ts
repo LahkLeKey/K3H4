@@ -13,7 +13,6 @@ export const UserFindManyResultSchema = z.object({
   refreshTokens: z.array(z.unknown()),
   preference: z.unknown().optional(),
   telemetry: z.array(z.unknown()),
-  bankTransactions: z.array(z.unknown()),
   personas: z.array(z.unknown()),
   assignments: z.array(z.unknown()),
   staffingEngagements: z.array(z.unknown()),
@@ -57,7 +56,8 @@ export const UserFindManyResultSchema = z.object({
   geoViewHistories: z.array(z.unknown()),
   chatSessions: z.array(z.unknown()),
   aiInsights: z.array(z.unknown()),
-  ollamaOperations: z.array(z.unknown())
+  ollamaOperations: z.array(z.unknown()),
+  actors: z.array(z.unknown())
 })),
   pagination: z.object({
   page: z.number().int().min(1),

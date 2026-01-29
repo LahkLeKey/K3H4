@@ -5,7 +5,6 @@ import { SortOrderInputObjectSchema as SortOrderInputObjectSchema } from './Sort
 import { RefreshTokenOrderByRelationAggregateInputObjectSchema as RefreshTokenOrderByRelationAggregateInputObjectSchema } from './RefreshTokenOrderByRelationAggregateInput.schema';
 import { UserPreferenceOrderByWithRelationInputObjectSchema as UserPreferenceOrderByWithRelationInputObjectSchema } from './UserPreferenceOrderByWithRelationInput.schema';
 import { TelemetryEventOrderByRelationAggregateInputObjectSchema as TelemetryEventOrderByRelationAggregateInputObjectSchema } from './TelemetryEventOrderByRelationAggregateInput.schema';
-import { BankTransactionOrderByRelationAggregateInputObjectSchema as BankTransactionOrderByRelationAggregateInputObjectSchema } from './BankTransactionOrderByRelationAggregateInput.schema';
 import { PersonaOrderByRelationAggregateInputObjectSchema as PersonaOrderByRelationAggregateInputObjectSchema } from './PersonaOrderByRelationAggregateInput.schema';
 import { AssignmentOrderByRelationAggregateInputObjectSchema as AssignmentOrderByRelationAggregateInputObjectSchema } from './AssignmentOrderByRelationAggregateInput.schema';
 import { StaffingEngagementOrderByRelationAggregateInputObjectSchema as StaffingEngagementOrderByRelationAggregateInputObjectSchema } from './StaffingEngagementOrderByRelationAggregateInput.schema';
@@ -49,7 +48,8 @@ import { PersonaCompatibilityOrderByRelationAggregateInputObjectSchema as Person
 import { GeoViewHistoryOrderByRelationAggregateInputObjectSchema as GeoViewHistoryOrderByRelationAggregateInputObjectSchema } from './GeoViewHistoryOrderByRelationAggregateInput.schema';
 import { ChatSessionOrderByRelationAggregateInputObjectSchema as ChatSessionOrderByRelationAggregateInputObjectSchema } from './ChatSessionOrderByRelationAggregateInput.schema';
 import { AiInsightOrderByRelationAggregateInputObjectSchema as AiInsightOrderByRelationAggregateInputObjectSchema } from './AiInsightOrderByRelationAggregateInput.schema';
-import { OllamaOperationOrderByRelationAggregateInputObjectSchema as OllamaOperationOrderByRelationAggregateInputObjectSchema } from './OllamaOperationOrderByRelationAggregateInput.schema'
+import { OllamaOperationOrderByRelationAggregateInputObjectSchema as OllamaOperationOrderByRelationAggregateInputObjectSchema } from './OllamaOperationOrderByRelationAggregateInput.schema';
+import { ActorOrderByRelationAggregateInputObjectSchema as ActorOrderByRelationAggregateInputObjectSchema } from './ActorOrderByRelationAggregateInput.schema'
 
 const makeSchema = () => z.object({
   id: SortOrderSchema.optional(),
@@ -64,7 +64,6 @@ const makeSchema = () => z.object({
   refreshTokens: z.lazy(() => RefreshTokenOrderByRelationAggregateInputObjectSchema).optional(),
   preference: z.lazy(() => UserPreferenceOrderByWithRelationInputObjectSchema).optional(),
   telemetry: z.lazy(() => TelemetryEventOrderByRelationAggregateInputObjectSchema).optional(),
-  bankTransactions: z.lazy(() => BankTransactionOrderByRelationAggregateInputObjectSchema).optional(),
   personas: z.lazy(() => PersonaOrderByRelationAggregateInputObjectSchema).optional(),
   assignments: z.lazy(() => AssignmentOrderByRelationAggregateInputObjectSchema).optional(),
   staffingEngagements: z.lazy(() => StaffingEngagementOrderByRelationAggregateInputObjectSchema).optional(),
@@ -108,7 +107,8 @@ const makeSchema = () => z.object({
   geoViewHistories: z.lazy(() => GeoViewHistoryOrderByRelationAggregateInputObjectSchema).optional(),
   chatSessions: z.lazy(() => ChatSessionOrderByRelationAggregateInputObjectSchema).optional(),
   aiInsights: z.lazy(() => AiInsightOrderByRelationAggregateInputObjectSchema).optional(),
-  ollamaOperations: z.lazy(() => OllamaOperationOrderByRelationAggregateInputObjectSchema).optional()
+  ollamaOperations: z.lazy(() => OllamaOperationOrderByRelationAggregateInputObjectSchema).optional(),
+  actors: z.lazy(() => ActorOrderByRelationAggregateInputObjectSchema).optional()
 }).strict();
 export const UserOrderByWithRelationInputObjectSchema: z.ZodType<Prisma.UserOrderByWithRelationInput> = makeSchema() as unknown as z.ZodType<Prisma.UserOrderByWithRelationInput>;
 export const UserOrderByWithRelationInputObjectZodSchema = makeSchema();

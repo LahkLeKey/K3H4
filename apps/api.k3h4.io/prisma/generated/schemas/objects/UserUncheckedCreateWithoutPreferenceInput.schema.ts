@@ -2,7 +2,6 @@ import * as z from 'zod';
 import { Prisma } from '@prisma/client';
 import { RefreshTokenUncheckedCreateNestedManyWithoutUserInputObjectSchema as RefreshTokenUncheckedCreateNestedManyWithoutUserInputObjectSchema } from './RefreshTokenUncheckedCreateNestedManyWithoutUserInput.schema';
 import { TelemetryEventUncheckedCreateNestedManyWithoutUserInputObjectSchema as TelemetryEventUncheckedCreateNestedManyWithoutUserInputObjectSchema } from './TelemetryEventUncheckedCreateNestedManyWithoutUserInput.schema';
-import { BankTransactionUncheckedCreateNestedManyWithoutUserInputObjectSchema as BankTransactionUncheckedCreateNestedManyWithoutUserInputObjectSchema } from './BankTransactionUncheckedCreateNestedManyWithoutUserInput.schema';
 import { PersonaUncheckedCreateNestedManyWithoutUserInputObjectSchema as PersonaUncheckedCreateNestedManyWithoutUserInputObjectSchema } from './PersonaUncheckedCreateNestedManyWithoutUserInput.schema';
 import { AssignmentUncheckedCreateNestedManyWithoutUserInputObjectSchema as AssignmentUncheckedCreateNestedManyWithoutUserInputObjectSchema } from './AssignmentUncheckedCreateNestedManyWithoutUserInput.schema';
 import { StaffingEngagementUncheckedCreateNestedManyWithoutUserInputObjectSchema as StaffingEngagementUncheckedCreateNestedManyWithoutUserInputObjectSchema } from './StaffingEngagementUncheckedCreateNestedManyWithoutUserInput.schema';
@@ -46,7 +45,8 @@ import { PersonaCompatibilityUncheckedCreateNestedManyWithoutUserInputObjectSche
 import { GeoViewHistoryUncheckedCreateNestedManyWithoutUserInputObjectSchema as GeoViewHistoryUncheckedCreateNestedManyWithoutUserInputObjectSchema } from './GeoViewHistoryUncheckedCreateNestedManyWithoutUserInput.schema';
 import { ChatSessionUncheckedCreateNestedManyWithoutUserInputObjectSchema as ChatSessionUncheckedCreateNestedManyWithoutUserInputObjectSchema } from './ChatSessionUncheckedCreateNestedManyWithoutUserInput.schema';
 import { AiInsightUncheckedCreateNestedManyWithoutUserInputObjectSchema as AiInsightUncheckedCreateNestedManyWithoutUserInputObjectSchema } from './AiInsightUncheckedCreateNestedManyWithoutUserInput.schema';
-import { OllamaOperationUncheckedCreateNestedManyWithoutUserInputObjectSchema as OllamaOperationUncheckedCreateNestedManyWithoutUserInputObjectSchema } from './OllamaOperationUncheckedCreateNestedManyWithoutUserInput.schema'
+import { OllamaOperationUncheckedCreateNestedManyWithoutUserInputObjectSchema as OllamaOperationUncheckedCreateNestedManyWithoutUserInputObjectSchema } from './OllamaOperationUncheckedCreateNestedManyWithoutUserInput.schema';
+import { ActorUncheckedCreateNestedManyWithoutUserInputObjectSchema as ActorUncheckedCreateNestedManyWithoutUserInputObjectSchema } from './ActorUncheckedCreateNestedManyWithoutUserInput.schema'
 
 import { DecimalJSLikeSchema, isValidDecimalInput } from '../../helpers/decimal-helpers';
 const makeSchema = () => z.object({
@@ -68,7 +68,6 @@ const makeSchema = () => z.object({
   updatedAt: z.coerce.date().optional(),
   refreshTokens: z.lazy(() => RefreshTokenUncheckedCreateNestedManyWithoutUserInputObjectSchema).optional(),
   telemetry: z.lazy(() => TelemetryEventUncheckedCreateNestedManyWithoutUserInputObjectSchema).optional(),
-  bankTransactions: z.lazy(() => BankTransactionUncheckedCreateNestedManyWithoutUserInputObjectSchema).optional(),
   personas: z.lazy(() => PersonaUncheckedCreateNestedManyWithoutUserInputObjectSchema).optional(),
   assignments: z.lazy(() => AssignmentUncheckedCreateNestedManyWithoutUserInputObjectSchema).optional(),
   staffingEngagements: z.lazy(() => StaffingEngagementUncheckedCreateNestedManyWithoutUserInputObjectSchema).optional(),
@@ -112,7 +111,8 @@ const makeSchema = () => z.object({
   geoViewHistories: z.lazy(() => GeoViewHistoryUncheckedCreateNestedManyWithoutUserInputObjectSchema).optional(),
   chatSessions: z.lazy(() => ChatSessionUncheckedCreateNestedManyWithoutUserInputObjectSchema).optional(),
   aiInsights: z.lazy(() => AiInsightUncheckedCreateNestedManyWithoutUserInputObjectSchema).optional(),
-  ollamaOperations: z.lazy(() => OllamaOperationUncheckedCreateNestedManyWithoutUserInputObjectSchema).optional()
+  ollamaOperations: z.lazy(() => OllamaOperationUncheckedCreateNestedManyWithoutUserInputObjectSchema).optional(),
+  actors: z.lazy(() => ActorUncheckedCreateNestedManyWithoutUserInputObjectSchema).optional()
 }).strict();
 export const UserUncheckedCreateWithoutPreferenceInputObjectSchema: z.ZodType<Prisma.UserUncheckedCreateWithoutPreferenceInput> = makeSchema() as unknown as z.ZodType<Prisma.UserUncheckedCreateWithoutPreferenceInput>;
 export const UserUncheckedCreateWithoutPreferenceInputObjectZodSchema = makeSchema();

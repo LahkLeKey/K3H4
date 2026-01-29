@@ -2,7 +2,6 @@ import * as z from 'zod';
 import type { Prisma } from '@prisma/client';
 import { UserCountOutputTypeCountRefreshTokensArgsObjectSchema as UserCountOutputTypeCountRefreshTokensArgsObjectSchema } from './UserCountOutputTypeCountRefreshTokensArgs.schema';
 import { UserCountOutputTypeCountTelemetryArgsObjectSchema as UserCountOutputTypeCountTelemetryArgsObjectSchema } from './UserCountOutputTypeCountTelemetryArgs.schema';
-import { UserCountOutputTypeCountBankTransactionsArgsObjectSchema as UserCountOutputTypeCountBankTransactionsArgsObjectSchema } from './UserCountOutputTypeCountBankTransactionsArgs.schema';
 import { UserCountOutputTypeCountPersonasArgsObjectSchema as UserCountOutputTypeCountPersonasArgsObjectSchema } from './UserCountOutputTypeCountPersonasArgs.schema';
 import { UserCountOutputTypeCountAssignmentsArgsObjectSchema as UserCountOutputTypeCountAssignmentsArgsObjectSchema } from './UserCountOutputTypeCountAssignmentsArgs.schema';
 import { UserCountOutputTypeCountStaffingEngagementsArgsObjectSchema as UserCountOutputTypeCountStaffingEngagementsArgsObjectSchema } from './UserCountOutputTypeCountStaffingEngagementsArgs.schema';
@@ -46,12 +45,12 @@ import { UserCountOutputTypeCountPersonaCompatibilitiesArgsObjectSchema as UserC
 import { UserCountOutputTypeCountGeoViewHistoriesArgsObjectSchema as UserCountOutputTypeCountGeoViewHistoriesArgsObjectSchema } from './UserCountOutputTypeCountGeoViewHistoriesArgs.schema';
 import { UserCountOutputTypeCountChatSessionsArgsObjectSchema as UserCountOutputTypeCountChatSessionsArgsObjectSchema } from './UserCountOutputTypeCountChatSessionsArgs.schema';
 import { UserCountOutputTypeCountAiInsightsArgsObjectSchema as UserCountOutputTypeCountAiInsightsArgsObjectSchema } from './UserCountOutputTypeCountAiInsightsArgs.schema';
-import { UserCountOutputTypeCountOllamaOperationsArgsObjectSchema as UserCountOutputTypeCountOllamaOperationsArgsObjectSchema } from './UserCountOutputTypeCountOllamaOperationsArgs.schema'
+import { UserCountOutputTypeCountOllamaOperationsArgsObjectSchema as UserCountOutputTypeCountOllamaOperationsArgsObjectSchema } from './UserCountOutputTypeCountOllamaOperationsArgs.schema';
+import { UserCountOutputTypeCountActorsArgsObjectSchema as UserCountOutputTypeCountActorsArgsObjectSchema } from './UserCountOutputTypeCountActorsArgs.schema'
 
 const makeSchema = () => z.object({
   refreshTokens: z.union([z.boolean(), z.lazy(() => UserCountOutputTypeCountRefreshTokensArgsObjectSchema)]).optional(),
   telemetry: z.union([z.boolean(), z.lazy(() => UserCountOutputTypeCountTelemetryArgsObjectSchema)]).optional(),
-  bankTransactions: z.union([z.boolean(), z.lazy(() => UserCountOutputTypeCountBankTransactionsArgsObjectSchema)]).optional(),
   personas: z.union([z.boolean(), z.lazy(() => UserCountOutputTypeCountPersonasArgsObjectSchema)]).optional(),
   assignments: z.union([z.boolean(), z.lazy(() => UserCountOutputTypeCountAssignmentsArgsObjectSchema)]).optional(),
   staffingEngagements: z.union([z.boolean(), z.lazy(() => UserCountOutputTypeCountStaffingEngagementsArgsObjectSchema)]).optional(),
@@ -95,7 +94,8 @@ const makeSchema = () => z.object({
   geoViewHistories: z.union([z.boolean(), z.lazy(() => UserCountOutputTypeCountGeoViewHistoriesArgsObjectSchema)]).optional(),
   chatSessions: z.union([z.boolean(), z.lazy(() => UserCountOutputTypeCountChatSessionsArgsObjectSchema)]).optional(),
   aiInsights: z.union([z.boolean(), z.lazy(() => UserCountOutputTypeCountAiInsightsArgsObjectSchema)]).optional(),
-  ollamaOperations: z.union([z.boolean(), z.lazy(() => UserCountOutputTypeCountOllamaOperationsArgsObjectSchema)]).optional()
+  ollamaOperations: z.union([z.boolean(), z.lazy(() => UserCountOutputTypeCountOllamaOperationsArgsObjectSchema)]).optional(),
+  actors: z.union([z.boolean(), z.lazy(() => UserCountOutputTypeCountActorsArgsObjectSchema)]).optional()
 }).strict();
 export const UserCountOutputTypeSelectObjectSchema: z.ZodType<Prisma.UserCountOutputTypeSelect> = makeSchema() as unknown as z.ZodType<Prisma.UserCountOutputTypeSelect>;
 export const UserCountOutputTypeSelectObjectZodSchema = makeSchema();
