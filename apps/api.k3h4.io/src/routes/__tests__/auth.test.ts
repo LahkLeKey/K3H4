@@ -17,6 +17,18 @@ function buildServer(prisma: any) {
   return server;
 }
 
+const LINKEDIN_REDIRECT_URI = 'https://app/cb';
+
+async function getLinkedinState(server: ReturnType<typeof buildServer>) {
+  const res = await server.inject({
+    method: 'POST',
+    url: '/auth/linkedin/url',
+    payload: {redirectUri: LINKEDIN_REDIRECT_URI}
+  });
+  expect(res.statusCode).toBe(200);
+  return res.json().state as string;
+}
+
 describe('auth routes', () => {
   beforeEach(() => {
     recordTelemetry.mockClear();
@@ -160,13 +172,16 @@ describe('auth routes', () => {
   });
 
   it('handles linkedin missing config', async () => {
+    process.env.LINKEDIN_CLIENT_ID = 'ln-id';
+    process.env.LINKEDIN_CLIENT_SECRET = 'ln-secret';
+    const server = buildServer({});
+    const state = await getLinkedinState(server);
     process.env.LINKEDIN_CLIENT_ID = '';
     process.env.LINKEDIN_CLIENT_SECRET = '';
-    const server = buildServer({});
     const res = await server.inject({
       method: 'POST',
       url: '/auth/linkedin/callback',
-      payload: {code: 'c', redirectUri: 'https://app/cb'}
+      payload: {code: 'c', redirectUri: LINKEDIN_REDIRECT_URI, state}
     });
     expect(res.statusCode).toBe(500);
   });
@@ -320,10 +335,11 @@ describe('auth routes', () => {
       },
     };
     const server = buildServer(prisma);
+    const state = await getLinkedinState(server);
     const res = await server.inject({
       method: 'POST',
       url: '/auth/linkedin/callback',
-      payload: {code: 'c', redirectUri: 'https://app/cb'}
+      payload: {code: 'c', redirectUri: LINKEDIN_REDIRECT_URI, state}
     });
     expect(res.statusCode).toBe(200);
     expect(prisma.user.upsert).toHaveBeenCalled();
@@ -337,10 +353,11 @@ describe('auth routes', () => {
     process.env.LINKEDIN_CLIENT_SECRET = 'ln-secret';
     const server =
         buildServer({user: {upsert: vi.fn()}, refreshToken: {create: vi.fn()}});
+    const state = await getLinkedinState(server);
     const res = await server.inject({
       method: 'POST',
       url: '/auth/linkedin/callback',
-      payload: {code: 'c', redirectUri: 'https://app/cb'}
+      payload: {code: 'c', redirectUri: LINKEDIN_REDIRECT_URI, state}
     });
     expect(res.statusCode).toBe(401);
   });
@@ -359,10 +376,11 @@ describe('auth routes', () => {
     process.env.LINKEDIN_CLIENT_SECRET = 'ln-secret';
     const server =
         buildServer({user: {upsert: vi.fn()}, refreshToken: {create: vi.fn()}});
+    const state = await getLinkedinState(server);
     const res = await server.inject({
       method: 'POST',
       url: '/auth/linkedin/callback',
-      payload: {code: 'c', redirectUri: 'https://app/cb'}
+      payload: {code: 'c', redirectUri: LINKEDIN_REDIRECT_URI, state}
     });
     expect(res.statusCode).toBe(401);
   });
@@ -386,6 +404,11 @@ describe('auth routes', () => {
       entity: {deleteMany: vi.fn().mockResolvedValue({count: 0})},
       actor: {deleteMany: vi.fn().mockResolvedValue({count: 0})},
       persona: {deleteMany: vi.fn().mockResolvedValue({count: 0})},
+      staffingPlacement: {deleteMany: vi.fn().mockResolvedValue({count: 0})},
+      staffingShift: {deleteMany: vi.fn().mockResolvedValue({count: 0})},
+      staffingCandidate: {deleteMany: vi.fn().mockResolvedValue({count: 0})},
+      staffingRole: {deleteMany: vi.fn().mockResolvedValue({count: 0})},
+      staffingEngagement: {deleteMany: vi.fn().mockResolvedValue({count: 0})},
       assignmentTimecard: {deleteMany: vi.fn().mockResolvedValue({count: 0})},
       assignmentPayout: {deleteMany: vi.fn().mockResolvedValue({count: 0})},
       assignment: {deleteMany: vi.fn().mockResolvedValue({count: 0})},

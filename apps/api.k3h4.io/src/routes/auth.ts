@@ -289,8 +289,8 @@ export function registerAuthRoutes(
     recordTelemetry: RecordTelemetryFn) {
   // Local email/password auth removed; only OAuth flows are supported.
   server.post('/auth/github/callback', async (request, reply) => {
+    const rt = withTelemetryBase(recordTelemetry, request);
     try {
-      const rt = withTelemetryBase(recordTelemetry, request);
       const body = request.body as {
         code?: string;
         redirectUri?: string

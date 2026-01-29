@@ -51,6 +51,11 @@ describe('freight routes', () => {
     });
     vi.stubGlobal('fetch', fetchMock);
 
+    const geoDirection = {
+      findUnique: vi.fn().mockResolvedValue(null),
+      upsert: vi.fn().mockResolvedValue({}),
+    };
+
     const prisma = {
       freightLoad: {
         create: vi.fn().mockResolvedValue({
@@ -60,6 +65,7 @@ describe('freight routes', () => {
           createdAt: new Date()
         })
       },
+      geoDirection,
     };
     const server = buildServer(prisma);
     const res = await server.inject({
@@ -84,7 +90,7 @@ describe('freight routes', () => {
             expect.objectContaining({eventType: 'freight.create'}));
   });
 
-  it('falls back when osrm fails', async () => {
+  it('returns 502 when osrm fails', async () => {
     const fetchMock = vi.fn().mockRejectedValue(new Error('network'));
     vi.stubGlobal('fetch', fetchMock);
 
@@ -113,19 +119,11 @@ describe('freight routes', () => {
       },
     });
 
-    expect(res.statusCode).toBe(200);
-    expect(prisma.freightLoad.create)
-        .toHaveBeenCalledWith(
-            expect.objectContaining({
-              data: expect.objectContaining({
-                distanceKm: new Prisma.Decimal('0.00'),
-                cost: new Prisma.Decimal('0.00')
-              })
-            }),
-        );
+    expect(res.statusCode).toBe(502);
+    expect(prisma.freightLoad.create).not.toHaveBeenCalled();
   });
 
-  it('falls back when osrm returns empty route', async () => {
+  it('returns 502 when osrm returns empty route', async () => {
     const fetchMock = vi.fn().mockResolvedValue(
         {ok: true, json: async () => ({routes: []})} as Response);
     vi.stubGlobal('fetch', fetchMock);
@@ -153,8 +151,8 @@ describe('freight routes', () => {
         destinationLng: 2
       },
     });
-    expect(res.statusCode).toBe(200);
-    expect(prisma.freightLoad.create).toHaveBeenCalled();
+    expect(res.statusCode).toBe(502);
+    expect(prisma.freightLoad.create).not.toHaveBeenCalled();
   });
 
   it('rejects invalid coordinates', async () => {
