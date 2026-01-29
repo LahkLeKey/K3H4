@@ -271,7 +271,7 @@ describe('bank routes', () => {
                 AND: expect.arrayContaining([
                   expect.objectContaining({
                     OR: expect.arrayContaining([
-                      expect.objectContaining({direction: 'CREDIT'}),
+                      expect.objectContaining({direction: 'credit'}),
                       expect.objectContaining({
                         metadata: expect.objectContaining(
                             {path: ['direction'], equals: 'credit'}),
@@ -308,8 +308,10 @@ describe('bank routes', () => {
     expect(res.statusCode).toBe(200);
     expect(prisma.entity.findMany)
         .toHaveBeenCalledWith(
-            expect.objectContaining(
-                {where: expect.objectContaining({createdAt: undefined})}),
+            expect.objectContaining({
+              where:
+                  expect.not.objectContaining({createdAt: expect.anything()}),
+            }),
         );
   });
 });

@@ -2,11 +2,7 @@ import {faker} from '@faker-js/faker';
 import {Prisma, type PrismaClient} from '@prisma/client';
 import {type FastifyInstance} from 'fastify';
 
-import {
-  BankTransactionDirection,
-  BankTransactionKind,
-  recordBankTransactionEntity,
-} from '../services/bank-actor';
+import {BankTransactionDirection, BankTransactionKind, recordBankTransactionEntity,} from '../services/bank-actor';
 
 import {buildTelemetryBase} from './telemetry';
 import {type RecordTelemetryFn} from './types';

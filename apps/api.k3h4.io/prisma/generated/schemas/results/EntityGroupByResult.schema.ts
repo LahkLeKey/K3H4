@@ -2,7 +2,6 @@ import * as z from 'zod';
 export const EntityGroupByResultSchema = z.array(z.object({
   id: z.string(),
   actorId: z.string(),
-  kind: z.string(),
   name: z.string(),
   targetType: z.string(),
   targetId: z.string(),
@@ -15,6 +14,7 @@ export const EntityGroupByResultSchema = z.array(z.object({
     actorId: z.number(),
     actor: z.number(),
     kind: z.number(),
+    direction: z.number(),
     name: z.number(),
     targetType: z.number(),
     targetId: z.number(),
@@ -26,7 +26,6 @@ export const EntityGroupByResultSchema = z.array(z.object({
   _min: z.object({
     id: z.string().nullable(),
     actorId: z.string().nullable(),
-    kind: z.string().nullable(),
     name: z.string().nullable(),
     targetType: z.string().nullable(),
     targetId: z.string().nullable(),
@@ -37,7 +36,6 @@ export const EntityGroupByResultSchema = z.array(z.object({
   _max: z.object({
     id: z.string().nullable(),
     actorId: z.string().nullable(),
-    kind: z.string().nullable(),
     name: z.string().nullable(),
     targetType: z.string().nullable(),
     targetId: z.string().nullable(),

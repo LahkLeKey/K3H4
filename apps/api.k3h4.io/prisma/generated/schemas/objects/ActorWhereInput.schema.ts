@@ -2,6 +2,8 @@ import * as z from 'zod';
 import type { Prisma } from '@prisma/client';
 import { StringFilterObjectSchema as StringFilterObjectSchema } from './StringFilter.schema';
 import { StringNullableFilterObjectSchema as StringNullableFilterObjectSchema } from './StringNullableFilter.schema';
+import { EnumBankActorTypeFilterObjectSchema as EnumBankActorTypeFilterObjectSchema } from './EnumBankActorTypeFilter.schema';
+import { BankActorTypeSchema } from '../enums/BankActorType.schema';
 import { JsonNullableFilterObjectSchema as JsonNullableFilterObjectSchema } from './JsonNullableFilter.schema';
 import { DateTimeFilterObjectSchema as DateTimeFilterObjectSchema } from './DateTimeFilter.schema';
 import { UserNullableScalarRelationFilterObjectSchema as UserNullableScalarRelationFilterObjectSchema } from './UserNullableScalarRelationFilter.schema';
@@ -15,7 +17,7 @@ const actorwhereinputSchema = z.object({
   id: z.union([z.lazy(() => StringFilterObjectSchema), z.string()]).optional(),
   userId: z.union([z.lazy(() => StringNullableFilterObjectSchema), z.string()]).optional().nullable(),
   label: z.union([z.lazy(() => StringFilterObjectSchema), z.string()]).optional(),
-  type: z.union([z.lazy(() => StringFilterObjectSchema), z.string()]).optional(),
+  type: z.union([z.lazy(() => EnumBankActorTypeFilterObjectSchema), BankActorTypeSchema]).optional(),
   note: z.union([z.lazy(() => StringNullableFilterObjectSchema), z.string()]).optional().nullable(),
   source: z.union([z.lazy(() => StringNullableFilterObjectSchema), z.string()]).optional().nullable(),
   metadata: z.lazy(() => JsonNullableFilterObjectSchema).optional(),

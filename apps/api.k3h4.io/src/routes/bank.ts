@@ -1,13 +1,7 @@
 import {Prisma, PrismaClient} from '@prisma/client';
 import {type FastifyInstance} from 'fastify';
 
-import {
-  BankActorType,
-  BankTransactionDirection,
-  BankTransactionKind,
-  buildBankTransactionWhere,
-  recordBankTransactionEntity,
-} from '../services/bank-actor';
+import {BankActorType, BankTransactionDirection, BankTransactionKind, buildBankTransactionWhere, recordBankTransactionEntity,} from '../services/bank-actor';
 
 import {withTelemetryBase} from './telemetry';
 import {type RecordTelemetryFn} from './types';
@@ -133,7 +127,7 @@ export function registerBankRoutes(
               userId,
               amount: change.abs(),
               direction: isCredit ? BankTransactionDirection.CREDIT :
-                                         BankTransactionDirection.DEBIT,
+                                    BankTransactionDirection.DEBIT,
               kind: hasSet ? BankTransactionKind.SET :
                   isCredit ? BankTransactionKind.DEPOSIT :
                              BankTransactionKind.WITHDRAWAL,
@@ -191,10 +185,10 @@ export function registerBankRoutes(
           return Math.max(Math.floor(parsed), 0);
         })();
 
-        const direction =
-          query?.direction === 'credit' ? BankTransactionDirection.CREDIT :
-          query?.direction === 'debit' ? BankTransactionDirection.DEBIT :
-          undefined;
+        const direction = query?.direction === 'credit' ?
+            BankTransactionDirection.CREDIT :
+            query?.direction === 'debit' ? BankTransactionDirection.DEBIT :
+                                           undefined;
         const directionLabel = direction?.toLowerCase() ?? '';
 
         const from = query?.from ? new Date(query.from) : undefined;
@@ -203,9 +197,10 @@ export function registerBankRoutes(
             from && !Number.isNaN(from.valueOf()) ? from : undefined;
         const validTo = to && !Number.isNaN(to.valueOf()) ? to : undefined;
 
-        const actor = await prisma.actor.findFirst(
-          {where: {userId, type: BankActorType.BANK_ACCOUNT},
-           select: {id: true}});
+        const actor = await prisma.actor.findFirst({
+          where: {userId, type: BankActorType.BANK_ACCOUNT},
+          select: {id: true}
+        });
         if (!actor) {
           await rt({
             eventType: 'bank.transactions.list',

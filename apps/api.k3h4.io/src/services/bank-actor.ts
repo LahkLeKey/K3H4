@@ -1,4 +1,4 @@
-import {Prisma, type PrismaClient, BankActorType, BankTransactionDirection, BankTransactionKind} from '@prisma/client';
+import {BankActorType, BankTransactionDirection, BankTransactionKind, Prisma, type PrismaClient} from '@prisma/client';
 
 const BANK_ACTOR_LABEL = 'K3H4 Coin Account';
 const BANK_ACTOR_NOTE = 'Ledger that tracks k3h4 coin movements';

@@ -6,6 +6,7 @@ const makeSchema = () => z.object({
   id: z.literal(true).optional(),
   actorId: z.literal(true).optional(),
   kind: z.literal(true).optional(),
+  direction: z.literal(true).optional(),
   name: z.literal(true).optional(),
   targetType: z.literal(true).optional(),
   targetId: z.literal(true).optional(),

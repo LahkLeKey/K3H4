@@ -5,7 +5,7 @@ export const ActorFindManyResultSchema = z.object({
   userId: z.string().optional(),
   user: z.unknown().optional(),
   label: z.string(),
-  type: z.string(),
+  type: z.unknown(),
   note: z.string().optional(),
   source: z.string().optional(),
   metadata: z.unknown().optional(),

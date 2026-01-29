@@ -1,13 +1,10 @@
 import {LifecycleStatus, Prisma, type PrismaClient} from '@prisma/client';
 import {type FastifyInstance} from 'fastify';
 
+import {BankTransactionDirection, BankTransactionKind, recordBankTransactionEntity,} from '../services/bank-actor';
+
 import {buildTelemetryBase} from './telemetry';
 import {type RecordTelemetryFn} from './types';
-import {
-  BankTransactionDirection,
-  BankTransactionKind,
-  recordBankTransactionEntity,
-} from '../services/bank-actor';
 
 const serializeDecimal = (val: Prisma.Decimal|number|null|undefined) => {
   if (val === null || val === undefined) return '0.00';

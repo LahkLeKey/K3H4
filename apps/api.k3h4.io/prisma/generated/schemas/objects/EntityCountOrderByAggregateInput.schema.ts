@@ -6,6 +6,7 @@ const makeSchema = () => z.object({
   id: SortOrderSchema.optional(),
   actorId: SortOrderSchema.optional(),
   kind: SortOrderSchema.optional(),
+  direction: SortOrderSchema.optional(),
   name: SortOrderSchema.optional(),
   targetType: SortOrderSchema.optional(),
   targetId: SortOrderSchema.optional(),

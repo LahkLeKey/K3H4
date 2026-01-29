@@ -1,5 +1,6 @@
 import * as z from 'zod';
 import type { Prisma } from '@prisma/client';
+import { BankActorTypeSchema } from '../enums/BankActorType.schema';
 import { NullableJsonNullValueInputSchema } from '../enums/NullableJsonNullValueInput.schema'
 
 import { JsonValueSchema as jsonSchema } from '../../helpers/json-helpers';
@@ -8,7 +9,7 @@ const makeSchema = () => z.object({
   id: z.string().optional(),
   userId: z.string().optional().nullable(),
   label: z.string(),
-  type: z.string(),
+  type: BankActorTypeSchema,
   note: z.string().optional().nullable(),
   source: z.string().optional().nullable(),
   metadata: z.union([NullableJsonNullValueInputSchema, jsonSchema]).optional(),

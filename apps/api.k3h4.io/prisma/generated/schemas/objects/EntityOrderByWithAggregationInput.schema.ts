@@ -10,6 +10,7 @@ const makeSchema = () => z.object({
   id: SortOrderSchema.optional(),
   actorId: SortOrderSchema.optional(),
   kind: SortOrderSchema.optional(),
+  direction: z.union([SortOrderSchema, z.lazy(() => SortOrderInputObjectSchema)]).optional(),
   name: z.union([SortOrderSchema, z.lazy(() => SortOrderInputObjectSchema)]).optional(),
   targetType: z.union([SortOrderSchema, z.lazy(() => SortOrderInputObjectSchema)]).optional(),
   targetId: z.union([SortOrderSchema, z.lazy(() => SortOrderInputObjectSchema)]).optional(),
