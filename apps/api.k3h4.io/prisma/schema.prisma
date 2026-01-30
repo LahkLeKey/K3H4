@@ -37,14 +37,14 @@ enum LifecycleStatus {
 }
 
 enum ActorType {
-  BANK_ACCOUNT       @map("bank-account")
-  ARCADE_MACHINE     @map("arcade-machine")
-  ARCADE_PLAYER_CARD @map("arcade-player-card")
-  ARCADE_PRIZE       @map("arcade-prize")
-  USDA_FEED          @map("usda-feed")
-  AGRICULTURE_FARM   @map("agriculture-farm")
+  BANK_ACCOUNT                 @map("bank-account")
+  ARCADE_MACHINE               @map("arcade-machine")
+  ARCADE_PLAYER_CARD           @map("arcade-player-card")
+  ARCADE_PRIZE                 @map("arcade-prize")
+  USDA_FEED                    @map("usda-feed")
+  AGRICULTURE_FARM             @map("agriculture-farm")
   AGRICULTURE_RESOURCE_LIBRARY @map("agriculture-resource-library")
-  WAREHOUSE          @map("warehouse")
+  WAREHOUSE                    @map("warehouse")
 }
 
 enum EntityDirection {
@@ -53,30 +53,30 @@ enum EntityDirection {
 }
 
 enum EntityKind {
-  DEPOSIT                 @map("deposit")
-  WITHDRAWAL              @map("withdrawal")
-  SET                     @map("set")
-  ASSIGNMENT_PAYOUT       @map("assignment_payout")
-  FREIGHT_PAYMENT         @map("freight_payment")
-  ARCADE_TOPUP            @map("arcade_topup")
-  ARCADE_SESSION          @map("arcade_session")
-  ARCADE_PRIZE_REDEMPTION @map("arcade_prize_redemption")
-  USDA_REGION             @map("usda-region")
-  USDA_COUNTRY            @map("usda-country")
-  USDA_COMMODITY          @map("usda-commodity")
-  USDA_UNIT               @map("usda-unit")
-  USDA_ATTRIBUTE          @map("usda-attribute")
-  AGRICULTURE_PLOT                  @map("agriculture_plot")
-  AGRICULTURE_PLOT_CONDITION        @map("agriculture_plot_condition")
-  AGRICULTURE_SLOT                  @map("agriculture_slot")
-  AGRICULTURE_CROP_PLAN             @map("agriculture_crop_plan")
-  AGRICULTURE_TASK                  @map("agriculture_task")
-  AGRICULTURE_INVENTORY_ITEM        @map("agriculture_inventory_item")
-  AGRICULTURE_INVENTORY_MOVEMENT    @map("agriculture_inventory_movement")
-  AGRICULTURE_SHIPMENT              @map("agriculture_shipment")
-  AGRICULTURE_RESOURCE_CATEGORY     @map("agriculture_resource_category")
-  AGRICULTURE_RESOURCE              @map("agriculture_resource") 
-  WAREHOUSE_ITEM                   @map("warehouse_item")
+  DEPOSIT                        @map("deposit")
+  WITHDRAWAL                     @map("withdrawal")
+  SET                            @map("set")
+  ASSIGNMENT_PAYOUT              @map("assignment_payout")
+  FREIGHT_PAYMENT                @map("freight_payment")
+  ARCADE_TOPUP                   @map("arcade_topup")
+  ARCADE_SESSION                 @map("arcade_session")
+  ARCADE_PRIZE_REDEMPTION        @map("arcade_prize_redemption")
+  USDA_REGION                    @map("usda-region")
+  USDA_COUNTRY                   @map("usda-country")
+  USDA_COMMODITY                 @map("usda-commodity")
+  USDA_UNIT                      @map("usda-unit")
+  USDA_ATTRIBUTE                 @map("usda-attribute")
+  AGRICULTURE_PLOT               @map("agriculture_plot")
+  AGRICULTURE_PLOT_CONDITION     @map("agriculture_plot_condition")
+  AGRICULTURE_SLOT               @map("agriculture_slot")
+  AGRICULTURE_CROP_PLAN          @map("agriculture_crop_plan")
+  AGRICULTURE_TASK               @map("agriculture_task")
+  AGRICULTURE_INVENTORY_ITEM     @map("agriculture_inventory_item")
+  AGRICULTURE_INVENTORY_MOVEMENT @map("agriculture_inventory_movement")
+  AGRICULTURE_SHIPMENT           @map("agriculture_shipment")
+  AGRICULTURE_RESOURCE_CATEGORY  @map("agriculture_resource_category")
+  AGRICULTURE_RESOURCE           @map("agriculture_resource")
+  WAREHOUSE_ITEM                 @map("warehouse_item")
 }
 
 enum EngagementPriority {
@@ -114,48 +114,48 @@ model Building {
 }
 
 model User {
-  id                            String                         @id @default(cuid())
-  email                         String                         @unique
-  provider                      String
-  providerId                    String
-  k3h4CoinBalance               Decimal                        @default("25000") @db.Decimal(18, 2) // sandbox-only play balance
-  displayName                   String?
-  avatarUrl                     String?
-  createdAt                     DateTime                       @default(now())
-  updatedAt                     DateTime                       @updatedAt
-  refreshTokens                 RefreshToken[]
-  preference                    UserPreference?
-  telemetry                     TelemetryEvent[]
-  personas                      Persona[]
-  assignments                   Assignment[]
-  staffingEngagements           StaffingEngagement[]
-  staffingRoles                 StaffingRole[]
-  staffingCandidates            StaffingCandidate[]
-  staffingShifts                StaffingShift[]
-  staffingPlacements            StaffingPlacement[]
-  freightLoads                  FreightLoad[]
-  posStores                     PosStore[]
-  posTickets                    PosTicket[]
-  culinaryMenuItems             CulinaryMenuItem[]
-  culinaryPrepTasks             CulinaryPrepTask[]
-  culinarySupplierNeeds         CulinarySupplierNeed[]
-  providerGrants                ProviderGrant[]
-  geoRouteCaches                GeoRouteCache[]
-  geoDirections                 GeoDirection[]
-  geoPoiCaches                  GeoPoiCache[]
-  geoQueryCaches                GeoQueryCache[]
-  maptilerQueries               MaptilerQuery[]
-  maptilerCacheEntries          MaptilerCacheEntry[]
-  osrmCacheEntries              OsrmCacheEntry[]
-  geoStatusLogs                 GeoStatusLog[]
-  geoDemTileCaches              GeoDemTileCache[]
-  personaAttributes             PersonaAttribute[]
-  personaCompatibilities        PersonaCompatibility[]
-  geoViewHistories              GeoViewHistory[]
-  chatSessions                  ChatSession[]
-  aiInsights                    AiInsight[]
-  ollamaOperations              OllamaOperation[]
-  actors                        Actor[]
+  id                     String                 @id @default(cuid())
+  email                  String                 @unique
+  provider               String
+  providerId             String
+  k3h4CoinBalance        Decimal                @default("25000") @db.Decimal(18, 2) // sandbox-only play balance
+  displayName            String?
+  avatarUrl              String?
+  createdAt              DateTime               @default(now())
+  updatedAt              DateTime               @updatedAt
+  refreshTokens          RefreshToken[]
+  preference             UserPreference?
+  telemetry              TelemetryEvent[]
+  personas               Persona[]
+  assignments            Assignment[]
+  staffingEngagements    StaffingEngagement[]
+  staffingRoles          StaffingRole[]
+  staffingCandidates     StaffingCandidate[]
+  staffingShifts         StaffingShift[]
+  staffingPlacements     StaffingPlacement[]
+  freightLoads           FreightLoad[]
+  posStores              PosStore[]
+  posTickets             PosTicket[]
+  culinaryMenuItems      CulinaryMenuItem[]
+  culinaryPrepTasks      CulinaryPrepTask[]
+  culinarySupplierNeeds  CulinarySupplierNeed[]
+  providerGrants         ProviderGrant[]
+  geoRouteCaches         GeoRouteCache[]
+  geoDirections          GeoDirection[]
+  geoPoiCaches           GeoPoiCache[]
+  geoQueryCaches         GeoQueryCache[]
+  maptilerQueries        MaptilerQuery[]
+  maptilerCacheEntries   MaptilerCacheEntry[]
+  osrmCacheEntries       OsrmCacheEntry[]
+  geoStatusLogs          GeoStatusLog[]
+  geoDemTileCaches       GeoDemTileCache[]
+  personaAttributes      PersonaAttribute[]
+  personaCompatibilities PersonaCompatibility[]
+  geoViewHistories       GeoViewHistory[]
+  chatSessions           ChatSession[]
+  aiInsights             AiInsight[]
+  ollamaOperations       OllamaOperation[]
+  actors                 Actor[]
 
   @@unique([provider, providerId])
 }
@@ -640,7 +640,6 @@ model StaffingEngagement {
 
   @@index([userId, status])
 }
-
 
 model AssignmentTimecard {
   id           String     @id @default(cuid())
