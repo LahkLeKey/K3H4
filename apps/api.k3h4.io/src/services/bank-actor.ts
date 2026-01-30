@@ -66,8 +66,7 @@ const ensureActor = async (
 
 export async function ensureBankActor(tx: PrismaTx, userId: string) {
   return ensureActor(
-      tx, userId, ActorType.BANK_ACCOUNT, BANK_ACTOR_LABEL,
-      BANK_ACTOR_NOTE);
+      tx, userId, ActorType.BANK_ACCOUNT, BANK_ACTOR_LABEL, BANK_ACTOR_NOTE);
 }
 
 export async function recordBankTransactionEntity(
@@ -77,7 +76,8 @@ export async function recordBankTransactionEntity(
       await ensureActor(
           tx, record.userId, record.actorType ?? ActorType.BANK_ACCOUNT,
           record.actorLabel ??
-              (record.actorType === ActorType.BANK_ACCOUNT ?
+              ((record.actorType ?? ActorType.BANK_ACCOUNT) ===
+                       ActorType.BANK_ACCOUNT ?
                    BANK_ACTOR_LABEL :
                    undefined),
           record.actorNote, record.actorMetadata);
