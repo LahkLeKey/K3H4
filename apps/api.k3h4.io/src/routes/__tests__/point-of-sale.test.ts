@@ -3,7 +3,7 @@ import Fastify from 'fastify';
 import {beforeEach, describe, expect, it, vi} from 'vitest';
 
 import * as bankActor from '../../services/bank-actor';
-import {registerPosRoutes} from '../pos';
+import {registerPointOfSaleRoutes} from '../point-of-sale';
 import {type RecordTelemetryFn} from '../types';
 
 const recordTelemetry = vi.fn() as unknown as RecordTelemetryFn;
@@ -14,7 +14,7 @@ function buildServer(mocks: any) {
   server.decorate('authenticate', async (request: any) => {
     request.user = {sub: userId};
   });
-  registerPosRoutes(server as any, mocks as any, recordTelemetry);
+  registerPointOfSaleRoutes(server as any, mocks as any, recordTelemetry);
   return server;
 }
 
@@ -39,7 +39,7 @@ const buildTransactionMocks = () => {
   return {transactionSpy, ticketCreate, txUser, createdTicket};
 };
 
-describe('POS routes', () => {
+describe('Point of Sale routes', () => {
   beforeEach(() => {
     recordTelemetry.mockClear();
     vi.restoreAllMocks();
@@ -90,15 +90,16 @@ describe('POS routes', () => {
       },
     };
     const server = buildServer(prisma);
-    const res = await server.inject({method: 'GET', url: '/pos/overview'});
+    const res =
+        await server.inject({method: 'GET', url: '/point-of-sale/overview'});
     expect(res.statusCode).toBe(200);
     const body = res.json();
     expect(body.metrics.tickets).toBe(2);
     expect(body.orders.length).toBe(2);
     expect(recordTelemetry)
-        .toHaveBeenCalledWith(
-            expect.anything(),
-            expect.objectContaining({eventType: 'pos.overview.fetch'}));
+        .toHaveBeenCalledWith(expect.anything(), expect.objectContaining({
+          eventType: 'point-of-sale.overview.fetch'
+        }));
   });
 
   it('handles empty overview data', async () => {
@@ -108,7 +109,8 @@ describe('POS routes', () => {
       posLineItem: {findMany: vi.fn().mockResolvedValue([])},
     };
     const server = buildServer(prisma);
-    const res = await server.inject({method: 'GET', url: '/pos/overview'});
+    const res =
+        await server.inject({method: 'GET', url: '/point-of-sale/overview'});
     expect(res.statusCode).toBe(200);
     const body = res.json();
     expect(body.metrics.grossRevenue).toBe('0.00');
@@ -130,7 +132,7 @@ describe('POS routes', () => {
     const server = buildServer(prisma);
     const res = await server.inject({
       method: 'POST',
-      url: '/pos/tickets',
+      url: '/point-of-sale/tickets',
       payload: {
         storeName: 'Main',
         total: 10,
@@ -156,7 +158,7 @@ describe('POS routes', () => {
     const server = buildServer(prisma);
     const res = await server.inject({
       method: 'POST',
-      url: '/pos/tickets',
+      url: '/point-of-sale/tickets',
       payload: {
         storeId: 's2',
         total: 5,
@@ -179,7 +181,7 @@ describe('POS routes', () => {
     const server = buildServer(prisma);
     const res = await server.inject({
       method: 'POST',
-      url: '/pos/stores',
+      url: '/point-of-sale/stores',
       payload: {name: 'Popup', channel: 'Delivery'}
     });
     expect(res.statusCode).toBe(200);
@@ -192,8 +194,11 @@ describe('POS routes', () => {
       posTicket: {create: vi.fn()}
     };
     const server = buildServer(prisma);
-    const res = await server.inject(
-        {method: 'POST', url: '/pos/tickets', payload: {storeName: 'Main'}});
+    const res = await server.inject({
+      method: 'POST',
+      url: '/point-of-sale/tickets',
+      payload: {storeName: 'Main'}
+    });
     expect(res.statusCode).toBe(400);
   });
 
@@ -204,7 +209,7 @@ describe('POS routes', () => {
     };
     const server = buildServer(prisma);
     const res = await server.inject(
-        {method: 'POST', url: '/pos/tickets', payload: {total: 10}});
+        {method: 'POST', url: '/point-of-sale/tickets', payload: {total: 10}});
     expect(res.statusCode).toBe(400);
   });
 });

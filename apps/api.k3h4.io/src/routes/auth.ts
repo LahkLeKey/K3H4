@@ -155,15 +155,15 @@ const runDeleteJob = async (
         action: () => deleteAgricultureActorWithEntities(prisma, userId)
       },
       {
-        key: 'posLineItems',
+        key: 'pointOfSaleLineItems',
         action: () => prisma.posLineItem.deleteMany({where: {ticket: {userId}}})
       },
       {
-        key: 'posTickets',
+        key: 'pointOfSaleTickets',
         action: () => prisma.posTicket.deleteMany({where: {userId}})
       },
       {
-        key: 'posStores',
+        key: 'pointOfSaleStores',
         action: () => prisma.posStore.deleteMany({where: {userId}})
       },
       {

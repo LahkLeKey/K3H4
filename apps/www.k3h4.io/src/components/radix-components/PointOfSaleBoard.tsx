@@ -3,13 +3,13 @@ import { z } from "zod";
 
 import { Badge, Button, Card, StatChip, Table } from "../ui";
 import { useAuthStore } from "../../zustand-stores/auth";
-import { usePosState } from "../../react-hooks/pos";
+import { usePointOfSaleState } from "../../react-hooks/point-of-sale";
 import { apiFetch } from "../../react-hooks/lib/api-client";
 import { useStorefrontsStore } from "../../zustand-stores/storefronts";
 
-export function PosBoard() {
+export function PointOfSaleBoard() {
     const { session } = useAuthStore();
-    const { overview, status, error, fetchOverview } = usePosState();
+    const { overview, status, error, fetchOverview } = usePointOfSaleState();
     const { posTicketStore, posTicketChannel, posTicketAmount, posTicketStatus, updateField } = useStorefrontsStore();
 
     useEffect(() => {
@@ -24,7 +24,7 @@ export function PosBoard() {
         if (!session?.accessToken) return;
         updateField("posTicketStatus", "Creating ticket...");
         try {
-            await apiFetch("/pos/tickets", {
+            await apiFetch("/point-of-sale/tickets", {
                 method: "POST",
                 token: session.accessToken,
                 baseUrl: useAuthStore.getState().apiBase,
@@ -46,7 +46,7 @@ export function PosBoard() {
     return (
         <div className="space-y-4">
             <div className="flex flex-wrap items-center gap-2">
-                <Badge accent="#f472b6">POS</Badge>
+                <Badge accent="#f472b6">Point of sale</Badge>
                 {loading ? <span className="text-xs text-slate-400">Loading…</span> : null}
                 {error ? <span className="text-xs text-amber-300">{error}</span> : null}
                 <div className="ml-auto flex items-center gap-2">
@@ -75,7 +75,7 @@ export function PosBoard() {
                         rowKey={(row, idx) => `${row.store}-${row.channel}-${idx}`}
                     />
                 ) : (
-                    <div className="rounded-2xl border border-white/10 bg-white/5 p-4 text-sm text-slate-300">{session ? "No orders yet." : "Sign in to load POS."}</div>
+                    <div className="rounded-2xl border border-white/10 bg-white/5 p-4 text-sm text-slate-300">{session ? "No orders yet." : "Sign in to load point of sale data."}</div>
                 )}
             </Card>
 
@@ -93,7 +93,7 @@ export function PosBoard() {
                 ) : null}
             </Card>
 
-            <Card eyebrow="Create" title="Add ticket" actions={<Badge accent="#f472b6">POST /pos/tickets</Badge>}>
+            <Card eyebrow="Create" title="Add ticket" actions={<Badge accent="#f472b6">POST /point-of-sale/tickets</Badge>}>
                 <div className="flex flex-col gap-2 sm:flex-row sm:items-end">
                     <input
                         className="w-full rounded-lg border border-white/10 bg-slate-900/80 p-2 text-sm text-slate-100 focus:border-emerald-300/60 focus:outline-none"
@@ -117,7 +117,7 @@ export function PosBoard() {
                         Create ticket
                     </Button>
                 </div>
-                <div className="text-xs text-slate-300">{posTicketStatus || (!session ? "Sign in to create tickets." : "Adds POS ticket records.")}</div>
+                <div className="text-xs text-slate-300">{posTicketStatus || (!session ? "Sign in to create tickets." : "Adds point-of-sale ticket records.")}</div>
             </Card>
         </div>
     );

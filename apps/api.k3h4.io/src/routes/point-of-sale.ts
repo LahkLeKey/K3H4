@@ -10,11 +10,11 @@ import {type RecordTelemetryFn} from './types';
 const serializeMoney = (value: Prisma.Decimal|null|undefined) =>
     value ? value.toFixed(2) : '0.00';
 
-export function registerPosRoutes(
+export function registerPointOfSaleRoutes(
     server: FastifyInstance, prisma: PrismaClient,
     recordTelemetry: RecordTelemetryFn) {
   server.get(
-      '/pos/overview',
+      '/point-of-sale/overview',
       {preHandler: [server.authenticate]},
       async (request) => {
         const userId = (request.user as {sub: string}).sub;
@@ -81,7 +81,7 @@ export function registerPosRoutes(
 
         await recordTelemetry(request, {
           ...buildTelemetryBase(request),
-          eventType: 'pos.overview.fetch',
+          eventType: 'point-of-sale.overview.fetch',
           source: 'api',
           payload: {gross, ticketCount, storeCount: stores.length},
         });
@@ -116,9 +116,8 @@ export function registerPosRoutes(
         };
       },
   );
-
   server.post(
-      '/pos/tickets',
+      '/point-of-sale/tickets',
       {preHandler: [server.authenticate]},
       async (request, reply) => {
         const userId = (request.user as {sub: string}).sub;
@@ -208,9 +207,9 @@ export function registerPosRoutes(
               direction: EntityDirection.CREDIT,
               kind: EntityKind.DEPOSIT,
               balanceAfter: nextBalance,
-              targetType: 'pos_ticket',
+              targetType: 'point-of-sale_ticket',
               targetId: createdTicket.id,
-              name: `POS ticket ${createdTicket.id}`,
+              name: `Point of Sale ticket ${createdTicket.id}`,
               metadata: {storeId: finalStoreId, channel, status: ticketStatus},
               note: ticketNote,
             });
@@ -220,7 +219,7 @@ export function registerPosRoutes(
 
           await recordTelemetry(request, {
             ...buildTelemetryBase(request),
-            eventType: 'pos.ticket.create',
+            eventType: 'point-of-sale.ticket.create',
             source: 'api',
             payload: {
               channel,
@@ -231,7 +230,7 @@ export function registerPosRoutes(
 
           return {ticket};
         } catch (err) {
-          request.log.error({err}, 'pos ticket creation failed');
+          request.log.error({err}, 'point of sale ticket creation failed');
           return reply.status(400).send({
             error: err instanceof Error ? err.message :
                                           'Unable to create ticket'
@@ -241,7 +240,7 @@ export function registerPosRoutes(
   );
 
   server.post(
-      '/pos/stores',
+      '/point-of-sale/stores',
       {preHandler: [server.authenticate]},
       async (request) => {
         const userId = (request.user as {sub: string}).sub;
@@ -254,7 +253,7 @@ export function registerPosRoutes(
         });
         await recordTelemetry(request, {
           ...buildTelemetryBase(request),
-          eventType: 'pos.store.create',
+          eventType: 'point-of-sale.store.create',
           source: 'api',
           payload: {name: store.name, channel: store.channel},
         });
