@@ -58,11 +58,11 @@ enum EntityKind {
   ARCADE_TOPUP            @map("arcade_topup")
   ARCADE_SESSION          @map("arcade_session")
   ARCADE_PRIZE_REDEMPTION @map("arcade_prize_redemption")
-  USDA_REGION            @map("usda-region")
-  USDA_COUNTRY           @map("usda-country")
-  USDA_COMMODITY         @map("usda-commodity")
-  USDA_UNIT              @map("usda-unit")
-  USDA_ATTRIBUTE         @map("usda-attribute")
+  USDA_REGION             @map("usda-region")
+  USDA_COUNTRY            @map("usda-country")
+  USDA_COMMODITY          @map("usda-commodity")
+  USDA_UNIT               @map("usda-unit")
+  USDA_ATTRIBUTE          @map("usda-attribute")
 }
 
 enum EngagementPriority {
@@ -1087,7 +1087,6 @@ model CulinarySupplierNeed {
   @@index([userId, status])
 }
 
-// USDA reference data now lives inside Actor/Entity records; cache entries stay generic.
 model ApiCacheEntry {
   id         String    @id @default(cuid())
   provider   String
@@ -1105,7 +1104,6 @@ model ApiCacheEntry {
   @@index([provider, scope, endpoint])
 }
 
-// Wikidata REST API cache entries
 model WikidataCacheEntry {
   id                  String    @id @default(cuid())
   resource            String
@@ -1126,7 +1124,6 @@ model WikidataCacheEntry {
   @@index([resource, fetchedAt])
 }
 
-// Prevents repeated enrichment calls against Wikidata for the same source entity
 model EnrichmentCache {
   id         String    @id @default(cuid())
   provider   String    @default("wikidata")
