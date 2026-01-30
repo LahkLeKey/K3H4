@@ -7,13 +7,6 @@ import { DateTimeFieldUpdateOperationsInputObjectSchema as DateTimeFieldUpdateOp
 import { RefreshTokenUpdateManyWithoutUserNestedInputObjectSchema as RefreshTokenUpdateManyWithoutUserNestedInputObjectSchema } from './RefreshTokenUpdateManyWithoutUserNestedInput.schema';
 import { UserPreferenceUpdateOneWithoutUserNestedInputObjectSchema as UserPreferenceUpdateOneWithoutUserNestedInputObjectSchema } from './UserPreferenceUpdateOneWithoutUserNestedInput.schema';
 import { TelemetryEventUpdateManyWithoutUserNestedInputObjectSchema as TelemetryEventUpdateManyWithoutUserNestedInputObjectSchema } from './TelemetryEventUpdateManyWithoutUserNestedInput.schema';
-import { PersonaUpdateManyWithoutUserNestedInputObjectSchema as PersonaUpdateManyWithoutUserNestedInputObjectSchema } from './PersonaUpdateManyWithoutUserNestedInput.schema';
-import { AssignmentUpdateManyWithoutUserNestedInputObjectSchema as AssignmentUpdateManyWithoutUserNestedInputObjectSchema } from './AssignmentUpdateManyWithoutUserNestedInput.schema';
-import { StaffingEngagementUpdateManyWithoutUserNestedInputObjectSchema as StaffingEngagementUpdateManyWithoutUserNestedInputObjectSchema } from './StaffingEngagementUpdateManyWithoutUserNestedInput.schema';
-import { StaffingRoleUpdateManyWithoutUserNestedInputObjectSchema as StaffingRoleUpdateManyWithoutUserNestedInputObjectSchema } from './StaffingRoleUpdateManyWithoutUserNestedInput.schema';
-import { StaffingCandidateUpdateManyWithoutUserNestedInputObjectSchema as StaffingCandidateUpdateManyWithoutUserNestedInputObjectSchema } from './StaffingCandidateUpdateManyWithoutUserNestedInput.schema';
-import { StaffingShiftUpdateManyWithoutUserNestedInputObjectSchema as StaffingShiftUpdateManyWithoutUserNestedInputObjectSchema } from './StaffingShiftUpdateManyWithoutUserNestedInput.schema';
-import { StaffingPlacementUpdateManyWithoutUserNestedInputObjectSchema as StaffingPlacementUpdateManyWithoutUserNestedInputObjectSchema } from './StaffingPlacementUpdateManyWithoutUserNestedInput.schema';
 import { FreightLoadUpdateManyWithoutUserNestedInputObjectSchema as FreightLoadUpdateManyWithoutUserNestedInputObjectSchema } from './FreightLoadUpdateManyWithoutUserNestedInput.schema';
 import { PosStoreUpdateManyWithoutUserNestedInputObjectSchema as PosStoreUpdateManyWithoutUserNestedInputObjectSchema } from './PosStoreUpdateManyWithoutUserNestedInput.schema';
 import { PosTicketUpdateManyWithoutUserNestedInputObjectSchema as PosTicketUpdateManyWithoutUserNestedInputObjectSchema } from './PosTicketUpdateManyWithoutUserNestedInput.schema';
@@ -30,8 +23,6 @@ import { MaptilerCacheEntryUpdateManyWithoutUserNestedInputObjectSchema as Mapti
 import { OsrmCacheEntryUpdateManyWithoutUserNestedInputObjectSchema as OsrmCacheEntryUpdateManyWithoutUserNestedInputObjectSchema } from './OsrmCacheEntryUpdateManyWithoutUserNestedInput.schema';
 import { GeoStatusLogUpdateManyWithoutUserNestedInputObjectSchema as GeoStatusLogUpdateManyWithoutUserNestedInputObjectSchema } from './GeoStatusLogUpdateManyWithoutUserNestedInput.schema';
 import { GeoDemTileCacheUpdateManyWithoutUserNestedInputObjectSchema as GeoDemTileCacheUpdateManyWithoutUserNestedInputObjectSchema } from './GeoDemTileCacheUpdateManyWithoutUserNestedInput.schema';
-import { PersonaAttributeUpdateManyWithoutUserNestedInputObjectSchema as PersonaAttributeUpdateManyWithoutUserNestedInputObjectSchema } from './PersonaAttributeUpdateManyWithoutUserNestedInput.schema';
-import { PersonaCompatibilityUpdateManyWithoutUserNestedInputObjectSchema as PersonaCompatibilityUpdateManyWithoutUserNestedInputObjectSchema } from './PersonaCompatibilityUpdateManyWithoutUserNestedInput.schema';
 import { GeoViewHistoryUpdateManyWithoutUserNestedInputObjectSchema as GeoViewHistoryUpdateManyWithoutUserNestedInputObjectSchema } from './GeoViewHistoryUpdateManyWithoutUserNestedInput.schema';
 import { ChatSessionUpdateManyWithoutUserNestedInputObjectSchema as ChatSessionUpdateManyWithoutUserNestedInputObjectSchema } from './ChatSessionUpdateManyWithoutUserNestedInput.schema';
 import { OllamaOperationUpdateManyWithoutUserNestedInputObjectSchema as OllamaOperationUpdateManyWithoutUserNestedInputObjectSchema } from './OllamaOperationUpdateManyWithoutUserNestedInput.schema';
@@ -58,13 +49,6 @@ const makeSchema = () => z.object({
   refreshTokens: z.lazy(() => RefreshTokenUpdateManyWithoutUserNestedInputObjectSchema).optional(),
   preference: z.lazy(() => UserPreferenceUpdateOneWithoutUserNestedInputObjectSchema).optional(),
   telemetry: z.lazy(() => TelemetryEventUpdateManyWithoutUserNestedInputObjectSchema).optional(),
-  personas: z.lazy(() => PersonaUpdateManyWithoutUserNestedInputObjectSchema).optional(),
-  assignments: z.lazy(() => AssignmentUpdateManyWithoutUserNestedInputObjectSchema).optional(),
-  staffingEngagements: z.lazy(() => StaffingEngagementUpdateManyWithoutUserNestedInputObjectSchema).optional(),
-  staffingRoles: z.lazy(() => StaffingRoleUpdateManyWithoutUserNestedInputObjectSchema).optional(),
-  staffingCandidates: z.lazy(() => StaffingCandidateUpdateManyWithoutUserNestedInputObjectSchema).optional(),
-  staffingShifts: z.lazy(() => StaffingShiftUpdateManyWithoutUserNestedInputObjectSchema).optional(),
-  staffingPlacements: z.lazy(() => StaffingPlacementUpdateManyWithoutUserNestedInputObjectSchema).optional(),
   freightLoads: z.lazy(() => FreightLoadUpdateManyWithoutUserNestedInputObjectSchema).optional(),
   posStores: z.lazy(() => PosStoreUpdateManyWithoutUserNestedInputObjectSchema).optional(),
   posTickets: z.lazy(() => PosTicketUpdateManyWithoutUserNestedInputObjectSchema).optional(),
@@ -81,8 +65,6 @@ const makeSchema = () => z.object({
   osrmCacheEntries: z.lazy(() => OsrmCacheEntryUpdateManyWithoutUserNestedInputObjectSchema).optional(),
   geoStatusLogs: z.lazy(() => GeoStatusLogUpdateManyWithoutUserNestedInputObjectSchema).optional(),
   geoDemTileCaches: z.lazy(() => GeoDemTileCacheUpdateManyWithoutUserNestedInputObjectSchema).optional(),
-  personaAttributes: z.lazy(() => PersonaAttributeUpdateManyWithoutUserNestedInputObjectSchema).optional(),
-  personaCompatibilities: z.lazy(() => PersonaCompatibilityUpdateManyWithoutUserNestedInputObjectSchema).optional(),
   geoViewHistories: z.lazy(() => GeoViewHistoryUpdateManyWithoutUserNestedInputObjectSchema).optional(),
   chatSessions: z.lazy(() => ChatSessionUpdateManyWithoutUserNestedInputObjectSchema).optional(),
   ollamaOperations: z.lazy(() => OllamaOperationUpdateManyWithoutUserNestedInputObjectSchema).optional(),

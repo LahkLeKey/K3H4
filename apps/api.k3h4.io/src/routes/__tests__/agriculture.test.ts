@@ -1,4 +1,4 @@
-import {Prisma} from '@prisma/client';
+import {EntityKind} from '@prisma/client';
 import Fastify from 'fastify';
 import {beforeEach, describe, expect, it, vi} from 'vitest';
 
@@ -18,15 +18,22 @@ function buildServer(mocks: any) {
 }
 
 describe('Agriculture routes', () => {
-  beforeEach(() => recordTelemetry.mockClear());
+  beforeEach(() => {
+    recordTelemetry.mockClear();
+  });
 
   it('returns overview', async () => {
+    const entity = {
+      count: vi.fn().mockResolvedValue(0),
+      findMany: vi.fn().mockResolvedValue([]),
+    };
+    const actor = {
+      findFirst: vi.fn().mockResolvedValue({id: 'actor-1'}),
+      create: vi.fn(),
+    };
     const prisma = {
-      agriculturePlot: {findMany: vi.fn().mockResolvedValue([])},
-      agricultureTask: {findMany: vi.fn().mockResolvedValue([])},
-      agricultureShipment: {findMany: vi.fn().mockResolvedValue([])},
-      agricultureSlot: {count: vi.fn().mockResolvedValue(0)},
-      agricultureInventory: {groupBy: vi.fn().mockResolvedValue([])},
+      entity,
+      actor,
     };
     const server = buildServer(prisma);
     const res =
@@ -38,72 +45,53 @@ describe('Agriculture routes', () => {
             expect.objectContaining({eventType: 'agriculture.overview.fetch'}));
   });
 
-  it('creates plot, task, and shipment', async () => {
+  it('creates a plot and reuses an unlocked slot', async () => {
+    const actor = {
+      findFirst: vi.fn().mockResolvedValue(null),
+      create: vi.fn().mockResolvedValue({id: 'actor-1', userId}),
+    };
     const createdPlot = {
-      id: 'p1',
-      name: 'North',
-      fieldCode: 'N1',
-      crop: 'Corn',
-      stage: 'planned',
-      acres: new Prisma.Decimal('10'),
-      health: 'good',
-      soilType: 'loam',
-      irrigationZone: 'zone-1',
-      notes: 'notes',
-      lastConditionAt: new Date(),
-      conditions: [],
-      cropPlans: [],
-      slots: [],
+      id: 'plot-1',
+      actorId: 'actor-1',
+      metadata: {name: 'North', crop: 'Corn'},
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+    const openSlot = {
+      id: 'slot-1',
+      actorId: 'actor-1',
+      metadata: {slotIndex: 0},
+      targetId: null,
+      createdAt: new Date(),
+      kind: EntityKind.AGRICULTURE_SLOT,
     };
     const txMock = {
-      agriculturePlot: {create: vi.fn().mockResolvedValue(createdPlot)},
-      agricultureSlot: {
-        findFirst: vi.fn().mockResolvedValue(null),
-        update: vi.fn().mockResolvedValue({}),
+      entity: {
+        create: vi.fn().mockResolvedValue(createdPlot),
+        findMany: vi.fn().mockResolvedValue([openSlot]),
+        update: vi.fn().mockResolvedValue({
+          ...openSlot,
+          targetId: createdPlot.id,
+        }),
       },
-    } as any;
+    };
     const prisma = {
-      agricultureTask: {create: vi.fn().mockResolvedValue({id: 't1'})},
-      agricultureShipment: {create: vi.fn().mockResolvedValue({id: 's1'})},
-      agriculturePlot: {create: vi.fn().mockResolvedValue(createdPlot)},
-      agricultureSlot: {
-        findFirst: txMock.agricultureSlot.findFirst,
-        update: txMock.agricultureSlot.update,
-      },
-      $transaction: vi.fn(async (cb) => cb(txMock)),
+      actor,
+      entity: {count: vi.fn(), findMany: vi.fn()},
+      $transaction: vi.fn(
+          async (cb: (tx: typeof txMock) => Promise<unknown>) => cb(txMock)),
     };
     const server = buildServer(prisma);
-
-    const plotRes = await server.inject({
+    const res = await server.inject({
       method: 'POST',
       url: '/agriculture/plots',
-      payload: {name: 'North', crop: 'Corn', acres: 10}
+      payload: {name: 'North', crop: 'Corn', acres: 10},
     });
-    expect(plotRes.statusCode).toBe(200);
-
-    const taskRes = await server.inject({
-      method: 'POST',
-      url: '/agriculture/tasks',
-      payload: {
-        title: 'Irrigate',
-        assignee: 'Alex',
-        dueDate: '2025-01-01',
-        status: 'done'
-      }
-    });
-    expect(taskRes.statusCode).toBe(200);
-
-    const shipRes = await server.inject({
-      method: 'POST',
-      url: '/agriculture/shipments',
-      payload: {
-        lot: 'LOT1',
-        destination: 'CHI',
-        mode: 'Truck',
-        eta: '2025-01-02',
-        freightLoadId: 'f1'
-      }
-    });
-    expect(shipRes.statusCode).toBe(200);
+    expect(res.statusCode).toBe(200);
+    expect(txMock.entity.update).toHaveBeenCalled();
+    expect(recordTelemetry)
+        .toHaveBeenCalledWith(
+            expect.anything(),
+            expect.objectContaining({eventType: 'agriculture.plot.create'}));
   });
 });

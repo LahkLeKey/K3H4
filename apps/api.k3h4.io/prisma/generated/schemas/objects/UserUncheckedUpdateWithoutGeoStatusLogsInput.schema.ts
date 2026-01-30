@@ -7,13 +7,6 @@ import { DateTimeFieldUpdateOperationsInputObjectSchema as DateTimeFieldUpdateOp
 import { RefreshTokenUncheckedUpdateManyWithoutUserNestedInputObjectSchema as RefreshTokenUncheckedUpdateManyWithoutUserNestedInputObjectSchema } from './RefreshTokenUncheckedUpdateManyWithoutUserNestedInput.schema';
 import { UserPreferenceUncheckedUpdateOneWithoutUserNestedInputObjectSchema as UserPreferenceUncheckedUpdateOneWithoutUserNestedInputObjectSchema } from './UserPreferenceUncheckedUpdateOneWithoutUserNestedInput.schema';
 import { TelemetryEventUncheckedUpdateManyWithoutUserNestedInputObjectSchema as TelemetryEventUncheckedUpdateManyWithoutUserNestedInputObjectSchema } from './TelemetryEventUncheckedUpdateManyWithoutUserNestedInput.schema';
-import { PersonaUncheckedUpdateManyWithoutUserNestedInputObjectSchema as PersonaUncheckedUpdateManyWithoutUserNestedInputObjectSchema } from './PersonaUncheckedUpdateManyWithoutUserNestedInput.schema';
-import { AssignmentUncheckedUpdateManyWithoutUserNestedInputObjectSchema as AssignmentUncheckedUpdateManyWithoutUserNestedInputObjectSchema } from './AssignmentUncheckedUpdateManyWithoutUserNestedInput.schema';
-import { StaffingEngagementUncheckedUpdateManyWithoutUserNestedInputObjectSchema as StaffingEngagementUncheckedUpdateManyWithoutUserNestedInputObjectSchema } from './StaffingEngagementUncheckedUpdateManyWithoutUserNestedInput.schema';
-import { StaffingRoleUncheckedUpdateManyWithoutUserNestedInputObjectSchema as StaffingRoleUncheckedUpdateManyWithoutUserNestedInputObjectSchema } from './StaffingRoleUncheckedUpdateManyWithoutUserNestedInput.schema';
-import { StaffingCandidateUncheckedUpdateManyWithoutUserNestedInputObjectSchema as StaffingCandidateUncheckedUpdateManyWithoutUserNestedInputObjectSchema } from './StaffingCandidateUncheckedUpdateManyWithoutUserNestedInput.schema';
-import { StaffingShiftUncheckedUpdateManyWithoutUserNestedInputObjectSchema as StaffingShiftUncheckedUpdateManyWithoutUserNestedInputObjectSchema } from './StaffingShiftUncheckedUpdateManyWithoutUserNestedInput.schema';
-import { StaffingPlacementUncheckedUpdateManyWithoutUserNestedInputObjectSchema as StaffingPlacementUncheckedUpdateManyWithoutUserNestedInputObjectSchema } from './StaffingPlacementUncheckedUpdateManyWithoutUserNestedInput.schema';
 import { FreightLoadUncheckedUpdateManyWithoutUserNestedInputObjectSchema as FreightLoadUncheckedUpdateManyWithoutUserNestedInputObjectSchema } from './FreightLoadUncheckedUpdateManyWithoutUserNestedInput.schema';
 import { PosStoreUncheckedUpdateManyWithoutUserNestedInputObjectSchema as PosStoreUncheckedUpdateManyWithoutUserNestedInputObjectSchema } from './PosStoreUncheckedUpdateManyWithoutUserNestedInput.schema';
 import { PosTicketUncheckedUpdateManyWithoutUserNestedInputObjectSchema as PosTicketUncheckedUpdateManyWithoutUserNestedInputObjectSchema } from './PosTicketUncheckedUpdateManyWithoutUserNestedInput.schema';
@@ -29,8 +22,6 @@ import { MaptilerQueryUncheckedUpdateManyWithoutUserNestedInputObjectSchema as M
 import { MaptilerCacheEntryUncheckedUpdateManyWithoutUserNestedInputObjectSchema as MaptilerCacheEntryUncheckedUpdateManyWithoutUserNestedInputObjectSchema } from './MaptilerCacheEntryUncheckedUpdateManyWithoutUserNestedInput.schema';
 import { OsrmCacheEntryUncheckedUpdateManyWithoutUserNestedInputObjectSchema as OsrmCacheEntryUncheckedUpdateManyWithoutUserNestedInputObjectSchema } from './OsrmCacheEntryUncheckedUpdateManyWithoutUserNestedInput.schema';
 import { GeoDemTileCacheUncheckedUpdateManyWithoutUserNestedInputObjectSchema as GeoDemTileCacheUncheckedUpdateManyWithoutUserNestedInputObjectSchema } from './GeoDemTileCacheUncheckedUpdateManyWithoutUserNestedInput.schema';
-import { PersonaAttributeUncheckedUpdateManyWithoutUserNestedInputObjectSchema as PersonaAttributeUncheckedUpdateManyWithoutUserNestedInputObjectSchema } from './PersonaAttributeUncheckedUpdateManyWithoutUserNestedInput.schema';
-import { PersonaCompatibilityUncheckedUpdateManyWithoutUserNestedInputObjectSchema as PersonaCompatibilityUncheckedUpdateManyWithoutUserNestedInputObjectSchema } from './PersonaCompatibilityUncheckedUpdateManyWithoutUserNestedInput.schema';
 import { GeoViewHistoryUncheckedUpdateManyWithoutUserNestedInputObjectSchema as GeoViewHistoryUncheckedUpdateManyWithoutUserNestedInputObjectSchema } from './GeoViewHistoryUncheckedUpdateManyWithoutUserNestedInput.schema';
 import { ChatSessionUncheckedUpdateManyWithoutUserNestedInputObjectSchema as ChatSessionUncheckedUpdateManyWithoutUserNestedInputObjectSchema } from './ChatSessionUncheckedUpdateManyWithoutUserNestedInput.schema';
 import { AiInsightUncheckedUpdateManyWithoutUserNestedInputObjectSchema as AiInsightUncheckedUpdateManyWithoutUserNestedInputObjectSchema } from './AiInsightUncheckedUpdateManyWithoutUserNestedInput.schema';
@@ -58,13 +49,6 @@ const makeSchema = () => z.object({
   refreshTokens: z.lazy(() => RefreshTokenUncheckedUpdateManyWithoutUserNestedInputObjectSchema).optional(),
   preference: z.lazy(() => UserPreferenceUncheckedUpdateOneWithoutUserNestedInputObjectSchema).optional(),
   telemetry: z.lazy(() => TelemetryEventUncheckedUpdateManyWithoutUserNestedInputObjectSchema).optional(),
-  personas: z.lazy(() => PersonaUncheckedUpdateManyWithoutUserNestedInputObjectSchema).optional(),
-  assignments: z.lazy(() => AssignmentUncheckedUpdateManyWithoutUserNestedInputObjectSchema).optional(),
-  staffingEngagements: z.lazy(() => StaffingEngagementUncheckedUpdateManyWithoutUserNestedInputObjectSchema).optional(),
-  staffingRoles: z.lazy(() => StaffingRoleUncheckedUpdateManyWithoutUserNestedInputObjectSchema).optional(),
-  staffingCandidates: z.lazy(() => StaffingCandidateUncheckedUpdateManyWithoutUserNestedInputObjectSchema).optional(),
-  staffingShifts: z.lazy(() => StaffingShiftUncheckedUpdateManyWithoutUserNestedInputObjectSchema).optional(),
-  staffingPlacements: z.lazy(() => StaffingPlacementUncheckedUpdateManyWithoutUserNestedInputObjectSchema).optional(),
   freightLoads: z.lazy(() => FreightLoadUncheckedUpdateManyWithoutUserNestedInputObjectSchema).optional(),
   posStores: z.lazy(() => PosStoreUncheckedUpdateManyWithoutUserNestedInputObjectSchema).optional(),
   posTickets: z.lazy(() => PosTicketUncheckedUpdateManyWithoutUserNestedInputObjectSchema).optional(),
@@ -80,8 +64,6 @@ const makeSchema = () => z.object({
   maptilerCacheEntries: z.lazy(() => MaptilerCacheEntryUncheckedUpdateManyWithoutUserNestedInputObjectSchema).optional(),
   osrmCacheEntries: z.lazy(() => OsrmCacheEntryUncheckedUpdateManyWithoutUserNestedInputObjectSchema).optional(),
   geoDemTileCaches: z.lazy(() => GeoDemTileCacheUncheckedUpdateManyWithoutUserNestedInputObjectSchema).optional(),
-  personaAttributes: z.lazy(() => PersonaAttributeUncheckedUpdateManyWithoutUserNestedInputObjectSchema).optional(),
-  personaCompatibilities: z.lazy(() => PersonaCompatibilityUncheckedUpdateManyWithoutUserNestedInputObjectSchema).optional(),
   geoViewHistories: z.lazy(() => GeoViewHistoryUncheckedUpdateManyWithoutUserNestedInputObjectSchema).optional(),
   chatSessions: z.lazy(() => ChatSessionUncheckedUpdateManyWithoutUserNestedInputObjectSchema).optional(),
   aiInsights: z.lazy(() => AiInsightUncheckedUpdateManyWithoutUserNestedInputObjectSchema).optional(),

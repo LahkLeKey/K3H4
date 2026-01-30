@@ -3,7 +3,9 @@ import {type FastifyInstance} from 'fastify';
 import {randomBytes} from 'node:crypto';
 import {URLSearchParams} from 'node:url';
 
+import {deleteAgricultureActorWithEntities} from '../services/agriculture-actor';
 import {deleteBankActorWithEntities} from '../services/bank-actor';
+import {deleteStaffingActorWithEntities} from '../services/staffing-actor';
 import {deleteWarehouseActorWithEntities} from '../services/warehouse-actor';
 
 import {withTelemetryBase} from './telemetry';
@@ -137,42 +139,8 @@ const runDeleteJob = async (
         action: () => deleteBankActorWithEntities(prisma, userId),
       },
       {
-        key: 'personas',
-        action: () => prisma.persona.deleteMany({where: {userId}})
-      },
-      {
-        key: 'staffingPlacements',
-        action: () => prisma.staffingPlacement.deleteMany({where: {userId}})
-      },
-      {
-        key: 'staffingShifts',
-        action: () => prisma.staffingShift.deleteMany({where: {userId}})
-      },
-      {
-        key: 'staffingCandidates',
-        action: () => prisma.staffingCandidate.deleteMany({where: {userId}})
-      },
-      {
-        key: 'staffingRoles',
-        action: () => prisma.staffingRole.deleteMany({where: {userId}})
-      },
-      {
-        key: 'staffingEngagements',
-        action: () => prisma.staffingEngagement.deleteMany({where: {userId}})
-      },
-      {
-        key: 'assignmentTimecards',
-        action: () => prisma.assignmentTimecard.deleteMany(
-            {where: {assignment: {userId}}})
-      },
-      {
-        key: 'assignmentPayouts',
-        action: () =>
-            prisma.assignmentPayout.deleteMany({where: {persona: {userId}}})
-      },
-      {
-        key: 'assignments',
-        action: () => prisma.assignment.deleteMany({where: {userId}})
+        key: 'staffingLedger',
+        action: () => deleteStaffingActorWithEntities(prisma, userId)
       },
       {
         key: 'freightLoads',
@@ -181,6 +149,10 @@ const runDeleteJob = async (
       {
         key: 'warehouseItems',
         action: () => deleteWarehouseActorWithEntities(prisma, userId)
+      },
+      {
+        key: 'agriculture',
+        action: () => deleteAgricultureActorWithEntities(prisma, userId)
       },
       {
         key: 'posLineItems',
@@ -193,18 +165,6 @@ const runDeleteJob = async (
       {
         key: 'posStores',
         action: () => prisma.posStore.deleteMany({where: {userId}})
-      },
-      {
-        key: 'agricultureShipments',
-        action: () => prisma.agricultureShipment.deleteMany({where: {userId}})
-      },
-      {
-        key: 'agricultureTasks',
-        action: () => prisma.agricultureTask.deleteMany({where: {userId}})
-      },
-      {
-        key: 'agriculturePlots',
-        action: () => prisma.agriculturePlot.deleteMany({where: {userId}})
       },
       {
         key: 'culinaryPrepTasks',
