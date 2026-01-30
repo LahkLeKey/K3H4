@@ -45,6 +45,9 @@ enum ActorType {
   AGRICULTURE_FARM             @map("agriculture-farm")
   AGRICULTURE_RESOURCE_LIBRARY @map("agriculture-resource-library")
   WAREHOUSE                    @map("warehouse")
+  PERSONA                      @map("persona")
+  STAFFING                     @map("staffing")
+  ASSIGNMENT                   @map("assignment")
 }
 
 enum EntityDirection {
@@ -77,6 +80,17 @@ enum EntityKind {
   AGRICULTURE_RESOURCE_CATEGORY  @map("agriculture_resource_category")
   AGRICULTURE_RESOURCE           @map("agriculture_resource")
   WAREHOUSE_ITEM                 @map("warehouse_item")
+  PERSONA                        @map("persona")
+  PERSONA_ATTRIBUTE              @map("persona_attribute")
+  PERSONA_COMPATIBILITY          @map("persona_compatibility")
+  STAFFING_ENGAGEMENT            @map("staffing_engagement")
+  STAFFING_ROLE                  @map("staffing_role")
+  STAFFING_CANDIDATE             @map("staffing_candidate")
+  STAFFING_SHIFT                 @map("staffing_shift")
+  STAFFING_PLACEMENT             @map("staffing_placement")
+  ASSIGNMENT                     @map("assignment")
+  ASSIGNMENT_TIMECARD            @map("assignment_timecard")
+  ASSIGNMENT_PAYOUT              @map("assignment_payout")
 }
 
 enum EngagementPriority {

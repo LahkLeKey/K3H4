@@ -3,10 +3,28 @@ import Fastify from 'fastify';
 import {beforeEach, describe, expect, it, vi} from 'vitest';
 
 import {registerAssignmentRoutes} from '../assignment';
+import * as personaLedger from '../services/persona-ledger';
+import type {PersonaRecord} from '../services/persona-ledger';
 import {type RecordTelemetryFn} from '../types';
 
 const recordTelemetry = vi.fn() as unknown as RecordTelemetryFn;
 const userId = 'user-1';
+const personaActor = {
+  id: 'actor-1',
+  userId,
+  type: 'persona'
+};
+const personaRecord: PersonaRecord = {
+  id: 'p1',
+  alias: 'Alias',
+  account: 'alias@test.com',
+  handle: '@alias',
+  note: null,
+  tags: [],
+  attributes: [],
+  createdAt: new Date(),
+  updatedAt: new Date(),
+};
 
 function buildServer(prisma: any) {
   const server = Fastify();
@@ -20,9 +38,22 @@ function buildServer(prisma: any) {
 describe('assignment routes', () => {
   beforeEach(() => {
     recordTelemetry.mockClear();
+    vi.restoreAllMocks();
+    vi.spyOn(personaLedger, 'ensurePersonaActor')
+        .mockResolvedValue(personaActor as any);
+    vi.spyOn(personaLedger, 'personaRecordToResponse')
+        .mockImplementation(
+            (persona) => ({id: persona.id, alias: persona.alias}));
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
   });
 
   it('lists assignments', async () => {
+    const loadMapSpy =
+        vi.spyOn(personaLedger, 'loadPersonaMap')
+            .mockResolvedValue(new Map([[personaRecord.id, personaRecord]]));
     const prisma = {
       assignment: {
         findMany: vi.fn().mockResolvedValue([
@@ -30,8 +61,7 @@ describe('assignment routes', () => {
             id: 'a1',
             title: 'Gig',
             hourlyRate: new Prisma.Decimal('100'),
-            persona:
-                {id: 'p1', alias: 'A', account: 'a@test.com', handle: '@a'},
+            personaId: personaRecord.id,
             timecards: [],
             payouts: [],
             createdAt: new Date(),
@@ -42,6 +72,11 @@ describe('assignment routes', () => {
     const server = buildServer(prisma);
     const res = await server.inject({method: 'GET', url: '/assignments'});
     expect(res.statusCode).toBe(200);
+    expect(loadMapSpy).toHaveBeenCalled();
+    expect(res.json().assignments[0].persona).toEqual({
+      id: personaRecord.id,
+      alias: personaRecord.alias,
+    });
     expect(recordTelemetry)
         .toHaveBeenCalledWith(
             expect.anything(),
@@ -49,14 +84,14 @@ describe('assignment routes', () => {
   });
 
   it('creates an assignment', async () => {
+    const loadRecordSpy = vi.spyOn(personaLedger, 'loadPersonaRecordById')
+                              .mockResolvedValue(personaRecord);
     const prisma = {
-      persona: {findFirst: vi.fn().mockResolvedValue({id: 'p1'})},
       assignment: {
         create: vi.fn().mockResolvedValue({
           id: 'a2',
           title: 'New Gig',
           hourlyRate: new Prisma.Decimal('50'),
-          persona: {id: 'p1', alias: 'A', account: 'a@test.com', handle: '@a'},
           timecards: [],
           payouts: [],
         }),
@@ -73,6 +108,7 @@ describe('assignment routes', () => {
     });
     expect(res.statusCode).toBe(200);
     expect(prisma.assignment.create).toHaveBeenCalled();
+    expect(loadRecordSpy).toHaveBeenCalledWith(prisma, personaActor.id, 'p1');
     expect(recordTelemetry)
         .toHaveBeenCalledWith(
             expect.anything(),

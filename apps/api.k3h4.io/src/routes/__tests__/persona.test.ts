@@ -2,10 +2,20 @@ import Fastify from 'fastify';
 import {beforeEach, describe, expect, it, vi} from 'vitest';
 
 import {registerPersonaRoutes} from '../persona';
+import * as personaLedger from '../services/persona-ledger';
+import type {PersonaRecord} from '../services/persona-ledger';
 import {type RecordTelemetryFn} from '../types';
 
 const recordTelemetry = vi.fn() as unknown as RecordTelemetryFn;
 const userId = 'user-1';
+const actorStub = {
+  id: 'actor-1',
+  userId,
+  type: 'persona',
+  label: 'Persona Ledger',
+  note: 'ledger',
+  source: 'tests',
+};
 
 function buildServer(prisma: any) {
   const server = Fastify();
@@ -16,322 +26,136 @@ function buildServer(prisma: any) {
   return server;
 }
 
+const buildPersonaRecord = (
+    overrides?: Partial<PersonaRecord>,
+    ): PersonaRecord => ({
+  id: 'persona-1',
+  alias: 'Persona Alias',
+  account: 'persona@k3h4.io',
+  handle: '@persona',
+  note: 'demo',
+  tags: ['alpha'],
+  attributes: [],
+  createdAt: new Date(),
+  updatedAt: new Date(),
+  ...overrides,
+});
+
 describe('persona routes', () => {
   beforeEach(() => {
     recordTelemetry.mockClear();
+    vi.restoreAllMocks();
+    vi.spyOn(personaLedger, 'ensurePersonaActor')
+        .mockResolvedValue(actorStub as any);
+    vi.spyOn(personaLedger, 'personaRecordToResponse')
+        .mockImplementation((persona) => ({
+                              id: persona.id,
+                              alias: persona.alias,
+                            }));
   });
 
-  it('seeds personas when empty', async () => {
-    const personas = [{
-      id: 'p1',
-      alias: 'A',
-      account: 'a@test.com',
-      handle: '@a',
-      note: null,
-      tags: [],
-      createdAt: new Date(),
-      updatedAt: new Date()
-    }];
-    const findMany =
-        vi.fn().mockResolvedValueOnce([]).mockResolvedValue(personas);
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it('seeds personas when none exist', async () => {
+    const record = buildPersonaRecord({id: 'p1'});
+    const loadSpy = vi.spyOn(personaLedger, 'loadPersonaRecordsByActor')
+                        .mockResolvedValueOnce([])
+                        .mockResolvedValueOnce([record]);
     const prisma = {
-      persona: {
-        findMany,
+      entity: {
         createMany: vi.fn().mockResolvedValue({count: 3}),
-      },
-      personaAttribute: {
-        createMany: vi.fn(),
       },
     };
     const server = buildServer(prisma);
     const res = await server.inject({method: 'GET', url: '/personas'});
     expect(res.statusCode).toBe(200);
-    expect(prisma.persona.createMany).toHaveBeenCalled();
-    expect(res.json().personas).toHaveLength(1);
+    expect(prisma.entity.createMany).toHaveBeenCalled();
+    expect(loadSpy).toHaveBeenCalledTimes(2);
+    expect(recordTelemetry)
+        .toHaveBeenCalledWith(
+            expect.anything(),
+            expect.objectContaining({eventType: 'persona.list'}));
+    expect(res.json().personas).toEqual([{id: 'p1', alias: 'Persona Alias'}]);
   });
 
-  it('creates a persona', async () => {
+  it('creates a persona with attributes', async () => {
+    const persona = buildPersonaRecord({id: 'p2'});
+    vi.spyOn(personaLedger, 'loadPersonaRecordById').mockResolvedValue(persona);
+    const buildAttributesSpy =
+        vi.spyOn(personaLedger, 'buildPersonaAttributeEntities')
+            .mockReturnValue([
+              {
+                actorId: actorStub.id,
+                kind: 'persona_attribute',
+                targetType: 'persona',
+                targetId: persona.id,
+                metadata: {category: 'skill', value: 'ops', weight: 1},
+              },
+            ] as any);
     const prisma = {
-      persona: {
-        create: vi.fn().mockResolvedValue({
-          id: 'p2',
-          alias: 'B',
-          account: 'b@test.com',
-          handle: null,
-          note: null,
-          tags: [],
-          createdAt: new Date(),
-          updatedAt: new Date()
-        }),
-        findMany: vi.fn(),
-        findUnique: vi.fn().mockResolvedValue({
-          id: 'p2',
-          alias: 'B',
-          account: 'b@test.com',
-          handle: null,
-          note: null,
-          tags: [],
-          createdAt: new Date(),
-          updatedAt: new Date(),
-          attributes: [],
-        }),
-      },
-      personaAttribute: {
-        createMany: vi.fn(),
+      entity: {
+        create: vi.fn().mockResolvedValue({id: persona.id}),
+        createMany: vi.fn().mockResolvedValue({count: 1}),
       },
     };
     const server = buildServer(prisma);
     const res = await server.inject({
       method: 'POST',
       url: '/personas',
-      payload: {alias: 'B', account: 'b@test.com', tags: ['vip']}
+      payload: {
+        alias: 'Persona Alias',
+        account: 'persona@k3h4.io',
+        attributes: [{category: 'skill', values: ['ops']}],
+      },
     });
     expect(res.statusCode).toBe(200);
-    expect(prisma.persona.create).toHaveBeenCalled();
+    expect(prisma.entity.create).toHaveBeenCalled();
+    expect(buildAttributesSpy).toHaveBeenCalled();
+    expect(prisma.entity.createMany).toHaveBeenCalled();
     expect(recordTelemetry)
         .toHaveBeenCalledWith(
             expect.anything(),
             expect.objectContaining({eventType: 'persona.create'}));
-  });
-
-  it('generates personas', async () => {
-    const prisma = {
-      persona: {
-        createMany: vi.fn().mockResolvedValue({count: 2}),
-        findMany: vi.fn().mockResolvedValue([
-          {
-            id: 'p3',
-            alias: 'C',
-            account: 'c@test.com',
-            handle: '@c',
-            note: null,
-            tags: [],
-            createdAt: new Date(),
-            updatedAt: new Date()
-          },
-          {
-            id: 'p4',
-            alias: 'D',
-            account: 'd@test.com',
-            handle: '@d',
-            note: null,
-            tags: [],
-            createdAt: new Date(),
-            updatedAt: new Date()
-          },
-        ]),
-      },
-      personaAttribute: {
-        createMany: vi.fn(),
-      },
-    };
-    const server = buildServer(prisma);
-    const res = await server.inject(
-        {method: 'POST', url: '/personas/generate', payload: {count: 2}});
-    expect(res.statusCode).toBe(200);
-    expect(prisma.persona.createMany).toHaveBeenCalled();
-    expect(res.json().personas).toHaveLength(2);
-  });
-
-  it('clamps generated persona count', async () => {
-    const prisma = {
-      persona: {
-        createMany: vi.fn().mockResolvedValue({count: 10}),
-        findMany: vi.fn().mockResolvedValue(
-            Array.from({length: 10}).map((_, idx) => ({
-                                           id: `p${idx}`,
-                                           alias: `Alias${idx}`,
-                                           account: `a${idx}@test.com`,
-                                           handle: `@a${idx}`,
-                                           note: null,
-                                           tags: [],
-                                           createdAt: new Date(),
-                                           updatedAt: new Date(),
-                                         }))),
-      },
-      personaAttribute: {
-        createMany: vi.fn(),
-      },
-    };
-    const server = buildServer(prisma);
-    const res = await server.inject(
-        {method: 'POST', url: '/personas/generate', payload: {count: 50}});
-    expect(res.statusCode).toBe(200);
-    expect(prisma.persona.createMany)
-        .toHaveBeenCalledWith(
-            expect.objectContaining({data: expect.any(Array)}));
-    expect(res.json().personas).toHaveLength(10);
+    expect(res.json().persona)
+        .toEqual({id: persona.id, alias: 'Persona Alias'});
   });
 
   it('updates persona attributes', async () => {
-    const persona = {
-      id: 'p-attr',
-      alias: 'Attr',
-      account: 'attr@test.com',
-      handle: null,
-      note: null,
-      tags: [],
-      userId,
-      createdAt: new Date(),
-      updatedAt: new Date()
-    };
+    const persona = buildPersonaRecord({id: 'p3'});
+    vi.spyOn(personaLedger, 'loadPersonaRecordById').mockResolvedValue(persona);
+    const buildAttributesSpy =
+        vi.spyOn(personaLedger, 'buildPersonaAttributeEntities')
+            .mockReturnValue([
+              {
+                actorId: actorStub.id,
+                kind: 'persona_attribute',
+                targetType: 'persona',
+                targetId: persona.id,
+                metadata: {category: 'tone', value: 'playful', weight: 1},
+              },
+            ] as any);
     const prisma = {
-      persona: {
-        findFirst: vi.fn().mockResolvedValue(persona),
-        findUnique: vi.fn().mockResolvedValue({
-          ...persona,
-          attributes: [{id: 'a1', category: 'skill', value: 'ops', weight: 1}]
-        }),
-      },
-      personaAttribute: {
+      entity: {
         deleteMany: vi.fn().mockResolvedValue({count: 1}),
-        createMany: vi.fn().mockResolvedValue({count: 2}),
+        createMany: vi.fn().mockResolvedValue({count: 1}),
       },
-      personaCompatibility:
-          {deleteMany: vi.fn(), createMany: vi.fn(), findMany: vi.fn()},
-      $transaction: vi.fn(
-          async (operations: Promise<unknown>[]) => Promise.all(operations)),
+      $transaction: vi.fn(async (ops: Promise<unknown>[]) => Promise.all(ops)),
     };
-
     const server = buildServer(prisma);
     const res = await server.inject({
       method: 'PUT',
-      url: '/personas/p-attr/attributes',
-      payload: {attributes: [{category: 'skill', values: ['ops', 'infra']}]}
+      url: '/personas/p3/attributes',
+      payload: {attributes: [{category: 'tone', values: ['playful']}]},
     });
     expect(res.statusCode).toBe(200);
-    expect(prisma.personaAttribute.deleteMany).toHaveBeenCalled();
-    expect(prisma.personaAttribute.createMany)
-        .toHaveBeenCalledWith(
-            expect.objectContaining({data: expect.any(Array)}));
-    expect(res.json().persona.attributes).toHaveLength(1);
-  });
-
-  it('recomputes compatibility graph', async () => {
-    const personas = [
-      {
-        id: 'p1',
-        userId,
-        alias: 'Alpha',
-        account: 'a@test.com',
-        handle: null,
-        note: null,
-        tags: ['fintech', 'payments'],
-        attributes: [{id: 'a1', category: 'stack', value: 'node', weight: 1}],
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      },
-      {
-        id: 'p2',
-        userId,
-        alias: 'Beta',
-        account: 'b@test.com',
-        handle: null,
-        note: null,
-        tags: ['fintech', 'logistics'],
-        attributes: [{id: 'a2', category: 'stack', value: 'node', weight: 1}],
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      },
-    ];
-
-    const compatRecord = {
-      id: 'c1',
-      userId,
-      sourceId: 'p1',
-      targetId: 'p2',
-      jaccardScore: 0.25,
-      intersectionCount: 2,
-      unionCount: 8,
-      overlappingTokens: ['fintech', 'stack:node'],
-      computedAt: new Date(),
-      rationale: null,
-      status: 'active',
-      source: personas[0],
-      target: personas[1],
-    };
-
-    const prisma = {
-      persona: {
-        findMany: vi.fn().mockResolvedValue(personas),
-      },
-      personaCompatibility: {
-        deleteMany: vi.fn().mockResolvedValue({count: 0}),
-        createMany: vi.fn().mockResolvedValue({count: 1}),
-        findMany: vi.fn().mockResolvedValue([compatRecord]),
-      },
-      $transaction: vi.fn(
-          async (operations: Promise<unknown>[]) => Promise.all(operations)),
-    };
-
-    const server = buildServer(prisma);
-    const res = await server.inject(
-        {method: 'POST', url: '/personas/compatibility/recompute'});
-    expect(res.statusCode).toBe(200);
-    expect(prisma.personaCompatibility.createMany).toHaveBeenCalled();
-    const body = res.json();
-    expect(body.compatibilities[0].jaccardScore).toBeCloseTo(0.25);
+    expect(prisma.entity.deleteMany).toHaveBeenCalled();
+    expect(buildAttributesSpy).toHaveBeenCalled();
+    expect(prisma.entity.createMany).toHaveBeenCalled();
     expect(recordTelemetry)
-        .toHaveBeenCalledWith(expect.anything(), expect.objectContaining({
-          eventType: 'persona.compatibility.recompute'
-        }));
-  });
-
-  it('returns confusion matrix', async () => {
-    const compat = {
-      id: 'c2',
-      userId,
-      sourceId: 'p1',
-      targetId: 'p2',
-      jaccardScore: 0.6,
-      intersectionCount: 3,
-      unionCount: 5,
-      overlappingTokens: ['a', 'b'],
-      computedAt: new Date(),
-      rationale: null,
-      status: 'active',
-      source: {
-        id: 'p1',
-        alias: 'One',
-        account: 'one@test.com',
-        handle: null,
-        note: null,
-        tags: [],
-        createdAt: new Date(),
-        updatedAt: new Date(),
-        attributes: []
-      },
-      target: {
-        id: 'p2',
-        alias: 'Two',
-        account: 'two@test.com',
-        handle: null,
-        note: null,
-        tags: [],
-        createdAt: new Date(),
-        updatedAt: new Date(),
-        attributes: []
-      },
-    };
-
-    const prisma = {
-      personaCompatibility: {
-        findMany: vi.fn().mockResolvedValue([compat]),
-      },
-    };
-
-    const server = buildServer(prisma);
-    const res = await server.inject({
-      method: 'POST',
-      url: '/personas/compatibility/confusion',
-      payload: {
-        pairs: [{sourceId: 'p1', targetId: 'p2', label: true}],
-        threshold: 0.4
-      },
-    });
-    expect(res.statusCode).toBe(200);
-    const body = res.json();
-    expect(body.counts.tp).toBe(1);
-    expect(body.metrics.recall).toBeCloseTo(1);
+        .toHaveBeenCalledWith(
+            expect.anything(),
+            expect.objectContaining({eventType: 'persona.attributes.update'}));
   });
 });

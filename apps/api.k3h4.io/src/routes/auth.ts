@@ -3,6 +3,7 @@ import {type FastifyInstance} from 'fastify';
 import {randomBytes} from 'node:crypto';
 import {URLSearchParams} from 'node:url';
 
+import {deleteAgricultureActorWithEntities} from '../services/agriculture-actor';
 import {deleteBankActorWithEntities} from '../services/bank-actor';
 import {deleteWarehouseActorWithEntities} from '../services/warehouse-actor';
 
@@ -183,6 +184,10 @@ const runDeleteJob = async (
         action: () => deleteWarehouseActorWithEntities(prisma, userId)
       },
       {
+        key: 'agriculture',
+        action: () => deleteAgricultureActorWithEntities(prisma, userId)
+      },
+      {
         key: 'posLineItems',
         action: () => prisma.posLineItem.deleteMany({where: {ticket: {userId}}})
       },
@@ -193,18 +198,6 @@ const runDeleteJob = async (
       {
         key: 'posStores',
         action: () => prisma.posStore.deleteMany({where: {userId}})
-      },
-      {
-        key: 'agricultureShipments',
-        action: () => prisma.agricultureShipment.deleteMany({where: {userId}})
-      },
-      {
-        key: 'agricultureTasks',
-        action: () => prisma.agricultureTask.deleteMany({where: {userId}})
-      },
-      {
-        key: 'agriculturePlots',
-        action: () => prisma.agriculturePlot.deleteMany({where: {userId}})
       },
       {
         key: 'culinaryPrepTasks',
