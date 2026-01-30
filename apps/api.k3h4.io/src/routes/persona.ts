@@ -3,7 +3,8 @@ import {Entity, EntityKind, LifecycleStatus, type Prisma, type PrismaClient} fro
 import {type FastifyInstance} from 'fastify';
 
 import {type CompatFeatureVector, runOnnxCompatibility} from '../lib/compat-onnx';
-import {buildPersonaAttributeEntities, buildPersonaMetadata, ensurePersonaActor, loadPersonaMap, loadPersonaRecordById, loadPersonaRecordsByActor, PERSONA_TARGET_TYPE, PersonaRecord, personaRecordToResponse,} from '../services/persona-ledger';
+import * as personaLedger from '../services/persona-ledger';
+import type {PersonaRecord} from '../services/persona-ledger';
 
 import {withTelemetryBase} from './telemetry';
 import {type RecordTelemetryFn} from './types';
@@ -182,8 +183,8 @@ const serializeCompatibility = (
     targetId: record.targetId,
     status: record.status,
     rationale: record.rationale ?? undefined,
-    source: personaRecordToResponse(source),
-    target: personaRecordToResponse(target),
+    source: personaLedger.personaRecordToResponse(source),
+    target: personaLedger.personaRecordToResponse(target),
   };
 };
 
@@ -287,9 +288,9 @@ const computeConfusionFromPairs = async (
   if (normalized.length === 0) {
     return {counts: emptyConfusion, details: [], missing: pairs.length};
   }
-  const actor = await ensurePersonaActor(prisma, userId);
+  const actor = await personaLedger.ensurePersonaActor(prisma, userId);
   const compatibilityRecords = await loadCompatibilityRecords(prisma, actor.id);
-  const personaMap = await loadPersonaMap(prisma, userId);
+  const personaMap = await personaLedger.loadPersonaMap(prisma, userId);
   const compatMap = new Map<string, CompatibilityRecord>();
   compatibilityRecords.forEach((record) => {
     compatMap.set(pairKey(record.sourceId, record.targetId), record);
@@ -352,12 +353,14 @@ export function registerPersonaRoutes(
       async (request, reply) => {
         const userId = (request.user as {sub: string}).sub;
         const rt = withTelemetryBase(recordTelemetry, request);
-        const actor = await ensurePersonaActor(prisma, userId);
-        let personas = await loadPersonaRecordsByActor(prisma, actor.id);
+        const actor = await personaLedger.ensurePersonaActor(prisma, userId);
+        let personas =
+            await personaLedger.loadPersonaRecordsByActor(prisma, actor.id);
         if (personas.length === 0) {
-          const seedData =
-              Array.from({length: 3})
-                  .map(() => buildPersonaMetadata(buildFakerPersona()));
+          const seedData = Array.from({length: 3})
+                               .map(
+                                   () => personaLedger.buildPersonaMetadata(
+                                       buildFakerPersona()));
           await prisma.entity.createMany({
             data: seedData.map((row) => ({
                                  actorId: actor.id,
@@ -365,24 +368,27 @@ export function registerPersonaRoutes(
                                  metadata: row,
                                })),
           });
-          personas = await loadPersonaRecordsByActor(prisma, actor.id);
+          personas =
+              await personaLedger.loadPersonaRecordsByActor(prisma, actor.id);
           const attributeSeeds = personas.flatMap(
               (persona) => buildSeedAttributes(persona.id, persona.tags));
           if (attributeSeeds.length > 0) {
             await prisma.entity.createMany({
-              data: attributeSeeds.map((entry) => ({
-                                         actorId: actor.id,
-                                         kind: EntityKind.PERSONA_ATTRIBUTE,
-                                         targetType: PERSONA_TARGET_TYPE,
-                                         targetId: entry.personaId,
-                                         metadata: {
-                                           category: entry.category,
-                                           value: entry.value,
-                                           weight: entry.weight,
-                                         },
-                                       })),
+              data: attributeSeeds.map(
+                  (entry) => ({
+                    actorId: actor.id,
+                    kind: EntityKind.PERSONA_ATTRIBUTE,
+                    targetType: personaLedger.PERSONA_TARGET_TYPE,
+                    targetId: entry.personaId,
+                    metadata: {
+                      category: entry.category,
+                      value: entry.value,
+                      weight: entry.weight,
+                    },
+                  })),
             });
-            personas = await loadPersonaRecordsByActor(prisma, actor.id);
+            personas =
+                await personaLedger.loadPersonaRecordsByActor(prisma, actor.id);
           }
           await rt({
             eventType: 'persona.seed',
@@ -395,7 +401,7 @@ export function registerPersonaRoutes(
           source: 'api',
           payload: {count: personas.length}
         });
-        return {personas: personas.map(personaRecordToResponse)};
+        return {personas: personas.map(personaLedger.personaRecordToResponse)};
       },
   );
 
@@ -420,12 +426,12 @@ export function registerPersonaRoutes(
           return reply.status(400).send(
               {error: 'alias and account are required'});
         }
-        const actor = await ensurePersonaActor(prisma, userId);
+        const actor = await personaLedger.ensurePersonaActor(prisma, userId);
         const personaEntity = await prisma.entity.create({
           data: {
             actorId: actor.id,
             kind: EntityKind.PERSONA,
-            metadata: buildPersonaMetadata({
+            metadata: personaLedger.buildPersonaMetadata({
               alias,
               account,
               handle: body?.handle,
@@ -439,7 +445,7 @@ export function registerPersonaRoutes(
              []).flatMap((entry) => normalizeAttributeInput(entry));
         if (attributes.length > 0) {
           await prisma.entity.createMany({
-            data: buildPersonaAttributeEntities(
+            data: personaLedger.buildPersonaAttributeEntities(
                 actor.id, personaEntity.id, attributes),
           });
         }
@@ -447,9 +453,12 @@ export function registerPersonaRoutes(
         const hasTags = Array.isArray(tags) && tags.length > 0;
         await rt(
             {eventType: 'persona.create', source: 'api', payload: {hasTags}});
-        const persona =
-            await loadPersonaRecordById(prisma, actor.id, personaEntity.id);
-        return {persona: persona ? personaRecordToResponse(persona) : null};
+        const persona = await personaLedger.loadPersonaRecordById(
+            prisma, actor.id, personaEntity.id);
+        return {
+          persona: persona ? personaLedger.personaRecordToResponse(persona) :
+                             null
+        };
       },
   );
 
@@ -461,10 +470,12 @@ export function registerPersonaRoutes(
         const rt = withTelemetryBase(recordTelemetry, request);
         const body = request.body as {count?: number} | undefined;
         const count = clampCount(body?.count);
-        const actor = await ensurePersonaActor(prisma, userId);
+        const actor = await personaLedger.ensurePersonaActor(prisma, userId);
         const metadataPayload =
             Array.from({length: count})
-                .map(() => buildPersonaMetadata(buildFakerPersona()));
+                .map(
+                    () => personaLedger.buildPersonaMetadata(
+                        buildFakerPersona()));
         await prisma.entity.createMany({
           data: metadataPayload.map((row) => ({
                                       actorId: actor.id,
@@ -472,30 +483,34 @@ export function registerPersonaRoutes(
                                       metadata: row,
                                     })),
         });
-        let personas = await loadPersonaRecordsByActor(prisma, actor.id);
+        let personas =
+            await personaLedger.loadPersonaRecordsByActor(prisma, actor.id);
         const created = personas.slice(0, count);
         const attributeSeeds = created.flatMap(
             (persona) => buildSeedAttributes(persona.id, persona.tags));
         if (attributeSeeds.length > 0) {
           await prisma.entity.createMany({
-            data: attributeSeeds.map((entry) => ({
-                                       actorId: actor.id,
-                                       kind: EntityKind.PERSONA_ATTRIBUTE,
-                                       targetType: PERSONA_TARGET_TYPE,
-                                       targetId: entry.personaId,
-                                       metadata: {
-                                         category: entry.category,
-                                         value: entry.value,
-                                         weight: entry.weight,
-                                       },
-                                     })),
+            data: attributeSeeds.map(
+                (entry) => ({
+                  actorId: actor.id,
+                  kind: EntityKind.PERSONA_ATTRIBUTE,
+                  targetType: personaLedger.PERSONA_TARGET_TYPE,
+                  targetId: entry.personaId,
+                  metadata: {
+                    category: entry.category,
+                    value: entry.value,
+                    weight: entry.weight,
+                  },
+                })),
           });
-          personas = await loadPersonaRecordsByActor(prisma, actor.id);
+          personas =
+              await personaLedger.loadPersonaRecordsByActor(prisma, actor.id);
         }
         await rt(
             {eventType: 'persona.generate', source: 'api', payload: {count}});
         return {
-          personas: personas.slice(0, count).map(personaRecordToResponse)
+          personas: personas.slice(0, count).map(
+              personaLedger.personaRecordToResponse)
         };
       },
   );
@@ -510,9 +525,9 @@ export function registerPersonaRoutes(
         if (!personaId) {
           return reply.status(400).send({error: 'persona id is required'});
         }
-        const actor = await ensurePersonaActor(prisma, userId);
-        const persona =
-            await loadPersonaRecordById(prisma, actor.id, personaId);
+        const actor = await personaLedger.ensurePersonaActor(prisma, userId);
+        const persona = await personaLedger.loadPersonaRecordById(
+            prisma, actor.id, personaId);
         if (!persona) {
           return reply.status(404).send({error: 'persona not found'});
         }
@@ -526,26 +541,29 @@ export function registerPersonaRoutes(
             where: {
               actorId: actor.id,
               kind: EntityKind.PERSONA_ATTRIBUTE,
-              targetType: PERSONA_TARGET_TYPE,
+              targetType: personaLedger.PERSONA_TARGET_TYPE,
               targetId: personaId,
             },
           }),
         ];
         if (attributes.length > 0) {
           attributeOps.push(prisma.entity.createMany({
-            data:
-                buildPersonaAttributeEntities(actor.id, personaId, attributes),
+            data: personaLedger.buildPersonaAttributeEntities(
+                actor.id, personaId, attributes),
           }));
         }
         await prisma.$transaction(attributeOps);
-        const updated =
-            await loadPersonaRecordById(prisma, actor.id, personaId);
+        const updated = await personaLedger.loadPersonaRecordById(
+            prisma, actor.id, personaId);
         await rt({
           eventType: 'persona.attributes.update',
           source: 'api',
           payload: {count: attributes.length}
         });
-        return {persona: updated ? personaRecordToResponse(updated) : null};
+        return {
+          persona: updated ? personaLedger.personaRecordToResponse(updated) :
+                             null
+        };
       },
   );
 
@@ -555,8 +573,9 @@ export function registerPersonaRoutes(
       async (request, reply) => {
         const userId = (request.user as {sub: string}).sub;
         const rt = withTelemetryBase(recordTelemetry, request);
-        const actor = await ensurePersonaActor(prisma, userId);
-        const personas = await loadPersonaRecordsByActor(prisma, actor.id);
+        const actor = await personaLedger.ensurePersonaActor(prisma, userId);
+        const personas =
+            await personaLedger.loadPersonaRecordsByActor(prisma, actor.id);
         if (personas.length < 2) {
           await prisma.entity.deleteMany({
             where: {actorId: actor.id, kind: EntityKind.PERSONA_COMPATIBILITY},
@@ -578,7 +597,7 @@ export function registerPersonaRoutes(
         ]);
         const compatibilities =
             await loadCompatibilityRecords(prisma, actor.id);
-        const personaMap = await loadPersonaMap(prisma, userId);
+        const personaMap = await personaLedger.loadPersonaMap(prisma, userId);
         const response =
             compatibilities
                 .map((record) => serializeCompatibility(record, personaMap))
@@ -599,10 +618,10 @@ export function registerPersonaRoutes(
       {preHandler: [server.authenticate]},
       async (request) => {
         const userId = (request.user as {sub: string}).sub;
-        const actor = await ensurePersonaActor(prisma, userId);
+        const actor = await personaLedger.ensurePersonaActor(prisma, userId);
         const compatibilities =
             await loadCompatibilityRecords(prisma, actor.id);
-        const personaMap = await loadPersonaMap(prisma, userId);
+        const personaMap = await personaLedger.loadPersonaMap(prisma, userId);
         const serialized =
             compatibilities
                 .map((record) => serializeCompatibility(record, personaMap))

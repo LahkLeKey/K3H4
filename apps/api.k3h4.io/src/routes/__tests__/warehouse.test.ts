@@ -1,7 +1,8 @@
-import {beforeEach, describe, expect, it, vi} from 'vitest';
 import Fastify from 'fastify';
-import {registerWarehouseRoutes} from '../warehouse';
+import {beforeEach, describe, expect, it, vi} from 'vitest';
+
 import {type RecordTelemetryFn} from '../types';
+import {registerWarehouseRoutes} from '../warehouse';
 
 const recordTelemetry = vi.fn() as unknown as RecordTelemetryFn;
 const userId = 'user-1';
@@ -48,6 +49,7 @@ describe('warehouse routes', () => {
           category: 'other',
         },
         createdAt: new Date(),
+        updatedAt: new Date(),
       },
     ]);
     const server = buildServer(prisma);
@@ -68,6 +70,7 @@ describe('warehouse routes', () => {
         category: 'other',
       },
       createdAt: new Date(),
+      updatedAt: new Date(),
     });
     const server = buildServer(prisma);
     const res = await server.inject({
@@ -77,10 +80,11 @@ describe('warehouse routes', () => {
     });
     expect(res.statusCode).toBe(200);
     expect(prisma.entity.create).toHaveBeenCalled();
-    expect(recordTelemetry).toHaveBeenCalledWith(
-        expect.anything(),
-        expect.objectContaining({eventType: 'warehouse.create'}),
-    );
+    expect(recordTelemetry)
+        .toHaveBeenCalledWith(
+            expect.anything(),
+            expect.objectContaining({eventType: 'warehouse.create'}),
+        );
   });
 
   it('rejects missing sku', async () => {
@@ -192,6 +196,8 @@ describe('warehouse routes', () => {
         status: 'stored',
         category: 'other',
       },
+      createdAt: new Date(),
+      updatedAt: new Date(),
     });
     const server = buildServer(prisma);
     const res = await server.inject({
@@ -201,9 +207,10 @@ describe('warehouse routes', () => {
     });
     expect(res.statusCode).toBe(200);
     expect(prisma.entity.update).toHaveBeenCalled();
-    expect(recordTelemetry).toHaveBeenCalledWith(
-        expect.anything(),
-        expect.objectContaining({eventType: 'warehouse.update'}),
-    );
+    expect(recordTelemetry)
+        .toHaveBeenCalledWith(
+            expect.anything(),
+            expect.objectContaining({eventType: 'warehouse.update'}),
+        );
   });
 });

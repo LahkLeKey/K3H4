@@ -2,19 +2,22 @@ import {CoverageStatus, EngagementPriority, Entity, EntityKind, LifecycleStatus,
 import {type FastifyInstance} from 'fastify';
 
 import {coverageStatusOrDefault, engagementPriorityOrDefault, lifecycleStatusOrDefault} from '../lib/status-utils';
-import {ensurePersonaActor, loadPersonaMap, loadPersonaRecordById, personaRecordToResponse} from '../services/persona-ledger';
+import * as personaLedger from '../services/persona-ledger';
 import {ensureStaffingActor, loadStaffingEntities, loadStaffingEntityByKind, STAFFING_ACTOR_SOURCE} from '../services/staffing-actor';
+
 import {buildTelemetryBase} from './telemetry';
 import {type RecordTelemetryFn} from './types';
 
-const money = (value?: Prisma.Decimal|null) => (value ? value.toFixed(2) : null);
+const money = (value?: Prisma.Decimal|null) =>
+    (value ? value.toFixed(2) : null);
 
 const serializePersona = (persona: any) => persona ? {
   id: persona.id,
   alias: persona.alias,
   account: persona.account,
   handle: persona.handle,
-} : null;
+} :
+                                                     null;
 
 const serializeEngagement = (engagement: any) => ({
   ...engagement,
@@ -81,22 +84,25 @@ const metadataString = (metadata: Record<string, unknown>, key: string) => {
 
 const metadataDecimal = (metadata: Record<string, unknown>, key: string) => {
   const value = metadata[key];
-  if (typeof value === 'string' && value.length) return new Prisma.Decimal(value);
-  if (typeof value === 'number' && Number.isFinite(value)) return new Prisma.Decimal(value);
+  if (typeof value === 'string' && value.length)
+    return new Prisma.Decimal(value);
+  if (typeof value === 'number' && Number.isFinite(value))
+    return new Prisma.Decimal(value);
   if (value instanceof Prisma.Decimal) return value;
   if (typeof value === 'bigint') return new Prisma.Decimal(value.toString());
   return null;
 };
 
-const metadataNumber = (metadata: Record<string, unknown>, key: string, fallback = 0) => {
-  const value = metadata[key];
-  if (typeof value === 'number' && Number.isFinite(value)) return value;
-  if (typeof value === 'string') {
-    const parsed = Number(value);
-    if (Number.isFinite(parsed)) return parsed;
-  }
-  return fallback;
-};
+const metadataNumber =
+    (metadata: Record<string, unknown>, key: string, fallback = 0) => {
+      const value = metadata[key];
+      if (typeof value === 'number' && Number.isFinite(value)) return value;
+      if (typeof value === 'string') {
+        const parsed = Number(value);
+        if (Number.isFinite(parsed)) return parsed;
+      }
+      return fallback;
+    };
 
 const metadataDate = (metadata: Record<string, unknown>, key: string) => {
   const value = metadata[key];
@@ -108,38 +114,40 @@ const metadataDate = (metadata: Record<string, unknown>, key: string) => {
   return null;
 };
 
-const metadataStringArray = (metadata: Record<string, unknown>, key: string) => {
-  const value = metadata[key];
-  if (Array.isArray(value)) {
-    return value
-        .map((entry) => {
-          if (typeof entry === 'string') return entry.trim();
-          if (typeof entry === 'number') return String(entry);
-          return null;
-        })
-        .filter((entry): entry is string => typeof entry === 'string' && entry.length);
-  }
-  if (typeof value === 'string') {
-    const trimmed = value.trim();
-    return trimmed.length ? [trimmed] : [];
-  }
-  return [];
-};
+const metadataStringArray =
+    (metadata: Record<string, unknown>, key: string) => {
+      const value = metadata[key];
+      if (Array.isArray(value)) {
+        return value
+            .map((entry) => {
+              if (typeof entry === 'string') return entry.trim();
+              if (typeof entry === 'number') return String(entry);
+              return null;
+            })
+            .filter(
+                (entry): entry is string =>
+                    typeof entry === 'string' && entry.length);
+      }
+      if (typeof value === 'string') {
+        const trimmed = value.trim();
+        return trimmed.length ? [trimmed] : [];
+      }
+      return [];
+    };
 
 type EngagementFields = {
-  id: string;
-  name: string;
-  client: string|null;
-  priority: EngagementPriority;
+  id: string; name: string; client: string | null; priority: EngagementPriority;
   status: LifecycleStatus;
-  startDate: Date|null;
-  endDate: Date|null;
-  budget: Prisma.Decimal|null;
-  forecast: Prisma.Decimal|null;
-  notes: string|null;
+  startDate: Date | null;
+  endDate: Date | null;
+  budget: Prisma.Decimal | null;
+  forecast: Prisma.Decimal | null;
+  notes: string | null;
 };
 
-type CandidateSummary = {id: string; fullName: string; stage: string|null};
+type CandidateSummary = {
+  id: string; fullName: string; stage: string | null
+};
 
 const buildEngagementFields = (entity: Entity): EngagementFields => {
   const metadata = asRecord(entity.metadata);
@@ -159,135 +167,138 @@ const buildEngagementFields = (entity: Entity): EngagementFields => {
   };
 };
 
-const buildRoleFields = (
-    entity: Entity,
-    engagementMap: Map<string, EngagementFields>,
-    placementsByRole: Map<string, Entity[]>) => {
-  const metadata = asRecord(entity.metadata);
-  const engagementId = metadataString(metadata, 'engagementId');
-  const openings = metadataNumber(metadata, 'openings', 1);
-  const filled = placementsByRole.get(entity.id)?.length ?? 0;
-  const engagement = engagementId ? engagementMap.get(engagementId) : null;
-  return {
-    id: entity.id,
-    engagementId,
-    title: metadataString(metadata, 'title') ?? '',
-    location: metadataString(metadata, 'location'),
-    modality: metadataString(metadata, 'modality'),
-    openings,
-    filled,
-    priority: engagementPriorityOrDefault(
-        metadataString(metadata, 'priority'), EngagementPriority.NORMAL),
-    status: lifecycleStatusOrDefault(
-        metadataString(metadata, 'status'), LifecycleStatus.OPEN),
-    rateMin: metadataDecimal(metadata, 'rateMin'),
-    rateMax: metadataDecimal(metadata, 'rateMax'),
-    billRate: metadataDecimal(metadata, 'billRate'),
-    payRate: metadataDecimal(metadata, 'payRate'),
-    tags: metadataString(metadata, 'tags'),
-    skills: metadataStringArray(metadata, 'skills'),
-    engagement,
-  };
-};
+const buildRoleFields =
+    (entity: Entity, engagementMap: Map<string, EngagementFields>,
+     placementsByRole: Map<string, Entity[]>) => {
+      const metadata = asRecord(entity.metadata);
+      const engagementId = metadataString(metadata, 'engagementId');
+      const openings = metadataNumber(metadata, 'openings', 1);
+      const filled = placementsByRole.get(entity.id)?.length ?? 0;
+      const engagement = engagementId ? engagementMap.get(engagementId) : null;
+      return {
+        id: entity.id,
+        engagementId,
+        title: metadataString(metadata, 'title') ?? '',
+        location: metadataString(metadata, 'location'),
+        modality: metadataString(metadata, 'modality'),
+        openings,
+        filled,
+        priority: engagementPriorityOrDefault(
+            metadataString(metadata, 'priority'), EngagementPriority.NORMAL),
+        status: lifecycleStatusOrDefault(
+            metadataString(metadata, 'status'), LifecycleStatus.OPEN),
+        rateMin: metadataDecimal(metadata, 'rateMin'),
+        rateMax: metadataDecimal(metadata, 'rateMax'),
+        billRate: metadataDecimal(metadata, 'billRate'),
+        payRate: metadataDecimal(metadata, 'payRate'),
+        tags: metadataString(metadata, 'tags'),
+        skills: metadataStringArray(metadata, 'skills'),
+        engagement,
+      };
+    };
 
-const buildCandidateFields = (
-    entity: Entity,
-    personaMap: Map<string, ReturnType<typeof personaRecordToResponse>>,
-    roleMap: Map<string, ReturnType<typeof serializeRole>>) => {
-  const metadata = asRecord(entity.metadata);
-  const roleId = metadataString(metadata, 'roleId');
-  const personaId = metadataString(metadata, 'personaId');
-  const persona = personaId ?
-      personaRecordToResponse(personaMap.get(personaId) ?? null) :
-      null;
-  return {
-    id: entity.id,
-    engagementId: metadataString(metadata, 'engagementId'),
-    roleId,
-    fullName: metadataString(metadata, 'fullName') ?? '',
-    email: metadataString(metadata, 'email'),
-    phone: metadataString(metadata, 'phone'),
-    source: metadataString(metadata, 'source'),
-    stage: metadataString(metadata, 'stage') ?? 'prospect',
-    score: metadataDecimal(metadata, 'score'),
-    desiredRate: metadataDecimal(metadata, 'desiredRate'),
-    availability: metadataString(metadata, 'availability'),
-    location: metadataString(metadata, 'location'),
-    note: metadataString(metadata, 'note'),
-    tags: metadataStringArray(metadata, 'tags'),
-    personaId,
-    persona,
-    role: roleId ? roleMap.get(roleId) ?? null : null,
-  };
-};
+const buildCandidateFields =
+    (entity: Entity,
+     personaMap: Map<string, ReturnType<typeof personaRecordToResponse>>,
+     roleMap: Map<string, ReturnType<typeof serializeRole>>) => {
+      const metadata = asRecord(entity.metadata);
+      const roleId = metadataString(metadata, 'roleId');
+      const personaId = metadataString(metadata, 'personaId');
+      const persona = personaId ? personaLedger.personaRecordToResponse(
+                                      personaMap.get(personaId) ?? null) :
+                                  null;
+      return {
+        id: entity.id,
+        engagementId: metadataString(metadata, 'engagementId'),
+        roleId,
+        fullName: metadataString(metadata, 'fullName') ?? '',
+        email: metadataString(metadata, 'email'),
+        phone: metadataString(metadata, 'phone'),
+        source: metadataString(metadata, 'source'),
+        stage: metadataString(metadata, 'stage') ?? 'prospect',
+        score: metadataDecimal(metadata, 'score'),
+        desiredRate: metadataDecimal(metadata, 'desiredRate'),
+        availability: metadataString(metadata, 'availability'),
+        location: metadataString(metadata, 'location'),
+        note: metadataString(metadata, 'note'),
+        tags: metadataStringArray(metadata, 'tags'),
+        personaId,
+        persona,
+        role: roleId ? roleMap.get(roleId) ?? null : null,
+      };
+    };
 
-const buildShiftFields = (
-    entity: Entity,
-    personaMap: Map<string, ReturnType<typeof personaRecordToResponse>>,
-    candidateSummaries: Map<string, CandidateSummary>) => {
-  const metadata = asRecord(entity.metadata);
-  const assignedPersonaId = metadataString(metadata, 'assignedPersonaId');
-  const assignedCandidateId = metadataString(metadata, 'assignedCandidateId');
-  const assignedPersona = assignedPersonaId ?
-      personaRecordToResponse(personaMap.get(assignedPersonaId) ?? null) :
-      null;
-  const assignedCandidate = assignedCandidateId ?
-      candidateSummaries.get(assignedCandidateId) ?? null :
-      null;
-  return {
-    id: entity.id,
-    roleId: metadataString(metadata, 'roleId'),
-    title: metadataString(metadata, 'title') ?? '',
-    location: metadataString(metadata, 'location'),
-    startsAt: metadataDate(metadata, 'startsAt'),
-    endsAt: metadataDate(metadata, 'endsAt'),
-    status: lifecycleStatusOrDefault(
-        metadataString(metadata, 'status'), LifecycleStatus.SCHEDULED),
-    coverageStatus: coverageStatusOrDefault(
-        metadataString(metadata, 'coverageStatus'), CoverageStatus.UNFILLED),
-    assignedPersona,
-    assignedCandidate,
-    notes: metadataString(metadata, 'notes'),
-  };
-};
+const buildShiftFields =
+    (entity: Entity,
+     personaMap: Map<string, ReturnType<typeof personaRecordToResponse>>,
+     candidateSummaries: Map<string, CandidateSummary>) => {
+      const metadata = asRecord(entity.metadata);
+      const assignedPersonaId = metadataString(metadata, 'assignedPersonaId');
+      const assignedCandidateId =
+          metadataString(metadata, 'assignedCandidateId');
+      const assignedPersona = assignedPersonaId ?
+          personaLedger.personaRecordToResponse(
+              personaMap.get(assignedPersonaId) ?? null) :
+          null;
+      const assignedCandidate = assignedCandidateId ?
+          candidateSummaries.get(assignedCandidateId) ?? null :
+          null;
+      return {
+        id: entity.id,
+        roleId: metadataString(metadata, 'roleId'),
+        title: metadataString(metadata, 'title') ?? '',
+        location: metadataString(metadata, 'location'),
+        startsAt: metadataDate(metadata, 'startsAt'),
+        endsAt: metadataDate(metadata, 'endsAt'),
+        status: lifecycleStatusOrDefault(
+            metadataString(metadata, 'status'), LifecycleStatus.SCHEDULED),
+        coverageStatus: coverageStatusOrDefault(
+            metadataString(metadata, 'coverageStatus'),
+            CoverageStatus.UNFILLED),
+        assignedPersona,
+        assignedCandidate,
+        notes: metadataString(metadata, 'notes'),
+      };
+    };
 
-const buildPlacementFields = (
-    entity: Entity,
-    personaMap: Map<string, ReturnType<typeof personaRecordToResponse>>,
-    roleMap: Map<string, ReturnType<typeof serializeRole>>,
-    engagementMap: Map<string, EngagementFields>,
-    candidateSummaries: Map<string, CandidateSummary>) => {
-  const metadata = asRecord(entity.metadata);
-  const billRate = metadataDecimal(metadata, 'billRate');
-  const payRate = metadataDecimal(metadata, 'payRate');
-  const margin = billRate && payRate ? billRate.sub(payRate) : billRate ?? null;
-  const personaId = metadataString(metadata, 'personaId');
-  const roleId = metadataString(metadata, 'roleId');
-  const engagementId = metadataString(metadata, 'engagementId');
-  const candidateId = metadataString(metadata, 'candidateId');
-  return {
-    id: entity.id,
-    engagementId,
-    roleId,
-    candidateId,
-    startDate: metadataDate(metadata, 'startDate'),
-    endDate: metadataDate(metadata, 'endDate'),
-    status: lifecycleStatusOrDefault(
-        metadataString(metadata, 'status'), LifecycleStatus.ACTIVE),
-    billRate,
-    payRate,
-    margin,
-    note: metadataString(metadata, 'note'),
-    persona: personaId ?
-        personaRecordToResponse(personaMap.get(personaId) ?? null) :
-        null,
-    candidate: candidateId ?
-        candidateSummaries.get(candidateId) ?? null :
-        null,
-    role: roleId ? roleMap.get(roleId) ?? null : null,
-    engagement: engagementId ? engagementMap.get(engagementId) ?? null : null,
-  };
-};
+const buildPlacementFields =
+    (entity: Entity,
+     personaMap: Map<string, ReturnType<typeof personaRecordToResponse>>,
+     roleMap: Map<string, ReturnType<typeof serializeRole>>,
+     engagementMap: Map<string, EngagementFields>,
+     candidateSummaries: Map<string, CandidateSummary>) => {
+      const metadata = asRecord(entity.metadata);
+      const billRate = metadataDecimal(metadata, 'billRate');
+      const payRate = metadataDecimal(metadata, 'payRate');
+      const margin =
+          billRate && payRate ? billRate.sub(payRate) : billRate ?? null;
+      const personaId = metadataString(metadata, 'personaId');
+      const roleId = metadataString(metadata, 'roleId');
+      const engagementId = metadataString(metadata, 'engagementId');
+      const candidateId = metadataString(metadata, 'candidateId');
+      return {
+        id: entity.id,
+        engagementId,
+        roleId,
+        candidateId,
+        startDate: metadataDate(metadata, 'startDate'),
+        endDate: metadataDate(metadata, 'endDate'),
+        status: lifecycleStatusOrDefault(
+            metadataString(metadata, 'status'), LifecycleStatus.ACTIVE),
+        billRate,
+        payRate,
+        margin,
+        note: metadataString(metadata, 'note'),
+        persona: personaId ? personaLedger.personaRecordToResponse(
+                                 personaMap.get(personaId) ?? null) :
+                             null,
+        candidate: candidateId ? candidateSummaries.get(candidateId) ?? null :
+                                 null,
+        role: roleId ? roleMap.get(roleId) ?? null : null,
+        engagement: engagementId ? engagementMap.get(engagementId) ?? null :
+                                   null,
+      };
+    };
 
 const groupByMetadataKey = (entities: Entity[], key: string) => {
   const map = new Map<string, Entity[]>();
@@ -305,7 +316,8 @@ const groupByMetadataKey = (entities: Entity[], key: string) => {
 const assertOwnedEntity = async (
     entity: Entity|null,
     reply: any,
-    message: string,) => {
+    message: string,
+    ) => {
   if (!entity) {
     await reply.status(404).send({error: message});
     return null;
@@ -315,7 +327,8 @@ const assertOwnedEntity = async (
 
 const normalizeSkills = (skills?: string[]|null) => {
   if (!Array.isArray(skills)) return undefined;
-  const normalized = skills.map((skill) => skill.trim()).filter((value) => value.length);
+  const normalized =
+      skills.map((skill) => skill.trim()).filter((value) => value.length);
   return normalized.length ? normalized : undefined;
 };
 
@@ -327,24 +340,28 @@ export function registerStaffingRoutes(
       {preHandler: [server.authenticate]},
       async (request) => {
         const userId = (request.user as {sub: string}).sub;
-        const personaMap = await loadPersonaMap(prisma, userId);
+        const personaMap = await personaLedger.loadPersonaMap(prisma, userId);
         const staffingActor = await ensureStaffingActor(prisma, userId);
-        const collections = await loadStaffingEntities(prisma, staffingActor.id);
+        const collections =
+            await loadStaffingEntities(prisma, staffingActor.id);
 
         const engagementMap = new Map<string, EngagementFields>();
         collections.engagements.forEach((entity) => {
           engagementMap.set(entity.id, buildEngagementFields(entity));
         });
 
-        const placementsByRole = groupByMetadataKey(collections.placements, 'roleId');
+        const placementsByRole =
+            groupByMetadataKey(collections.placements, 'roleId');
         const placementsByEngagement =
             groupByMetadataKey(collections.placements, 'engagementId');
 
         const roleDetails = collections.roles.map((entity) => {
-          const fields = buildRoleFields(entity, engagementMap, placementsByRole);
+          const fields =
+              buildRoleFields(entity, engagementMap, placementsByRole);
           return {entity, fields, serialized: serializeRole(fields)};
         });
-        const roleMap = new Map(roleDetails.map((detail) => [detail.entity.id, detail.serialized]));
+        const roleMap = new Map(
+            roleDetails.map((detail) => [detail.entity.id, detail.serialized]));
 
         const candidateDetails = collections.candidates.map((entity) => {
           const fields = buildCandidateFields(entity, personaMap, roleMap);
@@ -359,8 +376,9 @@ export function registerStaffingRoutes(
           });
         });
 
-        const shiftPayloads = collections.shifts.map((entity) =>
-            serializeShift(buildShiftFields(entity, personaMap, candidateSummaries)));
+        const shiftPayloads = collections.shifts.map(
+            (entity) => serializeShift(
+                buildShiftFields(entity, personaMap, candidateSummaries)));
 
         const placementDetails = collections.placements.map((entity) => {
           const fields = buildPlacementFields(
@@ -368,7 +386,8 @@ export function registerStaffingRoutes(
           return {entity, fields, serialized: serializePlacement(fields)};
         });
 
-        const candidatesByEngagementSerialized = new Map<string, ReturnType<typeof serializeCandidate>[]>();
+        const candidatesByEngagementSerialized =
+            new Map<string, ReturnType<typeof serializeCandidate>[]>();
         candidateDetails.forEach((detail) => {
           const engagementId = detail.fields.engagementId;
           if (!engagementId) return;
@@ -377,7 +396,8 @@ export function registerStaffingRoutes(
           candidatesByEngagementSerialized.set(engagementId, list);
         });
 
-        const rolesByEngagementSerialized = new Map<string, ReturnType<typeof serializeRole>[]>();
+        const rolesByEngagementSerialized =
+            new Map<string, ReturnType<typeof serializeRole>[]>();
         roleDetails.forEach((detail) => {
           const engagementId = detail.fields.engagementId;
           if (!engagementId) return;
@@ -386,7 +406,8 @@ export function registerStaffingRoutes(
           rolesByEngagementSerialized.set(engagementId, list);
         });
 
-        const placementsByEngagementSerialized = new Map<string, ReturnType<typeof serializePlacement>[]>();
+        const placementsByEngagementSerialized =
+            new Map<string, ReturnType<typeof serializePlacement>[]>();
         placementDetails.forEach((detail) => {
           const engagementId = detail.fields.engagementId;
           if (!engagementId) return;
@@ -405,29 +426,30 @@ export function registerStaffingRoutes(
           });
         });
 
-        const totalOpenings = roleDetails
-                                  .map((detail) => detail.fields.openings)
-                                  .reduce((sum, value) => sum + value, 0);
-        const totalFilled = roleDetails
-                                  .map((detail) => detail.fields.filled)
-                                  .reduce((sum, value) => sum + value, 0);
+        const totalOpenings =
+            roleDetails.map((detail) => detail.fields.openings)
+                .reduce((sum, value) => sum + value, 0);
+        const totalFilled = roleDetails.map((detail) => detail.fields.filled)
+                                .reduce((sum, value) => sum + value, 0);
         const fillRate = totalOpenings > 0 ?
             Number(((totalFilled / totalOpenings) * 100).toFixed(1)) :
             0;
         const metrics = {
-          openRoles: roleDetails.filter(
-                               (detail) =>
-                                   detail.fields.status !== LifecycleStatus.CLOSED)
-                               .length,
-          activeCandidates: candidateDetails.filter(
-                                   (detail) => detail.fields.stage !== 'archived')
-                               .length,
+          openRoles: roleDetails
+                         .filter(
+                             (detail) => detail.fields.status !==
+                                 LifecycleStatus.CLOSED)
+                         .length,
+          activeCandidates:
+              candidateDetails
+                  .filter((detail) => detail.fields.stage !== 'archived')
+                  .length,
           scheduledShifts: shiftPayloads.length,
-          activePlacements: placementDetails.filter(
-                                      (detail) =>
-                                          detail.fields.status ===
-                                          LifecycleStatus.ACTIVE)
-                                      .length,
+          activePlacements: placementDetails
+                                .filter(
+                                    (detail) => detail.fields.status ===
+                                        LifecycleStatus.ACTIVE)
+                                .length,
           fillRate,
         };
 
@@ -468,7 +490,8 @@ export function registerStaffingRoutes(
           budget?: number|string;
           forecast?: number|string;
           notes?: string;
-        } | undefined;
+        }
+        |undefined;
 
         const name = body?.name?.trim();
         if (!name) return reply.status(400).send({error: 'name is required'});
@@ -537,7 +560,8 @@ export function registerStaffingRoutes(
           status?: string;
           tags?: string;
           skills?: string[];
-        } | undefined;
+        }
+        |undefined;
 
         const title = body?.title?.trim();
         if (!title) return reply.status(400).send({error: 'title is required'});
@@ -550,9 +574,8 @@ export function registerStaffingRoutes(
             return reply.status(404).send({error: 'Engagement not found'});
         }
 
-        const openings = body?.openings !== undefined ?
-            Number(body.openings) :
-            1;
+        const openings =
+            body?.openings !== undefined ? Number(body.openings) : 1;
         if (!Number.isFinite(openings) || openings <= 0)
           return reply.status(400).send({error: 'openings must be positive'});
 
@@ -576,8 +599,8 @@ export function registerStaffingRoutes(
               openings,
               priority: engagementPriorityOrDefault(
                   body?.priority, EngagementPriority.NORMAL),
-              status: lifecycleStatusOrDefault(
-                  body?.status, LifecycleStatus.OPEN),
+              status:
+                  lifecycleStatusOrDefault(body?.status, LifecycleStatus.OPEN),
               rateMin: rateMin?.toFixed(2) ?? null,
               rateMax: rateMax?.toFixed(2) ?? null,
               billRate: billRate?.toFixed(2) ?? null,
@@ -592,10 +615,13 @@ export function registerStaffingRoutes(
           ...buildTelemetryBase(request),
           eventType: 'staffing.role.create',
           source: 'api',
-          payload: {roleId: roleEntity.id, engagementId: body?.engagementId ?? null},
+          payload:
+              {roleId: roleEntity.id, engagementId: body?.engagementId ?? null},
         });
 
-        return {role: serializeRole(buildRoleFields(roleEntity, new Map(), new Map()))};
+        return {
+          role: serializeRole(buildRoleFields(roleEntity, new Map(), new Map()))
+        };
       },
   );
 
@@ -619,7 +645,8 @@ export function registerStaffingRoutes(
           engagementId?: string;
           roleId?: string;
           personaId?: string;
-        } | undefined;
+        }
+        |undefined;
 
         const fullName = body?.fullName?.trim();
         if (!fullName)
@@ -638,10 +665,12 @@ export function registerStaffingRoutes(
           if (!role) return reply.status(404).send({error: 'Role not found'});
         }
         if (body?.personaId) {
-          const personaActor = await ensurePersonaActor(prisma, userId);
-          const persona = await loadPersonaRecordById(
+          const personaActor =
+              await personaLedger.ensurePersonaActor(prisma, userId);
+          const persona = await personaLedger.loadPersonaRecordById(
               prisma, personaActor.id, body.personaId);
-          if (!persona) return reply.status(404).send({error: 'Persona not found'});
+          if (!persona)
+            return reply.status(404).send({error: 'Persona not found'});
         }
 
         const score = parseMoney(body?.score);
@@ -687,9 +716,9 @@ export function registerStaffingRoutes(
         });
 
         return {
-          candidate: serializeCandidate(
-              buildCandidateFields(
-                  candidateEntity, await loadPersonaMap(prisma, userId), new Map())),
+          candidate: serializeCandidate(buildCandidateFields(
+              candidateEntity,
+              await personaLedger.loadPersonaMap(prisma, userId), new Map())),
         };
       },
   );
@@ -706,16 +735,20 @@ export function registerStaffingRoutes(
 
         const entity = await loadStaffingEntityByKind(
             prisma, userId, EntityKind.STAFFING_CANDIDATE, candidateId);
-        const owned = await assertOwnedEntity(entity, reply, 'Candidate not found');
+        const owned =
+            await assertOwnedEntity(entity, reply, 'Candidate not found');
         if (!owned) return;
 
         const metadata = {...asRecord(owned.metadata), stage};
-        await prisma.entity.update({where: {id: candidateId}, data: {metadata}});
+        await prisma.entity.update(
+            {where: {id: candidateId}, data: {metadata}});
 
-        const updated = await prisma.entity.findUnique({where: {id: candidateId}});
-        if (!updated) return reply.status(404).send({error: 'Candidate not found'});
+        const updated =
+            await prisma.entity.findUnique({where: {id: candidateId}});
+        if (!updated)
+          return reply.status(404).send({error: 'Candidate not found'});
 
-        const personaMap = await loadPersonaMap(prisma, userId);
+        const personaMap = await personaLedger.loadPersonaMap(prisma, userId);
         const candidateResponse = serializeCandidate(
             buildCandidateFields(updated, personaMap, new Map()));
 
@@ -746,7 +779,8 @@ export function registerStaffingRoutes(
           assignedPersonaId?: string;
           assignedCandidateId?: string;
           notes?: string;
-        } | undefined;
+        }
+        |undefined;
 
         const title = body?.title?.trim();
         if (!title) return reply.status(400).send({error: 'title is required'});
@@ -754,7 +788,8 @@ export function registerStaffingRoutes(
         const startsAt = parseDate(body?.startsAt);
         const endsAt = parseDate(body?.endsAt);
         if (!startsAt || !endsAt || startsAt >= endsAt)
-          return reply.status(400).send({error: 'startsAt and endsAt must be valid and ordered'});
+          return reply.status(400).send(
+              {error: 'startsAt and endsAt must be valid and ordered'});
 
         if (body?.roleId) {
           const role = await loadStaffingEntityByKind(
@@ -762,8 +797,9 @@ export function registerStaffingRoutes(
           if (!role) return reply.status(404).send({error: 'Role not found'});
         }
         if (body?.assignedPersonaId) {
-          const personaActor = await ensurePersonaActor(prisma, userId);
-          const persona = await loadPersonaRecordById(
+          const personaActor =
+              await personaLedger.ensurePersonaActor(prisma, userId);
+          const persona = await personaLedger.loadPersonaRecordById(
               prisma, personaActor.id, body.assignedPersonaId);
           if (!persona)
             return reply.status(404).send({error: 'Persona not found'});
@@ -771,7 +807,8 @@ export function registerStaffingRoutes(
         let assignedCandidate: Entity|null = null;
         if (body?.assignedCandidateId) {
           assignedCandidate = await loadStaffingEntityByKind(
-              prisma, userId, EntityKind.STAFFING_CANDIDATE, body.assignedCandidateId);
+              prisma, userId, EntityKind.STAFFING_CANDIDATE,
+              body.assignedCandidateId);
           if (!assignedCandidate)
             return reply.status(404).send({error: 'Candidate not found'});
         }
@@ -800,11 +837,11 @@ export function registerStaffingRoutes(
           },
         });
 
-        const personaMap = await loadPersonaMap(prisma, userId);
+        const personaMap = await personaLedger.loadPersonaMap(prisma, userId);
         const candidateSummaries = new Map<string, CandidateSummary>();
         if (assignedCandidate) {
-          const candidateFields = buildCandidateFields(
-              assignedCandidate, personaMap, new Map());
+          const candidateFields =
+              buildCandidateFields(assignedCandidate, personaMap, new Map());
           candidateSummaries.set(assignedCandidate.id, {
             id: candidateFields.id,
             fullName: candidateFields.fullName,
@@ -846,7 +883,8 @@ export function registerStaffingRoutes(
           billRate?: number|string;
           payRate?: number|string;
           note?: string;
-        } | undefined;
+        }
+        |undefined;
 
         const startDate = parseDate(body?.startDate);
         if (!startDate)
@@ -861,21 +899,24 @@ export function registerStaffingRoutes(
 
         const engagementEntity = body?.engagementId ?
             await loadStaffingEntityByKind(
-                prisma, userId, EntityKind.STAFFING_ENGAGEMENT, body.engagementId) :
+                prisma, userId, EntityKind.STAFFING_ENGAGEMENT,
+                body.engagementId) :
             null;
         if (body?.engagementId && !engagementEntity)
           return reply.status(404).send({error: 'Engagement not found'});
 
         const candidateEntity = body?.candidateId ?
             await loadStaffingEntityByKind(
-                prisma, userId, EntityKind.STAFFING_CANDIDATE, body.candidateId) :
+                prisma, userId, EntityKind.STAFFING_CANDIDATE,
+                body.candidateId) :
             null;
         if (body?.candidateId && !candidateEntity)
           return reply.status(404).send({error: 'Candidate not found'});
 
         if (body?.personaId) {
-          const personaActor = await ensurePersonaActor(prisma, userId);
-          const persona = await loadPersonaRecordById(
+          const personaActor =
+              await personaLedger.ensurePersonaActor(prisma, userId);
+          const persona = await personaLedger.loadPersonaRecordById(
               prisma, personaActor.id, body.personaId);
           if (!persona)
             return reply.status(404).send({error: 'Persona not found'});
@@ -883,7 +924,8 @@ export function registerStaffingRoutes(
 
         const billRate = parseMoney(body?.billRate);
         const payRate = parseMoney(body?.payRate);
-        const margin = billRate && payRate ? billRate.sub(payRate) : billRate ?? null;
+        const margin =
+            billRate && payRate ? billRate.sub(payRate) : billRate ?? null;
         const actor = await ensureStaffingActor(prisma, userId);
 
         const placementEntity = await prisma.entity.create({
@@ -909,19 +951,23 @@ export function registerStaffingRoutes(
           },
         });
 
-        const personaMap = await loadPersonaMap(prisma, userId);
-        const roleSerializationMap = new Map<string, ReturnType<typeof serializeRole>>();
+        const personaMap = await personaLedger.loadPersonaMap(prisma, userId);
+        const roleSerializationMap =
+            new Map<string, ReturnType<typeof serializeRole>>();
         if (roleEntity) {
           roleSerializationMap.set(
-              roleEntity.id, serializeRole(buildRoleFields(roleEntity, new Map(), new Map())));
+              roleEntity.id,
+              serializeRole(buildRoleFields(roleEntity, new Map(), new Map())));
         }
         const engagementFieldsMap = new Map<string, EngagementFields>();
         if (engagementEntity) {
-          engagementFieldsMap.set(engagementEntity.id, buildEngagementFields(engagementEntity));
+          engagementFieldsMap.set(
+              engagementEntity.id, buildEngagementFields(engagementEntity));
         }
         const candidateSummaries = new Map<string, CandidateSummary>();
         if (candidateEntity) {
-          const candidateFields = buildCandidateFields(candidateEntity, personaMap, roleSerializationMap);
+          const candidateFields = buildCandidateFields(
+              candidateEntity, personaMap, roleSerializationMap);
           candidateSummaries.set(candidateEntity.id, {
             id: candidateFields.id,
             fullName: candidateFields.fullName,
@@ -933,17 +979,14 @@ export function registerStaffingRoutes(
           ...buildTelemetryBase(request),
           eventType: 'staffing.placement.create',
           source: 'api',
-          payload: {placementId: placementEntity.id, roleId: body?.roleId ?? null},
+          payload:
+              {placementId: placementEntity.id, roleId: body?.roleId ?? null},
         });
 
         return {
-          placement: serializePlacement(
-              buildPlacementFields(
-                  placementEntity,
-                  personaMap,
-                  roleSerializationMap,
-                  engagementFieldsMap,
-                  candidateSummaries)),
+          placement: serializePlacement(buildPlacementFields(
+              placementEntity, personaMap, roleSerializationMap,
+              engagementFieldsMap, candidateSummaries)),
         };
       },
   );

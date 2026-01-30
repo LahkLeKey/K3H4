@@ -1,9 +1,9 @@
 import Fastify from 'fastify';
 import {beforeEach, describe, expect, it, vi} from 'vitest';
 
-import {registerPersonaRoutes} from '../persona';
 import * as personaLedger from '../../services/persona-ledger';
 import type {PersonaRecord} from '../../services/persona-ledger';
+import {registerPersonaRoutes} from '../persona';
 import {type RecordTelemetryFn} from '../types';
 
 const recordTelemetry = vi.fn() as unknown as RecordTelemetryFn;
@@ -62,7 +62,8 @@ describe('persona routes', () => {
     const record = buildPersonaRecord({id: 'p1'});
     const loadSpy = vi.spyOn(personaLedger, 'loadPersonaRecordsByActor')
                         .mockResolvedValueOnce([])
-                        .mockResolvedValueOnce([record]);
+                        .mockResolvedValueOnce([record])
+                        .mockResolvedValue([record]);
     const prisma = {
       entity: {
         createMany: vi.fn().mockResolvedValue({count: 3}),
@@ -72,7 +73,7 @@ describe('persona routes', () => {
     const res = await server.inject({method: 'GET', url: '/personas'});
     expect(res.statusCode).toBe(200);
     expect(prisma.entity.createMany).toHaveBeenCalled();
-    expect(loadSpy).toHaveBeenCalledTimes(2);
+    expect(loadSpy).toHaveBeenCalledTimes(3);
     expect(recordTelemetry)
         .toHaveBeenCalledWith(
             expect.anything(),

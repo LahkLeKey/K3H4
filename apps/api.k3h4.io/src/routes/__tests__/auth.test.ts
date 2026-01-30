@@ -1,8 +1,8 @@
 import Fastify from 'fastify';
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 
-import {registerAuthRoutes} from '../auth';
 import * as staffingActor from '../../services/staffing-actor';
+import {registerAuthRoutes} from '../auth';
 import {type RecordTelemetryFn} from '../types';
 
 const recordTelemetry = vi.fn() as unknown as RecordTelemetryFn;
