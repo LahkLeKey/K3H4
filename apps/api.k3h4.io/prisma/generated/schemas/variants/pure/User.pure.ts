@@ -14,8 +14,6 @@ export const UserModelSchema = z.object({
     preference: z.unknown().nullable(),
     telemetry: z.array(z.unknown()),
     freightLoads: z.array(z.unknown()),
-    posStores: z.array(z.unknown()),
-    posTickets: z.array(z.unknown()),
     culinaryMenuItems: z.array(z.unknown()),
     culinaryPrepTasks: z.array(z.unknown()),
     culinarySupplierNeeds: z.array(z.unknown()),

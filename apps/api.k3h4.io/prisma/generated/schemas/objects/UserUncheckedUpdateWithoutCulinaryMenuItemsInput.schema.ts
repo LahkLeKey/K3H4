@@ -8,8 +8,6 @@ import { RefreshTokenUncheckedUpdateManyWithoutUserNestedInputObjectSchema as Re
 import { UserPreferenceUncheckedUpdateOneWithoutUserNestedInputObjectSchema as UserPreferenceUncheckedUpdateOneWithoutUserNestedInputObjectSchema } from './UserPreferenceUncheckedUpdateOneWithoutUserNestedInput.schema';
 import { TelemetryEventUncheckedUpdateManyWithoutUserNestedInputObjectSchema as TelemetryEventUncheckedUpdateManyWithoutUserNestedInputObjectSchema } from './TelemetryEventUncheckedUpdateManyWithoutUserNestedInput.schema';
 import { FreightLoadUncheckedUpdateManyWithoutUserNestedInputObjectSchema as FreightLoadUncheckedUpdateManyWithoutUserNestedInputObjectSchema } from './FreightLoadUncheckedUpdateManyWithoutUserNestedInput.schema';
-import { PosStoreUncheckedUpdateManyWithoutUserNestedInputObjectSchema as PosStoreUncheckedUpdateManyWithoutUserNestedInputObjectSchema } from './PosStoreUncheckedUpdateManyWithoutUserNestedInput.schema';
-import { PosTicketUncheckedUpdateManyWithoutUserNestedInputObjectSchema as PosTicketUncheckedUpdateManyWithoutUserNestedInputObjectSchema } from './PosTicketUncheckedUpdateManyWithoutUserNestedInput.schema';
 import { CulinaryPrepTaskUncheckedUpdateManyWithoutUserNestedInputObjectSchema as CulinaryPrepTaskUncheckedUpdateManyWithoutUserNestedInputObjectSchema } from './CulinaryPrepTaskUncheckedUpdateManyWithoutUserNestedInput.schema';
 import { CulinarySupplierNeedUncheckedUpdateManyWithoutUserNestedInputObjectSchema as CulinarySupplierNeedUncheckedUpdateManyWithoutUserNestedInputObjectSchema } from './CulinarySupplierNeedUncheckedUpdateManyWithoutUserNestedInput.schema';
 import { ProviderGrantUncheckedUpdateManyWithoutUserNestedInputObjectSchema as ProviderGrantUncheckedUpdateManyWithoutUserNestedInputObjectSchema } from './ProviderGrantUncheckedUpdateManyWithoutUserNestedInput.schema';
@@ -50,8 +48,6 @@ const makeSchema = () => z.object({
   preference: z.lazy(() => UserPreferenceUncheckedUpdateOneWithoutUserNestedInputObjectSchema).optional(),
   telemetry: z.lazy(() => TelemetryEventUncheckedUpdateManyWithoutUserNestedInputObjectSchema).optional(),
   freightLoads: z.lazy(() => FreightLoadUncheckedUpdateManyWithoutUserNestedInputObjectSchema).optional(),
-  posStores: z.lazy(() => PosStoreUncheckedUpdateManyWithoutUserNestedInputObjectSchema).optional(),
-  posTickets: z.lazy(() => PosTicketUncheckedUpdateManyWithoutUserNestedInputObjectSchema).optional(),
   culinaryPrepTasks: z.lazy(() => CulinaryPrepTaskUncheckedUpdateManyWithoutUserNestedInputObjectSchema).optional(),
   culinarySupplierNeeds: z.lazy(() => CulinarySupplierNeedUncheckedUpdateManyWithoutUserNestedInputObjectSchema).optional(),
   providerGrants: z.lazy(() => ProviderGrantUncheckedUpdateManyWithoutUserNestedInputObjectSchema).optional(),

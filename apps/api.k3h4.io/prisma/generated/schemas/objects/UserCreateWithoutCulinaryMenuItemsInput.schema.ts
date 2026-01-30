@@ -4,8 +4,6 @@ import { RefreshTokenCreateNestedManyWithoutUserInputObjectSchema as RefreshToke
 import { UserPreferenceCreateNestedOneWithoutUserInputObjectSchema as UserPreferenceCreateNestedOneWithoutUserInputObjectSchema } from './UserPreferenceCreateNestedOneWithoutUserInput.schema';
 import { TelemetryEventCreateNestedManyWithoutUserInputObjectSchema as TelemetryEventCreateNestedManyWithoutUserInputObjectSchema } from './TelemetryEventCreateNestedManyWithoutUserInput.schema';
 import { FreightLoadCreateNestedManyWithoutUserInputObjectSchema as FreightLoadCreateNestedManyWithoutUserInputObjectSchema } from './FreightLoadCreateNestedManyWithoutUserInput.schema';
-import { PosStoreCreateNestedManyWithoutUserInputObjectSchema as PosStoreCreateNestedManyWithoutUserInputObjectSchema } from './PosStoreCreateNestedManyWithoutUserInput.schema';
-import { PosTicketCreateNestedManyWithoutUserInputObjectSchema as PosTicketCreateNestedManyWithoutUserInputObjectSchema } from './PosTicketCreateNestedManyWithoutUserInput.schema';
 import { CulinaryPrepTaskCreateNestedManyWithoutUserInputObjectSchema as CulinaryPrepTaskCreateNestedManyWithoutUserInputObjectSchema } from './CulinaryPrepTaskCreateNestedManyWithoutUserInput.schema';
 import { CulinarySupplierNeedCreateNestedManyWithoutUserInputObjectSchema as CulinarySupplierNeedCreateNestedManyWithoutUserInputObjectSchema } from './CulinarySupplierNeedCreateNestedManyWithoutUserInput.schema';
 import { ProviderGrantCreateNestedManyWithoutUserInputObjectSchema as ProviderGrantCreateNestedManyWithoutUserInputObjectSchema } from './ProviderGrantCreateNestedManyWithoutUserInput.schema';
@@ -46,8 +44,6 @@ const makeSchema = () => z.object({
   preference: z.lazy(() => UserPreferenceCreateNestedOneWithoutUserInputObjectSchema).optional(),
   telemetry: z.lazy(() => TelemetryEventCreateNestedManyWithoutUserInputObjectSchema).optional(),
   freightLoads: z.lazy(() => FreightLoadCreateNestedManyWithoutUserInputObjectSchema).optional(),
-  posStores: z.lazy(() => PosStoreCreateNestedManyWithoutUserInputObjectSchema).optional(),
-  posTickets: z.lazy(() => PosTicketCreateNestedManyWithoutUserInputObjectSchema).optional(),
   culinaryPrepTasks: z.lazy(() => CulinaryPrepTaskCreateNestedManyWithoutUserInputObjectSchema).optional(),
   culinarySupplierNeeds: z.lazy(() => CulinarySupplierNeedCreateNestedManyWithoutUserInputObjectSchema).optional(),
   providerGrants: z.lazy(() => ProviderGrantCreateNestedManyWithoutUserInputObjectSchema).optional(),

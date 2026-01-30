@@ -3,8 +3,6 @@ import { Prisma } from '@prisma/client';
 import { RefreshTokenUncheckedCreateNestedManyWithoutUserInputObjectSchema as RefreshTokenUncheckedCreateNestedManyWithoutUserInputObjectSchema } from './RefreshTokenUncheckedCreateNestedManyWithoutUserInput.schema';
 import { UserPreferenceUncheckedCreateNestedOneWithoutUserInputObjectSchema as UserPreferenceUncheckedCreateNestedOneWithoutUserInputObjectSchema } from './UserPreferenceUncheckedCreateNestedOneWithoutUserInput.schema';
 import { FreightLoadUncheckedCreateNestedManyWithoutUserInputObjectSchema as FreightLoadUncheckedCreateNestedManyWithoutUserInputObjectSchema } from './FreightLoadUncheckedCreateNestedManyWithoutUserInput.schema';
-import { PosStoreUncheckedCreateNestedManyWithoutUserInputObjectSchema as PosStoreUncheckedCreateNestedManyWithoutUserInputObjectSchema } from './PosStoreUncheckedCreateNestedManyWithoutUserInput.schema';
-import { PosTicketUncheckedCreateNestedManyWithoutUserInputObjectSchema as PosTicketUncheckedCreateNestedManyWithoutUserInputObjectSchema } from './PosTicketUncheckedCreateNestedManyWithoutUserInput.schema';
 import { CulinaryMenuItemUncheckedCreateNestedManyWithoutUserInputObjectSchema as CulinaryMenuItemUncheckedCreateNestedManyWithoutUserInputObjectSchema } from './CulinaryMenuItemUncheckedCreateNestedManyWithoutUserInput.schema';
 import { CulinaryPrepTaskUncheckedCreateNestedManyWithoutUserInputObjectSchema as CulinaryPrepTaskUncheckedCreateNestedManyWithoutUserInputObjectSchema } from './CulinaryPrepTaskUncheckedCreateNestedManyWithoutUserInput.schema';
 import { CulinarySupplierNeedUncheckedCreateNestedManyWithoutUserInputObjectSchema as CulinarySupplierNeedUncheckedCreateNestedManyWithoutUserInputObjectSchema } from './CulinarySupplierNeedUncheckedCreateNestedManyWithoutUserInput.schema';
@@ -45,8 +43,6 @@ const makeSchema = () => z.object({
   refreshTokens: z.lazy(() => RefreshTokenUncheckedCreateNestedManyWithoutUserInputObjectSchema).optional(),
   preference: z.lazy(() => UserPreferenceUncheckedCreateNestedOneWithoutUserInputObjectSchema).optional(),
   freightLoads: z.lazy(() => FreightLoadUncheckedCreateNestedManyWithoutUserInputObjectSchema).optional(),
-  posStores: z.lazy(() => PosStoreUncheckedCreateNestedManyWithoutUserInputObjectSchema).optional(),
-  posTickets: z.lazy(() => PosTicketUncheckedCreateNestedManyWithoutUserInputObjectSchema).optional(),
   culinaryMenuItems: z.lazy(() => CulinaryMenuItemUncheckedCreateNestedManyWithoutUserInputObjectSchema).optional(),
   culinaryPrepTasks: z.lazy(() => CulinaryPrepTaskUncheckedCreateNestedManyWithoutUserInputObjectSchema).optional(),
   culinarySupplierNeeds: z.lazy(() => CulinarySupplierNeedUncheckedCreateNestedManyWithoutUserInputObjectSchema).optional(),
