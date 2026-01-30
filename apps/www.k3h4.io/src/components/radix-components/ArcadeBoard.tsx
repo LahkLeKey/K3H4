@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 
-import { Badge, Button, Card, StatChip, Table } from "../ui";
+import { Badge, Button, Card, StatChip, Table, type TableColumn } from "../ui";
 import { useAuthStore } from "../../zustand-stores/auth";
 import { useArcadeState } from "../../react-hooks/arcade";
 
@@ -34,13 +34,13 @@ export function ArcadeBoard() {
         { label: "Redemptions", value: hasOverview ? redemptions.length.toString() : "-", accent: "#fb7185" },
     ];
 
-    const machineColumns = [
+    const machineColumns: TableColumn<typeof machines[number]>[] = [
         { key: "name", label: "Machine" },
         { key: "status", label: "Status", render: (row: typeof machines[number]) => row.status ?? "offline" },
         { key: "createdAt", label: "Installed", render: (row: typeof machines[number]) => formatDate(row.createdAt) },
     ];
 
-    const sessionColumns = [
+    const sessionColumns: TableColumn<typeof sessions[number]>[] = [
         { key: "cardId", label: "Card" },
         { key: "machineId", label: "Machine" },
         {
@@ -57,7 +57,7 @@ export function ArcadeBoard() {
         { key: "startedAt", label: "Started", render: (row: typeof sessions[number]) => formatTime(row.startedAt) },
     ];
 
-    const redemptionColumns = [
+    const redemptionColumns: TableColumn<typeof redemptions[number]>[] = [
         { key: "prizeId", label: "Prize" },
         { key: "cardId", label: "Card" },
         {
