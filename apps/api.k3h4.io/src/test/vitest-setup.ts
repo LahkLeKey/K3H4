@@ -16,6 +16,12 @@ const responsePrototype =
 responsePrototype.writeHead = function writeHead(
     this: PatchedLightMyRequestResponse,
     ...args: Parameters<typeof http.ServerResponse.prototype.writeHead>) {
+  if (this.headersSent) {
+    console.error('writeHead invoked after headers sent', {
+      stack: new Error().stack,
+      statusCode: this.statusCode,
+    });
+  }
   const result = originalWriteHead.apply(this, args);
   if (this._lightMyRequest) {
     this._lightMyRequest.headers = Object.assign({}, this.getHeaders());

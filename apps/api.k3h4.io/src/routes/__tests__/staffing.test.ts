@@ -1,3 +1,5 @@
+import '../../test/vitest-setup.ts';
+
 import {Entity, EntityKind} from '@prisma/client';
 import Fastify from 'fastify';
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';

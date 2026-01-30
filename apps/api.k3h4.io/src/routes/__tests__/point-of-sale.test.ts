@@ -1,3 +1,5 @@
+import '../../test/vitest-setup.ts';
+
 import {Prisma} from '@prisma/client';
 import Fastify from 'fastify';
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
@@ -154,9 +156,11 @@ describe('Point of Sale routes', () => {
     });
     expect(res.statusCode).toBe(200);
     expect(transactionSpy).toHaveBeenCalled();
-    expect(txActor.create).toHaveBeenCalledWith(expect.objectContaining({
-      label: 'Acme'
-    }));
+    expect(txActor.create)
+        .toHaveBeenCalledWith(
+            expect.objectContaining(
+                {data: expect.objectContaining({label: 'Acme'})}),
+        );
     expect(txUser.update).toHaveBeenCalled();
     expect(recordTelemetry)
         .toHaveBeenCalledWith(expect.anything(), expect.objectContaining({

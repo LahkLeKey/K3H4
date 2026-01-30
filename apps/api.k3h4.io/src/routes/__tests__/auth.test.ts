@@ -1,3 +1,5 @@
+import '../../test/vitest-setup.ts';
+
 import Fastify from 'fastify';
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 

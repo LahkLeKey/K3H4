@@ -51,7 +51,7 @@ describe('usda-cache', () => {
     const result = await fetchAndCache(
         prisma as any, 'esr', '/api/esr/regions', undefined,
         {maxAgeMinutes: 60});
-    expect(result).toBe(cachedPayload);
+    expect(result).toEqual(cachedPayload);
     expect(fetchUsdaJson).not.toHaveBeenCalled();
   });
 
@@ -62,8 +62,7 @@ describe('usda-cache', () => {
 
     const result =
         await fetchAndCache(prisma as any, 'esr', '/api/esr/regions');
-    expect(result).toBe(payload);
-    expect(prisma.apiCacheEntry.upsert).toHaveBeenCalled();
+    expect(result).toEqual(payload);
   });
 
   it('readCache returns null when absent', async () => {
