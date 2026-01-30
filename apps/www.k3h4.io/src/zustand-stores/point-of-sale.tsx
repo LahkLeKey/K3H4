@@ -29,7 +29,7 @@ const PointOfSaleStoreSchema = z.object({
     channel: z.string().nullish(),
 });
 
-const PointOfSaleOverviewSchema = z.object({
+export const PointOfSaleOverviewSchema = z.object({
     metrics: PointOfSaleMetricsSchema,
     orders: z.array(PointOfSaleOrderSchema),
     topItems: z.array(PointOfSaleTopItemSchema),
