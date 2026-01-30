@@ -13,22 +13,20 @@ const asRecord = (value: Prisma.JsonValue|null|undefined) => {
 };
 
 const ensureActor = async (
-    tx: PrismaTx, userId: string, type: ActorType, label?: string|null,
-    note?: string|null, metadata?: Prisma.JsonValue|null) => {
+    tx: PrismaTx, userId: string, type: ActorType, label: string,
+    note?: string|null, metadata?: Prisma.JsonValue) => {
   const criteria: Prisma.ActorWhereInput = {userId, type};
-  if (label) criteria.label = label;
   const existing = await tx.actor.findFirst({where: criteria});
   if (existing) return existing;
-  return tx.actor.create({
-    data: {
-      userId,
-      type,
-      label,
-      note,
-      source: AGRICULTURE_ENTITY_SOURCE,
-      metadata,
-    },
-  });
+  const data: Prisma.ActorCreateInput = {
+    user: {connect: {id: userId}},
+    type,
+    label,
+    source: AGRICULTURE_ENTITY_SOURCE,
+  };
+  if (note) data.note = note;
+  if (metadata) data.metadata = metadata;
+  return tx.actor.create({data});
 };
 
 export async function ensureAgricultureActor(
@@ -39,7 +37,7 @@ export async function ensureAgricultureActor(
       ActorType.AGRICULTURE_FARM,
       AGRICULTURE_ACTOR_LABEL,
       AGRICULTURE_ACTOR_NOTE,
-      metadata,
+      metadata ?? undefined,
   );
 }
 
@@ -104,7 +102,7 @@ export async function resolveAgricultureSlotSnapshot(
     },
   });
   if (!slot) return null;
-  let plot: Prisma.Entity|null = null;
+  let plot: Entity|null = null;
   if (slot.targetId) {
     plot = await prisma.entity.findUnique({where: {id: slot.targetId}});
   }

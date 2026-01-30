@@ -108,6 +108,16 @@ const buildSlotPayload = (slot: Entity, plot?: Entity|null) => {
   };
 };
 
+type AgriculturePlotCreateBody = {
+  name: string; crop: string;
+  acres?: number | string;
+  stage?: string;
+  fieldCode?: string;
+  soilType?: string;
+  irrigationZone?: string;
+  notes?: string;
+};
+
 const buildConditionPayload = (condition: Entity) => {
   const metadata = metadataRecord(condition.metadata);
   return {
@@ -617,36 +627,30 @@ export function registerAgricultureRoutes(
       async (request, reply) => {
         const rt = withTelemetryBase(recordTelemetry, request);
         const userId = (request.user as {sub: string}).sub;
-        const body = request.body as {
-          name?: string;
-          crop?: string;
-          acres?: number|string;
-          stage?: string;
-          fieldCode?: string;
-          soilType?: string;
-          irrigationZone?: string;
-          notes?: string;
-        }
-        |undefined;
+        const body =
+            request.body as Partial<AgriculturePlotCreateBody>| undefined;
         if (!body?.name || !body?.crop)
           return reply.status(400).send({error: 'name and crop are required'});
         const actor = await ensureAgricultureActor(prisma, userId);
-        const acres = toDecimal(body.acres ?? 0) ?? new Prisma.Decimal(0);
+        const plotBody = body as AgriculturePlotCreateBody;
+        const name = plotBody.name.trim();
+        const crop = plotBody.crop.trim();
+        const acres = toDecimal(plotBody.acres ?? 0) ?? new Prisma.Decimal(0);
         const plot = await prisma.$transaction(async (tx) => {
           const createdPlot = await tx.entity.create({
             data: {
               actorId: actor.id,
               kind: EntityKind.AGRICULTURE_PLOT,
-              name: `plot-${body.name.trim()}`,
+              name: `plot-${name}`,
               metadata: toJsonValue({
-                name: body.name.trim(),
-                crop: body.crop.trim(),
-                stage: (body.stage?.trim() || 'planned'),
+                name,
+                crop,
+                stage: (plotBody.stage?.trim() || 'planned'),
                 acres: acres.toFixed(2),
-                fieldCode: body.fieldCode?.trim() || null,
-                soilType: body.soilType?.trim() || null,
-                irrigationZone: body.irrigationZone?.trim() || null,
-                notes: body.notes?.trim() || null,
+                fieldCode: plotBody.fieldCode?.trim() || null,
+                soilType: plotBody.soilType?.trim() || null,
+                irrigationZone: plotBody.irrigationZone?.trim() || null,
+                notes: plotBody.notes?.trim() || null,
               }),
             },
           });
@@ -1222,4 +1226,3 @@ export function registerAgricultureRoutes(
       },
   );
 }
-*** End File
