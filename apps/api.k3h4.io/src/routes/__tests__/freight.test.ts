@@ -1,3 +1,5 @@
+import '../../test/vitest-setup.ts';
+
 import {Prisma} from '@prisma/client';
 import Fastify from 'fastify';
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
@@ -7,6 +9,7 @@ import {type RecordTelemetryFn} from '../types';
 
 const recordTelemetry = vi.fn() as unknown as RecordTelemetryFn;
 const userId = 'user-1';
+const nativeFetch = globalThis.fetch;
 
 function buildServer(prisma: any) {
   const server = Fastify();
@@ -20,10 +23,11 @@ function buildServer(prisma: any) {
 describe('freight routes', () => {
   beforeEach(() => {
     recordTelemetry.mockClear();
+    globalThis.fetch = nativeFetch;
   });
 
   afterEach(() => {
-    vi.unstubAllGlobals();
+    globalThis.fetch = nativeFetch;
   });
 
   it('lists loads', async () => {
@@ -49,7 +53,7 @@ describe('freight routes', () => {
       json: async () =>
           ({routes: [{distance: 10000, duration: 600, geometry: {}}]}),
     });
-    vi.stubGlobal('fetch', fetchMock);
+    globalThis.fetch = fetchMock;
 
     const geoDirection = {
       findUnique: vi.fn().mockResolvedValue(null),
@@ -92,7 +96,7 @@ describe('freight routes', () => {
 
   it('returns 502 when osrm fails', async () => {
     const fetchMock = vi.fn().mockRejectedValue(new Error('network'));
-    vi.stubGlobal('fetch', fetchMock);
+    globalThis.fetch = fetchMock;
 
     const prisma = {
       freightLoad: {
@@ -126,7 +130,7 @@ describe('freight routes', () => {
   it('returns 502 when osrm returns empty route', async () => {
     const fetchMock = vi.fn().mockResolvedValue(
         {ok: true, json: async () => ({routes: []})} as Response);
-    vi.stubGlobal('fetch', fetchMock);
+    globalThis.fetch = fetchMock;
     const prisma = {
       freightLoad: {
         create: vi.fn().mockResolvedValue({

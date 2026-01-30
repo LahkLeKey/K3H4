@@ -1,6 +1,8 @@
+import '../../test/vitest-setup.ts';
+
 import {EntityKind, Prisma} from '@prisma/client';
 import Fastify from 'fastify';
-import {beforeEach, describe, expect, it, vi} from 'vitest';
+import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 
 import * as assignmentActor from '../../services/assignment-actor';
 import * as personaLedger from '../../services/persona-ledger';

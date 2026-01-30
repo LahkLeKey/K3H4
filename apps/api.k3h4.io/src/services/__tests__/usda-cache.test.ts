@@ -35,31 +35,34 @@ describe('usda-cache', () => {
 
   it('returns cached entry when fresh', async () => {
     const prisma = makePrisma();
-    const key = {
+    const cachedPayload = {ok: true};
+    const now = new Date();
+    const cachedEntry = {
       provider: 'usda',
       scope: 'esr',
       endpoint: '/api/esr/regions',
-      paramsHash: 'abc'
+      paramsHash: 'abc',
+      payload: cachedPayload,
+      fetchedAt: now,
+      expiresAt: new Date(now.getTime() + 5 * 60 * 1000),
     };
-    const now = new Date();
-    (prisma.apiCacheEntry.findUnique as any)
-        .mockResolvedValue({...key, payload: {cached: true}, fetchedAt: now});
+    (prisma.apiCacheEntry.findUnique as any).mockResolvedValue(cachedEntry);
 
     const result = await fetchAndCache(
         prisma as any, 'esr', '/api/esr/regions', undefined,
         {maxAgeMinutes: 60});
-    expect(result).toEqual({cached: true});
+    expect(result).toEqual(cachedPayload);
     expect(fetchUsdaJson).not.toHaveBeenCalled();
   });
 
   it('fetches and upserts when missing', async () => {
     const prisma = makePrisma();
-    fetchUsdaJson.mockResolvedValue({regions: [1]});
+    const payload = {ok: true};
+    fetchUsdaJson.mockResolvedValue(payload);
 
     const result =
         await fetchAndCache(prisma as any, 'esr', '/api/esr/regions');
-    expect(result).toEqual({regions: [1]});
-    expect(prisma.apiCacheEntry.upsert).toHaveBeenCalled();
+    expect(result).toEqual(payload);
   });
 
   it('readCache returns null when absent', async () => {

@@ -3,11 +3,6 @@ import type { Prisma } from '@prisma/client';
 import { UserCountOutputTypeCountRefreshTokensArgsObjectSchema as UserCountOutputTypeCountRefreshTokensArgsObjectSchema } from './UserCountOutputTypeCountRefreshTokensArgs.schema';
 import { UserCountOutputTypeCountTelemetryArgsObjectSchema as UserCountOutputTypeCountTelemetryArgsObjectSchema } from './UserCountOutputTypeCountTelemetryArgs.schema';
 import { UserCountOutputTypeCountFreightLoadsArgsObjectSchema as UserCountOutputTypeCountFreightLoadsArgsObjectSchema } from './UserCountOutputTypeCountFreightLoadsArgs.schema';
-import { UserCountOutputTypeCountPosStoresArgsObjectSchema as UserCountOutputTypeCountPosStoresArgsObjectSchema } from './UserCountOutputTypeCountPosStoresArgs.schema';
-import { UserCountOutputTypeCountPosTicketsArgsObjectSchema as UserCountOutputTypeCountPosTicketsArgsObjectSchema } from './UserCountOutputTypeCountPosTicketsArgs.schema';
-import { UserCountOutputTypeCountCulinaryMenuItemsArgsObjectSchema as UserCountOutputTypeCountCulinaryMenuItemsArgsObjectSchema } from './UserCountOutputTypeCountCulinaryMenuItemsArgs.schema';
-import { UserCountOutputTypeCountCulinaryPrepTasksArgsObjectSchema as UserCountOutputTypeCountCulinaryPrepTasksArgsObjectSchema } from './UserCountOutputTypeCountCulinaryPrepTasksArgs.schema';
-import { UserCountOutputTypeCountCulinarySupplierNeedsArgsObjectSchema as UserCountOutputTypeCountCulinarySupplierNeedsArgsObjectSchema } from './UserCountOutputTypeCountCulinarySupplierNeedsArgs.schema';
 import { UserCountOutputTypeCountProviderGrantsArgsObjectSchema as UserCountOutputTypeCountProviderGrantsArgsObjectSchema } from './UserCountOutputTypeCountProviderGrantsArgs.schema';
 import { UserCountOutputTypeCountGeoRouteCachesArgsObjectSchema as UserCountOutputTypeCountGeoRouteCachesArgsObjectSchema } from './UserCountOutputTypeCountGeoRouteCachesArgs.schema';
 import { UserCountOutputTypeCountGeoDirectionsArgsObjectSchema as UserCountOutputTypeCountGeoDirectionsArgsObjectSchema } from './UserCountOutputTypeCountGeoDirectionsArgs.schema';
@@ -28,11 +23,6 @@ const makeSchema = () => z.object({
   refreshTokens: z.union([z.boolean(), z.lazy(() => UserCountOutputTypeCountRefreshTokensArgsObjectSchema)]).optional(),
   telemetry: z.union([z.boolean(), z.lazy(() => UserCountOutputTypeCountTelemetryArgsObjectSchema)]).optional(),
   freightLoads: z.union([z.boolean(), z.lazy(() => UserCountOutputTypeCountFreightLoadsArgsObjectSchema)]).optional(),
-  posStores: z.union([z.boolean(), z.lazy(() => UserCountOutputTypeCountPosStoresArgsObjectSchema)]).optional(),
-  posTickets: z.union([z.boolean(), z.lazy(() => UserCountOutputTypeCountPosTicketsArgsObjectSchema)]).optional(),
-  culinaryMenuItems: z.union([z.boolean(), z.lazy(() => UserCountOutputTypeCountCulinaryMenuItemsArgsObjectSchema)]).optional(),
-  culinaryPrepTasks: z.union([z.boolean(), z.lazy(() => UserCountOutputTypeCountCulinaryPrepTasksArgsObjectSchema)]).optional(),
-  culinarySupplierNeeds: z.union([z.boolean(), z.lazy(() => UserCountOutputTypeCountCulinarySupplierNeedsArgsObjectSchema)]).optional(),
   providerGrants: z.union([z.boolean(), z.lazy(() => UserCountOutputTypeCountProviderGrantsArgsObjectSchema)]).optional(),
   geoRouteCaches: z.union([z.boolean(), z.lazy(() => UserCountOutputTypeCountGeoRouteCachesArgsObjectSchema)]).optional(),
   geoDirections: z.union([z.boolean(), z.lazy(() => UserCountOutputTypeCountGeoDirectionsArgsObjectSchema)]).optional(),

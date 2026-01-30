@@ -1,12 +1,23 @@
-import {Prisma} from '@prisma/client';
-import Fastify from 'fastify';
-import {beforeEach, describe, expect, it, vi} from 'vitest';
+import '../../test/vitest-setup.ts';
 
+import {LifecycleStatus} from '@prisma/client';
+import Fastify from 'fastify';
+import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
+
+import * as culinaryLedger from '../../services/culinary-ledger';
+import * as pointOfSaleLedger from '../../services/point-of-sale-ledger';
 import {registerCulinaryRoutes} from '../culinary';
 import {type RecordTelemetryFn} from '../types';
 
 const recordTelemetry = vi.fn() as unknown as RecordTelemetryFn;
 const userId = 'user-1';
+let loadMenuItemsSpy: ReturnType<typeof vi.spyOn>;
+let loadPrepTasksSpy: ReturnType<typeof vi.spyOn>;
+let loadSupplierNeedsSpy: ReturnType<typeof vi.spyOn>;
+let createMenuItemSpy: ReturnType<typeof vi.spyOn>;
+let createPrepTaskSpy: ReturnType<typeof vi.spyOn>;
+let createSupplierNeedSpy: ReturnType<typeof vi.spyOn>;
+let pointOfSaleOverviewSpy: ReturnType<typeof vi.spyOn>;
 
 function buildServer(mocks: any) {
   const server = Fastify();
@@ -18,14 +29,41 @@ function buildServer(mocks: any) {
 }
 
 describe('Culinary routes', () => {
-  beforeEach(() => recordTelemetry.mockClear());
+  beforeEach(() => {
+    recordTelemetry.mockClear();
+    loadMenuItemsSpy =
+        vi.spyOn(culinaryLedger, 'loadCulinaryMenuItems').mockResolvedValue([]);
+    loadPrepTasksSpy =
+        vi.spyOn(culinaryLedger, 'loadCulinaryPrepTasks').mockResolvedValue([]);
+    loadSupplierNeedsSpy = vi.spyOn(culinaryLedger, 'loadCulinarySupplierNeeds')
+                               .mockResolvedValue([]);
+    createMenuItemSpy =
+        vi.spyOn(culinaryLedger, 'createCulinaryMenuItem').mockResolvedValue({
+          id: 'm1'
+        });
+    createPrepTaskSpy =
+        vi.spyOn(culinaryLedger, 'createCulinaryPrepTask').mockResolvedValue({
+          id: 'p1'
+        });
+    createSupplierNeedSpy =
+        vi.spyOn(culinaryLedger, 'createCulinarySupplierNeed')
+            .mockResolvedValue({id: 's1'});
+    pointOfSaleOverviewSpy =
+        vi.spyOn(pointOfSaleLedger, 'getPointOfSaleOverview')
+            .mockResolvedValue({
+              metrics: {grossRevenue: '0.00', tickets: 0, avgTicket: '0.00'},
+              orders: [],
+              topItems: [],
+              stores: [],
+            });
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
 
   it('returns overview', async () => {
-    const prisma = {
-      culinaryMenuItem: {findMany: vi.fn().mockResolvedValue([])},
-      culinaryPrepTask: {findMany: vi.fn().mockResolvedValue([])},
-      culinarySupplierNeed: {findMany: vi.fn().mockResolvedValue([])},
-    };
+    const prisma = {$transaction: vi.fn()};
     const server = buildServer(prisma);
     const res = await server.inject({method: 'GET', url: '/culinary/overview'});
     expect(res.statusCode).toBe(200);
@@ -33,15 +71,19 @@ describe('Culinary routes', () => {
         .toHaveBeenCalledWith(
             expect.anything(),
             expect.objectContaining({eventType: 'culinary.overview.fetch'}));
+    expect(loadMenuItemsSpy).toHaveBeenCalledWith(prisma, userId);
+    expect(loadPrepTasksSpy).toHaveBeenCalledWith(prisma, userId);
+    expect(loadSupplierNeedsSpy).toHaveBeenCalledWith(prisma, userId);
+    const body = res.json();
+    expect(body.pointOfSale).toEqual(expect.objectContaining({
+      metrics: expect.objectContaining({tickets: 0}),
+    }));
   });
 
   it('creates menu item, prep task, and supplier need', async () => {
     const prisma = {
-      culinaryMenuItem: {create: vi.fn().mockResolvedValue({id: 'm1'})},
-      culinaryPrepTask:
-          {create: vi.fn().mockResolvedValue({id: 'p1', station: 'Garde'})},
-      culinarySupplierNeed:
-          {create: vi.fn().mockResolvedValue({id: 's1', status: 'open'})},
+      $transaction:
+          vi.fn(async (callback: (tx: any) => any) => callback({} as any)),
     };
     const server = buildServer(prisma);
 
@@ -51,6 +93,10 @@ describe('Culinary routes', () => {
       payload: {name: 'Bowl', prepMinutes: 10, cost: 4.5, price: 12}
     });
     expect(menuRes.statusCode).toBe(200);
+    expect(createMenuItemSpy)
+        .toHaveBeenCalledWith(
+            expect.anything(), userId,
+            {name: 'Bowl', prepMinutes: 10, cost: 4.5, price: 12});
 
     const prepRes = await server.inject({
       method: 'POST',
@@ -63,6 +109,12 @@ describe('Culinary routes', () => {
       }
     });
     expect(prepRes.statusCode).toBe(200);
+    expect(createPrepTaskSpy).toHaveBeenCalledWith(expect.anything(), userId, {
+      task: 'Chop',
+      station: 'Garde',
+      dueAt: '2025-01-01',
+      status: LifecycleStatus.PENDING,
+    });
 
     const supplierRes = await server.inject({
       method: 'POST',
@@ -75,5 +127,12 @@ describe('Culinary routes', () => {
       }
     });
     expect(supplierRes.statusCode).toBe(200);
+    expect(createSupplierNeedSpy)
+        .toHaveBeenCalledWith(expect.anything(), userId, {
+          item: 'Greens',
+          quantity: '3',
+          dueDate: '2025-01-02',
+          status: LifecycleStatus.CLOSED,
+        });
   });
 });

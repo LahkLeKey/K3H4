@@ -48,6 +48,8 @@ enum ActorType {
   PERSONA                      @map("persona")
   STAFFING                     @map("staffing")
   ASSIGNMENT                   @map("assignment")
+  CULINARY                     @map("culinary")
+  POINT_OF_SALE_STORE          @map("point-of-sale-store")
 }
 
 enum EntityDirection {
@@ -90,6 +92,10 @@ enum EntityKind {
   STAFFING_PLACEMENT             @map("staffing_placement")
   ASSIGNMENT                     @map("assignment")
   ASSIGNMENT_TIMECARD            @map("assignment_timecard")
+  CULINARY_MENU_ITEM             @map("culinary-menu-item")
+  CULINARY_PREP_TASK             @map("culinary-prep-task")
+  CULINARY_SUPPLIER_NEED         @map("culinary-supplier-need")
+  POINT_OF_SALE_TICKET           @map("point-of-sale_ticket")
 }
 
 enum EngagementPriority {
@@ -127,39 +133,34 @@ model Building {
 }
 
 model User {
-  id                    String                 @id @default(cuid())
-  email                 String                 @unique
-  provider              String
-  providerId            String
-  k3h4CoinBalance       Decimal                @default("25000") @db.Decimal(18, 2) // sandbox-only play balance
-  displayName           String?
-  avatarUrl             String?
-  createdAt             DateTime               @default(now())
-  updatedAt             DateTime               @updatedAt
-  refreshTokens         RefreshToken[]
-  preference            UserPreference?
-  telemetry             TelemetryEvent[]
-  freightLoads          FreightLoad[]
-  posStores             PosStore[]
-  posTickets            PosTicket[]
-  culinaryMenuItems     CulinaryMenuItem[]
-  culinaryPrepTasks     CulinaryPrepTask[]
-  culinarySupplierNeeds CulinarySupplierNeed[]
-  providerGrants        ProviderGrant[]
-  geoRouteCaches        GeoRouteCache[]
-  geoDirections         GeoDirection[]
-  geoPoiCaches          GeoPoiCache[]
-  geoQueryCaches        GeoQueryCache[]
-  maptilerQueries       MaptilerQuery[]
-  maptilerCacheEntries  MaptilerCacheEntry[]
-  osrmCacheEntries      OsrmCacheEntry[]
-  geoStatusLogs         GeoStatusLog[]
-  geoDemTileCaches      GeoDemTileCache[]
-  geoViewHistories      GeoViewHistory[]
-  chatSessions          ChatSession[]
-  aiInsights            AiInsight[]
-  ollamaOperations      OllamaOperation[]
-  actors                Actor[]
+  id                   String               @id @default(cuid())
+  email                String               @unique
+  provider             String
+  providerId           String
+  k3h4CoinBalance      Decimal              @default("25000") @db.Decimal(18, 2) // sandbox-only play balance
+  displayName          String?
+  avatarUrl            String?
+  createdAt            DateTime             @default(now())
+  updatedAt            DateTime             @updatedAt
+  refreshTokens        RefreshToken[]
+  preference           UserPreference?
+  telemetry            TelemetryEvent[]
+  freightLoads         FreightLoad[]
+  providerGrants       ProviderGrant[]
+  geoRouteCaches       GeoRouteCache[]
+  geoDirections        GeoDirection[]
+  geoPoiCaches         GeoPoiCache[]
+  geoQueryCaches       GeoQueryCache[]
+  maptilerQueries      MaptilerQuery[]
+  maptilerCacheEntries MaptilerCacheEntry[]
+  osrmCacheEntries     OsrmCacheEntry[]
+  geoStatusLogs        GeoStatusLog[]
+  geoDemTileCaches     GeoDemTileCache[]
+  geoViewHistories     GeoViewHistory[]
+  chatSessions         ChatSession[]
+  aiInsights           AiInsight[]
+  ollamaOperations     OllamaOperation[]
+  actors               Actor[]
 
   @@unique([provider, providerId])
 }
@@ -563,93 +564,6 @@ model FreightLoad {
   routeGeoJson    Json?
   createdAt       DateTime        @default(now())
   updatedAt       DateTime        @updatedAt
-
-  @@index([userId, status])
-}
-
-model PosStore {
-  id        String      @id @default(cuid())
-  userId    String
-  user      User        @relation(fields: [userId], references: [id], onDelete: Cascade)
-  name      String
-  channel   String
-  tickets   PosTicket[]
-  createdAt DateTime    @default(now())
-  updatedAt DateTime    @updatedAt
-
-  @@unique([userId, name])
-  @@index([userId])
-}
-
-model PosTicket {
-  id         String          @id @default(cuid())
-  userId     String
-  user       User            @relation(fields: [userId], references: [id], onDelete: Cascade)
-  storeId    String
-  store      PosStore        @relation(fields: [storeId], references: [id], onDelete: Cascade)
-  total      Decimal         @db.Decimal(18, 2)
-  itemsCount Int             @default(0)
-  channel    String
-  status     LifecycleStatus @default(OPEN)
-  createdAt  DateTime        @default(now())
-  updatedAt  DateTime        @updatedAt
-  lineItems  PosLineItem[]
-
-  @@index([userId, storeId])
-  @@index([userId, channel])
-  @@index([userId, createdAt])
-}
-
-model PosLineItem {
-  id        String    @id @default(cuid())
-  ticketId  String
-  ticket    PosTicket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
-  name      String
-  quantity  Int       @default(1)
-  price     Decimal   @db.Decimal(18, 2)
-  createdAt DateTime  @default(now())
-
-  @@index([ticketId])
-}
-
-model CulinaryMenuItem {
-  id          String   @id @default(cuid())
-  userId      String
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  name        String
-  prepMinutes Int
-  cost        Decimal  @db.Decimal(18, 2)
-  price       Decimal  @db.Decimal(18, 2)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  @@index([userId, name])
-}
-
-model CulinaryPrepTask {
-  id        String          @id @default(cuid())
-  userId    String
-  user      User            @relation(fields: [userId], references: [id], onDelete: Cascade)
-  task      String
-  station   String
-  dueAt     DateTime?
-  status    LifecycleStatus @default(PENDING)
-  createdAt DateTime        @default(now())
-  updatedAt DateTime        @updatedAt
-
-  @@index([userId, status])
-}
-
-model CulinarySupplierNeed {
-  id        String          @id @default(cuid())
-  userId    String
-  user      User            @relation(fields: [userId], references: [id], onDelete: Cascade)
-  item      String
-  quantity  String
-  status    LifecycleStatus @default(OPEN)
-  dueDate   DateTime?
-  createdAt DateTime        @default(now())
-  updatedAt DateTime        @updatedAt
 
   @@index([userId, status])
 }

@@ -1,10 +1,11 @@
-import {Prisma, PrismaClient} from '@prisma/client';
+import {ActorType, Prisma, PrismaClient} from '@prisma/client';
 import {type FastifyInstance} from 'fastify';
 import {randomBytes} from 'node:crypto';
 import {URLSearchParams} from 'node:url';
 
 import {deleteAgricultureActorWithEntities} from '../services/agriculture-actor';
 import {deleteBankActorWithEntities} from '../services/bank-actor';
+import {deleteCulinaryActorWithEntities} from '../services/culinary-ledger';
 import {deleteStaffingActorWithEntities} from '../services/staffing-actor';
 import {deleteWarehouseActorWithEntities} from '../services/warehouse-actor';
 
@@ -155,28 +156,14 @@ const runDeleteJob = async (
         action: () => deleteAgricultureActorWithEntities(prisma, userId)
       },
       {
-        key: 'posLineItems',
-        action: () => prisma.posLineItem.deleteMany({where: {ticket: {userId}}})
+        key: 'pointOfSaleStores',
+        action: () => prisma.actor.deleteMany({
+          where: {userId, type: ActorType.POINT_OF_SALE_STORE},
+        })
       },
       {
-        key: 'posTickets',
-        action: () => prisma.posTicket.deleteMany({where: {userId}})
-      },
-      {
-        key: 'posStores',
-        action: () => prisma.posStore.deleteMany({where: {userId}})
-      },
-      {
-        key: 'culinaryPrepTasks',
-        action: () => prisma.culinaryPrepTask.deleteMany({where: {userId}})
-      },
-      {
-        key: 'culinarySupplierNeeds',
-        action: () => prisma.culinarySupplierNeed.deleteMany({where: {userId}})
-      },
-      {
-        key: 'culinaryMenuItems',
-        action: () => prisma.culinaryMenuItem.deleteMany({where: {userId}})
+        key: 'culinaryLedger',
+        action: () => deleteCulinaryActorWithEntities(prisma, userId)
       },
       {
         key: 'userPreferences',
