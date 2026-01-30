@@ -1,7 +1,7 @@
 import {Prisma, PrismaClient} from '@prisma/client';
 import {type FastifyInstance} from 'fastify';
 
-import {BankActorType, BankTransactionDirection, BankTransactionKind, buildBankTransactionWhere, recordBankTransactionEntity,} from '../services/bank-actor';
+import {ActorType, EntityDirection, EntityKind, buildBankTransactionWhere, recordBankTransactionEntity,} from '../services/bank-actor';
 
 import {withTelemetryBase} from './telemetry';
 import {type RecordTelemetryFn} from './types';
@@ -22,8 +22,8 @@ const serializeTransaction = (entity: {
   targetType?: string | null;
   targetId?: string | null;
   name?: string | null;
-  direction?: BankTransactionDirection | null;
-  kind?: BankTransactionKind | null;
+  direction?: EntityDirection | null;
+  kind?: EntityKind | null;
 }) => {
   const metadata = (entity.metadata as {
                      amount?: string;
@@ -126,11 +126,11 @@ export function registerBankRoutes(
             const txn = await recordBankTransactionEntity(tx, {
               userId,
               amount: change.abs(),
-              direction: isCredit ? BankTransactionDirection.CREDIT :
-                                    BankTransactionDirection.DEBIT,
-              kind: hasSet ? BankTransactionKind.SET :
-                  isCredit ? BankTransactionKind.DEPOSIT :
-                             BankTransactionKind.WITHDRAWAL,
+              direction: isCredit ? EntityDirection.CREDIT :
+                                    EntityDirection.DEBIT,
+              kind: hasSet ? EntityKind.SET :
+                  isCredit ? EntityKind.DEPOSIT :
+                             EntityKind.WITHDRAWAL,
               note: body?.reason ?? null,
               balanceAfter: saved.k3h4CoinBalance,
             });
@@ -186,8 +186,8 @@ export function registerBankRoutes(
         })();
 
         const direction = query?.direction === 'credit' ?
-            BankTransactionDirection.CREDIT :
-            query?.direction === 'debit' ? BankTransactionDirection.DEBIT :
+            EntityDirection.CREDIT :
+            query?.direction === 'debit' ? EntityDirection.DEBIT :
                                            undefined;
         const directionLabel = direction?.toLowerCase() ?? '';
 
@@ -198,7 +198,7 @@ export function registerBankRoutes(
         const validTo = to && !Number.isNaN(to.valueOf()) ? to : undefined;
 
         const actor = await prisma.actor.findFirst({
-          where: {userId, type: BankActorType.BANK_ACCOUNT},
+          where: {userId, type: ActorType.BANK_ACCOUNT},
           select: {id: true}
         });
         if (!actor) {

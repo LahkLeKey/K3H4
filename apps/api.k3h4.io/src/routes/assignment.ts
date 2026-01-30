@@ -2,7 +2,7 @@ import {faker} from '@faker-js/faker';
 import {Prisma, type PrismaClient} from '@prisma/client';
 import {type FastifyInstance} from 'fastify';
 
-import {BankTransactionDirection, BankTransactionKind, recordBankTransactionEntity,} from '../services/bank-actor';
+import {EntityDirection, EntityKind, recordBankTransactionEntity,} from '../services/bank-actor';
 
 import {buildTelemetryBase} from './telemetry';
 import {type RecordTelemetryFn} from './types';
@@ -222,8 +222,8 @@ export function registerAssignmentRoutes(
             const bankTxn = await recordBankTransactionEntity(tx, {
               userId,
               amount,
-              direction: BankTransactionDirection.DEBIT,
-              kind: BankTransactionKind.ASSIGNMENT_PAYOUT,
+              direction: EntityDirection.DEBIT,
+              kind: EntityKind.ASSIGNMENT_PAYOUT,
               note: body?.note ??
                   `Payout for ${assignment.title} (${
                         assignment.persona.alias})`,

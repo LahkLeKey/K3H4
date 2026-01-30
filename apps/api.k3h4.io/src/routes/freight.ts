@@ -3,7 +3,7 @@ import {type FastifyInstance} from 'fastify';
 
 import {routeSignature} from '../lib/geo-signature';
 import {fetchOsrm} from '../lib/osrm-client';
-import {BankTransactionDirection, BankTransactionKind, recordBankTransactionEntity,} from '../services/bank-actor';
+import {EntityDirection, EntityKind, recordBankTransactionEntity,} from '../services/bank-actor';
 
 import {withTelemetryBase} from './telemetry';
 import {type RecordTelemetryFn} from './types';
@@ -483,8 +483,8 @@ export function registerFreightRoutes(
             await recordBankTransactionEntity(tx, {
               userId,
               amount: cost,
-              direction: BankTransactionDirection.DEBIT,
-              kind: BankTransactionKind.FREIGHT_PAYMENT,
+              direction: EntityDirection.DEBIT,
+              kind: EntityKind.FREIGHT_PAYMENT,
               note: `Freight load ${load.title}`,
               balanceAfter: savedUser.k3h4CoinBalance,
               targetType: 'freight_load',

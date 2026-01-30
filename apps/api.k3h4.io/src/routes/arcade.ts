@@ -1,7 +1,7 @@
 import {Prisma, type PrismaClient} from '@prisma/client';
 import {type FastifyInstance} from 'fastify';
 
-import {BankActorType, BankTransactionDirection, BankTransactionKind, recordBankTransactionEntity,} from '../services/bank-actor';
+import {ActorType, EntityDirection, EntityKind, recordBankTransactionEntity,} from '../services/bank-actor';
 
 import {buildTelemetryBase} from './telemetry';
 import {type RecordTelemetryFn} from './types';
@@ -30,10 +30,10 @@ const parseAmountFromMetadata = (metadata: Prisma.JsonValue|null|undefined) => {
 };
 
 const computeBalance = (entries: Array<{
-  direction: BankTransactionDirection | null; metadata: Prisma.JsonValue | null;
+  direction: EntityDirection | null; metadata: Prisma.JsonValue | null;
 }>) => entries.reduce((balance, entry) => {
   const amount = parseAmountFromMetadata(entry.metadata);
-  if (entry.direction === BankTransactionDirection.DEBIT)
+  if (entry.direction === EntityDirection.DEBIT)
     return balance.sub(amount);
   return balance.add(amount);
 }, new Prisma.Decimal(0));
@@ -79,7 +79,7 @@ const buildCardSummary = (card: Prisma.Actor, entries: Prisma.Entity[]) => {
   const balance = computeBalance(entries);
   const topUps =
       entries
-          .filter((entity) => entity.kind === BankTransactionKind.ARCADE_TOPUP)
+          .filter((entity) => entity.kind === EntityKind.ARCADE_TOPUP)
           .map(buildCardTopUp);
   return {
     id: card.id,
@@ -131,15 +131,15 @@ export function registerArcadeRoutes(
       async (request) => {
         const userId = (request.user as {sub: string}).sub;
         const machinesPromise = prisma.actor.findMany({
-          where: {userId, type: BankActorType.ARCADE_MACHINE},
+          where: {userId, type: ActorType.ARCADE_MACHINE},
           orderBy: {createdAt: 'desc'},
         });
         const cardsPromise = prisma.actor.findMany({
-          where: {userId, type: BankActorType.ARCADE_PLAYER_CARD},
+          where: {userId, type: ActorType.ARCADE_PLAYER_CARD},
           orderBy: {createdAt: 'desc'},
         });
         const prizesPromise = prisma.actor.findMany({
-          where: {userId, type: BankActorType.ARCADE_PRIZE},
+          where: {userId, type: ActorType.ARCADE_PRIZE},
           orderBy: {createdAt: 'desc'},
         });
         const [machines, cards, prizes] = await Promise.all([
@@ -155,16 +155,16 @@ export function registerArcadeRoutes(
                                             [];
         const sessionsPromise = prisma.entity.findMany({
           where: {
-            actor: {userId, type: BankActorType.ARCADE_PLAYER_CARD},
-            kind: BankTransactionKind.ARCADE_SESSION,
+            actor: {userId, type: ActorType.ARCADE_PLAYER_CARD},
+            kind: EntityKind.ARCADE_SESSION,
           },
           orderBy: {createdAt: 'desc'},
           take: 20,
         });
         const redemptionsPromise = prisma.entity.findMany({
           where: {
-            actor: {userId, type: BankActorType.ARCADE_PLAYER_CARD},
-            kind: BankTransactionKind.ARCADE_PRIZE_REDEMPTION,
+            actor: {userId, type: ActorType.ARCADE_PLAYER_CARD},
+            kind: EntityKind.ARCADE_PRIZE_REDEMPTION,
           },
           orderBy: {createdAt: 'desc'},
           take: 20,
@@ -215,7 +215,7 @@ export function registerArcadeRoutes(
         const card = await prisma.actor.create({
           data: {
             userId,
-            type: BankActorType.ARCADE_PLAYER_CARD,
+            type: ActorType.ARCADE_PLAYER_CARD,
             label: body?.label?.trim() || 'Arcade card',
             source: 'k3h4-api',
           },
@@ -258,7 +258,7 @@ export function registerArcadeRoutes(
               throw new Error('Insufficient k3h4-coin balance');
 
             const card = await tx.actor.findFirst({
-              where: {id, userId, type: BankActorType.ARCADE_PLAYER_CARD},
+              where: {id, userId, type: ActorType.ARCADE_PLAYER_CARD},
             });
             if (!card) throw new Error('Card not found');
 
@@ -273,8 +273,8 @@ export function registerArcadeRoutes(
             await recordBankTransactionEntity(tx, {
               userId,
               amount,
-              direction: BankTransactionDirection.DEBIT,
-              kind: BankTransactionKind.ARCADE_TOPUP,
+              direction: EntityDirection.DEBIT,
+              kind: EntityKind.ARCADE_TOPUP,
               balanceAfter: nextUserBalance,
               targetType: 'arcade_card',
               targetId: card.id,
@@ -285,8 +285,8 @@ export function registerArcadeRoutes(
               userId,
               actorId: card.id,
               amount,
-              direction: BankTransactionDirection.CREDIT,
-              kind: BankTransactionKind.ARCADE_TOPUP,
+              direction: EntityDirection.CREDIT,
+              kind: EntityKind.ARCADE_TOPUP,
               balanceAfter: nextCardBalance,
               metadata: {source: body?.source ?? 'k3h4-coin'},
               name: 'Arcade card top-up',
@@ -329,7 +329,7 @@ export function registerArcadeRoutes(
         const prize = await prisma.actor.create({
           data: {
             userId,
-            type: BankActorType.ARCADE_PRIZE,
+            type: ActorType.ARCADE_PRIZE,
             label: body.name,
             metadata: {
               sku: body.sku ?? null,
@@ -371,7 +371,7 @@ export function registerArcadeRoutes(
               where: {
                 id: body.cardId,
                 userId,
-                type: BankActorType.ARCADE_PLAYER_CARD
+                type: ActorType.ARCADE_PLAYER_CARD
               },
             });
             if (!card) throw new Error('Card not found');
@@ -380,7 +380,7 @@ export function registerArcadeRoutes(
               where: {
                 id: body.machineId,
                 userId,
-                type: BankActorType.ARCADE_MACHINE
+                type: ActorType.ARCADE_MACHINE
               },
             });
             if (!machine) throw new Error('Machine not found');
@@ -397,8 +397,8 @@ export function registerArcadeRoutes(
               userId,
               actorId: card.id,
               amount,
-              direction: BankTransactionDirection.DEBIT,
-              kind: BankTransactionKind.ARCADE_SESSION,
+              direction: EntityDirection.DEBIT,
+              kind: EntityKind.ARCADE_SESSION,
               balanceAfter: nextBalance,
               targetType: 'arcade_machine',
               targetId: machine.id,
@@ -449,7 +449,7 @@ export function registerArcadeRoutes(
               await prisma.$transaction(async (tx) => {
                 const prize = await tx.actor.findFirst({
                   where:
-                      {id: prizeId, userId, type: BankActorType.ARCADE_PRIZE},
+                      {id: prizeId, userId, type: ActorType.ARCADE_PRIZE},
                 });
                 if (!prize) throw new Error('Prize not found');
                 const prizeMetadata = parseJsonObject(prize.metadata);
@@ -467,7 +467,7 @@ export function registerArcadeRoutes(
                   where: {
                     id: body.cardId,
                     userId,
-                    type: BankActorType.ARCADE_PLAYER_CARD
+                    type: ActorType.ARCADE_PLAYER_CARD
                   },
                 });
                 if (!card) throw new Error('Card not found');
@@ -481,8 +481,8 @@ export function registerArcadeRoutes(
                   userId,
                   actorId: card.id,
                   amount: cost,
-                  direction: BankTransactionDirection.DEBIT,
-                  kind: BankTransactionKind.ARCADE_PRIZE_REDEMPTION,
+                  direction: EntityDirection.DEBIT,
+                  kind: EntityKind.ARCADE_PRIZE_REDEMPTION,
                   balanceAfter: nextBalance,
                   targetType: 'arcade_prize',
                   targetId: prize.id,

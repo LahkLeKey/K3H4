@@ -36,26 +36,26 @@ enum LifecycleStatus {
   UNFILLED  @map("unfilled")
 }
 
-enum BankActorType {
-  BANK_ACCOUNT @map("bank-account")
-  ARCADE_MACHINE @map("arcade-machine")
+enum ActorType {
+  BANK_ACCOUNT       @map("bank-account")
+  ARCADE_MACHINE     @map("arcade-machine")
   ARCADE_PLAYER_CARD @map("arcade-player-card")
-  ARCADE_PRIZE @map("arcade-prize")
+  ARCADE_PRIZE       @map("arcade-prize")
 }
 
-enum BankTransactionDirection {
+enum EntityDirection {
   CREDIT @map("credit")
-  DEBIT @map("debit")
+  DEBIT  @map("debit")
 }
 
-enum BankTransactionKind {
-  DEPOSIT @map("deposit")
-  WITHDRAWAL @map("withdrawal")
-  SET @map("set")
-  ASSIGNMENT_PAYOUT @map("assignment_payout")
-  FREIGHT_PAYMENT @map("freight_payment")
-  ARCADE_TOPUP @map("arcade_topup")
-  ARCADE_SESSION @map("arcade_session")
+enum EntityKind {
+  DEPOSIT                 @map("deposit")
+  WITHDRAWAL              @map("withdrawal")
+  SET                     @map("set")
+  ASSIGNMENT_PAYOUT       @map("assignment_payout")
+  FREIGHT_PAYMENT         @map("freight_payment")
+  ARCADE_TOPUP            @map("arcade_topup")
+  ARCADE_SESSION          @map("arcade_session")
   ARCADE_PRIZE_REDEMPTION @map("arcade_prize_redemption")
 }
 
@@ -1081,7 +1081,6 @@ model CulinarySupplierNeed {
   @@index([userId, status])
 }
 
-
 // USDA FAS datasets (ESR, GATS, PSD) cached artifacts and reference data
 model UsdaRegion {
   id         String   @id @default(cuid())
@@ -1297,16 +1296,16 @@ model OllamaOperation {
 }
 
 model Actor {
-  id        String   @id @default(cuid())
+  id        String    @id @default(cuid())
   userId    String?
-  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  user      User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
   label     String
-  type      BankActorType
+  type      ActorType
   note      String?
   source    String?
   metadata  Json?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
 
   entities Entity[]
 
@@ -1315,18 +1314,18 @@ model Actor {
 }
 
 model Entity {
-  id         String   @id @default(cuid())
+  id         String           @id @default(cuid())
   actorId    String
-  actor      Actor    @relation(fields: [actorId], references: [id], onDelete: Cascade)
-  kind       BankTransactionKind
-  direction  BankTransactionDirection?
+  actor      Actor            @relation(fields: [actorId], references: [id], onDelete: Cascade)
+  kind       EntityKind
+  direction  EntityDirection?
   name       String?
   targetType String?
   targetId   String?
   source     String?
   metadata   Json?
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  createdAt  DateTime         @default(now())
+  updatedAt  DateTime         @updatedAt
 
   @@index([actorId])
   @@index([kind])

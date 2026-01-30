@@ -1,29 +1,29 @@
-import {BankActorType, BankTransactionDirection, BankTransactionKind, Prisma, type PrismaClient} from '@prisma/client';
+import {ActorType, EntityDirection, EntityKind, Prisma, type PrismaClient} from '@prisma/client';
 
 const BANK_ACTOR_LABEL = 'K3H4 Coin Account';
 const BANK_ACTOR_NOTE = 'Ledger that tracks k3h4 coin movements';
 const BANK_ACTOR_SOURCE = 'k3h4-api';
 
-export {BankActorType, BankTransactionDirection, BankTransactionKind};
+export {ActorType, EntityDirection, EntityKind};
 
 type PrismaTx = PrismaClient|Prisma.TransactionClient;
 
 type BankEntityMetadata = {
-  amount: string; balanceAfter: string; direction: BankTransactionDirection;
-  kind: BankTransactionKind;
+  amount: string; balanceAfter: string; direction: EntityDirection;
+  kind: EntityKind;
   note: string | null;
 }&Record<string, unknown>;
 
 export type BankTransactionRecord = {
-  userId: string; amount: Prisma.Decimal; direction: BankTransactionDirection;
-  kind: BankTransactionKind;
+  userId: string; amount: Prisma.Decimal; direction: EntityDirection;
+  kind: EntityKind;
   balanceAfter: Prisma.Decimal;
   note?: string | null;
   targetType?: string | null;
   targetId?: string | null;
   name?: string | null;
   source?: string | null;
-  actorType?: BankActorType;
+  actorType?: ActorType;
   actorLabel?: string | null;
   actorNote?: string | null;
   actorMetadata?: Prisma.JsonValue | null;
@@ -43,7 +43,7 @@ const buildMetadata = (record: BankTransactionRecord): BankEntityMetadata => ({
 });
 
 const ensureActor = async (
-    tx: PrismaTx, userId: string, type: BankActorType, label?: string|null,
+    tx: PrismaTx, userId: string, type: ActorType, label?: string|null,
     note?: string|null, metadata?: Prisma.JsonValue|null) => {
   const criteria: Prisma.ActorWhereInput = {
     userId,
@@ -66,7 +66,7 @@ const ensureActor = async (
 
 export async function ensureBankActor(tx: PrismaTx, userId: string) {
   return ensureActor(
-      tx, userId, BankActorType.BANK_ACCOUNT, BANK_ACTOR_LABEL,
+      tx, userId, ActorType.BANK_ACCOUNT, BANK_ACTOR_LABEL,
       BANK_ACTOR_NOTE);
 }
 
@@ -75,9 +75,9 @@ export async function recordBankTransactionEntity(
   const actor = record.actorId ?
       await tx.actor.findUnique({where: {id: record.actorId}}) :
       await ensureActor(
-          tx, record.userId, record.actorType ?? BankActorType.BANK_ACCOUNT,
+          tx, record.userId, record.actorType ?? ActorType.BANK_ACCOUNT,
           record.actorLabel ??
-              (record.actorType === BankActorType.BANK_ACCOUNT ?
+              (record.actorType === ActorType.BANK_ACCOUNT ?
                    BANK_ACTOR_LABEL :
                    undefined),
           record.actorNote, record.actorMetadata);
@@ -99,8 +99,8 @@ export async function recordBankTransactionEntity(
 type MetadataFilter = Prisma.JsonFilter;
 
 type BankTransactionWhereOptions = {
-  direction?: BankTransactionDirection;
-  kind?: BankTransactionKind;
+  direction?: EntityDirection;
+  kind?: EntityKind;
   from?: Date;
   to?: Date;
   metadataFilters?: MetadataFilter[];
@@ -158,11 +158,11 @@ export async function deleteBankActorWithEntities(
     tx: PrismaTx, userId: string) {
   const entities = await tx.entity.deleteMany({
     where: {
-      actor: {userId, type: BankActorType.BANK_ACCOUNT},
+      actor: {userId, type: ActorType.BANK_ACCOUNT},
     },
   });
   const actors = await tx.actor.deleteMany({
-    where: {userId, type: BankActorType.BANK_ACCOUNT},
+    where: {userId, type: ActorType.BANK_ACCOUNT},
   });
   return {entities, actors};
 }
