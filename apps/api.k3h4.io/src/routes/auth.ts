@@ -139,26 +139,8 @@ const runDeleteJob = async (
         action: () => deleteBankActorWithEntities(prisma, userId),
       },
       {
-        key: 'personas',
-        action: () => prisma.persona.deleteMany({where: {userId}})
-      },
-      {
         key: 'staffingLedger',
         action: () => deleteStaffingActorWithEntities(prisma, userId)
-      },
-      {
-        key: 'assignmentTimecards',
-        action: () => prisma.assignmentTimecard.deleteMany(
-            {where: {assignment: {userId}}})
-      },
-      {
-        key: 'assignmentPayouts',
-        action: () =>
-            prisma.assignmentPayout.deleteMany({where: {persona: {userId}}})
-      },
-      {
-        key: 'assignments',
-        action: () => prisma.assignment.deleteMany({where: {userId}})
       },
       {
         key: 'freightLoads',

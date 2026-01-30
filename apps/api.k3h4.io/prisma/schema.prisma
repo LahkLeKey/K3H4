@@ -127,43 +127,39 @@ model Building {
 }
 
 model User {
-  id                     String                 @id @default(cuid())
-  email                  String                 @unique
-  provider               String
-  providerId             String
-  k3h4CoinBalance        Decimal                @default("25000") @db.Decimal(18, 2) // sandbox-only play balance
-  displayName            String?
-  avatarUrl              String?
-  createdAt              DateTime               @default(now())
-  updatedAt              DateTime               @updatedAt
-  refreshTokens          RefreshToken[]
-  preference             UserPreference?
-  telemetry              TelemetryEvent[]
-  personas               Persona[]
-  assignments            Assignment[]
-  freightLoads           FreightLoad[]
-  posStores              PosStore[]
-  posTickets             PosTicket[]
-  culinaryMenuItems      CulinaryMenuItem[]
-  culinaryPrepTasks      CulinaryPrepTask[]
-  culinarySupplierNeeds  CulinarySupplierNeed[]
-  providerGrants         ProviderGrant[]
-  geoRouteCaches         GeoRouteCache[]
-  geoDirections          GeoDirection[]
-  geoPoiCaches           GeoPoiCache[]
-  geoQueryCaches         GeoQueryCache[]
-  maptilerQueries        MaptilerQuery[]
-  maptilerCacheEntries   MaptilerCacheEntry[]
-  osrmCacheEntries       OsrmCacheEntry[]
-  geoStatusLogs          GeoStatusLog[]
-  geoDemTileCaches       GeoDemTileCache[]
-  personaAttributes      PersonaAttribute[]
-  personaCompatibilities PersonaCompatibility[]
-  geoViewHistories       GeoViewHistory[]
-  chatSessions           ChatSession[]
-  aiInsights             AiInsight[]
-  ollamaOperations       OllamaOperation[]
-  actors                 Actor[]
+  id                    String                 @id @default(cuid())
+  email                 String                 @unique
+  provider              String
+  providerId            String
+  k3h4CoinBalance       Decimal                @default("25000") @db.Decimal(18, 2) // sandbox-only play balance
+  displayName           String?
+  avatarUrl             String?
+  createdAt             DateTime               @default(now())
+  updatedAt             DateTime               @updatedAt
+  refreshTokens         RefreshToken[]
+  preference            UserPreference?
+  telemetry             TelemetryEvent[]
+  freightLoads          FreightLoad[]
+  posStores             PosStore[]
+  posTickets            PosTicket[]
+  culinaryMenuItems     CulinaryMenuItem[]
+  culinaryPrepTasks     CulinaryPrepTask[]
+  culinarySupplierNeeds CulinarySupplierNeed[]
+  providerGrants        ProviderGrant[]
+  geoRouteCaches        GeoRouteCache[]
+  geoDirections         GeoDirection[]
+  geoPoiCaches          GeoPoiCache[]
+  geoQueryCaches        GeoQueryCache[]
+  maptilerQueries       MaptilerQuery[]
+  maptilerCacheEntries  MaptilerCacheEntry[]
+  osrmCacheEntries      OsrmCacheEntry[]
+  geoStatusLogs         GeoStatusLog[]
+  geoDemTileCaches      GeoDemTileCache[]
+  geoViewHistories      GeoViewHistory[]
+  chatSessions          ChatSession[]
+  aiInsights            AiInsight[]
+  ollamaOperations      OllamaOperation[]
+  actors                Actor[]
 
   @@unique([provider, providerId])
 }
@@ -184,63 +180,6 @@ model AiInsight {
   @@index([userId])
   @@index([targetType])
   @@index([userId, createdAt])
-}
-
-model Persona {
-  id        String   @id @default(cuid())
-  userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  alias     String
-  account   String
-  handle    String?
-  note      String?
-  tags      Json?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  assignments          Assignment[]
-  assignmentPayouts    AssignmentPayout[]
-  attributes           PersonaAttribute[]
-  compatibilitySources PersonaCompatibility[] @relation("PersonaCompatibilitySource")
-  compatibilityTargets PersonaCompatibility[] @relation("PersonaCompatibilityTarget")
-
-  @@index([userId, alias])
-}
-
-model PersonaAttribute {
-  id        String   @id @default(cuid())
-  userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  personaId String
-  persona   Persona  @relation(fields: [personaId], references: [id], onDelete: Cascade)
-  category  String
-  value     String
-  weight    Int      @default(1)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@unique([personaId, category, value])
-  @@index([userId, category])
-}
-
-model PersonaCompatibility {
-  id                String          @id @default(cuid())
-  userId            String
-  user              User            @relation(fields: [userId], references: [id], onDelete: Cascade)
-  sourceId          String
-  source            Persona         @relation("PersonaCompatibilitySource", fields: [sourceId], references: [id], onDelete: Cascade)
-  targetId          String
-  target            Persona         @relation("PersonaCompatibilityTarget", fields: [targetId], references: [id], onDelete: Cascade)
-  jaccardScore      Float
-  intersectionCount Int
-  unionCount        Int
-  overlappingTokens Json?
-  computedAt        DateTime        @default(now())
-  rationale         String?
-  status            LifecycleStatus @default(ACTIVE)
-
-  @@unique([userId, sourceId, targetId])
-  @@index([userId, computedAt])
 }
 
 model RefreshToken {
@@ -604,51 +543,6 @@ model TelemetryEvent {
   @@index([sessionId])
   @@index([eventType])
   @@index([createdAt, id])
-}
-
-model Assignment {
-  id         String               @id @default(cuid())
-  userId     String
-  user       User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
-  personaId  String
-  persona    Persona              @relation(fields: [personaId], references: [id], onDelete: Cascade)
-  title      String
-  hourlyRate Decimal              @db.Decimal(18, 2)
-  status     LifecycleStatus      @default(OPEN)
-  createdAt  DateTime             @default(now())
-  updatedAt  DateTime             @updatedAt
-  timecards  AssignmentTimecard[]
-  payouts    AssignmentPayout[]
-
-  @@index([userId, personaId])
-}
-
-model AssignmentTimecard {
-  id           String     @id @default(cuid())
-  assignmentId String
-  assignment   Assignment @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
-  hours        Decimal    @db.Decimal(10, 2)
-  amount       Decimal    @db.Decimal(18, 2)
-  note         String?
-  status       String     @default("approved")
-  createdAt    DateTime   @default(now())
-
-  @@index([assignmentId, status])
-}
-
-model AssignmentPayout {
-  id           String     @id @default(cuid())
-  assignmentId String
-  assignment   Assignment @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
-  personaId    String
-  persona      Persona    @relation(fields: [personaId], references: [id], onDelete: Cascade)
-  amount       Decimal    @db.Decimal(18, 2)
-  note         String?
-  invoiceUrl   String?
-  status       String     @default("paid")
-  createdAt    DateTime   @default(now())
-
-  @@index([assignmentId, personaId])
 }
 
 model FreightLoad {
