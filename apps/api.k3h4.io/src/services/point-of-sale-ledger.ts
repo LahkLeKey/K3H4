@@ -1,4 +1,4 @@
-import {ActorType, Entity, EntityKind, LifecycleStatus, Prisma, PrismaClient} from '@prisma/client';
+import {Actor, ActorType, Entity, EntityKind, LifecycleStatus, Prisma, PrismaClient} from '@prisma/client';
 
 export const POS_DEFAULT_CHANNEL = 'In-store';
 
@@ -32,12 +32,12 @@ const parseTicketItems = (value: Prisma.JsonValue|null|undefined) => {
       .filter((item): item is TicketItem => Boolean(item));
 };
 
-const getStoreChannel = (store: Prisma.Actor) => {
+const getStoreChannel = (store: Actor) => {
   const metadata = parseJsonObject(store.metadata);
   return (metadata.channel as string | undefined) ?? POS_DEFAULT_CHANNEL;
 };
 
-const buildStoreSummary = (store: Prisma.Actor) => ({
+const buildStoreSummary = (store: Actor) => ({
   id: store.id,
   name: store.label,
   channel: getStoreChannel(store),
@@ -54,7 +54,7 @@ type TicketRecord = {
   itemsCount: number;
 };
 
-const ticketFromEntity = (entity: Prisma.Entity): TicketRecord => {
+const ticketFromEntity = (entity: Entity): TicketRecord => {
   const metadata = parseJsonObject(entity.metadata);
   const amount = typeof metadata.amount === 'string' ? metadata.amount : '0';
   const total = new Prisma.Decimal(amount || '0');

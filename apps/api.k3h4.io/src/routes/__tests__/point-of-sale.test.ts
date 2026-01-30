@@ -1,4 +1,4 @@
-import '../../test/vitest-setup.ts';
+import '../../test/vitest-setup';
 
 import {Prisma} from '@prisma/client';
 import Fastify from 'fastify';
@@ -8,7 +8,8 @@ import * as bankActor from '../../services/bank-actor';
 import {registerPointOfSaleRoutes} from '../point-of-sale';
 import {type RecordTelemetryFn} from '../types';
 
-const recordTelemetry = vi.fn() as unknown as RecordTelemetryFn;
+const recordTelemetryMock = vi.fn();
+const recordTelemetry = recordTelemetryMock as unknown as RecordTelemetryFn;
 const userId = 'user-1';
 
 function buildServer(prisma: any) {
@@ -48,21 +49,22 @@ describe('Point of Sale routes', () => {
   let recordBankTransactionEntitySpy: ReturnType<typeof vi.spyOn>;
 
   beforeEach(() => {
-    recordTelemetry.mockClear();
+    recordTelemetryMock.mockClear();
     recordBankTransactionEntitySpy =
-        vi.spyOn(bankActor, 'recordBankTransactionEntity').mockResolvedValue({
-          id: 'txn-1',
-          metadata: {
-            amount: '15.00',
-            storeId: 'store-1',
-            storeName: 'Main',
-            channel: 'In-store',
-            status: 'CLOSED',
-            itemsCount: 1,
-            items: [{name: 'Snack', quantity: 1, price: '15.00'}],
-          },
-          createdAt: new Date('2025-01-01T00:00:00Z'),
-        } as any);
+        vi.spyOn(bankActor as any, 'recordBankTransactionEntity')
+            .mockResolvedValue({
+              id: 'txn-1',
+              metadata: {
+                amount: '15.00',
+                storeId: 'store-1',
+                storeName: 'Main',
+                channel: 'In-store',
+                status: 'CLOSED',
+                itemsCount: 1,
+                items: [{name: 'Snack', quantity: 1, price: '15.00'}],
+              },
+              createdAt: new Date('2025-01-01T00:00:00Z'),
+            } as any);
   });
 
   afterEach(() => {
