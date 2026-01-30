@@ -41,6 +41,7 @@ enum ActorType {
   ARCADE_MACHINE     @map("arcade-machine")
   ARCADE_PLAYER_CARD @map("arcade-player-card")
   ARCADE_PRIZE       @map("arcade-prize")
+  USDA_FEED          @map("usda-feed")
 }
 
 enum EntityDirection {
@@ -57,6 +58,11 @@ enum EntityKind {
   ARCADE_TOPUP            @map("arcade_topup")
   ARCADE_SESSION          @map("arcade_session")
   ARCADE_PRIZE_REDEMPTION @map("arcade_prize_redemption")
+  USDA_REGION            @map("usda-region")
+  USDA_COUNTRY           @map("usda-country")
+  USDA_COMMODITY         @map("usda-commodity")
+  USDA_UNIT              @map("usda-unit")
+  USDA_ATTRIBUTE         @map("usda-attribute")
 }
 
 enum EngagementPriority {
@@ -1081,100 +1087,11 @@ model CulinarySupplierNeed {
   @@index([userId, status])
 }
 
-// USDA FAS datasets (ESR, GATS, PSD) cached artifacts and reference data
-model UsdaRegion {
-  id         String   @id @default(cuid())
-  dataset    String
-  code       String
-  name       String?
-  wikidataId String?
-  enrichment Json?
-  extra      Json?
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
-
-  @@unique([dataset, code])
-  @@index([dataset])
-}
-
-model UsdaCountry {
-  id         String   @id @default(cuid())
-  dataset    String
-  code       String
-  name       String?
-  regionCode String?
-  wikidataId String?
-  enrichment Json?
-  extra      Json?
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
-
-  @@unique([dataset, code])
-  @@index([dataset, regionCode])
-}
-
-model UsdaCommodity {
-  id         String   @id @default(cuid())
-  dataset    String
-  code       String
-  name       String?
-  wikidataId String?
-  enrichment Json?
-  extra      Json?
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
-
-  @@unique([dataset, code])
-  @@index([dataset])
-}
-
-model UsdaUnit {
-  id         String   @id @default(cuid())
-  dataset    String
-  code       String
-  name       String?
-  wikidataId String?
-  enrichment Json?
-  extra      Json?
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
-
-  @@unique([dataset, code])
-  @@index([dataset])
-}
-
-model UsdaRelease {
-  id         String   @id @default(cuid())
-  dataset    String
-  scope      String
-  releasedOn DateTime
-  note       String?
-  fetchedAt  DateTime @default(now())
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
-
-  @@unique([dataset, scope])
-  @@index([dataset, releasedOn])
-}
-
-model UsdaCommodityAttribute {
-  id         String   @id @default(cuid())
-  dataset    String
-  code       String
-  name       String?
-  wikidataId String?
-  enrichment Json?
-  extra      Json?
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
-
-  @@unique([dataset, code])
-  @@index([dataset])
-}
-
-model UsdaCacheEntry {
+// USDA reference data now lives inside Actor/Entity records; cache entries stay generic.
+model ApiCacheEntry {
   id         String    @id @default(cuid())
-  dataset    String
+  provider   String
+  scope      String
   endpoint   String
   params     Json?
   paramsHash String
@@ -1184,21 +1101,8 @@ model UsdaCacheEntry {
   createdAt  DateTime  @default(now())
   updatedAt  DateTime  @updatedAt
 
-  @@unique([dataset, endpoint, paramsHash])
-  @@index([dataset, endpoint])
-}
-
-model UsdaSyncState {
-  id            String    @id @default(cuid())
-  dataset       String
-  scope         String
-  lastReleaseOn DateTime?
-  lastSyncedAt  DateTime?
-  note          String?
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
-
-  @@unique([dataset, scope])
+  @@unique([provider, scope, endpoint, paramsHash])
+  @@index([provider, scope, endpoint])
 }
 
 // Wikidata REST API cache entries
