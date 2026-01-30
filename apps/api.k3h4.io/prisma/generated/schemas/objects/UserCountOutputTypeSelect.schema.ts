@@ -10,7 +10,6 @@ import { UserCountOutputTypeCountStaffingCandidatesArgsObjectSchema as UserCount
 import { UserCountOutputTypeCountStaffingShiftsArgsObjectSchema as UserCountOutputTypeCountStaffingShiftsArgsObjectSchema } from './UserCountOutputTypeCountStaffingShiftsArgs.schema';
 import { UserCountOutputTypeCountStaffingPlacementsArgsObjectSchema as UserCountOutputTypeCountStaffingPlacementsArgsObjectSchema } from './UserCountOutputTypeCountStaffingPlacementsArgs.schema';
 import { UserCountOutputTypeCountFreightLoadsArgsObjectSchema as UserCountOutputTypeCountFreightLoadsArgsObjectSchema } from './UserCountOutputTypeCountFreightLoadsArgs.schema';
-import { UserCountOutputTypeCountWarehouseItemsArgsObjectSchema as UserCountOutputTypeCountWarehouseItemsArgsObjectSchema } from './UserCountOutputTypeCountWarehouseItemsArgs.schema';
 import { UserCountOutputTypeCountPosStoresArgsObjectSchema as UserCountOutputTypeCountPosStoresArgsObjectSchema } from './UserCountOutputTypeCountPosStoresArgs.schema';
 import { UserCountOutputTypeCountPosTicketsArgsObjectSchema as UserCountOutputTypeCountPosTicketsArgsObjectSchema } from './UserCountOutputTypeCountPosTicketsArgs.schema';
 import { UserCountOutputTypeCountCulinaryMenuItemsArgsObjectSchema as UserCountOutputTypeCountCulinaryMenuItemsArgsObjectSchema } from './UserCountOutputTypeCountCulinaryMenuItemsArgs.schema';
@@ -45,7 +44,6 @@ const makeSchema = () => z.object({
   staffingShifts: z.union([z.boolean(), z.lazy(() => UserCountOutputTypeCountStaffingShiftsArgsObjectSchema)]).optional(),
   staffingPlacements: z.union([z.boolean(), z.lazy(() => UserCountOutputTypeCountStaffingPlacementsArgsObjectSchema)]).optional(),
   freightLoads: z.union([z.boolean(), z.lazy(() => UserCountOutputTypeCountFreightLoadsArgsObjectSchema)]).optional(),
-  warehouseItems: z.union([z.boolean(), z.lazy(() => UserCountOutputTypeCountWarehouseItemsArgsObjectSchema)]).optional(),
   posStores: z.union([z.boolean(), z.lazy(() => UserCountOutputTypeCountPosStoresArgsObjectSchema)]).optional(),
   posTickets: z.union([z.boolean(), z.lazy(() => UserCountOutputTypeCountPosTicketsArgsObjectSchema)]).optional(),
   culinaryMenuItems: z.union([z.boolean(), z.lazy(() => UserCountOutputTypeCountCulinaryMenuItemsArgsObjectSchema)]).optional(),

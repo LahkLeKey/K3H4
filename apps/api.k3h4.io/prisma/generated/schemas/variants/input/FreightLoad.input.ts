@@ -18,8 +18,7 @@ export const FreightLoadInputSchema = z.object({
     status: LifecycleStatusSchema,
     routeGeoJson: z.unknown().optional().nullable(),
     createdAt: z.date(),
-    updatedAt: z.date(),
-    warehouseItems: z.array(z.unknown())
+    updatedAt: z.date()
 }).strict();
 
 export type FreightLoadInputType = z.infer<typeof FreightLoadInputSchema>;

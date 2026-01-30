@@ -13,7 +13,6 @@ import { StaffingCandidateOrderByRelationAggregateInputObjectSchema as StaffingC
 import { StaffingShiftOrderByRelationAggregateInputObjectSchema as StaffingShiftOrderByRelationAggregateInputObjectSchema } from './StaffingShiftOrderByRelationAggregateInput.schema';
 import { StaffingPlacementOrderByRelationAggregateInputObjectSchema as StaffingPlacementOrderByRelationAggregateInputObjectSchema } from './StaffingPlacementOrderByRelationAggregateInput.schema';
 import { FreightLoadOrderByRelationAggregateInputObjectSchema as FreightLoadOrderByRelationAggregateInputObjectSchema } from './FreightLoadOrderByRelationAggregateInput.schema';
-import { WarehouseItemOrderByRelationAggregateInputObjectSchema as WarehouseItemOrderByRelationAggregateInputObjectSchema } from './WarehouseItemOrderByRelationAggregateInput.schema';
 import { PosStoreOrderByRelationAggregateInputObjectSchema as PosStoreOrderByRelationAggregateInputObjectSchema } from './PosStoreOrderByRelationAggregateInput.schema';
 import { PosTicketOrderByRelationAggregateInputObjectSchema as PosTicketOrderByRelationAggregateInputObjectSchema } from './PosTicketOrderByRelationAggregateInput.schema';
 import { CulinaryMenuItemOrderByRelationAggregateInputObjectSchema as CulinaryMenuItemOrderByRelationAggregateInputObjectSchema } from './CulinaryMenuItemOrderByRelationAggregateInput.schema';
@@ -58,7 +57,6 @@ const makeSchema = () => z.object({
   staffingShifts: z.lazy(() => StaffingShiftOrderByRelationAggregateInputObjectSchema).optional(),
   staffingPlacements: z.lazy(() => StaffingPlacementOrderByRelationAggregateInputObjectSchema).optional(),
   freightLoads: z.lazy(() => FreightLoadOrderByRelationAggregateInputObjectSchema).optional(),
-  warehouseItems: z.lazy(() => WarehouseItemOrderByRelationAggregateInputObjectSchema).optional(),
   posStores: z.lazy(() => PosStoreOrderByRelationAggregateInputObjectSchema).optional(),
   posTickets: z.lazy(() => PosTicketOrderByRelationAggregateInputObjectSchema).optional(),
   culinaryMenuItems: z.lazy(() => CulinaryMenuItemOrderByRelationAggregateInputObjectSchema).optional(),

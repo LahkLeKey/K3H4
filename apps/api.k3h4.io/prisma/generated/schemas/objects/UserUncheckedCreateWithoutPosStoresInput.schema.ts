@@ -11,7 +11,6 @@ import { StaffingCandidateUncheckedCreateNestedManyWithoutUserInputObjectSchema 
 import { StaffingShiftUncheckedCreateNestedManyWithoutUserInputObjectSchema as StaffingShiftUncheckedCreateNestedManyWithoutUserInputObjectSchema } from './StaffingShiftUncheckedCreateNestedManyWithoutUserInput.schema';
 import { StaffingPlacementUncheckedCreateNestedManyWithoutUserInputObjectSchema as StaffingPlacementUncheckedCreateNestedManyWithoutUserInputObjectSchema } from './StaffingPlacementUncheckedCreateNestedManyWithoutUserInput.schema';
 import { FreightLoadUncheckedCreateNestedManyWithoutUserInputObjectSchema as FreightLoadUncheckedCreateNestedManyWithoutUserInputObjectSchema } from './FreightLoadUncheckedCreateNestedManyWithoutUserInput.schema';
-import { WarehouseItemUncheckedCreateNestedManyWithoutUserInputObjectSchema as WarehouseItemUncheckedCreateNestedManyWithoutUserInputObjectSchema } from './WarehouseItemUncheckedCreateNestedManyWithoutUserInput.schema';
 import { PosTicketUncheckedCreateNestedManyWithoutUserInputObjectSchema as PosTicketUncheckedCreateNestedManyWithoutUserInputObjectSchema } from './PosTicketUncheckedCreateNestedManyWithoutUserInput.schema';
 import { CulinaryMenuItemUncheckedCreateNestedManyWithoutUserInputObjectSchema as CulinaryMenuItemUncheckedCreateNestedManyWithoutUserInputObjectSchema } from './CulinaryMenuItemUncheckedCreateNestedManyWithoutUserInput.schema';
 import { CulinaryPrepTaskUncheckedCreateNestedManyWithoutUserInputObjectSchema as CulinaryPrepTaskUncheckedCreateNestedManyWithoutUserInputObjectSchema } from './CulinaryPrepTaskUncheckedCreateNestedManyWithoutUserInput.schema';
@@ -63,7 +62,6 @@ const makeSchema = () => z.object({
   staffingShifts: z.lazy(() => StaffingShiftUncheckedCreateNestedManyWithoutUserInputObjectSchema).optional(),
   staffingPlacements: z.lazy(() => StaffingPlacementUncheckedCreateNestedManyWithoutUserInputObjectSchema).optional(),
   freightLoads: z.lazy(() => FreightLoadUncheckedCreateNestedManyWithoutUserInputObjectSchema).optional(),
-  warehouseItems: z.lazy(() => WarehouseItemUncheckedCreateNestedManyWithoutUserInputObjectSchema).optional(),
   posTickets: z.lazy(() => PosTicketUncheckedCreateNestedManyWithoutUserInputObjectSchema).optional(),
   culinaryMenuItems: z.lazy(() => CulinaryMenuItemUncheckedCreateNestedManyWithoutUserInputObjectSchema).optional(),
   culinaryPrepTasks: z.lazy(() => CulinaryPrepTaskUncheckedCreateNestedManyWithoutUserInputObjectSchema).optional(),

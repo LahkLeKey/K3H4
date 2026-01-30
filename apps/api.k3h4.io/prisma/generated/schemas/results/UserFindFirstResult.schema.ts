@@ -20,7 +20,6 @@ export const UserFindFirstResultSchema = z.nullable(z.object({
   staffingShifts: z.array(z.unknown()),
   staffingPlacements: z.array(z.unknown()),
   freightLoads: z.array(z.unknown()),
-  warehouseItems: z.array(z.unknown()),
   posStores: z.array(z.unknown()),
   posTickets: z.array(z.unknown()),
   culinaryMenuItems: z.array(z.unknown()),

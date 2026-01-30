@@ -43,6 +43,7 @@ enum ActorType {
   ARCADE_PRIZE       @map("arcade-prize")
   USDA_FEED          @map("usda-feed")
   AGRICULTURE_FARM   @map("agriculture-farm")
+  AGRICULTURE_RESOURCE_LIBRARY @map("agriculture-resource-library")
   WAREHOUSE          @map("warehouse")
 }
 
@@ -73,6 +74,8 @@ enum EntityKind {
   AGRICULTURE_INVENTORY_ITEM        @map("agriculture_inventory_item")
   AGRICULTURE_INVENTORY_MOVEMENT    @map("agriculture_inventory_movement")
   AGRICULTURE_SHIPMENT              @map("agriculture_shipment")
+  AGRICULTURE_RESOURCE_CATEGORY     @map("agriculture_resource_category")
+  AGRICULTURE_RESOURCE              @map("agriculture_resource") 
   WAREHOUSE_ITEM                   @map("warehouse_item")
 }
 
@@ -839,32 +842,6 @@ model PosLineItem {
   createdAt DateTime  @default(now())
 
   @@index([ticketId])
-}
-
-model AgricultureResourceCategory {
-  id          String   @id @default(cuid())
-  slug        String   @unique
-  title       String
-  description String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  resources AgricultureResource[]
-}
-
-model AgricultureResource {
-  id         String                      @id @default(cuid())
-  categoryId String
-  category   AgricultureResourceCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
-  title      String
-  summary    String
-  url        String
-  tags       String[]                    @default([])
-  source     String?
-  createdAt  DateTime                    @default(now())
-  updatedAt  DateTime                    @updatedAt
-
-  @@index([categoryId])
 }
 
 model CulinaryMenuItem {

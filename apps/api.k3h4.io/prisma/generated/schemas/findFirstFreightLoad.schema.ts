@@ -26,9 +26,7 @@ export const FreightLoadFindFirstSelectSchema: z.ZodType<Prisma.FreightLoadSelec
     status: z.boolean().optional(),
     routeGeoJson: z.boolean().optional(),
     createdAt: z.boolean().optional(),
-    updatedAt: z.boolean().optional(),
-    warehouseItems: z.boolean().optional(),
-    _count: z.boolean().optional()
+    updatedAt: z.boolean().optional()
   }).strict() as unknown as z.ZodType<Prisma.FreightLoadSelect>;
 
 export const FreightLoadFindFirstSelectZodSchema = z.object({
@@ -48,9 +46,7 @@ export const FreightLoadFindFirstSelectZodSchema = z.object({
     status: z.boolean().optional(),
     routeGeoJson: z.boolean().optional(),
     createdAt: z.boolean().optional(),
-    updatedAt: z.boolean().optional(),
-    warehouseItems: z.boolean().optional(),
-    _count: z.boolean().optional()
+    updatedAt: z.boolean().optional()
   }).strict();
 
 export const FreightLoadFindFirstSchema: z.ZodType<Prisma.FreightLoadFindFirstArgs> = z.object({ select: FreightLoadFindFirstSelectSchema.optional(), include: z.lazy(() => FreightLoadIncludeObjectSchema.optional()), orderBy: z.union([FreightLoadOrderByWithRelationInputObjectSchema, FreightLoadOrderByWithRelationInputObjectSchema.array()]).optional(), where: FreightLoadWhereInputObjectSchema.optional(), cursor: FreightLoadWhereUniqueInputObjectSchema.optional(), take: z.number().optional(), skip: z.number().optional(), distinct: z.union([FreightLoadScalarFieldEnumSchema, FreightLoadScalarFieldEnumSchema.array()]).optional() }).strict() as unknown as z.ZodType<Prisma.FreightLoadFindFirstArgs>;

@@ -1,4 +1,4 @@
-import {type Entity, EntityKind, LifecycleStatus, Prisma, type PrismaClient,} from '@prisma/client';
+import {ActorType, type Entity, EntityKind, LifecycleStatus, Prisma, type PrismaClient,} from '@prisma/client';
 import {type FastifyInstance} from 'fastify';
 
 import {lifecycleStatusOrDefault, parseLifecycleStatus} from '../lib/status-utils';
@@ -49,6 +49,27 @@ const metadataString = (metadata: Record<string, unknown>, key: string) => {
   if (value != null) return String(value);
   return null;
 };
+
+const metadataStringArray =
+    (metadata: Record<string, unknown>, key: string) => {
+      const value = metadata[key];
+      if (Array.isArray(value)) {
+        return value
+            .map((entry) => {
+              if (typeof entry === 'string') return entry.trim();
+              if (typeof entry === 'number') return String(entry);
+              return null;
+            })
+            .filter(
+                (entry): entry is string =>
+                    typeof entry === 'string' && entry.trim().length > 0);
+      }
+      if (typeof value === 'string') {
+        const trimmed = value.trim();
+        return trimmed.length ? [trimmed] : [];
+      }
+      return [];
+    };
 
 const metadataNumber = (metadata: Record<string, unknown>, key: string) => {
   const value = metadata[key];
@@ -249,23 +270,53 @@ const buildShipmentPayload = (entity: Entity) => {
   };
 };
 
-const serializeResource = (resource: any) => ({
-  id: resource.id,
-  title: resource.title,
-  summary: resource.summary,
-  url: resource.url,
-  tags: resource.tags ?? [],
-  source: resource.source ?? null,
-});
+const AGRICULTURE_RESOURCE_ACTOR_SOURCE = 'agriculture-resources';
+const AGRICULTURE_RESOURCE_ACTOR_LABEL = 'Agriculture Resources';
+const AGRICULTURE_RESOURCE_CATEGORY_TARGET = 'agriculture-resource-category';
 
-const serializeResourceCategory = (category: any) => ({
-  id: category.id,
-  slug: category.slug,
-  title: category.title,
-  description: category.description ?? null,
-  resources: category.resources ? category.resources.map(serializeResource) :
-                                  [],
-});
+const ensureAgricultureResourceActor = async (prisma: PrismaClient) => {
+  const existing = await prisma.actor.findFirst({
+    where: {
+      type: ActorType.AGRICULTURE_RESOURCE_LIBRARY,
+      source: AGRICULTURE_RESOURCE_ACTOR_SOURCE,
+    },
+  });
+  if (existing) return existing;
+  return prisma.actor.create({
+    data: {
+      type: ActorType.AGRICULTURE_RESOURCE_LIBRARY,
+      label: AGRICULTURE_RESOURCE_ACTOR_LABEL,
+      source: AGRICULTURE_RESOURCE_ACTOR_SOURCE,
+    },
+  });
+};
+
+const serializeResource = (resource: Entity) => {
+  const metadata = metadataRecord(resource.metadata);
+  const title = resource.name ?? metadataString(metadata, 'title') ??
+      metadataString(metadata, 'slug');
+  return {
+    id: resource.id,
+    title: title ?? resource.id,
+    summary: metadataString(metadata, 'summary') ?? null,
+    url: metadataString(metadata, 'url') ?? null,
+    tags: metadataStringArray(metadata, 'tags'),
+    source: metadataString(metadata, 'source') ?? null,
+  };
+};
+
+const serializeResourceCategory = (category: Entity, resources: Entity[]) => {
+  const metadata = metadataRecord(category.metadata);
+  const title = category.name ?? metadataString(metadata, 'title') ??
+      metadataString(metadata, 'slug');
+  return {
+    id: category.id,
+    slug: metadataString(metadata, 'slug') ?? null,
+    title: title ?? category.id,
+    description: metadataString(metadata, 'description') ?? null,
+    resources: resources.map(serializeResource),
+  };
+};
 
 export function registerAgricultureRoutes(
     server: FastifyInstance, prisma: PrismaClient,
@@ -1213,16 +1264,44 @@ export function registerAgricultureRoutes(
       {preHandler: [server.authenticate]},
       async (request) => {
         const rt = withTelemetryBase(recordTelemetry, request);
-        const categories = await prisma.agricultureResourceCategory.findMany({
-          orderBy: {title: 'asc'},
-          include: {resources: {orderBy: {title: 'asc'}}},
+        const actor = await ensureAgricultureResourceActor(prisma);
+        const categories = await prisma.entity.findMany({
+          where: {
+            actorId: actor.id,
+            kind: EntityKind.AGRICULTURE_RESOURCE_CATEGORY,
+          },
+          orderBy: {name: 'asc'},
         });
+        const categoryIds = categories.map((category) => category.id);
+        const resources = categoryIds.length ? await prisma.entity.findMany({
+          where: {
+            actorId: actor.id,
+            kind: EntityKind.AGRICULTURE_RESOURCE,
+            targetType: AGRICULTURE_RESOURCE_CATEGORY_TARGET,
+            targetId: {in : categoryIds},
+          },
+          orderBy: {name: 'asc'},
+        }) :
+                                               [];
+        const resourcesByCategory = new Map<string, Entity[]>();
+        for (const resource of resources) {
+          if (!resource.targetId) continue;
+          const bucket = resourcesByCategory.get(resource.targetId);
+          if (bucket)
+            bucket.push(resource);
+          else
+            resourcesByCategory.set(resource.targetId, [resource]);
+        }
         await rt({
           eventType: 'agriculture.resources.fetch',
           source: 'api',
           payload: {count: categories.length},
         });
-        return {categories: categories.map(serializeResourceCategory)};
+        return {
+          categories: categories.map(
+              (category) => serializeResourceCategory(
+                  category, resourcesByCategory.get(category.id) ?? [])),
+        };
       },
   );
 }

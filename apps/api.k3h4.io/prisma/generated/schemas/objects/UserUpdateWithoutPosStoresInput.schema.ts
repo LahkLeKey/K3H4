@@ -15,7 +15,6 @@ import { StaffingCandidateUpdateManyWithoutUserNestedInputObjectSchema as Staffi
 import { StaffingShiftUpdateManyWithoutUserNestedInputObjectSchema as StaffingShiftUpdateManyWithoutUserNestedInputObjectSchema } from './StaffingShiftUpdateManyWithoutUserNestedInput.schema';
 import { StaffingPlacementUpdateManyWithoutUserNestedInputObjectSchema as StaffingPlacementUpdateManyWithoutUserNestedInputObjectSchema } from './StaffingPlacementUpdateManyWithoutUserNestedInput.schema';
 import { FreightLoadUpdateManyWithoutUserNestedInputObjectSchema as FreightLoadUpdateManyWithoutUserNestedInputObjectSchema } from './FreightLoadUpdateManyWithoutUserNestedInput.schema';
-import { WarehouseItemUpdateManyWithoutUserNestedInputObjectSchema as WarehouseItemUpdateManyWithoutUserNestedInputObjectSchema } from './WarehouseItemUpdateManyWithoutUserNestedInput.schema';
 import { PosTicketUpdateManyWithoutUserNestedInputObjectSchema as PosTicketUpdateManyWithoutUserNestedInputObjectSchema } from './PosTicketUpdateManyWithoutUserNestedInput.schema';
 import { CulinaryMenuItemUpdateManyWithoutUserNestedInputObjectSchema as CulinaryMenuItemUpdateManyWithoutUserNestedInputObjectSchema } from './CulinaryMenuItemUpdateManyWithoutUserNestedInput.schema';
 import { CulinaryPrepTaskUpdateManyWithoutUserNestedInputObjectSchema as CulinaryPrepTaskUpdateManyWithoutUserNestedInputObjectSchema } from './CulinaryPrepTaskUpdateManyWithoutUserNestedInput.schema';
@@ -67,7 +66,6 @@ const makeSchema = () => z.object({
   staffingShifts: z.lazy(() => StaffingShiftUpdateManyWithoutUserNestedInputObjectSchema).optional(),
   staffingPlacements: z.lazy(() => StaffingPlacementUpdateManyWithoutUserNestedInputObjectSchema).optional(),
   freightLoads: z.lazy(() => FreightLoadUpdateManyWithoutUserNestedInputObjectSchema).optional(),
-  warehouseItems: z.lazy(() => WarehouseItemUpdateManyWithoutUserNestedInputObjectSchema).optional(),
   posTickets: z.lazy(() => PosTicketUpdateManyWithoutUserNestedInputObjectSchema).optional(),
   culinaryMenuItems: z.lazy(() => CulinaryMenuItemUpdateManyWithoutUserNestedInputObjectSchema).optional(),
   culinaryPrepTasks: z.lazy(() => CulinaryPrepTaskUpdateManyWithoutUserNestedInputObjectSchema).optional(),

@@ -16,8 +16,7 @@ export const FreightLoadAggregateResultSchema = z.object({  _count: z.object({
     status: z.number(),
     routeGeoJson: z.number(),
     createdAt: z.number(),
-    updatedAt: z.number(),
-    warehouseItems: z.number()
+    updatedAt: z.number()
   }).optional(),
   _sum: z.object({
     originLat: z.number().nullable(),

@@ -16,7 +16,6 @@ import { StaffingCandidateListRelationFilterObjectSchema as StaffingCandidateLis
 import { StaffingShiftListRelationFilterObjectSchema as StaffingShiftListRelationFilterObjectSchema } from './StaffingShiftListRelationFilter.schema';
 import { StaffingPlacementListRelationFilterObjectSchema as StaffingPlacementListRelationFilterObjectSchema } from './StaffingPlacementListRelationFilter.schema';
 import { FreightLoadListRelationFilterObjectSchema as FreightLoadListRelationFilterObjectSchema } from './FreightLoadListRelationFilter.schema';
-import { WarehouseItemListRelationFilterObjectSchema as WarehouseItemListRelationFilterObjectSchema } from './WarehouseItemListRelationFilter.schema';
 import { PosStoreListRelationFilterObjectSchema as PosStoreListRelationFilterObjectSchema } from './PosStoreListRelationFilter.schema';
 import { PosTicketListRelationFilterObjectSchema as PosTicketListRelationFilterObjectSchema } from './PosTicketListRelationFilter.schema';
 import { CulinaryMenuItemListRelationFilterObjectSchema as CulinaryMenuItemListRelationFilterObjectSchema } from './CulinaryMenuItemListRelationFilter.schema';
@@ -72,7 +71,6 @@ const userwhereinputSchema = z.object({
   staffingShifts: z.lazy(() => StaffingShiftListRelationFilterObjectSchema).optional(),
   staffingPlacements: z.lazy(() => StaffingPlacementListRelationFilterObjectSchema).optional(),
   freightLoads: z.lazy(() => FreightLoadListRelationFilterObjectSchema).optional(),
-  warehouseItems: z.lazy(() => WarehouseItemListRelationFilterObjectSchema).optional(),
   posStores: z.lazy(() => PosStoreListRelationFilterObjectSchema).optional(),
   posTickets: z.lazy(() => PosTicketListRelationFilterObjectSchema).optional(),
   culinaryMenuItems: z.lazy(() => CulinaryMenuItemListRelationFilterObjectSchema).optional(),

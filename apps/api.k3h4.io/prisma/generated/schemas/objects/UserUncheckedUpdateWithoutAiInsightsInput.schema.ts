@@ -15,7 +15,6 @@ import { StaffingCandidateUncheckedUpdateManyWithoutUserNestedInputObjectSchema 
 import { StaffingShiftUncheckedUpdateManyWithoutUserNestedInputObjectSchema as StaffingShiftUncheckedUpdateManyWithoutUserNestedInputObjectSchema } from './StaffingShiftUncheckedUpdateManyWithoutUserNestedInput.schema';
 import { StaffingPlacementUncheckedUpdateManyWithoutUserNestedInputObjectSchema as StaffingPlacementUncheckedUpdateManyWithoutUserNestedInputObjectSchema } from './StaffingPlacementUncheckedUpdateManyWithoutUserNestedInput.schema';
 import { FreightLoadUncheckedUpdateManyWithoutUserNestedInputObjectSchema as FreightLoadUncheckedUpdateManyWithoutUserNestedInputObjectSchema } from './FreightLoadUncheckedUpdateManyWithoutUserNestedInput.schema';
-import { WarehouseItemUncheckedUpdateManyWithoutUserNestedInputObjectSchema as WarehouseItemUncheckedUpdateManyWithoutUserNestedInputObjectSchema } from './WarehouseItemUncheckedUpdateManyWithoutUserNestedInput.schema';
 import { PosStoreUncheckedUpdateManyWithoutUserNestedInputObjectSchema as PosStoreUncheckedUpdateManyWithoutUserNestedInputObjectSchema } from './PosStoreUncheckedUpdateManyWithoutUserNestedInput.schema';
 import { PosTicketUncheckedUpdateManyWithoutUserNestedInputObjectSchema as PosTicketUncheckedUpdateManyWithoutUserNestedInputObjectSchema } from './PosTicketUncheckedUpdateManyWithoutUserNestedInput.schema';
 import { CulinaryMenuItemUncheckedUpdateManyWithoutUserNestedInputObjectSchema as CulinaryMenuItemUncheckedUpdateManyWithoutUserNestedInputObjectSchema } from './CulinaryMenuItemUncheckedUpdateManyWithoutUserNestedInput.schema';
@@ -67,7 +66,6 @@ const makeSchema = () => z.object({
   staffingShifts: z.lazy(() => StaffingShiftUncheckedUpdateManyWithoutUserNestedInputObjectSchema).optional(),
   staffingPlacements: z.lazy(() => StaffingPlacementUncheckedUpdateManyWithoutUserNestedInputObjectSchema).optional(),
   freightLoads: z.lazy(() => FreightLoadUncheckedUpdateManyWithoutUserNestedInputObjectSchema).optional(),
-  warehouseItems: z.lazy(() => WarehouseItemUncheckedUpdateManyWithoutUserNestedInputObjectSchema).optional(),
   posStores: z.lazy(() => PosStoreUncheckedUpdateManyWithoutUserNestedInputObjectSchema).optional(),
   posTickets: z.lazy(() => PosTicketUncheckedUpdateManyWithoutUserNestedInputObjectSchema).optional(),
   culinaryMenuItems: z.lazy(() => CulinaryMenuItemUncheckedUpdateManyWithoutUserNestedInputObjectSchema).optional(),

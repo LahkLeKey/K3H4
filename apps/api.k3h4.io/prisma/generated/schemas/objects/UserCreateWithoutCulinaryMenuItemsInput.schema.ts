@@ -11,7 +11,6 @@ import { StaffingCandidateCreateNestedManyWithoutUserInputObjectSchema as Staffi
 import { StaffingShiftCreateNestedManyWithoutUserInputObjectSchema as StaffingShiftCreateNestedManyWithoutUserInputObjectSchema } from './StaffingShiftCreateNestedManyWithoutUserInput.schema';
 import { StaffingPlacementCreateNestedManyWithoutUserInputObjectSchema as StaffingPlacementCreateNestedManyWithoutUserInputObjectSchema } from './StaffingPlacementCreateNestedManyWithoutUserInput.schema';
 import { FreightLoadCreateNestedManyWithoutUserInputObjectSchema as FreightLoadCreateNestedManyWithoutUserInputObjectSchema } from './FreightLoadCreateNestedManyWithoutUserInput.schema';
-import { WarehouseItemCreateNestedManyWithoutUserInputObjectSchema as WarehouseItemCreateNestedManyWithoutUserInputObjectSchema } from './WarehouseItemCreateNestedManyWithoutUserInput.schema';
 import { PosStoreCreateNestedManyWithoutUserInputObjectSchema as PosStoreCreateNestedManyWithoutUserInputObjectSchema } from './PosStoreCreateNestedManyWithoutUserInput.schema';
 import { PosTicketCreateNestedManyWithoutUserInputObjectSchema as PosTicketCreateNestedManyWithoutUserInputObjectSchema } from './PosTicketCreateNestedManyWithoutUserInput.schema';
 import { CulinaryPrepTaskCreateNestedManyWithoutUserInputObjectSchema as CulinaryPrepTaskCreateNestedManyWithoutUserInputObjectSchema } from './CulinaryPrepTaskCreateNestedManyWithoutUserInput.schema';
@@ -63,7 +62,6 @@ const makeSchema = () => z.object({
   staffingShifts: z.lazy(() => StaffingShiftCreateNestedManyWithoutUserInputObjectSchema).optional(),
   staffingPlacements: z.lazy(() => StaffingPlacementCreateNestedManyWithoutUserInputObjectSchema).optional(),
   freightLoads: z.lazy(() => FreightLoadCreateNestedManyWithoutUserInputObjectSchema).optional(),
-  warehouseItems: z.lazy(() => WarehouseItemCreateNestedManyWithoutUserInputObjectSchema).optional(),
   posStores: z.lazy(() => PosStoreCreateNestedManyWithoutUserInputObjectSchema).optional(),
   posTickets: z.lazy(() => PosTicketCreateNestedManyWithoutUserInputObjectSchema).optional(),
   culinaryPrepTasks: z.lazy(() => CulinaryPrepTaskCreateNestedManyWithoutUserInputObjectSchema).optional(),
