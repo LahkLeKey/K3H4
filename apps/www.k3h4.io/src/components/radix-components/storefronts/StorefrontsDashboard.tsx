@@ -4,23 +4,23 @@ import { Tabs } from "../../radix-primitives";
 import { Button, Grid, MetricTile, Stack } from "../../ui";
 import { useAuthStore } from "../../../zustand-stores/auth";
 import { useCulinaryState } from "../../../react-hooks/culinary";
-import { usePosState } from "../../../react-hooks/pos";
+import { usePointOfSaleState } from "../../../react-hooks/point-of-sale";
 import { useArcadeState } from "../../../react-hooks/arcade";
 import { useStorefrontsStore, type StorefrontsTab } from "../../../zustand-stores/storefronts";
 import { CulinaryBoard } from "../CulinaryBoard";
 import { ArcadeBoard } from "../ArcadeBoard";
-import { PosEmbeddedPanel } from "./PosEmbeddedPanel";
+import { PointOfSaleEmbeddedPanel } from "./PointOfSaleEmbeddedPanel";
 
 export function StorefrontsDashboard() {
     const { session } = useAuthStore();
     const { overview: culinaryOverview, status: culinaryStatus, fetchOverview: fetchCulinary } = useCulinaryState();
-    const { overview: posOverview, status: posStatus, fetchOverview: fetchPos } = usePosState();
+    const { overview: pointOfSaleOverview, status: pointOfSaleStatus, fetchOverview: fetchPointOfSale } = usePointOfSaleState();
     const { overview: arcadeOverview, status: arcadeStatus, fetchOverview: fetchArcade } = useArcadeState();
     const { activeTab, setActiveTab } = useStorefrontsStore();
 
     const handleTabChange = (key: string) => setActiveTab(key as StorefrontsTab);
 
-    const anyLoading = [culinaryStatus, posStatus, arcadeStatus].some((s) => s === "loading");
+    const anyLoading = [culinaryStatus, pointOfSaleStatus, arcadeStatus].some((s) => s === "loading");
 
     const kpis = useMemo(
         () => [
@@ -31,8 +31,8 @@ export function StorefrontsDashboard() {
                 accent: "#fb7185",
             },
             {
-                label: "POS",
-                value: posOverview ? `₭${posOverview.metrics.grossRevenue}` : "-",
+                label: "Point of sale",
+                value: pointOfSaleOverview ? `₭${pointOfSaleOverview.metrics.grossRevenue}` : "-",
                 hint: "Gross",
                 accent: "#f472b6",
             },
@@ -49,27 +49,27 @@ export function StorefrontsDashboard() {
                 accent: "#22d3ee",
             },
         ],
-        [culinaryOverview, posOverview, arcadeOverview],
+        [culinaryOverview, pointOfSaleOverview, arcadeOverview],
     );
 
     const handleRefreshAll = () => {
         if (!session?.accessToken) return;
         fetchCulinary();
-        fetchPos();
+        fetchPointOfSale();
         fetchArcade();
     };
 
     const culinaryPane = (
         <Stack gap="md">
             <CulinaryBoard />
-            <PosEmbeddedPanel prefix="culinary" title="Culinary POS" accent="#f472b6" />
+            <PointOfSaleEmbeddedPanel prefix="culinary" title="Culinary point of sale" accent="#f472b6" />
         </Stack>
     );
 
     const arcadePane = (
         <Stack gap="md">
             <ArcadeBoard />
-            <PosEmbeddedPanel prefix="arcade" title="Arcade POS" accent="#22c55e" />
+            <PointOfSaleEmbeddedPanel prefix="arcade" title="Arcade point of sale" accent="#22c55e" />
         </Stack>
     );
 
@@ -78,10 +78,10 @@ export function StorefrontsDashboard() {
             <div className="space-y-2">
                 <div className="inline-flex flex-wrap items-center gap-2 text-xs uppercase tracking-[0.18em] text-emerald-100">
                     <span className="rounded-full border border-emerald-300/30 bg-emerald-500/15 px-3 py-1">Storefronts</span>
-                    <span className="text-[11px] text-slate-300">Culinary / Arcade (POS embedded)</span>
+                    <span className="text-[11px] text-slate-300">Culinary / Arcade (point-of-sale embedded)</span>
                 </div>
                 <div className="text-3xl font-semibold text-white">Storefront control</div>
-                <p className="max-w-3xl text-sm text-slate-300">Menus, sales orchestration, arcade engagement, and POS seeded per vertical.</p>
+                <p className="max-w-3xl text-sm text-slate-300">Menus, sales orchestration, arcade engagement, and point-of-sale data seeded per vertical.</p>
                 <div className="flex flex-wrap items-center gap-2">
                     {!session ? <div className="text-xs text-amber-200">Sign in to load live storefront data.</div> : null}
                     <div className="flex items-center gap-2">
