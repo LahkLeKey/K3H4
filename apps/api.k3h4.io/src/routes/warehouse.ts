@@ -2,6 +2,7 @@ import {LifecycleStatus, Prisma, type PrismaClient, WarehouseCategory} from '@pr
 import {type FastifyInstance} from 'fastify';
 
 import {lifecycleStatusOrDefault, parseLifecycleStatus} from '../lib/status-utils';
+import {AgricultureSlotSnapshot, resolveAgricultureSlotSnapshot,} from '../services/agriculture-actor';
 
 import {buildTelemetryBase} from './telemetry';
 import {type RecordTelemetryFn} from './types';
@@ -11,13 +12,6 @@ const serializeItem = (item: any) => ({
   quantity: Number(item.quantity),
   category: item.category,
   metadata: item.metadata ?? null,
-});
-
-const buildAgricultureSlotSnapshot = (slot: any) => ({
-  id: slot.id,
-  slotIndex: slot.slotIndex,
-  plotId: slot.plotId,
-  slug: slot.plot ? `${slot.plot.name} (${slot.plot.crop})` : null,
 });
 
 const normalizeCategory = (value?: string) =>
@@ -81,13 +75,11 @@ export function registerWarehouseRoutes(
         }
 
         const category = normalizeCategory(body?.category);
-        let agricultureSlot: any|null = null;
+        let agricultureSlot: AgricultureSlotSnapshot|null = null;
         if (category === WarehouseCategory.AGRICULTURE &&
             body?.agricultureSlotId) {
-          agricultureSlot = await prisma.agricultureSlot.findFirst({
-            where: {id: body.agricultureSlotId, userId},
-            include: {plot: {select: {id: true, name: true, crop: true}}},
-          });
+          agricultureSlot = await resolveAgricultureSlotSnapshot(
+              prisma, userId, body.agricultureSlotId);
           if (!agricultureSlot) {
             return reply.status(404).send(
                 {error: 'Agriculture slot not found'});
@@ -100,8 +92,7 @@ export function registerWarehouseRoutes(
             {} as Record<string, unknown>;
         if (category === WarehouseCategory.AGRICULTURE) {
           baseMetadata.source = 'agriculture';
-          if (agricultureSlot)
-            baseMetadata.slot = buildAgricultureSlotSnapshot(agricultureSlot);
+          if (agricultureSlot) baseMetadata.slot = agricultureSlot;
         } else {
           baseMetadata.source = 'manual';
         }
@@ -193,13 +184,11 @@ export function registerWarehouseRoutes(
 
         const category =
             body?.category ? normalizeCategory(body.category) : item.category;
-        let agricultureSlot: any|null = null;
+        let agricultureSlot: AgricultureSlotSnapshot|null = null;
         if (category === WarehouseCategory.AGRICULTURE &&
             body?.agricultureSlotId) {
-          agricultureSlot = await prisma.agricultureSlot.findFirst({
-            where: {id: body.agricultureSlotId, userId},
-            include: {plot: {select: {id: true, name: true, crop: true}}},
-          });
+          agricultureSlot = await resolveAgricultureSlotSnapshot(
+              prisma, userId, body.agricultureSlotId);
           if (!agricultureSlot) {
             return reply.status(404).send(
                 {error: 'Agriculture slot not found'});
@@ -217,9 +206,7 @@ export function registerWarehouseRoutes(
             existingMetadata;
         if (category === WarehouseCategory.AGRICULTURE) {
           metadataSource.source = 'agriculture';
-          if (agricultureSlot) {
-            metadataSource.slot = buildAgricultureSlotSnapshot(agricultureSlot);
-          }
+          if (agricultureSlot) metadataSource.slot = agricultureSlot;
         } else {
           metadataSource.source = 'manual';
         }
