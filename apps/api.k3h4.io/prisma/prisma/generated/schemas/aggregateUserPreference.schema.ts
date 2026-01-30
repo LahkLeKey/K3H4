@@ -1,0 +1,14 @@
+import type { Prisma } from '@prisma/client';
+import * as z from 'zod';
+import { UserPreferenceOrderByWithRelationInputObjectSchema as UserPreferenceOrderByWithRelationInputObjectSchema } from './objects/UserPreferenceOrderByWithRelationInput.schema';
+import { UserPreferenceWhereInputObjectSchema as UserPreferenceWhereInputObjectSchema } from './objects/UserPreferenceWhereInput.schema';
+import { UserPreferenceWhereUniqueInputObjectSchema as UserPreferenceWhereUniqueInputObjectSchema } from './objects/UserPreferenceWhereUniqueInput.schema';
+import { UserPreferenceCountAggregateInputObjectSchema as UserPreferenceCountAggregateInputObjectSchema } from './objects/UserPreferenceCountAggregateInput.schema';
+import { UserPreferenceMinAggregateInputObjectSchema as UserPreferenceMinAggregateInputObjectSchema } from './objects/UserPreferenceMinAggregateInput.schema';
+import { UserPreferenceMaxAggregateInputObjectSchema as UserPreferenceMaxAggregateInputObjectSchema } from './objects/UserPreferenceMaxAggregateInput.schema';
+import { UserPreferenceAvgAggregateInputObjectSchema as UserPreferenceAvgAggregateInputObjectSchema } from './objects/UserPreferenceAvgAggregateInput.schema';
+import { UserPreferenceSumAggregateInputObjectSchema as UserPreferenceSumAggregateInputObjectSchema } from './objects/UserPreferenceSumAggregateInput.schema';
+
+export const UserPreferenceAggregateSchema: z.ZodType<Prisma.UserPreferenceAggregateArgs> = z.object({ orderBy: z.union([UserPreferenceOrderByWithRelationInputObjectSchema, UserPreferenceOrderByWithRelationInputObjectSchema.array()]).optional(), where: UserPreferenceWhereInputObjectSchema.optional(), cursor: UserPreferenceWhereUniqueInputObjectSchema.optional(), take: z.number().optional(), skip: z.number().optional(), _count: z.union([ z.literal(true), UserPreferenceCountAggregateInputObjectSchema ]).optional(), _min: UserPreferenceMinAggregateInputObjectSchema.optional(), _max: UserPreferenceMaxAggregateInputObjectSchema.optional(), _avg: UserPreferenceAvgAggregateInputObjectSchema.optional(), _sum: UserPreferenceSumAggregateInputObjectSchema.optional() }).strict() as unknown as z.ZodType<Prisma.UserPreferenceAggregateArgs>;
+
+export const UserPreferenceAggregateZodSchema = z.object({ orderBy: z.union([UserPreferenceOrderByWithRelationInputObjectSchema, UserPreferenceOrderByWithRelationInputObjectSchema.array()]).optional(), where: UserPreferenceWhereInputObjectSchema.optional(), cursor: UserPreferenceWhereUniqueInputObjectSchema.optional(), take: z.number().optional(), skip: z.number().optional(), _count: z.union([ z.literal(true), UserPreferenceCountAggregateInputObjectSchema ]).optional(), _min: UserPreferenceMinAggregateInputObjectSchema.optional(), _max: UserPreferenceMaxAggregateInputObjectSchema.optional(), _avg: UserPreferenceAvgAggregateInputObjectSchema.optional(), _sum: UserPreferenceSumAggregateInputObjectSchema.optional() }).strict();

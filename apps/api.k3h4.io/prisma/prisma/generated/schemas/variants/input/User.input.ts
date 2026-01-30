@@ -1,0 +1,34 @@
+import * as z from 'zod';
+// prettier-ignore
+export const UserInputSchema = z.object({
+    id: z.string(),
+    email: z.string(),
+    provider: z.string(),
+    providerId: z.string(),
+    k3h4CoinBalance: z.number(),
+    displayName: z.string().optional().nullable(),
+    avatarUrl: z.string().optional().nullable(),
+    createdAt: z.date(),
+    updatedAt: z.date(),
+    refreshTokens: z.array(z.unknown()),
+    preference: z.unknown().optional().nullable(),
+    telemetry: z.array(z.unknown()),
+    freightLoads: z.array(z.unknown()),
+    providerGrants: z.array(z.unknown()),
+    geoRouteCaches: z.array(z.unknown()),
+    geoDirections: z.array(z.unknown()),
+    geoPoiCaches: z.array(z.unknown()),
+    geoQueryCaches: z.array(z.unknown()),
+    maptilerQueries: z.array(z.unknown()),
+    maptilerCacheEntries: z.array(z.unknown()),
+    osrmCacheEntries: z.array(z.unknown()),
+    geoStatusLogs: z.array(z.unknown()),
+    geoDemTileCaches: z.array(z.unknown()),
+    geoViewHistories: z.array(z.unknown()),
+    chatSessions: z.array(z.unknown()),
+    aiInsights: z.array(z.unknown()),
+    ollamaOperations: z.array(z.unknown()),
+    actors: z.array(z.unknown())
+}).strict();
+
+export type UserInputType = z.infer<typeof UserInputSchema>;

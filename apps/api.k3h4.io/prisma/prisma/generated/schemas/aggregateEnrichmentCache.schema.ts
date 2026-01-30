@@ -1,0 +1,12 @@
+import type { Prisma } from '@prisma/client';
+import * as z from 'zod';
+import { EnrichmentCacheOrderByWithRelationInputObjectSchema as EnrichmentCacheOrderByWithRelationInputObjectSchema } from './objects/EnrichmentCacheOrderByWithRelationInput.schema';
+import { EnrichmentCacheWhereInputObjectSchema as EnrichmentCacheWhereInputObjectSchema } from './objects/EnrichmentCacheWhereInput.schema';
+import { EnrichmentCacheWhereUniqueInputObjectSchema as EnrichmentCacheWhereUniqueInputObjectSchema } from './objects/EnrichmentCacheWhereUniqueInput.schema';
+import { EnrichmentCacheCountAggregateInputObjectSchema as EnrichmentCacheCountAggregateInputObjectSchema } from './objects/EnrichmentCacheCountAggregateInput.schema';
+import { EnrichmentCacheMinAggregateInputObjectSchema as EnrichmentCacheMinAggregateInputObjectSchema } from './objects/EnrichmentCacheMinAggregateInput.schema';
+import { EnrichmentCacheMaxAggregateInputObjectSchema as EnrichmentCacheMaxAggregateInputObjectSchema } from './objects/EnrichmentCacheMaxAggregateInput.schema';
+
+export const EnrichmentCacheAggregateSchema: z.ZodType<Prisma.EnrichmentCacheAggregateArgs> = z.object({ orderBy: z.union([EnrichmentCacheOrderByWithRelationInputObjectSchema, EnrichmentCacheOrderByWithRelationInputObjectSchema.array()]).optional(), where: EnrichmentCacheWhereInputObjectSchema.optional(), cursor: EnrichmentCacheWhereUniqueInputObjectSchema.optional(), take: z.number().optional(), skip: z.number().optional(), _count: z.union([ z.literal(true), EnrichmentCacheCountAggregateInputObjectSchema ]).optional(), _min: EnrichmentCacheMinAggregateInputObjectSchema.optional(), _max: EnrichmentCacheMaxAggregateInputObjectSchema.optional() }).strict() as unknown as z.ZodType<Prisma.EnrichmentCacheAggregateArgs>;
+
+export const EnrichmentCacheAggregateZodSchema = z.object({ orderBy: z.union([EnrichmentCacheOrderByWithRelationInputObjectSchema, EnrichmentCacheOrderByWithRelationInputObjectSchema.array()]).optional(), where: EnrichmentCacheWhereInputObjectSchema.optional(), cursor: EnrichmentCacheWhereUniqueInputObjectSchema.optional(), take: z.number().optional(), skip: z.number().optional(), _count: z.union([ z.literal(true), EnrichmentCacheCountAggregateInputObjectSchema ]).optional(), _min: EnrichmentCacheMinAggregateInputObjectSchema.optional(), _max: EnrichmentCacheMaxAggregateInputObjectSchema.optional() }).strict();

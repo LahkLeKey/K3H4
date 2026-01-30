@@ -4,6 +4,7 @@ generator client {
 
 generator zod {
   provider = "prisma-zod-generator"
+  output   = "./prisma/generated/schemas"
 }
 
 datasource db {
@@ -690,6 +691,7 @@ model Actor {
   updatedAt DateTime  @updatedAt
 
   entities Entity[]
+  caches   ActorCache[]
 
   @@index([userId])
   @@index([type])
@@ -709,8 +711,38 @@ model Entity {
   createdAt  DateTime         @default(now())
   updatedAt  DateTime         @updatedAt
 
+  caches EntityCache[]
+
   @@index([actorId])
   @@index([kind])
   @@index([targetType, targetId])
   @@index([direction])
+}
+
+model ActorCache {
+  id        String    @id @default(cuid())
+  actorId   String
+  actor     Actor     @relation(fields: [actorId], references: [id], onDelete: Cascade)
+  key       String
+  payload   Json?
+  expiresAt DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  @@unique([actorId, key], name: "actor_cache_key")
+  @@index([expiresAt])
+}
+
+model EntityCache {
+  id        String    @id @default(cuid())
+  entityId  String
+  entity    Entity    @relation(fields: [entityId], references: [id], onDelete: Cascade)
+  key       String
+  payload   Json?
+  expiresAt DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  @@unique([entityId, key], name: "entity_cache_key")
+  @@index([expiresAt])
 }

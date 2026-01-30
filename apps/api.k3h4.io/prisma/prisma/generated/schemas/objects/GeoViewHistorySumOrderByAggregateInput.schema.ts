@@ -1,0 +1,15 @@
+import * as z from 'zod';
+import type { Prisma } from '@prisma/client';
+import { SortOrderSchema } from '../enums/SortOrder.schema'
+
+const makeSchema = () => z.object({
+  zoomBand: SortOrderSchema.optional(),
+  bboxMinLat: SortOrderSchema.optional(),
+  bboxMinLng: SortOrderSchema.optional(),
+  bboxMaxLat: SortOrderSchema.optional(),
+  bboxMaxLng: SortOrderSchema.optional(),
+  lastPoiCount: SortOrderSchema.optional(),
+  viewCount: SortOrderSchema.optional()
+}).strict();
+export const GeoViewHistorySumOrderByAggregateInputObjectSchema: z.ZodType<Prisma.GeoViewHistorySumOrderByAggregateInput> = makeSchema() as unknown as z.ZodType<Prisma.GeoViewHistorySumOrderByAggregateInput>;
+export const GeoViewHistorySumOrderByAggregateInputObjectZodSchema = makeSchema();

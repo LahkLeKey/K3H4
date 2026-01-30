@@ -1,0 +1,21 @@
+import * as z from 'zod';
+import type { Prisma } from '@prisma/client';
+import { NullableJsonNullValueInputSchema } from '../enums/NullableJsonNullValueInput.schema';
+import { OllamaOperationUncheckedCreateNestedManyWithoutSessionInputObjectSchema as OllamaOperationUncheckedCreateNestedManyWithoutSessionInputObjectSchema } from './OllamaOperationUncheckedCreateNestedManyWithoutSessionInput.schema'
+
+import { JsonValueSchema as jsonSchema } from '../helpers/json-helpers';
+
+const makeSchema = () => z.object({
+  id: z.string().optional(),
+  userId: z.string(),
+  title: z.string().optional().nullable(),
+  systemPrompt: z.string().optional().nullable(),
+  model: z.string().optional().nullable(),
+  temperature: z.number().optional().nullable(),
+  metadata: z.union([NullableJsonNullValueInputSchema, jsonSchema]).optional(),
+  createdAt: z.coerce.date().optional(),
+  updatedAt: z.coerce.date().optional(),
+  ollamaOperations: z.lazy(() => OllamaOperationUncheckedCreateNestedManyWithoutSessionInputObjectSchema).optional()
+}).strict();
+export const ChatSessionUncheckedCreateWithoutMessagesInputObjectSchema: z.ZodType<Prisma.ChatSessionUncheckedCreateWithoutMessagesInput> = makeSchema() as unknown as z.ZodType<Prisma.ChatSessionUncheckedCreateWithoutMessagesInput>;
+export const ChatSessionUncheckedCreateWithoutMessagesInputObjectZodSchema = makeSchema();

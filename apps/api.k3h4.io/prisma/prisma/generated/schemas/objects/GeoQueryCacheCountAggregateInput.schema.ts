@@ -1,0 +1,18 @@
+import * as z from 'zod';
+import type { Prisma } from '@prisma/client';
+
+
+const makeSchema = () => z.object({
+  id: z.literal(true).optional(),
+  userId: z.literal(true).optional(),
+  type: z.literal(true).optional(),
+  signature: z.literal(true).optional(),
+  params: z.literal(true).optional(),
+  payload: z.literal(true).optional(),
+  count: z.literal(true).optional(),
+  expiresAt: z.literal(true).optional(),
+  createdAt: z.literal(true).optional(),
+  _all: z.literal(true).optional()
+}).strict();
+export const GeoQueryCacheCountAggregateInputObjectSchema: z.ZodType<Prisma.GeoQueryCacheCountAggregateInputType> = makeSchema() as unknown as z.ZodType<Prisma.GeoQueryCacheCountAggregateInputType>;
+export const GeoQueryCacheCountAggregateInputObjectZodSchema = makeSchema();

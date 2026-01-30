@@ -1,0 +1,14 @@
+import type { Prisma } from '@prisma/client';
+import * as z from 'zod';
+import { TelemetryEventOrderByWithRelationInputObjectSchema as TelemetryEventOrderByWithRelationInputObjectSchema } from './objects/TelemetryEventOrderByWithRelationInput.schema';
+import { TelemetryEventWhereInputObjectSchema as TelemetryEventWhereInputObjectSchema } from './objects/TelemetryEventWhereInput.schema';
+import { TelemetryEventWhereUniqueInputObjectSchema as TelemetryEventWhereUniqueInputObjectSchema } from './objects/TelemetryEventWhereUniqueInput.schema';
+import { TelemetryEventCountAggregateInputObjectSchema as TelemetryEventCountAggregateInputObjectSchema } from './objects/TelemetryEventCountAggregateInput.schema';
+import { TelemetryEventMinAggregateInputObjectSchema as TelemetryEventMinAggregateInputObjectSchema } from './objects/TelemetryEventMinAggregateInput.schema';
+import { TelemetryEventMaxAggregateInputObjectSchema as TelemetryEventMaxAggregateInputObjectSchema } from './objects/TelemetryEventMaxAggregateInput.schema';
+import { TelemetryEventAvgAggregateInputObjectSchema as TelemetryEventAvgAggregateInputObjectSchema } from './objects/TelemetryEventAvgAggregateInput.schema';
+import { TelemetryEventSumAggregateInputObjectSchema as TelemetryEventSumAggregateInputObjectSchema } from './objects/TelemetryEventSumAggregateInput.schema';
+
+export const TelemetryEventAggregateSchema: z.ZodType<Prisma.TelemetryEventAggregateArgs> = z.object({ orderBy: z.union([TelemetryEventOrderByWithRelationInputObjectSchema, TelemetryEventOrderByWithRelationInputObjectSchema.array()]).optional(), where: TelemetryEventWhereInputObjectSchema.optional(), cursor: TelemetryEventWhereUniqueInputObjectSchema.optional(), take: z.number().optional(), skip: z.number().optional(), _count: z.union([ z.literal(true), TelemetryEventCountAggregateInputObjectSchema ]).optional(), _min: TelemetryEventMinAggregateInputObjectSchema.optional(), _max: TelemetryEventMaxAggregateInputObjectSchema.optional(), _avg: TelemetryEventAvgAggregateInputObjectSchema.optional(), _sum: TelemetryEventSumAggregateInputObjectSchema.optional() }).strict() as unknown as z.ZodType<Prisma.TelemetryEventAggregateArgs>;
+
+export const TelemetryEventAggregateZodSchema = z.object({ orderBy: z.union([TelemetryEventOrderByWithRelationInputObjectSchema, TelemetryEventOrderByWithRelationInputObjectSchema.array()]).optional(), where: TelemetryEventWhereInputObjectSchema.optional(), cursor: TelemetryEventWhereUniqueInputObjectSchema.optional(), take: z.number().optional(), skip: z.number().optional(), _count: z.union([ z.literal(true), TelemetryEventCountAggregateInputObjectSchema ]).optional(), _min: TelemetryEventMinAggregateInputObjectSchema.optional(), _max: TelemetryEventMaxAggregateInputObjectSchema.optional(), _avg: TelemetryEventAvgAggregateInputObjectSchema.optional(), _sum: TelemetryEventSumAggregateInputObjectSchema.optional() }).strict();

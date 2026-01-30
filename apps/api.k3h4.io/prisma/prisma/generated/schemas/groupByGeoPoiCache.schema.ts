@@ -1,0 +1,15 @@
+import type { Prisma } from '@prisma/client';
+import * as z from 'zod';
+import { GeoPoiCacheWhereInputObjectSchema as GeoPoiCacheWhereInputObjectSchema } from './objects/GeoPoiCacheWhereInput.schema';
+import { GeoPoiCacheOrderByWithAggregationInputObjectSchema as GeoPoiCacheOrderByWithAggregationInputObjectSchema } from './objects/GeoPoiCacheOrderByWithAggregationInput.schema';
+import { GeoPoiCacheScalarWhereWithAggregatesInputObjectSchema as GeoPoiCacheScalarWhereWithAggregatesInputObjectSchema } from './objects/GeoPoiCacheScalarWhereWithAggregatesInput.schema';
+import { GeoPoiCacheScalarFieldEnumSchema } from './enums/GeoPoiCacheScalarFieldEnum.schema';
+import { GeoPoiCacheCountAggregateInputObjectSchema as GeoPoiCacheCountAggregateInputObjectSchema } from './objects/GeoPoiCacheCountAggregateInput.schema';
+import { GeoPoiCacheMinAggregateInputObjectSchema as GeoPoiCacheMinAggregateInputObjectSchema } from './objects/GeoPoiCacheMinAggregateInput.schema';
+import { GeoPoiCacheMaxAggregateInputObjectSchema as GeoPoiCacheMaxAggregateInputObjectSchema } from './objects/GeoPoiCacheMaxAggregateInput.schema';
+import { GeoPoiCacheAvgAggregateInputObjectSchema as GeoPoiCacheAvgAggregateInputObjectSchema } from './objects/GeoPoiCacheAvgAggregateInput.schema';
+import { GeoPoiCacheSumAggregateInputObjectSchema as GeoPoiCacheSumAggregateInputObjectSchema } from './objects/GeoPoiCacheSumAggregateInput.schema';
+
+export const GeoPoiCacheGroupBySchema: z.ZodType<Prisma.GeoPoiCacheGroupByArgs> = z.object({ where: GeoPoiCacheWhereInputObjectSchema.optional(), orderBy: z.union([GeoPoiCacheOrderByWithAggregationInputObjectSchema, GeoPoiCacheOrderByWithAggregationInputObjectSchema.array()]).optional(), having: GeoPoiCacheScalarWhereWithAggregatesInputObjectSchema.optional(), take: z.number().optional(), skip: z.number().optional(), by: z.array(GeoPoiCacheScalarFieldEnumSchema), _count: z.union([ z.literal(true), GeoPoiCacheCountAggregateInputObjectSchema ]).optional(), _min: GeoPoiCacheMinAggregateInputObjectSchema.optional(), _max: GeoPoiCacheMaxAggregateInputObjectSchema.optional(), _avg: GeoPoiCacheAvgAggregateInputObjectSchema.optional(), _sum: GeoPoiCacheSumAggregateInputObjectSchema.optional() }).strict() as unknown as z.ZodType<Prisma.GeoPoiCacheGroupByArgs>;
+
+export const GeoPoiCacheGroupByZodSchema = z.object({ where: GeoPoiCacheWhereInputObjectSchema.optional(), orderBy: z.union([GeoPoiCacheOrderByWithAggregationInputObjectSchema, GeoPoiCacheOrderByWithAggregationInputObjectSchema.array()]).optional(), having: GeoPoiCacheScalarWhereWithAggregatesInputObjectSchema.optional(), take: z.number().optional(), skip: z.number().optional(), by: z.array(GeoPoiCacheScalarFieldEnumSchema), _count: z.union([ z.literal(true), GeoPoiCacheCountAggregateInputObjectSchema ]).optional(), _min: GeoPoiCacheMinAggregateInputObjectSchema.optional(), _max: GeoPoiCacheMaxAggregateInputObjectSchema.optional(), _avg: GeoPoiCacheAvgAggregateInputObjectSchema.optional(), _sum: GeoPoiCacheSumAggregateInputObjectSchema.optional() }).strict();

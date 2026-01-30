@@ -1,0 +1,14 @@
+import type { Prisma } from '@prisma/client';
+import * as z from 'zod';
+import { GeoRouteCacheOrderByWithRelationInputObjectSchema as GeoRouteCacheOrderByWithRelationInputObjectSchema } from './objects/GeoRouteCacheOrderByWithRelationInput.schema';
+import { GeoRouteCacheWhereInputObjectSchema as GeoRouteCacheWhereInputObjectSchema } from './objects/GeoRouteCacheWhereInput.schema';
+import { GeoRouteCacheWhereUniqueInputObjectSchema as GeoRouteCacheWhereUniqueInputObjectSchema } from './objects/GeoRouteCacheWhereUniqueInput.schema';
+import { GeoRouteCacheCountAggregateInputObjectSchema as GeoRouteCacheCountAggregateInputObjectSchema } from './objects/GeoRouteCacheCountAggregateInput.schema';
+import { GeoRouteCacheMinAggregateInputObjectSchema as GeoRouteCacheMinAggregateInputObjectSchema } from './objects/GeoRouteCacheMinAggregateInput.schema';
+import { GeoRouteCacheMaxAggregateInputObjectSchema as GeoRouteCacheMaxAggregateInputObjectSchema } from './objects/GeoRouteCacheMaxAggregateInput.schema';
+import { GeoRouteCacheAvgAggregateInputObjectSchema as GeoRouteCacheAvgAggregateInputObjectSchema } from './objects/GeoRouteCacheAvgAggregateInput.schema';
+import { GeoRouteCacheSumAggregateInputObjectSchema as GeoRouteCacheSumAggregateInputObjectSchema } from './objects/GeoRouteCacheSumAggregateInput.schema';
+
+export const GeoRouteCacheAggregateSchema: z.ZodType<Prisma.GeoRouteCacheAggregateArgs> = z.object({ orderBy: z.union([GeoRouteCacheOrderByWithRelationInputObjectSchema, GeoRouteCacheOrderByWithRelationInputObjectSchema.array()]).optional(), where: GeoRouteCacheWhereInputObjectSchema.optional(), cursor: GeoRouteCacheWhereUniqueInputObjectSchema.optional(), take: z.number().optional(), skip: z.number().optional(), _count: z.union([ z.literal(true), GeoRouteCacheCountAggregateInputObjectSchema ]).optional(), _min: GeoRouteCacheMinAggregateInputObjectSchema.optional(), _max: GeoRouteCacheMaxAggregateInputObjectSchema.optional(), _avg: GeoRouteCacheAvgAggregateInputObjectSchema.optional(), _sum: GeoRouteCacheSumAggregateInputObjectSchema.optional() }).strict() as unknown as z.ZodType<Prisma.GeoRouteCacheAggregateArgs>;
+
+export const GeoRouteCacheAggregateZodSchema = z.object({ orderBy: z.union([GeoRouteCacheOrderByWithRelationInputObjectSchema, GeoRouteCacheOrderByWithRelationInputObjectSchema.array()]).optional(), where: GeoRouteCacheWhereInputObjectSchema.optional(), cursor: GeoRouteCacheWhereUniqueInputObjectSchema.optional(), take: z.number().optional(), skip: z.number().optional(), _count: z.union([ z.literal(true), GeoRouteCacheCountAggregateInputObjectSchema ]).optional(), _min: GeoRouteCacheMinAggregateInputObjectSchema.optional(), _max: GeoRouteCacheMaxAggregateInputObjectSchema.optional(), _avg: GeoRouteCacheAvgAggregateInputObjectSchema.optional(), _sum: GeoRouteCacheSumAggregateInputObjectSchema.optional() }).strict();

@@ -1,5 +1,7 @@
 import {ActorType, Entity, EntityKind, Prisma, type PrismaClient} from '@prisma/client';
 
+import {readActorCache, writeActorCache} from './actor-cache';
+
 const PERSONA_ACTOR_LABEL = 'Persona Ledger';
 const PERSONA_ACTOR_NOTE = 'Ledger that tracks persona definitions';
 const PERSONA_ACTOR_SOURCE = 'k3h4-persona';
@@ -78,6 +80,100 @@ export type PersonaRecord = {
 
 export type PersonaRef = {
   id: string; alias: string; account: string; handle: string | null;
+};
+
+const PERSONA_CACHE_KEY = 'persona-records';
+const PERSONA_CACHE_TTL_MS =
+    Number(process.env.PERSONA_CACHE_TTL_MS ?? 1000 * 60 * 5);
+
+type PersonaAttributeCachePayload = {
+  id: string; category: string; value: string; weight: number;
+  createdAt: string;
+  updatedAt: string;
+};
+
+type PersonaCachePayload = {
+  id: string; alias: string; account: string; handle: string | null;
+  note: string | null;
+  tags: string[];
+  attributes: PersonaAttributeCachePayload[];
+  createdAt: string;
+  updatedAt: string;
+};
+
+const parseCacheDate = (value: unknown): Date|null => {
+  if (typeof value !== 'string') return null;
+  const parsed = new Date(value);
+  return Number.isNaN(parsed.getTime()) ? null : parsed;
+};
+
+const serializePersonaRecordForCache =
+    (persona: PersonaRecord): PersonaCachePayload => ({
+      id: persona.id,
+      alias: persona.alias,
+      account: persona.account,
+      handle: persona.handle,
+      note: persona.note,
+      tags: persona.tags,
+      attributes:
+          persona.attributes.map((attr) => ({
+                                   id: attr.id,
+                                   category: attr.category,
+                                   value: attr.value,
+                                   weight: attr.weight,
+                                   createdAt: attr.createdAt.toISOString(),
+                                   updatedAt: attr.updatedAt.toISOString(),
+                                 })),
+      createdAt: persona.createdAt.toISOString(),
+      updatedAt: persona.updatedAt.toISOString(),
+    });
+
+const deserializePersonaRecords = (
+    payload: Prisma.JsonValue|null,
+    ): PersonaRecord[]|null => {
+  if (!Array.isArray(payload)) return null;
+  const records: PersonaRecord[] = [];
+  payload.forEach((entry) => {
+    if (!entry || typeof entry !== 'object' || Array.isArray(entry)) return;
+    const candidate = entry as PersonaCachePayload;
+    const createdAt = parseCacheDate(candidate.createdAt);
+    const updatedAt = parseCacheDate(candidate.updatedAt);
+    if (!createdAt || !updatedAt) return;
+    const attributes: PersonaAttributeRecord[] = [];
+    if (Array.isArray(candidate.attributes)) {
+      candidate.attributes.forEach((attr) => {
+        if (!attr || typeof attr !== 'object') return;
+        const attrCreated = parseCacheDate(attr.createdAt);
+        const attrUpdated = parseCacheDate(attr.updatedAt);
+        if (!attrCreated || !attrUpdated) return;
+        const weight = typeof attr.weight === 'number' ?
+            attr.weight :
+            Number(attr.weight ?? 0);
+        attributes.push({
+          id: attr.id,
+          category: attr.category,
+          value: attr.value,
+          weight,
+          createdAt: attrCreated,
+          updatedAt: attrUpdated,
+        });
+      });
+    }
+    records.push({
+      id: candidate.id,
+      alias: candidate.alias,
+      account: candidate.account,
+      handle: candidate.handle,
+      note: candidate.note,
+      tags: Array.isArray(candidate.tags) ?
+          candidate.tags.map((tag) => String(tag)) :
+          [],
+      attributes,
+      createdAt,
+      updatedAt,
+    });
+  });
+  return records;
 };
 
 const buildPersonaAttributeRecord =
@@ -169,6 +265,9 @@ export async function loadPersonaRecordsByActor(
     prisma: PrismaClient,
     actorId: string,
 ) {
+  const cached = await readActorCache(prisma, actorId, PERSONA_CACHE_KEY);
+  const fromCache = deserializePersonaRecords(cached);
+  if (fromCache) return fromCache;
   const [personas, attributes] = await Promise.all([
     prisma.entity.findMany({
       where: {actorId, kind: personaKind},
@@ -177,7 +276,18 @@ export async function loadPersonaRecordsByActor(
     prisma.entity.findMany({where: {actorId, kind: personaAttributeKind}}),
   ]);
   const attributeMap = buildAttributeMap(attributes);
-  return personas.map((entity) => buildPersonaRecord(entity, attributeMap));
+  const records =
+      personas.map((entity) => buildPersonaRecord(entity, attributeMap));
+  const cachePayload =
+      records.map((record) => serializePersonaRecordForCache(record));
+  await writeActorCache(
+      prisma,
+      actorId,
+      PERSONA_CACHE_KEY,
+      cachePayload as Prisma.JsonValue,
+      PERSONA_CACHE_TTL_MS,
+  );
+  return records;
 }
 
 export async function loadPersonaRecordById(
@@ -185,22 +295,8 @@ export async function loadPersonaRecordById(
     actorId: string,
     personaId: string,
 ) {
-  const [personas, attributes] = await Promise.all([
-    prisma.entity.findMany({
-      where: {actorId, kind: personaKind, id: personaId},
-    }),
-    prisma.entity.findMany({
-      where: {
-        actorId,
-        kind: personaAttributeKind,
-        targetType: PERSONA_TARGET_TYPE,
-        targetId: personaId,
-      },
-    }),
-  ]);
-  if (personas.length === 0) return null;
-  const attributeMap = buildAttributeMap(attributes);
-  return buildPersonaRecord(personas[0], attributeMap);
+  const personas = await loadPersonaRecordsByActor(prisma, actorId);
+  return personas.find((persona) => persona.id === personaId) ?? null;
 }
 
 export async function loadPersonaMap(prisma: PrismaClient, userId: string) {
