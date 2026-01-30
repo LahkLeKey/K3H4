@@ -43,6 +43,7 @@ enum ActorType {
   ARCADE_PRIZE       @map("arcade-prize")
   USDA_FEED          @map("usda-feed")
   AGRICULTURE_FARM   @map("agriculture-farm")
+  WAREHOUSE          @map("warehouse")
 }
 
 enum EntityDirection {
@@ -72,6 +73,7 @@ enum EntityKind {
   AGRICULTURE_INVENTORY_ITEM        @map("agriculture_inventory_item")
   AGRICULTURE_INVENTORY_MOVEMENT    @map("agriculture_inventory_movement")
   AGRICULTURE_SHIPMENT              @map("agriculture_shipment")
+  WAREHOUSE_ITEM                   @map("warehouse_item")
 }
 
 enum EngagementPriority {
@@ -129,7 +131,6 @@ model User {
   staffingShifts                StaffingShift[]
   staffingPlacements            StaffingPlacement[]
   freightLoads                  FreightLoad[]
-  warehouseItems                WarehouseItem[]
   posStores                     PosStore[]
   posTickets                    PosTicket[]
   culinaryMenuItems             CulinaryMenuItem[]
@@ -792,30 +793,7 @@ model FreightLoad {
   createdAt       DateTime        @default(now())
   updatedAt       DateTime        @updatedAt
 
-  warehouseItems       WarehouseItem[]
-
   @@index([userId, status])
-}
-
-model WarehouseItem {
-  id            String            @id @default(cuid())
-  userId        String
-  user          User              @relation(fields: [userId], references: [id], onDelete: Cascade)
-  sku           String
-  description   String?
-  quantity      Int               @default(0)
-  location      String
-  status        LifecycleStatus   @default(STORED)
-  freightLoadId String?
-  freightLoad   FreightLoad?      @relation(fields: [freightLoadId], references: [id], onDelete: SetNull)
-  category      WarehouseCategory @default(OTHER)
-  metadata      Json?
-  createdAt     DateTime          @default(now())
-  updatedAt     DateTime          @updatedAt
-
-  @@index([userId, status])
-  @@index([userId, freightLoadId])
-  @@index([userId, category])
 }
 
 model PosStore {
