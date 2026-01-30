@@ -140,8 +140,6 @@ model User {
   preference            UserPreference?
   telemetry             TelemetryEvent[]
   freightLoads          FreightLoad[]
-  posStores             PosStore[]
-  posTickets            PosTicket[]
   culinaryMenuItems     CulinaryMenuItem[]
   culinaryPrepTasks     CulinaryPrepTask[]
   culinarySupplierNeeds CulinarySupplierNeed[]
@@ -565,51 +563,6 @@ model FreightLoad {
   updatedAt       DateTime        @updatedAt
 
   @@index([userId, status])
-}
-
-model PosStore {
-  id        String      @id @default(cuid())
-  userId    String
-  user      User        @relation(fields: [userId], references: [id], onDelete: Cascade)
-  name      String
-  channel   String
-  tickets   PosTicket[]
-  createdAt DateTime    @default(now())
-  updatedAt DateTime    @updatedAt
-
-  @@unique([userId, name])
-  @@index([userId])
-}
-
-model PosTicket {
-  id         String          @id @default(cuid())
-  userId     String
-  user       User            @relation(fields: [userId], references: [id], onDelete: Cascade)
-  storeId    String
-  store      PosStore        @relation(fields: [storeId], references: [id], onDelete: Cascade)
-  total      Decimal         @db.Decimal(18, 2)
-  itemsCount Int             @default(0)
-  channel    String
-  status     LifecycleStatus @default(OPEN)
-  createdAt  DateTime        @default(now())
-  updatedAt  DateTime        @updatedAt
-  lineItems  PosLineItem[]
-
-  @@index([userId, storeId])
-  @@index([userId, channel])
-  @@index([userId, createdAt])
-}
-
-model PosLineItem {
-  id        String    @id @default(cuid())
-  ticketId  String
-  ticket    PosTicket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
-  name      String
-  quantity  Int       @default(1)
-  price     Decimal   @db.Decimal(18, 2)
-  createdAt DateTime  @default(now())
-
-  @@index([ticketId])
 }
 
 model CulinaryMenuItem {
