@@ -33,8 +33,7 @@ export const FreightLoadGroupByResultSchema = z.array(z.object({
     routeGeoJson: z.number(),
     createdAt: z.number(),
     updatedAt: z.number(),
-    warehouseItems: z.number(),
-    agricultureShipments: z.number()
+    warehouseItems: z.number()
   }).optional(),
   _sum: z.object({
     originLat: z.number().nullable(),

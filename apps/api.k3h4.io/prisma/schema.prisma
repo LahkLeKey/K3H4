@@ -42,6 +42,7 @@ enum ActorType {
   ARCADE_PLAYER_CARD @map("arcade-player-card")
   ARCADE_PRIZE       @map("arcade-prize")
   USDA_FEED          @map("usda-feed")
+  AGRICULTURE_FARM   @map("agriculture-farm")
 }
 
 enum EntityDirection {
@@ -58,11 +59,19 @@ enum EntityKind {
   ARCADE_TOPUP            @map("arcade_topup")
   ARCADE_SESSION          @map("arcade_session")
   ARCADE_PRIZE_REDEMPTION @map("arcade_prize_redemption")
-  USDA_REGION            @map("usda-region")
-  USDA_COUNTRY           @map("usda-country")
-  USDA_COMMODITY         @map("usda-commodity")
-  USDA_UNIT              @map("usda-unit")
-  USDA_ATTRIBUTE         @map("usda-attribute")
+  USDA_REGION             @map("usda-region")
+  USDA_COUNTRY            @map("usda-country")
+  USDA_COMMODITY          @map("usda-commodity")
+  USDA_UNIT               @map("usda-unit")
+  USDA_ATTRIBUTE          @map("usda-attribute")
+  AGRICULTURE_PLOT                  @map("agriculture_plot")
+  AGRICULTURE_PLOT_CONDITION        @map("agriculture_plot_condition")
+  AGRICULTURE_SLOT                  @map("agriculture_slot")
+  AGRICULTURE_CROP_PLAN             @map("agriculture_crop_plan")
+  AGRICULTURE_TASK                  @map("agriculture_task")
+  AGRICULTURE_INVENTORY_ITEM        @map("agriculture_inventory_item")
+  AGRICULTURE_INVENTORY_MOVEMENT    @map("agriculture_inventory_movement")
+  AGRICULTURE_SHIPMENT              @map("agriculture_shipment")
 }
 
 enum EngagementPriority {
@@ -123,14 +132,6 @@ model User {
   warehouseItems                WarehouseItem[]
   posStores                     PosStore[]
   posTickets                    PosTicket[]
-  agriculturePlots              AgriculturePlot[]
-  agricultureTasks              AgricultureTask[]
-  agricultureShipments          AgricultureShipment[]
-  agricultureCropPlans          AgricultureCropPlan[]
-  agriculturePlotConditions     AgriculturePlotCondition[]
-  agricultureInventories        AgricultureInventory[]
-  agricultureInventoryMovements AgricultureInventoryMovement[]
-  agricultureSlots              AgricultureSlot[]
   culinaryMenuItems             CulinaryMenuItem[]
   culinaryPrepTasks             CulinaryPrepTask[]
   culinarySupplierNeeds         CulinarySupplierNeed[]
@@ -636,80 +637,6 @@ model StaffingEngagement {
   @@index([userId, status])
 }
 
-model AgricultureCropPlan {
-  id                String            @id @default(cuid())
-  userId            String
-  plotId            String
-  user              User              @relation(fields: [userId], references: [id], onDelete: Cascade)
-  plot              AgriculturePlot   @relation(fields: [plotId], references: [id], onDelete: Cascade)
-  crop              String
-  phase             String            @default("planned")
-  status            LifecycleStatus   @default(ACTIVE)
-  startDate         DateTime
-  targetHarvestDate DateTime?
-  endDate           DateTime?
-  notes             String?
-  createdAt         DateTime          @default(now())
-  updatedAt         DateTime          @updatedAt
-  tasks             AgricultureTask[]
-
-  @@index([userId, plotId])
-  @@index([userId, phase])
-}
-
-model AgriculturePlotCondition {
-  id          String          @id @default(cuid())
-  userId      String
-  plotId      String
-  user        User            @relation(fields: [userId], references: [id], onDelete: Cascade)
-  plot        AgriculturePlot @relation(fields: [plotId], references: [id], onDelete: Cascade)
-  recordedAt  DateTime        @default(now())
-  temperature Float?
-  moisture    Float?
-  ph          Decimal?        @db.Decimal(5, 2)
-  notes       String?
-  createdAt   DateTime        @default(now())
-  updatedAt   DateTime        @updatedAt
-
-  @@index([userId, plotId])
-  @@index([userId, recordedAt])
-}
-
-model AgricultureInventory {
-  id            String                         @id @default(cuid())
-  userId        String
-  user          User                           @relation(fields: [userId], references: [id], onDelete: Cascade)
-  sku           String
-  description   String?
-  totalQuantity Decimal                        @default("0") @db.Decimal(18, 2)
-  unit          String
-  location      String?
-  status        LifecycleStatus                @default(ACTIVE)
-  createdAt     DateTime                       @default(now())
-  updatedAt     DateTime                       @updatedAt
-  movements     AgricultureInventoryMovement[]
-
-  @@index([userId, sku])
-}
-
-model AgricultureInventoryMovement {
-  id          String               @id @default(cuid())
-  userId      String
-  user        User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
-  inventoryId String
-  inventory   AgricultureInventory @relation(fields: [inventoryId], references: [id], onDelete: Cascade)
-  shipmentId  String?
-  shipment    AgricultureShipment? @relation(fields: [shipmentId], references: [id], onDelete: SetNull)
-  type        String
-  quantity    Decimal              @db.Decimal(18, 2)
-  reason      String?
-  createdAt   DateTime             @default(now())
-  updatedAt   DateTime             @updatedAt
-
-  @@index([userId])
-  @@index([inventoryId])
-  @@index([userId, shipmentId])
-}
 
 model AssignmentTimecard {
   id           String     @id @default(cuid())
@@ -866,7 +793,6 @@ model FreightLoad {
   updatedAt       DateTime        @updatedAt
 
   warehouseItems       WarehouseItem[]
-  agricultureShipments AgricultureShipment[]
 
   @@index([userId, status])
 }
@@ -937,88 +863,6 @@ model PosLineItem {
   @@index([ticketId])
 }
 
-model AgriculturePlot {
-  id              String    @id @default(cuid())
-  userId          String
-  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  name            String
-  fieldCode       String?
-  crop            String
-  stage           String
-  acres           Decimal   @db.Decimal(10, 2)
-  health          String    @default("Unknown")
-  soilType        String?
-  irrigationZone  String?
-  notes           String?
-  lastConditionAt DateTime?
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
-
-  cropPlans  AgricultureCropPlan[]
-  conditions AgriculturePlotCondition[]
-  tasks      AgricultureTask[]
-  slots      AgricultureSlot[]
-
-  @@index([userId, crop])
-  @@index([userId, fieldCode])
-}
-
-model AgricultureSlot {
-  id         String           @id @default(cuid())
-  userId     String
-  user       User             @relation(fields: [userId], references: [id], onDelete: Cascade)
-  slotIndex  Int
-  unlockedAt DateTime         @default(now())
-  costPaid   Decimal          @default("0") @db.Decimal(18, 2)
-  plotId     String?
-  plot       AgriculturePlot? @relation(fields: [plotId], references: [id], onDelete: SetNull)
-
-  @@unique([userId, slotIndex])
-  @@index([userId])
-}
-
-model AgricultureTask {
-  id         String               @id @default(cuid())
-  userId     String
-  user       User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
-  plotId     String?
-  plot       AgriculturePlot?     @relation(fields: [plotId], references: [id], onDelete: SetNull)
-  cropPlanId String?
-  cropPlan   AgricultureCropPlan? @relation(fields: [cropPlanId], references: [id], onDelete: SetNull)
-  title      String
-  assignee   String?
-  priority   Int                  @default(2)
-  tags       Json?
-  notes      String?
-  dueDate    DateTime?
-  status     LifecycleStatus      @default(PENDING)
-  createdAt  DateTime             @default(now())
-  updatedAt  DateTime             @updatedAt
-
-  @@index([userId, status])
-  @@index([userId, dueDate])
-  @@index([userId, plotId])
-  @@index([userId, cropPlanId])
-}
-
-model AgricultureShipment {
-  id                 String                         @id @default(cuid())
-  userId             String
-  user               User                           @relation(fields: [userId], references: [id], onDelete: Cascade)
-  lot                String
-  destination        String
-  mode               String
-  eta                DateTime?
-  freightLoadId      String?
-  freightLoad        FreightLoad?                   @relation(fields: [freightLoadId], references: [id], onDelete: SetNull)
-  inventoryMovements AgricultureInventoryMovement[]
-  createdAt          DateTime                       @default(now())
-  updatedAt          DateTime                       @updatedAt
-
-  @@index([userId])
-  @@index([userId, freightLoadId])
-}
-
 model AgricultureResourceCategory {
   id          String   @id @default(cuid())
   slug        String   @unique
@@ -1087,7 +931,6 @@ model CulinarySupplierNeed {
   @@index([userId, status])
 }
 
-// USDA reference data now lives inside Actor/Entity records; cache entries stay generic.
 model ApiCacheEntry {
   id         String    @id @default(cuid())
   provider   String
@@ -1105,7 +948,6 @@ model ApiCacheEntry {
   @@index([provider, scope, endpoint])
 }
 
-// Wikidata REST API cache entries
 model WikidataCacheEntry {
   id                  String    @id @default(cuid())
   resource            String
@@ -1126,7 +968,6 @@ model WikidataCacheEntry {
   @@index([resource, fetchedAt])
 }
 
-// Prevents repeated enrichment calls against Wikidata for the same source entity
 model EnrichmentCache {
   id         String    @id @default(cuid())
   provider   String    @default("wikidata")

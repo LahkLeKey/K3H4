@@ -18,8 +18,7 @@ export const FreightLoadFindManyResultSchema = z.object({
   routeGeoJson: z.unknown().optional(),
   createdAt: z.date(),
   updatedAt: z.date(),
-  warehouseItems: z.array(z.unknown()),
-  agricultureShipments: z.array(z.unknown())
+  warehouseItems: z.array(z.unknown())
 })),
   pagination: z.object({
   page: z.number().int().min(1),

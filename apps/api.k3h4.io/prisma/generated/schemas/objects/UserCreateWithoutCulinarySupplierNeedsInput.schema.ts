@@ -14,14 +14,6 @@ import { FreightLoadCreateNestedManyWithoutUserInputObjectSchema as FreightLoadC
 import { WarehouseItemCreateNestedManyWithoutUserInputObjectSchema as WarehouseItemCreateNestedManyWithoutUserInputObjectSchema } from './WarehouseItemCreateNestedManyWithoutUserInput.schema';
 import { PosStoreCreateNestedManyWithoutUserInputObjectSchema as PosStoreCreateNestedManyWithoutUserInputObjectSchema } from './PosStoreCreateNestedManyWithoutUserInput.schema';
 import { PosTicketCreateNestedManyWithoutUserInputObjectSchema as PosTicketCreateNestedManyWithoutUserInputObjectSchema } from './PosTicketCreateNestedManyWithoutUserInput.schema';
-import { AgriculturePlotCreateNestedManyWithoutUserInputObjectSchema as AgriculturePlotCreateNestedManyWithoutUserInputObjectSchema } from './AgriculturePlotCreateNestedManyWithoutUserInput.schema';
-import { AgricultureTaskCreateNestedManyWithoutUserInputObjectSchema as AgricultureTaskCreateNestedManyWithoutUserInputObjectSchema } from './AgricultureTaskCreateNestedManyWithoutUserInput.schema';
-import { AgricultureShipmentCreateNestedManyWithoutUserInputObjectSchema as AgricultureShipmentCreateNestedManyWithoutUserInputObjectSchema } from './AgricultureShipmentCreateNestedManyWithoutUserInput.schema';
-import { AgricultureCropPlanCreateNestedManyWithoutUserInputObjectSchema as AgricultureCropPlanCreateNestedManyWithoutUserInputObjectSchema } from './AgricultureCropPlanCreateNestedManyWithoutUserInput.schema';
-import { AgriculturePlotConditionCreateNestedManyWithoutUserInputObjectSchema as AgriculturePlotConditionCreateNestedManyWithoutUserInputObjectSchema } from './AgriculturePlotConditionCreateNestedManyWithoutUserInput.schema';
-import { AgricultureInventoryCreateNestedManyWithoutUserInputObjectSchema as AgricultureInventoryCreateNestedManyWithoutUserInputObjectSchema } from './AgricultureInventoryCreateNestedManyWithoutUserInput.schema';
-import { AgricultureInventoryMovementCreateNestedManyWithoutUserInputObjectSchema as AgricultureInventoryMovementCreateNestedManyWithoutUserInputObjectSchema } from './AgricultureInventoryMovementCreateNestedManyWithoutUserInput.schema';
-import { AgricultureSlotCreateNestedManyWithoutUserInputObjectSchema as AgricultureSlotCreateNestedManyWithoutUserInputObjectSchema } from './AgricultureSlotCreateNestedManyWithoutUserInput.schema';
 import { CulinaryMenuItemCreateNestedManyWithoutUserInputObjectSchema as CulinaryMenuItemCreateNestedManyWithoutUserInputObjectSchema } from './CulinaryMenuItemCreateNestedManyWithoutUserInput.schema';
 import { CulinaryPrepTaskCreateNestedManyWithoutUserInputObjectSchema as CulinaryPrepTaskCreateNestedManyWithoutUserInputObjectSchema } from './CulinaryPrepTaskCreateNestedManyWithoutUserInput.schema';
 import { ProviderGrantCreateNestedManyWithoutUserInputObjectSchema as ProviderGrantCreateNestedManyWithoutUserInputObjectSchema } from './ProviderGrantCreateNestedManyWithoutUserInput.schema';
@@ -74,14 +66,6 @@ const makeSchema = () => z.object({
   warehouseItems: z.lazy(() => WarehouseItemCreateNestedManyWithoutUserInputObjectSchema).optional(),
   posStores: z.lazy(() => PosStoreCreateNestedManyWithoutUserInputObjectSchema).optional(),
   posTickets: z.lazy(() => PosTicketCreateNestedManyWithoutUserInputObjectSchema).optional(),
-  agriculturePlots: z.lazy(() => AgriculturePlotCreateNestedManyWithoutUserInputObjectSchema).optional(),
-  agricultureTasks: z.lazy(() => AgricultureTaskCreateNestedManyWithoutUserInputObjectSchema).optional(),
-  agricultureShipments: z.lazy(() => AgricultureShipmentCreateNestedManyWithoutUserInputObjectSchema).optional(),
-  agricultureCropPlans: z.lazy(() => AgricultureCropPlanCreateNestedManyWithoutUserInputObjectSchema).optional(),
-  agriculturePlotConditions: z.lazy(() => AgriculturePlotConditionCreateNestedManyWithoutUserInputObjectSchema).optional(),
-  agricultureInventories: z.lazy(() => AgricultureInventoryCreateNestedManyWithoutUserInputObjectSchema).optional(),
-  agricultureInventoryMovements: z.lazy(() => AgricultureInventoryMovementCreateNestedManyWithoutUserInputObjectSchema).optional(),
-  agricultureSlots: z.lazy(() => AgricultureSlotCreateNestedManyWithoutUserInputObjectSchema).optional(),
   culinaryMenuItems: z.lazy(() => CulinaryMenuItemCreateNestedManyWithoutUserInputObjectSchema).optional(),
   culinaryPrepTasks: z.lazy(() => CulinaryPrepTaskCreateNestedManyWithoutUserInputObjectSchema).optional(),
   providerGrants: z.lazy(() => ProviderGrantCreateNestedManyWithoutUserInputObjectSchema).optional(),

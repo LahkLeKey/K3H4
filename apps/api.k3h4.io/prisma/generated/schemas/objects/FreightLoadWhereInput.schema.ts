@@ -10,8 +10,7 @@ import { JsonNullableFilterObjectSchema as JsonNullableFilterObjectSchema } from
 import { DateTimeFilterObjectSchema as DateTimeFilterObjectSchema } from './DateTimeFilter.schema';
 import { UserScalarRelationFilterObjectSchema as UserScalarRelationFilterObjectSchema } from './UserScalarRelationFilter.schema';
 import { UserWhereInputObjectSchema as UserWhereInputObjectSchema } from './UserWhereInput.schema';
-import { WarehouseItemListRelationFilterObjectSchema as WarehouseItemListRelationFilterObjectSchema } from './WarehouseItemListRelationFilter.schema';
-import { AgricultureShipmentListRelationFilterObjectSchema as AgricultureShipmentListRelationFilterObjectSchema } from './AgricultureShipmentListRelationFilter.schema'
+import { WarehouseItemListRelationFilterObjectSchema as WarehouseItemListRelationFilterObjectSchema } from './WarehouseItemListRelationFilter.schema'
 
 import { DecimalJSLikeSchema, isValidDecimalInput } from '../../helpers/decimal-helpers';
 const freightloadwhereinputSchema = z.object({
@@ -49,8 +48,7 @@ const freightloadwhereinputSchema = z.object({
   createdAt: z.union([z.lazy(() => DateTimeFilterObjectSchema), z.coerce.date()]).optional(),
   updatedAt: z.union([z.lazy(() => DateTimeFilterObjectSchema), z.coerce.date()]).optional(),
   user: z.union([z.lazy(() => UserScalarRelationFilterObjectSchema), z.lazy(() => UserWhereInputObjectSchema)]).optional(),
-  warehouseItems: z.lazy(() => WarehouseItemListRelationFilterObjectSchema).optional(),
-  agricultureShipments: z.lazy(() => AgricultureShipmentListRelationFilterObjectSchema).optional()
+  warehouseItems: z.lazy(() => WarehouseItemListRelationFilterObjectSchema).optional()
 }).strict();
 export const FreightLoadWhereInputObjectSchema: z.ZodType<Prisma.FreightLoadWhereInput> = freightloadwhereinputSchema as unknown as z.ZodType<Prisma.FreightLoadWhereInput>;
 export const FreightLoadWhereInputObjectZodSchema = freightloadwhereinputSchema;

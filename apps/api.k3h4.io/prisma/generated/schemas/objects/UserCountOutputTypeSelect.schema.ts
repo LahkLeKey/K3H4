@@ -13,14 +13,6 @@ import { UserCountOutputTypeCountFreightLoadsArgsObjectSchema as UserCountOutput
 import { UserCountOutputTypeCountWarehouseItemsArgsObjectSchema as UserCountOutputTypeCountWarehouseItemsArgsObjectSchema } from './UserCountOutputTypeCountWarehouseItemsArgs.schema';
 import { UserCountOutputTypeCountPosStoresArgsObjectSchema as UserCountOutputTypeCountPosStoresArgsObjectSchema } from './UserCountOutputTypeCountPosStoresArgs.schema';
 import { UserCountOutputTypeCountPosTicketsArgsObjectSchema as UserCountOutputTypeCountPosTicketsArgsObjectSchema } from './UserCountOutputTypeCountPosTicketsArgs.schema';
-import { UserCountOutputTypeCountAgriculturePlotsArgsObjectSchema as UserCountOutputTypeCountAgriculturePlotsArgsObjectSchema } from './UserCountOutputTypeCountAgriculturePlotsArgs.schema';
-import { UserCountOutputTypeCountAgricultureTasksArgsObjectSchema as UserCountOutputTypeCountAgricultureTasksArgsObjectSchema } from './UserCountOutputTypeCountAgricultureTasksArgs.schema';
-import { UserCountOutputTypeCountAgricultureShipmentsArgsObjectSchema as UserCountOutputTypeCountAgricultureShipmentsArgsObjectSchema } from './UserCountOutputTypeCountAgricultureShipmentsArgs.schema';
-import { UserCountOutputTypeCountAgricultureCropPlansArgsObjectSchema as UserCountOutputTypeCountAgricultureCropPlansArgsObjectSchema } from './UserCountOutputTypeCountAgricultureCropPlansArgs.schema';
-import { UserCountOutputTypeCountAgriculturePlotConditionsArgsObjectSchema as UserCountOutputTypeCountAgriculturePlotConditionsArgsObjectSchema } from './UserCountOutputTypeCountAgriculturePlotConditionsArgs.schema';
-import { UserCountOutputTypeCountAgricultureInventoriesArgsObjectSchema as UserCountOutputTypeCountAgricultureInventoriesArgsObjectSchema } from './UserCountOutputTypeCountAgricultureInventoriesArgs.schema';
-import { UserCountOutputTypeCountAgricultureInventoryMovementsArgsObjectSchema as UserCountOutputTypeCountAgricultureInventoryMovementsArgsObjectSchema } from './UserCountOutputTypeCountAgricultureInventoryMovementsArgs.schema';
-import { UserCountOutputTypeCountAgricultureSlotsArgsObjectSchema as UserCountOutputTypeCountAgricultureSlotsArgsObjectSchema } from './UserCountOutputTypeCountAgricultureSlotsArgs.schema';
 import { UserCountOutputTypeCountCulinaryMenuItemsArgsObjectSchema as UserCountOutputTypeCountCulinaryMenuItemsArgsObjectSchema } from './UserCountOutputTypeCountCulinaryMenuItemsArgs.schema';
 import { UserCountOutputTypeCountCulinaryPrepTasksArgsObjectSchema as UserCountOutputTypeCountCulinaryPrepTasksArgsObjectSchema } from './UserCountOutputTypeCountCulinaryPrepTasksArgs.schema';
 import { UserCountOutputTypeCountCulinarySupplierNeedsArgsObjectSchema as UserCountOutputTypeCountCulinarySupplierNeedsArgsObjectSchema } from './UserCountOutputTypeCountCulinarySupplierNeedsArgs.schema';
@@ -56,14 +48,6 @@ const makeSchema = () => z.object({
   warehouseItems: z.union([z.boolean(), z.lazy(() => UserCountOutputTypeCountWarehouseItemsArgsObjectSchema)]).optional(),
   posStores: z.union([z.boolean(), z.lazy(() => UserCountOutputTypeCountPosStoresArgsObjectSchema)]).optional(),
   posTickets: z.union([z.boolean(), z.lazy(() => UserCountOutputTypeCountPosTicketsArgsObjectSchema)]).optional(),
-  agriculturePlots: z.union([z.boolean(), z.lazy(() => UserCountOutputTypeCountAgriculturePlotsArgsObjectSchema)]).optional(),
-  agricultureTasks: z.union([z.boolean(), z.lazy(() => UserCountOutputTypeCountAgricultureTasksArgsObjectSchema)]).optional(),
-  agricultureShipments: z.union([z.boolean(), z.lazy(() => UserCountOutputTypeCountAgricultureShipmentsArgsObjectSchema)]).optional(),
-  agricultureCropPlans: z.union([z.boolean(), z.lazy(() => UserCountOutputTypeCountAgricultureCropPlansArgsObjectSchema)]).optional(),
-  agriculturePlotConditions: z.union([z.boolean(), z.lazy(() => UserCountOutputTypeCountAgriculturePlotConditionsArgsObjectSchema)]).optional(),
-  agricultureInventories: z.union([z.boolean(), z.lazy(() => UserCountOutputTypeCountAgricultureInventoriesArgsObjectSchema)]).optional(),
-  agricultureInventoryMovements: z.union([z.boolean(), z.lazy(() => UserCountOutputTypeCountAgricultureInventoryMovementsArgsObjectSchema)]).optional(),
-  agricultureSlots: z.union([z.boolean(), z.lazy(() => UserCountOutputTypeCountAgricultureSlotsArgsObjectSchema)]).optional(),
   culinaryMenuItems: z.union([z.boolean(), z.lazy(() => UserCountOutputTypeCountCulinaryMenuItemsArgsObjectSchema)]).optional(),
   culinaryPrepTasks: z.union([z.boolean(), z.lazy(() => UserCountOutputTypeCountCulinaryPrepTasksArgsObjectSchema)]).optional(),
   culinarySupplierNeeds: z.union([z.boolean(), z.lazy(() => UserCountOutputTypeCountCulinarySupplierNeedsArgsObjectSchema)]).optional(),

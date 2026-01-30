@@ -17,14 +17,6 @@ import { StaffingPlacementUncheckedUpdateManyWithoutUserNestedInputObjectSchema 
 import { FreightLoadUncheckedUpdateManyWithoutUserNestedInputObjectSchema as FreightLoadUncheckedUpdateManyWithoutUserNestedInputObjectSchema } from './FreightLoadUncheckedUpdateManyWithoutUserNestedInput.schema';
 import { WarehouseItemUncheckedUpdateManyWithoutUserNestedInputObjectSchema as WarehouseItemUncheckedUpdateManyWithoutUserNestedInputObjectSchema } from './WarehouseItemUncheckedUpdateManyWithoutUserNestedInput.schema';
 import { PosStoreUncheckedUpdateManyWithoutUserNestedInputObjectSchema as PosStoreUncheckedUpdateManyWithoutUserNestedInputObjectSchema } from './PosStoreUncheckedUpdateManyWithoutUserNestedInput.schema';
-import { AgriculturePlotUncheckedUpdateManyWithoutUserNestedInputObjectSchema as AgriculturePlotUncheckedUpdateManyWithoutUserNestedInputObjectSchema } from './AgriculturePlotUncheckedUpdateManyWithoutUserNestedInput.schema';
-import { AgricultureTaskUncheckedUpdateManyWithoutUserNestedInputObjectSchema as AgricultureTaskUncheckedUpdateManyWithoutUserNestedInputObjectSchema } from './AgricultureTaskUncheckedUpdateManyWithoutUserNestedInput.schema';
-import { AgricultureShipmentUncheckedUpdateManyWithoutUserNestedInputObjectSchema as AgricultureShipmentUncheckedUpdateManyWithoutUserNestedInputObjectSchema } from './AgricultureShipmentUncheckedUpdateManyWithoutUserNestedInput.schema';
-import { AgricultureCropPlanUncheckedUpdateManyWithoutUserNestedInputObjectSchema as AgricultureCropPlanUncheckedUpdateManyWithoutUserNestedInputObjectSchema } from './AgricultureCropPlanUncheckedUpdateManyWithoutUserNestedInput.schema';
-import { AgriculturePlotConditionUncheckedUpdateManyWithoutUserNestedInputObjectSchema as AgriculturePlotConditionUncheckedUpdateManyWithoutUserNestedInputObjectSchema } from './AgriculturePlotConditionUncheckedUpdateManyWithoutUserNestedInput.schema';
-import { AgricultureInventoryUncheckedUpdateManyWithoutUserNestedInputObjectSchema as AgricultureInventoryUncheckedUpdateManyWithoutUserNestedInputObjectSchema } from './AgricultureInventoryUncheckedUpdateManyWithoutUserNestedInput.schema';
-import { AgricultureInventoryMovementUncheckedUpdateManyWithoutUserNestedInputObjectSchema as AgricultureInventoryMovementUncheckedUpdateManyWithoutUserNestedInputObjectSchema } from './AgricultureInventoryMovementUncheckedUpdateManyWithoutUserNestedInput.schema';
-import { AgricultureSlotUncheckedUpdateManyWithoutUserNestedInputObjectSchema as AgricultureSlotUncheckedUpdateManyWithoutUserNestedInputObjectSchema } from './AgricultureSlotUncheckedUpdateManyWithoutUserNestedInput.schema';
 import { CulinaryMenuItemUncheckedUpdateManyWithoutUserNestedInputObjectSchema as CulinaryMenuItemUncheckedUpdateManyWithoutUserNestedInputObjectSchema } from './CulinaryMenuItemUncheckedUpdateManyWithoutUserNestedInput.schema';
 import { CulinaryPrepTaskUncheckedUpdateManyWithoutUserNestedInputObjectSchema as CulinaryPrepTaskUncheckedUpdateManyWithoutUserNestedInputObjectSchema } from './CulinaryPrepTaskUncheckedUpdateManyWithoutUserNestedInput.schema';
 import { CulinarySupplierNeedUncheckedUpdateManyWithoutUserNestedInputObjectSchema as CulinarySupplierNeedUncheckedUpdateManyWithoutUserNestedInputObjectSchema } from './CulinarySupplierNeedUncheckedUpdateManyWithoutUserNestedInput.schema';
@@ -77,14 +69,6 @@ const makeSchema = () => z.object({
   freightLoads: z.lazy(() => FreightLoadUncheckedUpdateManyWithoutUserNestedInputObjectSchema).optional(),
   warehouseItems: z.lazy(() => WarehouseItemUncheckedUpdateManyWithoutUserNestedInputObjectSchema).optional(),
   posStores: z.lazy(() => PosStoreUncheckedUpdateManyWithoutUserNestedInputObjectSchema).optional(),
-  agriculturePlots: z.lazy(() => AgriculturePlotUncheckedUpdateManyWithoutUserNestedInputObjectSchema).optional(),
-  agricultureTasks: z.lazy(() => AgricultureTaskUncheckedUpdateManyWithoutUserNestedInputObjectSchema).optional(),
-  agricultureShipments: z.lazy(() => AgricultureShipmentUncheckedUpdateManyWithoutUserNestedInputObjectSchema).optional(),
-  agricultureCropPlans: z.lazy(() => AgricultureCropPlanUncheckedUpdateManyWithoutUserNestedInputObjectSchema).optional(),
-  agriculturePlotConditions: z.lazy(() => AgriculturePlotConditionUncheckedUpdateManyWithoutUserNestedInputObjectSchema).optional(),
-  agricultureInventories: z.lazy(() => AgricultureInventoryUncheckedUpdateManyWithoutUserNestedInputObjectSchema).optional(),
-  agricultureInventoryMovements: z.lazy(() => AgricultureInventoryMovementUncheckedUpdateManyWithoutUserNestedInputObjectSchema).optional(),
-  agricultureSlots: z.lazy(() => AgricultureSlotUncheckedUpdateManyWithoutUserNestedInputObjectSchema).optional(),
   culinaryMenuItems: z.lazy(() => CulinaryMenuItemUncheckedUpdateManyWithoutUserNestedInputObjectSchema).optional(),
   culinaryPrepTasks: z.lazy(() => CulinaryPrepTaskUncheckedUpdateManyWithoutUserNestedInputObjectSchema).optional(),
   culinarySupplierNeeds: z.lazy(() => CulinarySupplierNeedUncheckedUpdateManyWithoutUserNestedInputObjectSchema).optional(),

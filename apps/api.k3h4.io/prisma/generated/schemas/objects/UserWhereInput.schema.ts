@@ -19,14 +19,6 @@ import { FreightLoadListRelationFilterObjectSchema as FreightLoadListRelationFil
 import { WarehouseItemListRelationFilterObjectSchema as WarehouseItemListRelationFilterObjectSchema } from './WarehouseItemListRelationFilter.schema';
 import { PosStoreListRelationFilterObjectSchema as PosStoreListRelationFilterObjectSchema } from './PosStoreListRelationFilter.schema';
 import { PosTicketListRelationFilterObjectSchema as PosTicketListRelationFilterObjectSchema } from './PosTicketListRelationFilter.schema';
-import { AgriculturePlotListRelationFilterObjectSchema as AgriculturePlotListRelationFilterObjectSchema } from './AgriculturePlotListRelationFilter.schema';
-import { AgricultureTaskListRelationFilterObjectSchema as AgricultureTaskListRelationFilterObjectSchema } from './AgricultureTaskListRelationFilter.schema';
-import { AgricultureShipmentListRelationFilterObjectSchema as AgricultureShipmentListRelationFilterObjectSchema } from './AgricultureShipmentListRelationFilter.schema';
-import { AgricultureCropPlanListRelationFilterObjectSchema as AgricultureCropPlanListRelationFilterObjectSchema } from './AgricultureCropPlanListRelationFilter.schema';
-import { AgriculturePlotConditionListRelationFilterObjectSchema as AgriculturePlotConditionListRelationFilterObjectSchema } from './AgriculturePlotConditionListRelationFilter.schema';
-import { AgricultureInventoryListRelationFilterObjectSchema as AgricultureInventoryListRelationFilterObjectSchema } from './AgricultureInventoryListRelationFilter.schema';
-import { AgricultureInventoryMovementListRelationFilterObjectSchema as AgricultureInventoryMovementListRelationFilterObjectSchema } from './AgricultureInventoryMovementListRelationFilter.schema';
-import { AgricultureSlotListRelationFilterObjectSchema as AgricultureSlotListRelationFilterObjectSchema } from './AgricultureSlotListRelationFilter.schema';
 import { CulinaryMenuItemListRelationFilterObjectSchema as CulinaryMenuItemListRelationFilterObjectSchema } from './CulinaryMenuItemListRelationFilter.schema';
 import { CulinaryPrepTaskListRelationFilterObjectSchema as CulinaryPrepTaskListRelationFilterObjectSchema } from './CulinaryPrepTaskListRelationFilter.schema';
 import { CulinarySupplierNeedListRelationFilterObjectSchema as CulinarySupplierNeedListRelationFilterObjectSchema } from './CulinarySupplierNeedListRelationFilter.schema';
@@ -83,14 +75,6 @@ const userwhereinputSchema = z.object({
   warehouseItems: z.lazy(() => WarehouseItemListRelationFilterObjectSchema).optional(),
   posStores: z.lazy(() => PosStoreListRelationFilterObjectSchema).optional(),
   posTickets: z.lazy(() => PosTicketListRelationFilterObjectSchema).optional(),
-  agriculturePlots: z.lazy(() => AgriculturePlotListRelationFilterObjectSchema).optional(),
-  agricultureTasks: z.lazy(() => AgricultureTaskListRelationFilterObjectSchema).optional(),
-  agricultureShipments: z.lazy(() => AgricultureShipmentListRelationFilterObjectSchema).optional(),
-  agricultureCropPlans: z.lazy(() => AgricultureCropPlanListRelationFilterObjectSchema).optional(),
-  agriculturePlotConditions: z.lazy(() => AgriculturePlotConditionListRelationFilterObjectSchema).optional(),
-  agricultureInventories: z.lazy(() => AgricultureInventoryListRelationFilterObjectSchema).optional(),
-  agricultureInventoryMovements: z.lazy(() => AgricultureInventoryMovementListRelationFilterObjectSchema).optional(),
-  agricultureSlots: z.lazy(() => AgricultureSlotListRelationFilterObjectSchema).optional(),
   culinaryMenuItems: z.lazy(() => CulinaryMenuItemListRelationFilterObjectSchema).optional(),
   culinaryPrepTasks: z.lazy(() => CulinaryPrepTaskListRelationFilterObjectSchema).optional(),
   culinarySupplierNeeds: z.lazy(() => CulinarySupplierNeedListRelationFilterObjectSchema).optional(),
