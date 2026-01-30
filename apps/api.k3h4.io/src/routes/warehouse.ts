@@ -56,7 +56,9 @@ export function registerWarehouseRoutes(
           source: 'api',
           payload: {count: items.length},
         });
-        return {items: items.map(buildWarehouseItemPayload)};
+        return {
+          items: items.map((item) => buildWarehouseItemPayload(item, userId))
+        };
       },
   );
 
@@ -142,7 +144,7 @@ export function registerWarehouseRoutes(
           source: 'api',
           payload: {sku: body.sku, freightLoadId},
         });
-        return {item: buildWarehouseItemPayload(entity)};
+        return {item: buildWarehouseItemPayload(entity, userId)};
       },
   );
 
@@ -283,7 +285,7 @@ export function registerWarehouseRoutes(
           source: 'api',
           payload: {id, freightLoadId: telemetryFreightId},
         });
-        return {item: buildWarehouseItemPayload(updated)};
+        return {item: buildWarehouseItemPayload(updated, userId)};
       },
   );
 }

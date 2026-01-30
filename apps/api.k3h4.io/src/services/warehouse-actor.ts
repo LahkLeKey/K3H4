@@ -72,20 +72,24 @@ export async function deleteWarehouseActorWithEntities(
 }
 
 export type WarehouseItemPayload = {
-  id: string; sku: string; description: string | null; quantity: number;
+  id: string; userId: string; sku: string; description: string | null;
+  quantity: number;
   location: string;
   status: LifecycleStatus;
   freightLoadId: string | null;
   category: WarehouseCategory;
   metadata: Record<string, unknown>| null;
+  createdAt: string;
+  updatedAt: string;
 };
 
 export const buildWarehouseItemPayload =
-    (entity: Entity): WarehouseItemPayload => {
+    (entity: Entity, userId: string): WarehouseItemPayload => {
       const metadata = asRecord(entity.metadata);
       const sku = metadataString(metadata, 'sku');
       return {
         id: entity.id,
+        userId,
         sku: sku ?? '',
         description: metadataString(metadata, 'description'),
         quantity: metadataNumber(metadata, 'quantity') ?? 0,
@@ -96,5 +100,7 @@ export const buildWarehouseItemPayload =
         category: (metadataString(metadata, 'category') as WarehouseCategory) ??
             WarehouseCategory.OTHER,
         metadata: Object.keys(metadata).length ? metadata : null,
+        createdAt: entity.createdAt.toISOString(),
+        updatedAt: entity.updatedAt.toISOString(),
       };
     };
