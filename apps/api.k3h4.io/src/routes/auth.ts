@@ -5,6 +5,7 @@ import {URLSearchParams} from 'node:url';
 
 import {deleteAgricultureActorWithEntities} from '../services/agriculture-actor';
 import {deleteBankActorWithEntities} from '../services/bank-actor';
+import {deleteCulinaryActorWithEntities} from '../services/culinary-ledger';
 import {deleteStaffingActorWithEntities} from '../services/staffing-actor';
 import {deleteWarehouseActorWithEntities} from '../services/warehouse-actor';
 
@@ -161,16 +162,8 @@ const runDeleteJob = async (
         })
       },
       {
-        key: 'culinaryPrepTasks',
-        action: () => prisma.culinaryPrepTask.deleteMany({where: {userId}})
-      },
-      {
-        key: 'culinarySupplierNeeds',
-        action: () => prisma.culinarySupplierNeed.deleteMany({where: {userId}})
-      },
-      {
-        key: 'culinaryMenuItems',
-        action: () => prisma.culinaryMenuItem.deleteMany({where: {userId}})
+        key: 'culinaryLedger',
+        action: () => deleteCulinaryActorWithEntities(prisma, userId)
       },
       {
         key: 'userPreferences',

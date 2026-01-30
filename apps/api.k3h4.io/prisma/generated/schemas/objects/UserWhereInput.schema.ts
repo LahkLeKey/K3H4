@@ -9,9 +9,6 @@ import { UserPreferenceNullableScalarRelationFilterObjectSchema as UserPreferenc
 import { UserPreferenceWhereInputObjectSchema as UserPreferenceWhereInputObjectSchema } from './UserPreferenceWhereInput.schema';
 import { TelemetryEventListRelationFilterObjectSchema as TelemetryEventListRelationFilterObjectSchema } from './TelemetryEventListRelationFilter.schema';
 import { FreightLoadListRelationFilterObjectSchema as FreightLoadListRelationFilterObjectSchema } from './FreightLoadListRelationFilter.schema';
-import { CulinaryMenuItemListRelationFilterObjectSchema as CulinaryMenuItemListRelationFilterObjectSchema } from './CulinaryMenuItemListRelationFilter.schema';
-import { CulinaryPrepTaskListRelationFilterObjectSchema as CulinaryPrepTaskListRelationFilterObjectSchema } from './CulinaryPrepTaskListRelationFilter.schema';
-import { CulinarySupplierNeedListRelationFilterObjectSchema as CulinarySupplierNeedListRelationFilterObjectSchema } from './CulinarySupplierNeedListRelationFilter.schema';
 import { ProviderGrantListRelationFilterObjectSchema as ProviderGrantListRelationFilterObjectSchema } from './ProviderGrantListRelationFilter.schema';
 import { GeoRouteCacheListRelationFilterObjectSchema as GeoRouteCacheListRelationFilterObjectSchema } from './GeoRouteCacheListRelationFilter.schema';
 import { GeoDirectionListRelationFilterObjectSchema as GeoDirectionListRelationFilterObjectSchema } from './GeoDirectionListRelationFilter.schema';
@@ -53,9 +50,6 @@ const userwhereinputSchema = z.object({
   preference: z.union([z.lazy(() => UserPreferenceNullableScalarRelationFilterObjectSchema), z.lazy(() => UserPreferenceWhereInputObjectSchema)]).optional(),
   telemetry: z.lazy(() => TelemetryEventListRelationFilterObjectSchema).optional(),
   freightLoads: z.lazy(() => FreightLoadListRelationFilterObjectSchema).optional(),
-  culinaryMenuItems: z.lazy(() => CulinaryMenuItemListRelationFilterObjectSchema).optional(),
-  culinaryPrepTasks: z.lazy(() => CulinaryPrepTaskListRelationFilterObjectSchema).optional(),
-  culinarySupplierNeeds: z.lazy(() => CulinarySupplierNeedListRelationFilterObjectSchema).optional(),
   providerGrants: z.lazy(() => ProviderGrantListRelationFilterObjectSchema).optional(),
   geoRouteCaches: z.lazy(() => GeoRouteCacheListRelationFilterObjectSchema).optional(),
   geoDirections: z.lazy(() => GeoDirectionListRelationFilterObjectSchema).optional(),

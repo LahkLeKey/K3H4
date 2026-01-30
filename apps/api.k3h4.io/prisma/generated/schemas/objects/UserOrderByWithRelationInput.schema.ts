@@ -6,9 +6,6 @@ import { RefreshTokenOrderByRelationAggregateInputObjectSchema as RefreshTokenOr
 import { UserPreferenceOrderByWithRelationInputObjectSchema as UserPreferenceOrderByWithRelationInputObjectSchema } from './UserPreferenceOrderByWithRelationInput.schema';
 import { TelemetryEventOrderByRelationAggregateInputObjectSchema as TelemetryEventOrderByRelationAggregateInputObjectSchema } from './TelemetryEventOrderByRelationAggregateInput.schema';
 import { FreightLoadOrderByRelationAggregateInputObjectSchema as FreightLoadOrderByRelationAggregateInputObjectSchema } from './FreightLoadOrderByRelationAggregateInput.schema';
-import { CulinaryMenuItemOrderByRelationAggregateInputObjectSchema as CulinaryMenuItemOrderByRelationAggregateInputObjectSchema } from './CulinaryMenuItemOrderByRelationAggregateInput.schema';
-import { CulinaryPrepTaskOrderByRelationAggregateInputObjectSchema as CulinaryPrepTaskOrderByRelationAggregateInputObjectSchema } from './CulinaryPrepTaskOrderByRelationAggregateInput.schema';
-import { CulinarySupplierNeedOrderByRelationAggregateInputObjectSchema as CulinarySupplierNeedOrderByRelationAggregateInputObjectSchema } from './CulinarySupplierNeedOrderByRelationAggregateInput.schema';
 import { ProviderGrantOrderByRelationAggregateInputObjectSchema as ProviderGrantOrderByRelationAggregateInputObjectSchema } from './ProviderGrantOrderByRelationAggregateInput.schema';
 import { GeoRouteCacheOrderByRelationAggregateInputObjectSchema as GeoRouteCacheOrderByRelationAggregateInputObjectSchema } from './GeoRouteCacheOrderByRelationAggregateInput.schema';
 import { GeoDirectionOrderByRelationAggregateInputObjectSchema as GeoDirectionOrderByRelationAggregateInputObjectSchema } from './GeoDirectionOrderByRelationAggregateInput.schema';
@@ -39,9 +36,6 @@ const makeSchema = () => z.object({
   preference: z.lazy(() => UserPreferenceOrderByWithRelationInputObjectSchema).optional(),
   telemetry: z.lazy(() => TelemetryEventOrderByRelationAggregateInputObjectSchema).optional(),
   freightLoads: z.lazy(() => FreightLoadOrderByRelationAggregateInputObjectSchema).optional(),
-  culinaryMenuItems: z.lazy(() => CulinaryMenuItemOrderByRelationAggregateInputObjectSchema).optional(),
-  culinaryPrepTasks: z.lazy(() => CulinaryPrepTaskOrderByRelationAggregateInputObjectSchema).optional(),
-  culinarySupplierNeeds: z.lazy(() => CulinarySupplierNeedOrderByRelationAggregateInputObjectSchema).optional(),
   providerGrants: z.lazy(() => ProviderGrantOrderByRelationAggregateInputObjectSchema).optional(),
   geoRouteCaches: z.lazy(() => GeoRouteCacheOrderByRelationAggregateInputObjectSchema).optional(),
   geoDirections: z.lazy(() => GeoDirectionOrderByRelationAggregateInputObjectSchema).optional(),

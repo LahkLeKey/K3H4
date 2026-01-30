@@ -1,7 +1,9 @@
-import {LifecycleStatus, Prisma, PrismaClient} from '@prisma/client';
+import {LifecycleStatus, PrismaClient} from '@prisma/client';
 import {type FastifyInstance} from 'fastify';
 
 import {parseLifecycleStatus} from '../lib/status-utils';
+import {createCulinaryMenuItem, createCulinaryPrepTask, createCulinarySupplierNeed, loadCulinaryMenuItems, loadCulinaryPrepTasks, loadCulinarySupplierNeeds,} from '../services/culinary-ledger';
+import {getPointOfSaleOverview} from '../services/point-of-sale-ledger';
 
 import {withTelemetryBase} from './telemetry';
 import {type RecordTelemetryFn} from './types';
@@ -15,14 +17,13 @@ export function registerCulinaryRoutes(
       async (request) => {
         const userId = (request.user as {sub: string}).sub;
 
-        const [menuItems, prepTasks, supplierNeeds] = await Promise.all([
-          prisma.culinaryMenuItem.findMany(
-              {where: {userId}, orderBy: {createdAt: 'desc'}}),
-          prisma.culinaryPrepTask.findMany(
-              {where: {userId}, orderBy: [{status: 'asc'}, {dueAt: 'asc'}]}),
-          prisma.culinarySupplierNeed.findMany(
-              {where: {userId}, orderBy: {createdAt: 'desc'}}),
-        ]);
+        const [menuItems, prepTasks, supplierNeeds, pointOfSale] =
+            await Promise.all([
+              loadCulinaryMenuItems(prisma, userId),
+              loadCulinaryPrepTasks(prisma, userId),
+              loadCulinarySupplierNeeds(prisma, userId),
+              getPointOfSaleOverview(prisma, userId),
+            ]);
 
         const rt = withTelemetryBase(recordTelemetry, request);
         await rt({
@@ -35,7 +36,7 @@ export function registerCulinaryRoutes(
           },
         });
 
-        return {menuItems, prepTasks, supplierNeeds};
+        return {menuItems, prepTasks, supplierNeeds, pointOfSale};
       },
   );
 
@@ -50,15 +51,13 @@ export function registerCulinaryRoutes(
           cost: number;
           price: number
         };
-        const item = await prisma.culinaryMenuItem.create({
-          data: {
-            userId,
-            name: body.name,
-            prepMinutes: body.prepMinutes,
-            cost: new Prisma.Decimal(Number(body.cost).toFixed(2)),
-            price: new Prisma.Decimal(Number(body.price).toFixed(2)),
-          },
-        });
+        const item = await prisma.$transaction(
+            async (tx) => createCulinaryMenuItem(tx, userId, {
+              name: body.name,
+              prepMinutes: body.prepMinutes,
+              cost: Number(body.cost),
+              price: Number(body.price),
+            }));
 
         const rt = withTelemetryBase(recordTelemetry, request);
         await rt({
@@ -88,15 +87,13 @@ export function registerCulinaryRoutes(
             return reply.status(400).send({error: 'Invalid status'});
           prepStatus = parsedStatus;
         }
-        const prep = await prisma.culinaryPrepTask.create({
-          data: {
-            userId,
-            task: body.task,
-            station: body.station,
-            dueAt: body.dueAt ? new Date(body.dueAt) : null,
-            status: prepStatus,
-          },
-        });
+        const prep = await prisma.$transaction(
+            async (tx) => createCulinaryPrepTask(tx, userId, {
+              task: body.task,
+              station: body.station,
+              dueAt: body.dueAt,
+              status: prepStatus,
+            }));
 
         const rt = withTelemetryBase(recordTelemetry, request);
         await rt({
@@ -126,15 +123,13 @@ export function registerCulinaryRoutes(
             return reply.status(400).send({error: 'Invalid status'});
           needStatus = parsedStatus;
         }
-        const need = await prisma.culinarySupplierNeed.create({
-          data: {
-            userId,
-            item: body.item,
-            quantity: body.quantity,
-            status: needStatus,
-            dueDate: body.dueDate ? new Date(body.dueDate) : null,
-          },
-        });
+        const need = await prisma.$transaction(
+            async (tx) => createCulinarySupplierNeed(tx, userId, {
+              item: body.item,
+              quantity: body.quantity,
+              status: needStatus,
+              dueDate: body.dueDate,
+            }));
 
         const rt = withTelemetryBase(recordTelemetry, request);
         await rt({

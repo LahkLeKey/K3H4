@@ -3,20 +3,12 @@ import {type FastifyInstance} from 'fastify';
 
 import {parseLifecycleStatus} from '../lib/status-utils';
 import {recordBankTransactionEntity} from '../services/bank-actor';
+import {getPointOfSaleOverview, POS_DEFAULT_CHANNEL, summarizePointOfSaleStore, ticketFromEntity,} from '../services/point-of-sale-ledger';
 
 import {buildTelemetryBase} from './telemetry';
 import {type RecordTelemetryFn} from './types';
 
-const DEFAULT_CHANNEL = 'In-store';
 const SOURCE = 'k3h4-api';
-
-const serializeMoney = (value: Prisma.Decimal|null|undefined) =>
-    value ? value.toFixed(2) : '0.00';
-
-const parseJsonObject = (value: Prisma.JsonValue|null|undefined) => {
-  if (!value || typeof value !== 'object' || Array.isArray(value)) return {};
-  return value as Record<string, unknown>;
-};
 
 type TicketItem = {
   name: string; quantity: number; price: string
@@ -41,134 +33,9 @@ const normalizeTicketItems =
               .filter((item): item is TicketItem => Boolean(item));
         };
 
-const parseTicketItems = (value: Prisma.JsonValue|null|undefined) => {
-  if (!value || !Array.isArray(value)) return [] as TicketItem[];
-  return value
-      .map((item) => {
-        if (!item || typeof item !== 'object' || Array.isArray(item))
-          return null;
-        const {name, quantity, price} = item as Record<string, unknown>;
-        const itemName = typeof name === 'string' ? name : undefined;
-        const itemQuantity = Number.isFinite(Number(quantity)) ?
-            Math.max(1, Math.floor(Number(quantity))) :
-            1;
-        const itemPrice = typeof price === 'string' ? price : undefined;
-        if (!itemName || !itemPrice) return null;
-        return {name: itemName, quantity: itemQuantity, price: itemPrice};
-      })
-      .filter((item): item is TicketItem => Boolean(item));
-};
-
-const getStoreChannel = (store: Prisma.Actor) => {
-  const metadata = parseJsonObject(store.metadata);
-  return (metadata.channel as string | undefined) ?? DEFAULT_CHANNEL;
-};
-
-const buildStoreSummary = (store: Prisma.Actor) => ({
-  id: store.id,
-  name: store.label,
-  channel: getStoreChannel(store),
-});
-
-type TicketRecord = {
-  id: string; storeId: string | null; storeName: string | null; channel: string;
-  status: LifecycleStatus | null;
-  total: Prisma.Decimal;
-  createdAt: string;
-  items: TicketItem[];
-  itemsCount: number;
-};
-
-const ticketFromEntity = (entity: Prisma.Entity) => {
-  const metadata = parseJsonObject(entity.metadata);
-  const amount = typeof metadata.amount === 'string' ? metadata.amount : '0';
-  const total = new Prisma.Decimal(amount || '0');
-  const storeId =
-      typeof metadata.storeId === 'string' ? metadata.storeId : null;
-  const storeName =
-      typeof metadata.storeName === 'string' ? metadata.storeName : null;
-  const channel =
-      typeof metadata.channel === 'string' ? metadata.channel : DEFAULT_CHANNEL;
-  const status = typeof metadata.status === 'string' ?
-      (metadata.status as LifecycleStatus) :
-      null;
-  const items =
-      parseTicketItems(metadata.items as Prisma.JsonValue | null | undefined);
-  const itemsCount = typeof metadata.itemsCount === 'number' ?
-      metadata.itemsCount :
-      items.reduce((sum, item) => sum + item.quantity, 0);
-  return {
-    id: entity.id,
-    storeId,
-    storeName,
-    channel,
-    status,
-    total,
-    createdAt: entity.createdAt.toISOString(),
-    items,
-    itemsCount,
-  };
-};
-
-const buildOrders =
-    (tickets: TicketRecord[], storeLookup: Map<string, string|undefined>) => {
-      const orders: Record < string, {
-        store: string;
-        channel: string;
-        tickets: number;
-        revenue: Prisma.Decimal;
-      }
-      > = {};
-      tickets.forEach((ticket) => {
-        const key = `${ticket.storeId ?? 'unknown'}:${ticket.channel}`;
-        if (!orders[key]) {
-          const fallbackStore = ticket.storeName ??
-              storeLookup.get(ticket.storeId ?? '') ?? 'Unknown store';
-          orders[key] = {
-            store: fallbackStore,
-            channel: ticket.channel,
-            tickets: 0,
-            revenue: new Prisma.Decimal(0),
-          };
-        }
-        orders[key].tickets += 1;
-        orders[key].revenue = orders[key].revenue.add(ticket.total);
-      });
-      return Object.values(orders).map((order) => ({
-                                         store: order.store,
-                                         channel: order.channel,
-                                         tickets: order.tickets,
-                                         revenue: serializeMoney(order.revenue),
-                                       }));
-    };
-
-const buildTopItems = (tickets: TicketRecord[]) => {
-  const agg: Record < string, {
-    name: string;
-    sold: number;
-    revenue: Prisma.Decimal
-  }
-  > = {};
-  tickets.forEach((ticket) => {
-    ticket.items.forEach((item) => {
-      const key =
-          item.name.trim().toLowerCase() || `${item.name}:${item.price}`;
-      if (!agg[key]) {
-        agg[key] = {name: item.name, sold: 0, revenue: new Prisma.Decimal(0)};
-      }
-      agg[key].sold += item.quantity;
-      agg[key].revenue = agg[key].revenue.add(
-          new Prisma.Decimal(item.price).mul(item.quantity));
-    });
-  });
-  return Object.values(agg)
-      .sort((a, b) => b.sold - a.sold)
-      .slice(0, 10)
-      .map((item) => ({
-             name: item.name,
-             sold: item.sold,
-             revenue: serializeMoney(item.revenue),
-           }));
+const parseJsonObject = (value: Prisma.JsonValue|null|undefined) => {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return {};
+  return value as Record<string, unknown>;
 };
 
 const ensureStoreActor = async (
@@ -210,48 +77,18 @@ export function registerPointOfSaleRoutes(
       '/point-of-sale/overview', {preHandler: [server.authenticate]},
       async (request) => {
         const userId = (request.user as {sub: string}).sub;
-        const [stores, ticketEntities] = await Promise.all([
-          prisma.actor.findMany({
-            where: {userId, type: ActorType.POINT_OF_SALE_STORE},
-            orderBy: {createdAt: 'desc'},
-          }),
-          prisma.entity.findMany({
-            where: {
-              actor: {userId},
-              kind: EntityKind.POINT_OF_SALE_TICKET,
-            },
-            orderBy: {createdAt: 'desc'},
-          }),
-        ]);
-
-        const storeNames = new Map<string, string>();
-        stores.forEach((store) => storeNames.set(store.id, store.label));
-
-        const tickets = ticketEntities.map(ticketFromEntity);
-        const gross = tickets.reduce(
-            (sum, ticket) => sum.add(ticket.total), new Prisma.Decimal(0));
-        const ticketCount = tickets.length;
-        const avgTicket =
-            ticketCount ? gross.div(ticketCount) : new Prisma.Decimal(0);
-
+        const overview = await getPointOfSaleOverview(prisma, userId);
         await recordTelemetry(request, {
           ...buildTelemetryBase(request),
           eventType: 'point-of-sale.overview.fetch',
           source: 'api',
-          payload:
-              {gross: gross.toFixed(2), ticketCount, storeCount: stores.length},
-        });
-
-        return {
-          metrics: {
-            grossRevenue: serializeMoney(gross),
-            tickets: ticketCount,
-            avgTicket: serializeMoney(avgTicket),
+          payload: {
+            gross: overview.metrics.grossRevenue,
+            ticketCount: overview.metrics.tickets,
+            storeCount: overview.stores.length,
           },
-          orders: buildOrders(tickets, storeNames),
-          topItems: buildTopItems(tickets),
-          stores: stores.map(buildStoreSummary),
-        };
+        });
+        return overview;
       });
 
   server.post(
@@ -271,7 +108,7 @@ export function registerPointOfSaleRoutes(
           return reply.status(400).send({error: 'total is required'});
 
         const requestedChannel = body.channel?.trim();
-        const channel = requestedChannel || DEFAULT_CHANNEL;
+        const channel = requestedChannel || POS_DEFAULT_CHANNEL;
         const items = normalizeTicketItems(body.items);
         const itemsCount = items.reduce((sum, item) => sum + item.quantity, 0);
         const storeName = body.storeName?.trim() || undefined;
@@ -359,7 +196,7 @@ export function registerPointOfSaleRoutes(
           name: string;
           channel?: string
         };
-        const channel = body.channel?.trim() || DEFAULT_CHANNEL;
+        const channel = body.channel?.trim() || POS_DEFAULT_CHANNEL;
         const store = await prisma.actor.create({
           data: {
             userId,
@@ -375,6 +212,6 @@ export function registerPointOfSaleRoutes(
           source: 'api',
           payload: {name: store.label, channel},
         });
-        return {store: buildStoreSummary(store)};
+        return {store: summarizePointOfSaleStore(store)};
       });
 }

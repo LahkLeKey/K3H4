@@ -3,6 +3,7 @@ import '../../test/vitest-setup.ts';
 import Fastify from 'fastify';
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 
+import * as culinaryLedger from '../../services/culinary-ledger';
 import * as staffingActor from '../../services/staffing-actor';
 import {registerAuthRoutes} from '../auth';
 import {type RecordTelemetryFn} from '../types';
@@ -411,12 +412,6 @@ describe('auth routes', () => {
       actor: {deleteMany: vi.fn().mockResolvedValue({count: 0})},
       freightLoad: {deleteMany: vi.fn().mockResolvedValue({count: 0})},
       warehouseItem: {deleteMany: vi.fn().mockResolvedValue({count: 0})},
-      posLineItem: {deleteMany: vi.fn().mockResolvedValue({count: 0})},
-      posTicket: {deleteMany: vi.fn().mockResolvedValue({count: 0})},
-      posStore: {deleteMany: vi.fn().mockResolvedValue({count: 0})},
-      culinaryPrepTask: {deleteMany: vi.fn().mockResolvedValue({count: 0})},
-      culinarySupplierNeed: {deleteMany: vi.fn().mockResolvedValue({count: 0})},
-      culinaryMenuItem: {deleteMany: vi.fn().mockResolvedValue({count: 0})},
       userPreference: {deleteMany: vi.fn().mockResolvedValue({count: 0})},
       refreshToken: {deleteMany: vi.fn().mockResolvedValue({count: 0})},
       user: {
@@ -429,6 +424,9 @@ describe('auth routes', () => {
     };
     const deleteStaffingSpy =
         vi.spyOn(staffingActor, 'deleteStaffingActorWithEntities')
+            .mockResolvedValue({entities: {count: 0}, actors: {count: 0}});
+    const deleteCulinarySpy =
+        vi.spyOn(culinaryLedger, 'deleteCulinaryActorWithEntities')
             .mockResolvedValue({entities: {count: 0}, actors: {count: 0}});
     const server = buildServer(prisma);
     const res = await server.inject({
@@ -447,6 +445,7 @@ describe('auth routes', () => {
     expect(statusRes.json().status).toBe('done');
     expect(prisma.user.delete).toHaveBeenCalledWith({where: {id: userId}});
     expect(deleteStaffingSpy).toHaveBeenCalledWith(prisma, userId);
+    expect(deleteCulinarySpy).toHaveBeenCalledWith(prisma, userId);
   });
 
   it('rejects delete when confirmation text is wrong', async () => {

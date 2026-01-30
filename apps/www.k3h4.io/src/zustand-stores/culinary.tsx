@@ -3,6 +3,7 @@ import { z } from "zod";
 
 import { apiFetch } from "../react-hooks/lib/api-client";
 import { useAuthStore } from "./auth";
+import { PointOfSaleOverviewSchema } from "./point-of-sale";
 
 const CulinaryMenuItemSchema = z.object({
     id: z.string(),
@@ -33,6 +34,7 @@ const CulinaryOverviewSchema = z.object({
     menuItems: z.array(CulinaryMenuItemSchema),
     prepTasks: z.array(CulinaryPrepTaskSchema),
     supplierNeeds: z.array(CulinarySupplierNeedSchema),
+    pointOfSale: PointOfSaleOverviewSchema,
 });
 
 export type CulinaryOverview = z.infer<typeof CulinaryOverviewSchema>;
