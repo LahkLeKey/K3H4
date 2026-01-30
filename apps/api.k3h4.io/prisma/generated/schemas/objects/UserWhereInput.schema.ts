@@ -30,12 +30,6 @@ import { AgricultureSlotListRelationFilterObjectSchema as AgricultureSlotListRel
 import { CulinaryMenuItemListRelationFilterObjectSchema as CulinaryMenuItemListRelationFilterObjectSchema } from './CulinaryMenuItemListRelationFilter.schema';
 import { CulinaryPrepTaskListRelationFilterObjectSchema as CulinaryPrepTaskListRelationFilterObjectSchema } from './CulinaryPrepTaskListRelationFilter.schema';
 import { CulinarySupplierNeedListRelationFilterObjectSchema as CulinarySupplierNeedListRelationFilterObjectSchema } from './CulinarySupplierNeedListRelationFilter.schema';
-import { ArcadeMachineListRelationFilterObjectSchema as ArcadeMachineListRelationFilterObjectSchema } from './ArcadeMachineListRelationFilter.schema';
-import { ArcadeCardListRelationFilterObjectSchema as ArcadeCardListRelationFilterObjectSchema } from './ArcadeCardListRelationFilter.schema';
-import { ArcadeTopUpListRelationFilterObjectSchema as ArcadeTopUpListRelationFilterObjectSchema } from './ArcadeTopUpListRelationFilter.schema';
-import { ArcadePrizeListRelationFilterObjectSchema as ArcadePrizeListRelationFilterObjectSchema } from './ArcadePrizeListRelationFilter.schema';
-import { ArcadeSessionListRelationFilterObjectSchema as ArcadeSessionListRelationFilterObjectSchema } from './ArcadeSessionListRelationFilter.schema';
-import { ArcadeRedemptionListRelationFilterObjectSchema as ArcadeRedemptionListRelationFilterObjectSchema } from './ArcadeRedemptionListRelationFilter.schema';
 import { ProviderGrantListRelationFilterObjectSchema as ProviderGrantListRelationFilterObjectSchema } from './ProviderGrantListRelationFilter.schema';
 import { GeoRouteCacheListRelationFilterObjectSchema as GeoRouteCacheListRelationFilterObjectSchema } from './GeoRouteCacheListRelationFilter.schema';
 import { GeoDirectionListRelationFilterObjectSchema as GeoDirectionListRelationFilterObjectSchema } from './GeoDirectionListRelationFilter.schema';
@@ -100,12 +94,6 @@ const userwhereinputSchema = z.object({
   culinaryMenuItems: z.lazy(() => CulinaryMenuItemListRelationFilterObjectSchema).optional(),
   culinaryPrepTasks: z.lazy(() => CulinaryPrepTaskListRelationFilterObjectSchema).optional(),
   culinarySupplierNeeds: z.lazy(() => CulinarySupplierNeedListRelationFilterObjectSchema).optional(),
-  arcadeMachines: z.lazy(() => ArcadeMachineListRelationFilterObjectSchema).optional(),
-  arcadeCards: z.lazy(() => ArcadeCardListRelationFilterObjectSchema).optional(),
-  arcadeTopUps: z.lazy(() => ArcadeTopUpListRelationFilterObjectSchema).optional(),
-  arcadePrizes: z.lazy(() => ArcadePrizeListRelationFilterObjectSchema).optional(),
-  arcadeSessions: z.lazy(() => ArcadeSessionListRelationFilterObjectSchema).optional(),
-  arcadeRedemptions: z.lazy(() => ArcadeRedemptionListRelationFilterObjectSchema).optional(),
   providerGrants: z.lazy(() => ProviderGrantListRelationFilterObjectSchema).optional(),
   geoRouteCaches: z.lazy(() => GeoRouteCacheListRelationFilterObjectSchema).optional(),
   geoDirections: z.lazy(() => GeoDirectionListRelationFilterObjectSchema).optional(),

@@ -27,12 +27,6 @@ import { AgricultureSlotOrderByRelationAggregateInputObjectSchema as Agriculture
 import { CulinaryMenuItemOrderByRelationAggregateInputObjectSchema as CulinaryMenuItemOrderByRelationAggregateInputObjectSchema } from './CulinaryMenuItemOrderByRelationAggregateInput.schema';
 import { CulinaryPrepTaskOrderByRelationAggregateInputObjectSchema as CulinaryPrepTaskOrderByRelationAggregateInputObjectSchema } from './CulinaryPrepTaskOrderByRelationAggregateInput.schema';
 import { CulinarySupplierNeedOrderByRelationAggregateInputObjectSchema as CulinarySupplierNeedOrderByRelationAggregateInputObjectSchema } from './CulinarySupplierNeedOrderByRelationAggregateInput.schema';
-import { ArcadeMachineOrderByRelationAggregateInputObjectSchema as ArcadeMachineOrderByRelationAggregateInputObjectSchema } from './ArcadeMachineOrderByRelationAggregateInput.schema';
-import { ArcadeCardOrderByRelationAggregateInputObjectSchema as ArcadeCardOrderByRelationAggregateInputObjectSchema } from './ArcadeCardOrderByRelationAggregateInput.schema';
-import { ArcadeTopUpOrderByRelationAggregateInputObjectSchema as ArcadeTopUpOrderByRelationAggregateInputObjectSchema } from './ArcadeTopUpOrderByRelationAggregateInput.schema';
-import { ArcadePrizeOrderByRelationAggregateInputObjectSchema as ArcadePrizeOrderByRelationAggregateInputObjectSchema } from './ArcadePrizeOrderByRelationAggregateInput.schema';
-import { ArcadeSessionOrderByRelationAggregateInputObjectSchema as ArcadeSessionOrderByRelationAggregateInputObjectSchema } from './ArcadeSessionOrderByRelationAggregateInput.schema';
-import { ArcadeRedemptionOrderByRelationAggregateInputObjectSchema as ArcadeRedemptionOrderByRelationAggregateInputObjectSchema } from './ArcadeRedemptionOrderByRelationAggregateInput.schema';
 import { ProviderGrantOrderByRelationAggregateInputObjectSchema as ProviderGrantOrderByRelationAggregateInputObjectSchema } from './ProviderGrantOrderByRelationAggregateInput.schema';
 import { GeoRouteCacheOrderByRelationAggregateInputObjectSchema as GeoRouteCacheOrderByRelationAggregateInputObjectSchema } from './GeoRouteCacheOrderByRelationAggregateInput.schema';
 import { GeoDirectionOrderByRelationAggregateInputObjectSchema as GeoDirectionOrderByRelationAggregateInputObjectSchema } from './GeoDirectionOrderByRelationAggregateInput.schema';
@@ -86,12 +80,6 @@ const makeSchema = () => z.object({
   culinaryMenuItems: z.lazy(() => CulinaryMenuItemOrderByRelationAggregateInputObjectSchema).optional(),
   culinaryPrepTasks: z.lazy(() => CulinaryPrepTaskOrderByRelationAggregateInputObjectSchema).optional(),
   culinarySupplierNeeds: z.lazy(() => CulinarySupplierNeedOrderByRelationAggregateInputObjectSchema).optional(),
-  arcadeMachines: z.lazy(() => ArcadeMachineOrderByRelationAggregateInputObjectSchema).optional(),
-  arcadeCards: z.lazy(() => ArcadeCardOrderByRelationAggregateInputObjectSchema).optional(),
-  arcadeTopUps: z.lazy(() => ArcadeTopUpOrderByRelationAggregateInputObjectSchema).optional(),
-  arcadePrizes: z.lazy(() => ArcadePrizeOrderByRelationAggregateInputObjectSchema).optional(),
-  arcadeSessions: z.lazy(() => ArcadeSessionOrderByRelationAggregateInputObjectSchema).optional(),
-  arcadeRedemptions: z.lazy(() => ArcadeRedemptionOrderByRelationAggregateInputObjectSchema).optional(),
   providerGrants: z.lazy(() => ProviderGrantOrderByRelationAggregateInputObjectSchema).optional(),
   geoRouteCaches: z.lazy(() => GeoRouteCacheOrderByRelationAggregateInputObjectSchema).optional(),
   geoDirections: z.lazy(() => GeoDirectionOrderByRelationAggregateInputObjectSchema).optional(),

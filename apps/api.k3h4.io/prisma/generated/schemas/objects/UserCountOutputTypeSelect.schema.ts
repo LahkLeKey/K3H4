@@ -24,12 +24,6 @@ import { UserCountOutputTypeCountAgricultureSlotsArgsObjectSchema as UserCountOu
 import { UserCountOutputTypeCountCulinaryMenuItemsArgsObjectSchema as UserCountOutputTypeCountCulinaryMenuItemsArgsObjectSchema } from './UserCountOutputTypeCountCulinaryMenuItemsArgs.schema';
 import { UserCountOutputTypeCountCulinaryPrepTasksArgsObjectSchema as UserCountOutputTypeCountCulinaryPrepTasksArgsObjectSchema } from './UserCountOutputTypeCountCulinaryPrepTasksArgs.schema';
 import { UserCountOutputTypeCountCulinarySupplierNeedsArgsObjectSchema as UserCountOutputTypeCountCulinarySupplierNeedsArgsObjectSchema } from './UserCountOutputTypeCountCulinarySupplierNeedsArgs.schema';
-import { UserCountOutputTypeCountArcadeMachinesArgsObjectSchema as UserCountOutputTypeCountArcadeMachinesArgsObjectSchema } from './UserCountOutputTypeCountArcadeMachinesArgs.schema';
-import { UserCountOutputTypeCountArcadeCardsArgsObjectSchema as UserCountOutputTypeCountArcadeCardsArgsObjectSchema } from './UserCountOutputTypeCountArcadeCardsArgs.schema';
-import { UserCountOutputTypeCountArcadeTopUpsArgsObjectSchema as UserCountOutputTypeCountArcadeTopUpsArgsObjectSchema } from './UserCountOutputTypeCountArcadeTopUpsArgs.schema';
-import { UserCountOutputTypeCountArcadePrizesArgsObjectSchema as UserCountOutputTypeCountArcadePrizesArgsObjectSchema } from './UserCountOutputTypeCountArcadePrizesArgs.schema';
-import { UserCountOutputTypeCountArcadeSessionsArgsObjectSchema as UserCountOutputTypeCountArcadeSessionsArgsObjectSchema } from './UserCountOutputTypeCountArcadeSessionsArgs.schema';
-import { UserCountOutputTypeCountArcadeRedemptionsArgsObjectSchema as UserCountOutputTypeCountArcadeRedemptionsArgsObjectSchema } from './UserCountOutputTypeCountArcadeRedemptionsArgs.schema';
 import { UserCountOutputTypeCountProviderGrantsArgsObjectSchema as UserCountOutputTypeCountProviderGrantsArgsObjectSchema } from './UserCountOutputTypeCountProviderGrantsArgs.schema';
 import { UserCountOutputTypeCountGeoRouteCachesArgsObjectSchema as UserCountOutputTypeCountGeoRouteCachesArgsObjectSchema } from './UserCountOutputTypeCountGeoRouteCachesArgs.schema';
 import { UserCountOutputTypeCountGeoDirectionsArgsObjectSchema as UserCountOutputTypeCountGeoDirectionsArgsObjectSchema } from './UserCountOutputTypeCountGeoDirectionsArgs.schema';
@@ -73,12 +67,6 @@ const makeSchema = () => z.object({
   culinaryMenuItems: z.union([z.boolean(), z.lazy(() => UserCountOutputTypeCountCulinaryMenuItemsArgsObjectSchema)]).optional(),
   culinaryPrepTasks: z.union([z.boolean(), z.lazy(() => UserCountOutputTypeCountCulinaryPrepTasksArgsObjectSchema)]).optional(),
   culinarySupplierNeeds: z.union([z.boolean(), z.lazy(() => UserCountOutputTypeCountCulinarySupplierNeedsArgsObjectSchema)]).optional(),
-  arcadeMachines: z.union([z.boolean(), z.lazy(() => UserCountOutputTypeCountArcadeMachinesArgsObjectSchema)]).optional(),
-  arcadeCards: z.union([z.boolean(), z.lazy(() => UserCountOutputTypeCountArcadeCardsArgsObjectSchema)]).optional(),
-  arcadeTopUps: z.union([z.boolean(), z.lazy(() => UserCountOutputTypeCountArcadeTopUpsArgsObjectSchema)]).optional(),
-  arcadePrizes: z.union([z.boolean(), z.lazy(() => UserCountOutputTypeCountArcadePrizesArgsObjectSchema)]).optional(),
-  arcadeSessions: z.union([z.boolean(), z.lazy(() => UserCountOutputTypeCountArcadeSessionsArgsObjectSchema)]).optional(),
-  arcadeRedemptions: z.union([z.boolean(), z.lazy(() => UserCountOutputTypeCountArcadeRedemptionsArgsObjectSchema)]).optional(),
   providerGrants: z.union([z.boolean(), z.lazy(() => UserCountOutputTypeCountProviderGrantsArgsObjectSchema)]).optional(),
   geoRouteCaches: z.union([z.boolean(), z.lazy(() => UserCountOutputTypeCountGeoRouteCachesArgsObjectSchema)]).optional(),
   geoDirections: z.union([z.boolean(), z.lazy(() => UserCountOutputTypeCountGeoDirectionsArgsObjectSchema)]).optional(),

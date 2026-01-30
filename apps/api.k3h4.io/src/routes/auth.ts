@@ -218,30 +218,6 @@ const runDeleteJob = async (
         action: () => prisma.culinaryMenuItem.deleteMany({where: {userId}})
       },
       {
-        key: 'arcadeSessions',
-        action: () => prisma.arcadeSession.deleteMany({where: {userId}})
-      },
-      {
-        key: 'arcadeRedemptions',
-        action: () => prisma.arcadeRedemption.deleteMany({where: {userId}})
-      },
-      {
-        key: 'arcadePrizes',
-        action: () => prisma.arcadePrize.deleteMany({where: {userId}})
-      },
-      {
-        key: 'arcadeTopUps',
-        action: () => prisma.arcadeTopUp.deleteMany({where: {userId}})
-      },
-      {
-        key: 'arcadeCards',
-        action: () => prisma.arcadeCard.deleteMany({where: {userId}})
-      },
-      {
-        key: 'arcadeMachines',
-        action: () => prisma.arcadeMachine.deleteMany({where: {userId}})
-      },
-      {
         key: 'userPreferences',
         action: () => prisma.userPreference.deleteMany({where: {userId}})
       },

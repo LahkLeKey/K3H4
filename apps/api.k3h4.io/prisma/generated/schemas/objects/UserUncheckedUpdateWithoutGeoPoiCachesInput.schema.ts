@@ -29,12 +29,6 @@ import { AgricultureSlotUncheckedUpdateManyWithoutUserNestedInputObjectSchema as
 import { CulinaryMenuItemUncheckedUpdateManyWithoutUserNestedInputObjectSchema as CulinaryMenuItemUncheckedUpdateManyWithoutUserNestedInputObjectSchema } from './CulinaryMenuItemUncheckedUpdateManyWithoutUserNestedInput.schema';
 import { CulinaryPrepTaskUncheckedUpdateManyWithoutUserNestedInputObjectSchema as CulinaryPrepTaskUncheckedUpdateManyWithoutUserNestedInputObjectSchema } from './CulinaryPrepTaskUncheckedUpdateManyWithoutUserNestedInput.schema';
 import { CulinarySupplierNeedUncheckedUpdateManyWithoutUserNestedInputObjectSchema as CulinarySupplierNeedUncheckedUpdateManyWithoutUserNestedInputObjectSchema } from './CulinarySupplierNeedUncheckedUpdateManyWithoutUserNestedInput.schema';
-import { ArcadeMachineUncheckedUpdateManyWithoutUserNestedInputObjectSchema as ArcadeMachineUncheckedUpdateManyWithoutUserNestedInputObjectSchema } from './ArcadeMachineUncheckedUpdateManyWithoutUserNestedInput.schema';
-import { ArcadeCardUncheckedUpdateManyWithoutUserNestedInputObjectSchema as ArcadeCardUncheckedUpdateManyWithoutUserNestedInputObjectSchema } from './ArcadeCardUncheckedUpdateManyWithoutUserNestedInput.schema';
-import { ArcadeTopUpUncheckedUpdateManyWithoutUserNestedInputObjectSchema as ArcadeTopUpUncheckedUpdateManyWithoutUserNestedInputObjectSchema } from './ArcadeTopUpUncheckedUpdateManyWithoutUserNestedInput.schema';
-import { ArcadePrizeUncheckedUpdateManyWithoutUserNestedInputObjectSchema as ArcadePrizeUncheckedUpdateManyWithoutUserNestedInputObjectSchema } from './ArcadePrizeUncheckedUpdateManyWithoutUserNestedInput.schema';
-import { ArcadeSessionUncheckedUpdateManyWithoutUserNestedInputObjectSchema as ArcadeSessionUncheckedUpdateManyWithoutUserNestedInputObjectSchema } from './ArcadeSessionUncheckedUpdateManyWithoutUserNestedInput.schema';
-import { ArcadeRedemptionUncheckedUpdateManyWithoutUserNestedInputObjectSchema as ArcadeRedemptionUncheckedUpdateManyWithoutUserNestedInputObjectSchema } from './ArcadeRedemptionUncheckedUpdateManyWithoutUserNestedInput.schema';
 import { ProviderGrantUncheckedUpdateManyWithoutUserNestedInputObjectSchema as ProviderGrantUncheckedUpdateManyWithoutUserNestedInputObjectSchema } from './ProviderGrantUncheckedUpdateManyWithoutUserNestedInput.schema';
 import { GeoRouteCacheUncheckedUpdateManyWithoutUserNestedInputObjectSchema as GeoRouteCacheUncheckedUpdateManyWithoutUserNestedInputObjectSchema } from './GeoRouteCacheUncheckedUpdateManyWithoutUserNestedInput.schema';
 import { GeoDirectionUncheckedUpdateManyWithoutUserNestedInputObjectSchema as GeoDirectionUncheckedUpdateManyWithoutUserNestedInputObjectSchema } from './GeoDirectionUncheckedUpdateManyWithoutUserNestedInput.schema';
@@ -95,12 +89,6 @@ const makeSchema = () => z.object({
   culinaryMenuItems: z.lazy(() => CulinaryMenuItemUncheckedUpdateManyWithoutUserNestedInputObjectSchema).optional(),
   culinaryPrepTasks: z.lazy(() => CulinaryPrepTaskUncheckedUpdateManyWithoutUserNestedInputObjectSchema).optional(),
   culinarySupplierNeeds: z.lazy(() => CulinarySupplierNeedUncheckedUpdateManyWithoutUserNestedInputObjectSchema).optional(),
-  arcadeMachines: z.lazy(() => ArcadeMachineUncheckedUpdateManyWithoutUserNestedInputObjectSchema).optional(),
-  arcadeCards: z.lazy(() => ArcadeCardUncheckedUpdateManyWithoutUserNestedInputObjectSchema).optional(),
-  arcadeTopUps: z.lazy(() => ArcadeTopUpUncheckedUpdateManyWithoutUserNestedInputObjectSchema).optional(),
-  arcadePrizes: z.lazy(() => ArcadePrizeUncheckedUpdateManyWithoutUserNestedInputObjectSchema).optional(),
-  arcadeSessions: z.lazy(() => ArcadeSessionUncheckedUpdateManyWithoutUserNestedInputObjectSchema).optional(),
-  arcadeRedemptions: z.lazy(() => ArcadeRedemptionUncheckedUpdateManyWithoutUserNestedInputObjectSchema).optional(),
   providerGrants: z.lazy(() => ProviderGrantUncheckedUpdateManyWithoutUserNestedInputObjectSchema).optional(),
   geoRouteCaches: z.lazy(() => GeoRouteCacheUncheckedUpdateManyWithoutUserNestedInputObjectSchema).optional(),
   geoDirections: z.lazy(() => GeoDirectionUncheckedUpdateManyWithoutUserNestedInputObjectSchema).optional(),

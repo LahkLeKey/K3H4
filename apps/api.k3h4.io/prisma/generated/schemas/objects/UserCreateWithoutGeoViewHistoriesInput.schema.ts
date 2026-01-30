@@ -25,12 +25,6 @@ import { AgricultureSlotCreateNestedManyWithoutUserInputObjectSchema as Agricult
 import { CulinaryMenuItemCreateNestedManyWithoutUserInputObjectSchema as CulinaryMenuItemCreateNestedManyWithoutUserInputObjectSchema } from './CulinaryMenuItemCreateNestedManyWithoutUserInput.schema';
 import { CulinaryPrepTaskCreateNestedManyWithoutUserInputObjectSchema as CulinaryPrepTaskCreateNestedManyWithoutUserInputObjectSchema } from './CulinaryPrepTaskCreateNestedManyWithoutUserInput.schema';
 import { CulinarySupplierNeedCreateNestedManyWithoutUserInputObjectSchema as CulinarySupplierNeedCreateNestedManyWithoutUserInputObjectSchema } from './CulinarySupplierNeedCreateNestedManyWithoutUserInput.schema';
-import { ArcadeMachineCreateNestedManyWithoutUserInputObjectSchema as ArcadeMachineCreateNestedManyWithoutUserInputObjectSchema } from './ArcadeMachineCreateNestedManyWithoutUserInput.schema';
-import { ArcadeCardCreateNestedManyWithoutUserInputObjectSchema as ArcadeCardCreateNestedManyWithoutUserInputObjectSchema } from './ArcadeCardCreateNestedManyWithoutUserInput.schema';
-import { ArcadeTopUpCreateNestedManyWithoutUserInputObjectSchema as ArcadeTopUpCreateNestedManyWithoutUserInputObjectSchema } from './ArcadeTopUpCreateNestedManyWithoutUserInput.schema';
-import { ArcadePrizeCreateNestedManyWithoutUserInputObjectSchema as ArcadePrizeCreateNestedManyWithoutUserInputObjectSchema } from './ArcadePrizeCreateNestedManyWithoutUserInput.schema';
-import { ArcadeSessionCreateNestedManyWithoutUserInputObjectSchema as ArcadeSessionCreateNestedManyWithoutUserInputObjectSchema } from './ArcadeSessionCreateNestedManyWithoutUserInput.schema';
-import { ArcadeRedemptionCreateNestedManyWithoutUserInputObjectSchema as ArcadeRedemptionCreateNestedManyWithoutUserInputObjectSchema } from './ArcadeRedemptionCreateNestedManyWithoutUserInput.schema';
 import { ProviderGrantCreateNestedManyWithoutUserInputObjectSchema as ProviderGrantCreateNestedManyWithoutUserInputObjectSchema } from './ProviderGrantCreateNestedManyWithoutUserInput.schema';
 import { GeoRouteCacheCreateNestedManyWithoutUserInputObjectSchema as GeoRouteCacheCreateNestedManyWithoutUserInputObjectSchema } from './GeoRouteCacheCreateNestedManyWithoutUserInput.schema';
 import { GeoDirectionCreateNestedManyWithoutUserInputObjectSchema as GeoDirectionCreateNestedManyWithoutUserInputObjectSchema } from './GeoDirectionCreateNestedManyWithoutUserInput.schema';
@@ -91,12 +85,6 @@ const makeSchema = () => z.object({
   culinaryMenuItems: z.lazy(() => CulinaryMenuItemCreateNestedManyWithoutUserInputObjectSchema).optional(),
   culinaryPrepTasks: z.lazy(() => CulinaryPrepTaskCreateNestedManyWithoutUserInputObjectSchema).optional(),
   culinarySupplierNeeds: z.lazy(() => CulinarySupplierNeedCreateNestedManyWithoutUserInputObjectSchema).optional(),
-  arcadeMachines: z.lazy(() => ArcadeMachineCreateNestedManyWithoutUserInputObjectSchema).optional(),
-  arcadeCards: z.lazy(() => ArcadeCardCreateNestedManyWithoutUserInputObjectSchema).optional(),
-  arcadeTopUps: z.lazy(() => ArcadeTopUpCreateNestedManyWithoutUserInputObjectSchema).optional(),
-  arcadePrizes: z.lazy(() => ArcadePrizeCreateNestedManyWithoutUserInputObjectSchema).optional(),
-  arcadeSessions: z.lazy(() => ArcadeSessionCreateNestedManyWithoutUserInputObjectSchema).optional(),
-  arcadeRedemptions: z.lazy(() => ArcadeRedemptionCreateNestedManyWithoutUserInputObjectSchema).optional(),
   providerGrants: z.lazy(() => ProviderGrantCreateNestedManyWithoutUserInputObjectSchema).optional(),
   geoRouteCaches: z.lazy(() => GeoRouteCacheCreateNestedManyWithoutUserInputObjectSchema).optional(),
   geoDirections: z.lazy(() => GeoDirectionCreateNestedManyWithoutUserInputObjectSchema).optional(),

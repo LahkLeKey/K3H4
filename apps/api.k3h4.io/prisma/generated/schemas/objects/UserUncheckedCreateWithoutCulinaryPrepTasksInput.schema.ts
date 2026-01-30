@@ -24,12 +24,6 @@ import { AgricultureInventoryMovementUncheckedCreateNestedManyWithoutUserInputOb
 import { AgricultureSlotUncheckedCreateNestedManyWithoutUserInputObjectSchema as AgricultureSlotUncheckedCreateNestedManyWithoutUserInputObjectSchema } from './AgricultureSlotUncheckedCreateNestedManyWithoutUserInput.schema';
 import { CulinaryMenuItemUncheckedCreateNestedManyWithoutUserInputObjectSchema as CulinaryMenuItemUncheckedCreateNestedManyWithoutUserInputObjectSchema } from './CulinaryMenuItemUncheckedCreateNestedManyWithoutUserInput.schema';
 import { CulinarySupplierNeedUncheckedCreateNestedManyWithoutUserInputObjectSchema as CulinarySupplierNeedUncheckedCreateNestedManyWithoutUserInputObjectSchema } from './CulinarySupplierNeedUncheckedCreateNestedManyWithoutUserInput.schema';
-import { ArcadeMachineUncheckedCreateNestedManyWithoutUserInputObjectSchema as ArcadeMachineUncheckedCreateNestedManyWithoutUserInputObjectSchema } from './ArcadeMachineUncheckedCreateNestedManyWithoutUserInput.schema';
-import { ArcadeCardUncheckedCreateNestedManyWithoutUserInputObjectSchema as ArcadeCardUncheckedCreateNestedManyWithoutUserInputObjectSchema } from './ArcadeCardUncheckedCreateNestedManyWithoutUserInput.schema';
-import { ArcadeTopUpUncheckedCreateNestedManyWithoutUserInputObjectSchema as ArcadeTopUpUncheckedCreateNestedManyWithoutUserInputObjectSchema } from './ArcadeTopUpUncheckedCreateNestedManyWithoutUserInput.schema';
-import { ArcadePrizeUncheckedCreateNestedManyWithoutUserInputObjectSchema as ArcadePrizeUncheckedCreateNestedManyWithoutUserInputObjectSchema } from './ArcadePrizeUncheckedCreateNestedManyWithoutUserInput.schema';
-import { ArcadeSessionUncheckedCreateNestedManyWithoutUserInputObjectSchema as ArcadeSessionUncheckedCreateNestedManyWithoutUserInputObjectSchema } from './ArcadeSessionUncheckedCreateNestedManyWithoutUserInput.schema';
-import { ArcadeRedemptionUncheckedCreateNestedManyWithoutUserInputObjectSchema as ArcadeRedemptionUncheckedCreateNestedManyWithoutUserInputObjectSchema } from './ArcadeRedemptionUncheckedCreateNestedManyWithoutUserInput.schema';
 import { ProviderGrantUncheckedCreateNestedManyWithoutUserInputObjectSchema as ProviderGrantUncheckedCreateNestedManyWithoutUserInputObjectSchema } from './ProviderGrantUncheckedCreateNestedManyWithoutUserInput.schema';
 import { GeoRouteCacheUncheckedCreateNestedManyWithoutUserInputObjectSchema as GeoRouteCacheUncheckedCreateNestedManyWithoutUserInputObjectSchema } from './GeoRouteCacheUncheckedCreateNestedManyWithoutUserInput.schema';
 import { GeoDirectionUncheckedCreateNestedManyWithoutUserInputObjectSchema as GeoDirectionUncheckedCreateNestedManyWithoutUserInputObjectSchema } from './GeoDirectionUncheckedCreateNestedManyWithoutUserInput.schema';
@@ -90,12 +84,6 @@ const makeSchema = () => z.object({
   agricultureSlots: z.lazy(() => AgricultureSlotUncheckedCreateNestedManyWithoutUserInputObjectSchema).optional(),
   culinaryMenuItems: z.lazy(() => CulinaryMenuItemUncheckedCreateNestedManyWithoutUserInputObjectSchema).optional(),
   culinarySupplierNeeds: z.lazy(() => CulinarySupplierNeedUncheckedCreateNestedManyWithoutUserInputObjectSchema).optional(),
-  arcadeMachines: z.lazy(() => ArcadeMachineUncheckedCreateNestedManyWithoutUserInputObjectSchema).optional(),
-  arcadeCards: z.lazy(() => ArcadeCardUncheckedCreateNestedManyWithoutUserInputObjectSchema).optional(),
-  arcadeTopUps: z.lazy(() => ArcadeTopUpUncheckedCreateNestedManyWithoutUserInputObjectSchema).optional(),
-  arcadePrizes: z.lazy(() => ArcadePrizeUncheckedCreateNestedManyWithoutUserInputObjectSchema).optional(),
-  arcadeSessions: z.lazy(() => ArcadeSessionUncheckedCreateNestedManyWithoutUserInputObjectSchema).optional(),
-  arcadeRedemptions: z.lazy(() => ArcadeRedemptionUncheckedCreateNestedManyWithoutUserInputObjectSchema).optional(),
   providerGrants: z.lazy(() => ProviderGrantUncheckedCreateNestedManyWithoutUserInputObjectSchema).optional(),
   geoRouteCaches: z.lazy(() => GeoRouteCacheUncheckedCreateNestedManyWithoutUserInputObjectSchema).optional(),
   geoDirections: z.lazy(() => GeoDirectionUncheckedCreateNestedManyWithoutUserInputObjectSchema).optional(),

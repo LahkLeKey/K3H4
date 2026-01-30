@@ -25,12 +25,6 @@ import { AgricultureSlotFindManySchema as AgricultureSlotFindManySchema } from '
 import { CulinaryMenuItemFindManySchema as CulinaryMenuItemFindManySchema } from '../findManyCulinaryMenuItem.schema';
 import { CulinaryPrepTaskFindManySchema as CulinaryPrepTaskFindManySchema } from '../findManyCulinaryPrepTask.schema';
 import { CulinarySupplierNeedFindManySchema as CulinarySupplierNeedFindManySchema } from '../findManyCulinarySupplierNeed.schema';
-import { ArcadeMachineFindManySchema as ArcadeMachineFindManySchema } from '../findManyArcadeMachine.schema';
-import { ArcadeCardFindManySchema as ArcadeCardFindManySchema } from '../findManyArcadeCard.schema';
-import { ArcadeTopUpFindManySchema as ArcadeTopUpFindManySchema } from '../findManyArcadeTopUp.schema';
-import { ArcadePrizeFindManySchema as ArcadePrizeFindManySchema } from '../findManyArcadePrize.schema';
-import { ArcadeSessionFindManySchema as ArcadeSessionFindManySchema } from '../findManyArcadeSession.schema';
-import { ArcadeRedemptionFindManySchema as ArcadeRedemptionFindManySchema } from '../findManyArcadeRedemption.schema';
 import { ProviderGrantFindManySchema as ProviderGrantFindManySchema } from '../findManyProviderGrant.schema';
 import { GeoRouteCacheFindManySchema as GeoRouteCacheFindManySchema } from '../findManyGeoRouteCache.schema';
 import { GeoDirectionFindManySchema as GeoDirectionFindManySchema } from '../findManyGeoDirection.schema';
@@ -76,12 +70,6 @@ const makeSchema = () => z.object({
   culinaryMenuItems: z.union([z.boolean(), z.lazy(() => CulinaryMenuItemFindManySchema)]).optional(),
   culinaryPrepTasks: z.union([z.boolean(), z.lazy(() => CulinaryPrepTaskFindManySchema)]).optional(),
   culinarySupplierNeeds: z.union([z.boolean(), z.lazy(() => CulinarySupplierNeedFindManySchema)]).optional(),
-  arcadeMachines: z.union([z.boolean(), z.lazy(() => ArcadeMachineFindManySchema)]).optional(),
-  arcadeCards: z.union([z.boolean(), z.lazy(() => ArcadeCardFindManySchema)]).optional(),
-  arcadeTopUps: z.union([z.boolean(), z.lazy(() => ArcadeTopUpFindManySchema)]).optional(),
-  arcadePrizes: z.union([z.boolean(), z.lazy(() => ArcadePrizeFindManySchema)]).optional(),
-  arcadeSessions: z.union([z.boolean(), z.lazy(() => ArcadeSessionFindManySchema)]).optional(),
-  arcadeRedemptions: z.union([z.boolean(), z.lazy(() => ArcadeRedemptionFindManySchema)]).optional(),
   providerGrants: z.union([z.boolean(), z.lazy(() => ProviderGrantFindManySchema)]).optional(),
   geoRouteCaches: z.union([z.boolean(), z.lazy(() => GeoRouteCacheFindManySchema)]).optional(),
   geoDirections: z.union([z.boolean(), z.lazy(() => GeoDirectionFindManySchema)]).optional(),

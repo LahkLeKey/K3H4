@@ -423,12 +423,6 @@ describe('auth routes', () => {
       culinaryPrepTask: {deleteMany: vi.fn().mockResolvedValue({count: 0})},
       culinarySupplierNeed: {deleteMany: vi.fn().mockResolvedValue({count: 0})},
       culinaryMenuItem: {deleteMany: vi.fn().mockResolvedValue({count: 0})},
-      arcadeSession: {deleteMany: vi.fn().mockResolvedValue({count: 0})},
-      arcadeRedemption: {deleteMany: vi.fn().mockResolvedValue({count: 0})},
-      arcadePrize: {deleteMany: vi.fn().mockResolvedValue({count: 0})},
-      arcadeTopUp: {deleteMany: vi.fn().mockResolvedValue({count: 0})},
-      arcadeCard: {deleteMany: vi.fn().mockResolvedValue({count: 0})},
-      arcadeMachine: {deleteMany: vi.fn().mockResolvedValue({count: 0})},
       userPreference: {deleteMany: vi.fn().mockResolvedValue({count: 0})},
       refreshToken: {deleteMany: vi.fn().mockResolvedValue({count: 0})},
       user: {
