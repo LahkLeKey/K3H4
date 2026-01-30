@@ -3,13 +3,6 @@ import { Prisma } from '@prisma/client';
 import { RefreshTokenUncheckedCreateNestedManyWithoutUserInputObjectSchema as RefreshTokenUncheckedCreateNestedManyWithoutUserInputObjectSchema } from './RefreshTokenUncheckedCreateNestedManyWithoutUserInput.schema';
 import { UserPreferenceUncheckedCreateNestedOneWithoutUserInputObjectSchema as UserPreferenceUncheckedCreateNestedOneWithoutUserInputObjectSchema } from './UserPreferenceUncheckedCreateNestedOneWithoutUserInput.schema';
 import { TelemetryEventUncheckedCreateNestedManyWithoutUserInputObjectSchema as TelemetryEventUncheckedCreateNestedManyWithoutUserInputObjectSchema } from './TelemetryEventUncheckedCreateNestedManyWithoutUserInput.schema';
-import { PersonaUncheckedCreateNestedManyWithoutUserInputObjectSchema as PersonaUncheckedCreateNestedManyWithoutUserInputObjectSchema } from './PersonaUncheckedCreateNestedManyWithoutUserInput.schema';
-import { AssignmentUncheckedCreateNestedManyWithoutUserInputObjectSchema as AssignmentUncheckedCreateNestedManyWithoutUserInputObjectSchema } from './AssignmentUncheckedCreateNestedManyWithoutUserInput.schema';
-import { StaffingEngagementUncheckedCreateNestedManyWithoutUserInputObjectSchema as StaffingEngagementUncheckedCreateNestedManyWithoutUserInputObjectSchema } from './StaffingEngagementUncheckedCreateNestedManyWithoutUserInput.schema';
-import { StaffingRoleUncheckedCreateNestedManyWithoutUserInputObjectSchema as StaffingRoleUncheckedCreateNestedManyWithoutUserInputObjectSchema } from './StaffingRoleUncheckedCreateNestedManyWithoutUserInput.schema';
-import { StaffingCandidateUncheckedCreateNestedManyWithoutUserInputObjectSchema as StaffingCandidateUncheckedCreateNestedManyWithoutUserInputObjectSchema } from './StaffingCandidateUncheckedCreateNestedManyWithoutUserInput.schema';
-import { StaffingShiftUncheckedCreateNestedManyWithoutUserInputObjectSchema as StaffingShiftUncheckedCreateNestedManyWithoutUserInputObjectSchema } from './StaffingShiftUncheckedCreateNestedManyWithoutUserInput.schema';
-import { StaffingPlacementUncheckedCreateNestedManyWithoutUserInputObjectSchema as StaffingPlacementUncheckedCreateNestedManyWithoutUserInputObjectSchema } from './StaffingPlacementUncheckedCreateNestedManyWithoutUserInput.schema';
 import { FreightLoadUncheckedCreateNestedManyWithoutUserInputObjectSchema as FreightLoadUncheckedCreateNestedManyWithoutUserInputObjectSchema } from './FreightLoadUncheckedCreateNestedManyWithoutUserInput.schema';
 import { PosTicketUncheckedCreateNestedManyWithoutUserInputObjectSchema as PosTicketUncheckedCreateNestedManyWithoutUserInputObjectSchema } from './PosTicketUncheckedCreateNestedManyWithoutUserInput.schema';
 import { CulinaryMenuItemUncheckedCreateNestedManyWithoutUserInputObjectSchema as CulinaryMenuItemUncheckedCreateNestedManyWithoutUserInputObjectSchema } from './CulinaryMenuItemUncheckedCreateNestedManyWithoutUserInput.schema';
@@ -25,8 +18,6 @@ import { MaptilerCacheEntryUncheckedCreateNestedManyWithoutUserInputObjectSchema
 import { OsrmCacheEntryUncheckedCreateNestedManyWithoutUserInputObjectSchema as OsrmCacheEntryUncheckedCreateNestedManyWithoutUserInputObjectSchema } from './OsrmCacheEntryUncheckedCreateNestedManyWithoutUserInput.schema';
 import { GeoStatusLogUncheckedCreateNestedManyWithoutUserInputObjectSchema as GeoStatusLogUncheckedCreateNestedManyWithoutUserInputObjectSchema } from './GeoStatusLogUncheckedCreateNestedManyWithoutUserInput.schema';
 import { GeoDemTileCacheUncheckedCreateNestedManyWithoutUserInputObjectSchema as GeoDemTileCacheUncheckedCreateNestedManyWithoutUserInputObjectSchema } from './GeoDemTileCacheUncheckedCreateNestedManyWithoutUserInput.schema';
-import { PersonaAttributeUncheckedCreateNestedManyWithoutUserInputObjectSchema as PersonaAttributeUncheckedCreateNestedManyWithoutUserInputObjectSchema } from './PersonaAttributeUncheckedCreateNestedManyWithoutUserInput.schema';
-import { PersonaCompatibilityUncheckedCreateNestedManyWithoutUserInputObjectSchema as PersonaCompatibilityUncheckedCreateNestedManyWithoutUserInputObjectSchema } from './PersonaCompatibilityUncheckedCreateNestedManyWithoutUserInput.schema';
 import { GeoViewHistoryUncheckedCreateNestedManyWithoutUserInputObjectSchema as GeoViewHistoryUncheckedCreateNestedManyWithoutUserInputObjectSchema } from './GeoViewHistoryUncheckedCreateNestedManyWithoutUserInput.schema';
 import { ChatSessionUncheckedCreateNestedManyWithoutUserInputObjectSchema as ChatSessionUncheckedCreateNestedManyWithoutUserInputObjectSchema } from './ChatSessionUncheckedCreateNestedManyWithoutUserInput.schema';
 import { AiInsightUncheckedCreateNestedManyWithoutUserInputObjectSchema as AiInsightUncheckedCreateNestedManyWithoutUserInputObjectSchema } from './AiInsightUncheckedCreateNestedManyWithoutUserInput.schema';
@@ -54,13 +45,6 @@ const makeSchema = () => z.object({
   refreshTokens: z.lazy(() => RefreshTokenUncheckedCreateNestedManyWithoutUserInputObjectSchema).optional(),
   preference: z.lazy(() => UserPreferenceUncheckedCreateNestedOneWithoutUserInputObjectSchema).optional(),
   telemetry: z.lazy(() => TelemetryEventUncheckedCreateNestedManyWithoutUserInputObjectSchema).optional(),
-  personas: z.lazy(() => PersonaUncheckedCreateNestedManyWithoutUserInputObjectSchema).optional(),
-  assignments: z.lazy(() => AssignmentUncheckedCreateNestedManyWithoutUserInputObjectSchema).optional(),
-  staffingEngagements: z.lazy(() => StaffingEngagementUncheckedCreateNestedManyWithoutUserInputObjectSchema).optional(),
-  staffingRoles: z.lazy(() => StaffingRoleUncheckedCreateNestedManyWithoutUserInputObjectSchema).optional(),
-  staffingCandidates: z.lazy(() => StaffingCandidateUncheckedCreateNestedManyWithoutUserInputObjectSchema).optional(),
-  staffingShifts: z.lazy(() => StaffingShiftUncheckedCreateNestedManyWithoutUserInputObjectSchema).optional(),
-  staffingPlacements: z.lazy(() => StaffingPlacementUncheckedCreateNestedManyWithoutUserInputObjectSchema).optional(),
   freightLoads: z.lazy(() => FreightLoadUncheckedCreateNestedManyWithoutUserInputObjectSchema).optional(),
   posTickets: z.lazy(() => PosTicketUncheckedCreateNestedManyWithoutUserInputObjectSchema).optional(),
   culinaryMenuItems: z.lazy(() => CulinaryMenuItemUncheckedCreateNestedManyWithoutUserInputObjectSchema).optional(),
@@ -76,8 +60,6 @@ const makeSchema = () => z.object({
   osrmCacheEntries: z.lazy(() => OsrmCacheEntryUncheckedCreateNestedManyWithoutUserInputObjectSchema).optional(),
   geoStatusLogs: z.lazy(() => GeoStatusLogUncheckedCreateNestedManyWithoutUserInputObjectSchema).optional(),
   geoDemTileCaches: z.lazy(() => GeoDemTileCacheUncheckedCreateNestedManyWithoutUserInputObjectSchema).optional(),
-  personaAttributes: z.lazy(() => PersonaAttributeUncheckedCreateNestedManyWithoutUserInputObjectSchema).optional(),
-  personaCompatibilities: z.lazy(() => PersonaCompatibilityUncheckedCreateNestedManyWithoutUserInputObjectSchema).optional(),
   geoViewHistories: z.lazy(() => GeoViewHistoryUncheckedCreateNestedManyWithoutUserInputObjectSchema).optional(),
   chatSessions: z.lazy(() => ChatSessionUncheckedCreateNestedManyWithoutUserInputObjectSchema).optional(),
   aiInsights: z.lazy(() => AiInsightUncheckedCreateNestedManyWithoutUserInputObjectSchema).optional(),

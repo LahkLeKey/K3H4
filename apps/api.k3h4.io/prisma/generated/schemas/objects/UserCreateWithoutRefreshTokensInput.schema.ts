@@ -2,13 +2,6 @@ import * as z from 'zod';
 import { Prisma } from '@prisma/client';
 import { UserPreferenceCreateNestedOneWithoutUserInputObjectSchema as UserPreferenceCreateNestedOneWithoutUserInputObjectSchema } from './UserPreferenceCreateNestedOneWithoutUserInput.schema';
 import { TelemetryEventCreateNestedManyWithoutUserInputObjectSchema as TelemetryEventCreateNestedManyWithoutUserInputObjectSchema } from './TelemetryEventCreateNestedManyWithoutUserInput.schema';
-import { PersonaCreateNestedManyWithoutUserInputObjectSchema as PersonaCreateNestedManyWithoutUserInputObjectSchema } from './PersonaCreateNestedManyWithoutUserInput.schema';
-import { AssignmentCreateNestedManyWithoutUserInputObjectSchema as AssignmentCreateNestedManyWithoutUserInputObjectSchema } from './AssignmentCreateNestedManyWithoutUserInput.schema';
-import { StaffingEngagementCreateNestedManyWithoutUserInputObjectSchema as StaffingEngagementCreateNestedManyWithoutUserInputObjectSchema } from './StaffingEngagementCreateNestedManyWithoutUserInput.schema';
-import { StaffingRoleCreateNestedManyWithoutUserInputObjectSchema as StaffingRoleCreateNestedManyWithoutUserInputObjectSchema } from './StaffingRoleCreateNestedManyWithoutUserInput.schema';
-import { StaffingCandidateCreateNestedManyWithoutUserInputObjectSchema as StaffingCandidateCreateNestedManyWithoutUserInputObjectSchema } from './StaffingCandidateCreateNestedManyWithoutUserInput.schema';
-import { StaffingShiftCreateNestedManyWithoutUserInputObjectSchema as StaffingShiftCreateNestedManyWithoutUserInputObjectSchema } from './StaffingShiftCreateNestedManyWithoutUserInput.schema';
-import { StaffingPlacementCreateNestedManyWithoutUserInputObjectSchema as StaffingPlacementCreateNestedManyWithoutUserInputObjectSchema } from './StaffingPlacementCreateNestedManyWithoutUserInput.schema';
 import { FreightLoadCreateNestedManyWithoutUserInputObjectSchema as FreightLoadCreateNestedManyWithoutUserInputObjectSchema } from './FreightLoadCreateNestedManyWithoutUserInput.schema';
 import { PosStoreCreateNestedManyWithoutUserInputObjectSchema as PosStoreCreateNestedManyWithoutUserInputObjectSchema } from './PosStoreCreateNestedManyWithoutUserInput.schema';
 import { PosTicketCreateNestedManyWithoutUserInputObjectSchema as PosTicketCreateNestedManyWithoutUserInputObjectSchema } from './PosTicketCreateNestedManyWithoutUserInput.schema';
@@ -25,8 +18,6 @@ import { MaptilerCacheEntryCreateNestedManyWithoutUserInputObjectSchema as Mapti
 import { OsrmCacheEntryCreateNestedManyWithoutUserInputObjectSchema as OsrmCacheEntryCreateNestedManyWithoutUserInputObjectSchema } from './OsrmCacheEntryCreateNestedManyWithoutUserInput.schema';
 import { GeoStatusLogCreateNestedManyWithoutUserInputObjectSchema as GeoStatusLogCreateNestedManyWithoutUserInputObjectSchema } from './GeoStatusLogCreateNestedManyWithoutUserInput.schema';
 import { GeoDemTileCacheCreateNestedManyWithoutUserInputObjectSchema as GeoDemTileCacheCreateNestedManyWithoutUserInputObjectSchema } from './GeoDemTileCacheCreateNestedManyWithoutUserInput.schema';
-import { PersonaAttributeCreateNestedManyWithoutUserInputObjectSchema as PersonaAttributeCreateNestedManyWithoutUserInputObjectSchema } from './PersonaAttributeCreateNestedManyWithoutUserInput.schema';
-import { PersonaCompatibilityCreateNestedManyWithoutUserInputObjectSchema as PersonaCompatibilityCreateNestedManyWithoutUserInputObjectSchema } from './PersonaCompatibilityCreateNestedManyWithoutUserInput.schema';
 import { GeoViewHistoryCreateNestedManyWithoutUserInputObjectSchema as GeoViewHistoryCreateNestedManyWithoutUserInputObjectSchema } from './GeoViewHistoryCreateNestedManyWithoutUserInput.schema';
 import { ChatSessionCreateNestedManyWithoutUserInputObjectSchema as ChatSessionCreateNestedManyWithoutUserInputObjectSchema } from './ChatSessionCreateNestedManyWithoutUserInput.schema';
 import { AiInsightCreateNestedManyWithoutUserInputObjectSchema as AiInsightCreateNestedManyWithoutUserInputObjectSchema } from './AiInsightCreateNestedManyWithoutUserInput.schema';
@@ -53,13 +44,6 @@ const makeSchema = () => z.object({
   updatedAt: z.coerce.date().optional(),
   preference: z.lazy(() => UserPreferenceCreateNestedOneWithoutUserInputObjectSchema).optional(),
   telemetry: z.lazy(() => TelemetryEventCreateNestedManyWithoutUserInputObjectSchema).optional(),
-  personas: z.lazy(() => PersonaCreateNestedManyWithoutUserInputObjectSchema).optional(),
-  assignments: z.lazy(() => AssignmentCreateNestedManyWithoutUserInputObjectSchema).optional(),
-  staffingEngagements: z.lazy(() => StaffingEngagementCreateNestedManyWithoutUserInputObjectSchema).optional(),
-  staffingRoles: z.lazy(() => StaffingRoleCreateNestedManyWithoutUserInputObjectSchema).optional(),
-  staffingCandidates: z.lazy(() => StaffingCandidateCreateNestedManyWithoutUserInputObjectSchema).optional(),
-  staffingShifts: z.lazy(() => StaffingShiftCreateNestedManyWithoutUserInputObjectSchema).optional(),
-  staffingPlacements: z.lazy(() => StaffingPlacementCreateNestedManyWithoutUserInputObjectSchema).optional(),
   freightLoads: z.lazy(() => FreightLoadCreateNestedManyWithoutUserInputObjectSchema).optional(),
   posStores: z.lazy(() => PosStoreCreateNestedManyWithoutUserInputObjectSchema).optional(),
   posTickets: z.lazy(() => PosTicketCreateNestedManyWithoutUserInputObjectSchema).optional(),
@@ -76,8 +60,6 @@ const makeSchema = () => z.object({
   osrmCacheEntries: z.lazy(() => OsrmCacheEntryCreateNestedManyWithoutUserInputObjectSchema).optional(),
   geoStatusLogs: z.lazy(() => GeoStatusLogCreateNestedManyWithoutUserInputObjectSchema).optional(),
   geoDemTileCaches: z.lazy(() => GeoDemTileCacheCreateNestedManyWithoutUserInputObjectSchema).optional(),
-  personaAttributes: z.lazy(() => PersonaAttributeCreateNestedManyWithoutUserInputObjectSchema).optional(),
-  personaCompatibilities: z.lazy(() => PersonaCompatibilityCreateNestedManyWithoutUserInputObjectSchema).optional(),
   geoViewHistories: z.lazy(() => GeoViewHistoryCreateNestedManyWithoutUserInputObjectSchema).optional(),
   chatSessions: z.lazy(() => ChatSessionCreateNestedManyWithoutUserInputObjectSchema).optional(),
   aiInsights: z.lazy(() => AiInsightCreateNestedManyWithoutUserInputObjectSchema).optional(),

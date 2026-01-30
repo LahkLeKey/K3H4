@@ -2,9 +2,9 @@ import {Entity, EntityKind} from '@prisma/client';
 import Fastify from 'fastify';
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 
-import * as personaLedger from '../services/persona-ledger';
-import type {PersonaRecord} from '../services/persona-ledger';
-import * as staffingActor from '../services/staffing-actor';
+import * as personaLedger from '../../services/persona-ledger';
+import type {PersonaRecord} from '../../services/persona-ledger';
+import * as staffingActor from '../../services/staffing-actor';
 import {registerStaffingRoutes} from '../staffing';
 import {type RecordTelemetryFn} from '../types';
 

@@ -8,13 +8,6 @@ import { RefreshTokenListRelationFilterObjectSchema as RefreshTokenListRelationF
 import { UserPreferenceNullableScalarRelationFilterObjectSchema as UserPreferenceNullableScalarRelationFilterObjectSchema } from './UserPreferenceNullableScalarRelationFilter.schema';
 import { UserPreferenceWhereInputObjectSchema as UserPreferenceWhereInputObjectSchema } from './UserPreferenceWhereInput.schema';
 import { TelemetryEventListRelationFilterObjectSchema as TelemetryEventListRelationFilterObjectSchema } from './TelemetryEventListRelationFilter.schema';
-import { PersonaListRelationFilterObjectSchema as PersonaListRelationFilterObjectSchema } from './PersonaListRelationFilter.schema';
-import { AssignmentListRelationFilterObjectSchema as AssignmentListRelationFilterObjectSchema } from './AssignmentListRelationFilter.schema';
-import { StaffingEngagementListRelationFilterObjectSchema as StaffingEngagementListRelationFilterObjectSchema } from './StaffingEngagementListRelationFilter.schema';
-import { StaffingRoleListRelationFilterObjectSchema as StaffingRoleListRelationFilterObjectSchema } from './StaffingRoleListRelationFilter.schema';
-import { StaffingCandidateListRelationFilterObjectSchema as StaffingCandidateListRelationFilterObjectSchema } from './StaffingCandidateListRelationFilter.schema';
-import { StaffingShiftListRelationFilterObjectSchema as StaffingShiftListRelationFilterObjectSchema } from './StaffingShiftListRelationFilter.schema';
-import { StaffingPlacementListRelationFilterObjectSchema as StaffingPlacementListRelationFilterObjectSchema } from './StaffingPlacementListRelationFilter.schema';
 import { FreightLoadListRelationFilterObjectSchema as FreightLoadListRelationFilterObjectSchema } from './FreightLoadListRelationFilter.schema';
 import { PosStoreListRelationFilterObjectSchema as PosStoreListRelationFilterObjectSchema } from './PosStoreListRelationFilter.schema';
 import { PosTicketListRelationFilterObjectSchema as PosTicketListRelationFilterObjectSchema } from './PosTicketListRelationFilter.schema';
@@ -31,8 +24,6 @@ import { MaptilerCacheEntryListRelationFilterObjectSchema as MaptilerCacheEntryL
 import { OsrmCacheEntryListRelationFilterObjectSchema as OsrmCacheEntryListRelationFilterObjectSchema } from './OsrmCacheEntryListRelationFilter.schema';
 import { GeoStatusLogListRelationFilterObjectSchema as GeoStatusLogListRelationFilterObjectSchema } from './GeoStatusLogListRelationFilter.schema';
 import { GeoDemTileCacheListRelationFilterObjectSchema as GeoDemTileCacheListRelationFilterObjectSchema } from './GeoDemTileCacheListRelationFilter.schema';
-import { PersonaAttributeListRelationFilterObjectSchema as PersonaAttributeListRelationFilterObjectSchema } from './PersonaAttributeListRelationFilter.schema';
-import { PersonaCompatibilityListRelationFilterObjectSchema as PersonaCompatibilityListRelationFilterObjectSchema } from './PersonaCompatibilityListRelationFilter.schema';
 import { GeoViewHistoryListRelationFilterObjectSchema as GeoViewHistoryListRelationFilterObjectSchema } from './GeoViewHistoryListRelationFilter.schema';
 import { ChatSessionListRelationFilterObjectSchema as ChatSessionListRelationFilterObjectSchema } from './ChatSessionListRelationFilter.schema';
 import { AiInsightListRelationFilterObjectSchema as AiInsightListRelationFilterObjectSchema } from './AiInsightListRelationFilter.schema';
@@ -63,13 +54,6 @@ const userwhereinputSchema = z.object({
   refreshTokens: z.lazy(() => RefreshTokenListRelationFilterObjectSchema).optional(),
   preference: z.union([z.lazy(() => UserPreferenceNullableScalarRelationFilterObjectSchema), z.lazy(() => UserPreferenceWhereInputObjectSchema)]).optional(),
   telemetry: z.lazy(() => TelemetryEventListRelationFilterObjectSchema).optional(),
-  personas: z.lazy(() => PersonaListRelationFilterObjectSchema).optional(),
-  assignments: z.lazy(() => AssignmentListRelationFilterObjectSchema).optional(),
-  staffingEngagements: z.lazy(() => StaffingEngagementListRelationFilterObjectSchema).optional(),
-  staffingRoles: z.lazy(() => StaffingRoleListRelationFilterObjectSchema).optional(),
-  staffingCandidates: z.lazy(() => StaffingCandidateListRelationFilterObjectSchema).optional(),
-  staffingShifts: z.lazy(() => StaffingShiftListRelationFilterObjectSchema).optional(),
-  staffingPlacements: z.lazy(() => StaffingPlacementListRelationFilterObjectSchema).optional(),
   freightLoads: z.lazy(() => FreightLoadListRelationFilterObjectSchema).optional(),
   posStores: z.lazy(() => PosStoreListRelationFilterObjectSchema).optional(),
   posTickets: z.lazy(() => PosTicketListRelationFilterObjectSchema).optional(),
@@ -86,8 +70,6 @@ const userwhereinputSchema = z.object({
   osrmCacheEntries: z.lazy(() => OsrmCacheEntryListRelationFilterObjectSchema).optional(),
   geoStatusLogs: z.lazy(() => GeoStatusLogListRelationFilterObjectSchema).optional(),
   geoDemTileCaches: z.lazy(() => GeoDemTileCacheListRelationFilterObjectSchema).optional(),
-  personaAttributes: z.lazy(() => PersonaAttributeListRelationFilterObjectSchema).optional(),
-  personaCompatibilities: z.lazy(() => PersonaCompatibilityListRelationFilterObjectSchema).optional(),
   geoViewHistories: z.lazy(() => GeoViewHistoryListRelationFilterObjectSchema).optional(),
   chatSessions: z.lazy(() => ChatSessionListRelationFilterObjectSchema).optional(),
   aiInsights: z.lazy(() => AiInsightListRelationFilterObjectSchema).optional(),

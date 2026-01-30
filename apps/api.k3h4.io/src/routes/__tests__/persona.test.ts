@@ -2,8 +2,8 @@ import Fastify from 'fastify';
 import {beforeEach, describe, expect, it, vi} from 'vitest';
 
 import {registerPersonaRoutes} from '../persona';
-import * as personaLedger from '../services/persona-ledger';
-import type {PersonaRecord} from '../services/persona-ledger';
+import * as personaLedger from '../../services/persona-ledger';
+import type {PersonaRecord} from '../../services/persona-ledger';
 import {type RecordTelemetryFn} from '../types';
 
 const recordTelemetry = vi.fn() as unknown as RecordTelemetryFn;
