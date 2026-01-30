@@ -1,18 +1,21 @@
-import { PrismaClient } from "@prisma/client";
-import { createHash } from "crypto";
-import { fetchUsdaJson, type UsdaDataset } from "../lib/usda-client";
+import {PrismaClient} from '@prisma/client';
+import {createHash} from 'crypto';
+
+import {fetchUsdaJson, type UsdaDataset} from '../lib/usda-client';
 
 type CacheOptions = {
   maxAgeMinutes?: number;
   expiresAt?: Date;
   staleWhileRevalidate?: boolean;
-  logger?: { warn?: (...args: any[]) => void; error?: (...args: any[]) => void };
+  logger?: {warn?: (...args: any[]) => void; error?: (...args: any[]) => void};
 };
 
-type Params = Record<string, string | number | boolean | null | undefined> | undefined;
+type Params = Record<string, string|number|boolean|null|undefined>|undefined;
 
-type PrismaWithUsda = PrismaClient & {
-  usdaCacheEntry: {
+const PROVIDER = 'usda';
+
+type PrismaWithApiCache = PrismaClient&{
+  apiCacheEntry: {
     findUnique: (...args: any[]) => Promise<any>;
     upsert: (...args: any[]) => Promise<any>;
   };
@@ -20,13 +23,11 @@ type PrismaWithUsda = PrismaClient & {
 
 const sortValue = (value: any): any => {
   if (Array.isArray(value)) return value.map(sortValue);
-  if (value && typeof value === "object") {
-    return Object.keys(value)
-      .sort()
-      .reduce((acc, key) => {
-        acc[key] = sortValue(value[key]);
-        return acc;
-      }, {} as Record<string, any>);
+  if (value && typeof value === 'object') {
+    return Object.keys(value).sort().reduce((acc, key) => {
+      acc[key] = sortValue(value[key]);
+      return acc;
+    }, {} as Record<string, any>);
   }
   return value;
 };
@@ -34,33 +35,35 @@ const sortValue = (value: any): any => {
 const stableStringify = (value: any) => JSON.stringify(sortValue(value));
 
 const fingerprint = (endpoint: string, params: Params) => {
-  const hash = createHash("sha256");
+  const hash = createHash('sha256');
   hash.update(endpoint);
-  hash.update(":");
+  hash.update(':');
   hash.update(stableStringify(params ?? {}));
-  return hash.digest("hex");
+  return hash.digest('hex');
 };
 
 export async function fetchAndCache<T = unknown>(
-  prisma: PrismaWithUsda,
-  dataset: UsdaDataset,
-  endpoint: string,
-  params?: Params,
-  options?: CacheOptions,
-): Promise<T> {
+    prisma: PrismaWithApiCache,
+    dataset: UsdaDataset,
+    endpoint: string,
+    params?: Params,
+    options?: CacheOptions,
+    ): Promise<T> {
   const paramsHash = fingerprint(endpoint, params);
-  const cacheKey = { dataset, endpoint, paramsHash };
-  const maxAgeMs = options?.maxAgeMinutes ? options.maxAgeMinutes * 60 * 1000 : undefined;
+  const cacheKey = {provider: PROVIDER, scope: dataset, endpoint, paramsHash};
+  const maxAgeMs =
+      options?.maxAgeMinutes ? options.maxAgeMinutes * 60 * 1000 : undefined;
   const now = Date.now();
   const log = options?.logger;
 
   const refreshAndStore = async () => {
     const payload = await fetchUsdaJson<T>(endpoint, params ?? undefined);
     const expiresAt = options?.expiresAt;
-    await prisma.usdaCacheEntry.upsert({
-      where: { dataset_endpoint_paramsHash: cacheKey },
+    await prisma.apiCacheEntry.upsert({
+      where: {provider_scope_endpoint_paramsHash: cacheKey},
       create: {
-        dataset,
+        provider: PROVIDER,
+        scope: dataset,
         endpoint,
         params: params ?? {},
         paramsHash,
@@ -79,16 +82,21 @@ export async function fetchAndCache<T = unknown>(
     return payload;
   };
 
-  const existing = await prisma.usdaCacheEntry.findUnique({ where: { dataset_endpoint_paramsHash: cacheKey } });
+  const existing = await prisma.apiCacheEntry.findUnique(
+      {where: {provider_scope_endpoint_paramsHash: cacheKey}});
   if (existing) {
-    const freshByAge = maxAgeMs ? now - existing.fetchedAt.getTime() <= maxAgeMs : false;
-    const notExpired = existing.expiresAt ? existing.expiresAt.getTime() > now : false;
+    const freshByAge =
+        maxAgeMs ? now - existing.fetchedAt.getTime() <= maxAgeMs : false;
+    const notExpired =
+        existing.expiresAt ? existing.expiresAt.getTime() > now : false;
     if (freshByAge || notExpired) {
       return existing.payload as T;
     }
 
     if (options?.staleWhileRevalidate) {
-      void refreshAndStore().catch((err) => log?.warn?.({ err, dataset, endpoint }, "usda fetchAndCache refresh failed"));
+      void refreshAndStore().catch(
+          (err) => log?.warn?.(
+              {err, dataset, endpoint}, 'usda fetchAndCache refresh failed'));
       return existing.payload as T;
     }
   }
@@ -96,9 +104,15 @@ export async function fetchAndCache<T = unknown>(
   return refreshAndStore();
 }
 
-export async function readCache<T = unknown>(prisma: PrismaWithUsda, dataset: UsdaDataset, endpoint: string, params?: Params): Promise<T | null> {
+export async function readCache<T = unknown>(
+    prisma: PrismaWithApiCache,
+    dataset: UsdaDataset,
+    endpoint: string,
+    params?: Params,
+    ): Promise<T|null> {
   const paramsHash = fingerprint(endpoint, params);
-  const cacheKey = { dataset, endpoint, paramsHash };
-  const existing = await prisma.usdaCacheEntry.findUnique({ where: { dataset_endpoint_paramsHash: cacheKey } });
+  const cacheKey = {provider: PROVIDER, scope: dataset, endpoint, paramsHash};
+  const existing = await prisma.apiCacheEntry.findUnique(
+      {where: {provider_scope_endpoint_paramsHash: cacheKey}});
   return existing ? (existing.payload as T) : null;
 }
