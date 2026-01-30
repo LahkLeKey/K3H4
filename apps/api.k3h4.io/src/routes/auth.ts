@@ -1,4 +1,4 @@
-import {Prisma, PrismaClient} from '@prisma/client';
+import {ActorType, Prisma, PrismaClient} from '@prisma/client';
 import {type FastifyInstance} from 'fastify';
 import {randomBytes} from 'node:crypto';
 import {URLSearchParams} from 'node:url';
@@ -155,16 +155,10 @@ const runDeleteJob = async (
         action: () => deleteAgricultureActorWithEntities(prisma, userId)
       },
       {
-        key: 'pointOfSaleLineItems',
-        action: () => prisma.posLineItem.deleteMany({where: {ticket: {userId}}})
-      },
-      {
-        key: 'pointOfSaleTickets',
-        action: () => prisma.posTicket.deleteMany({where: {userId}})
-      },
-      {
         key: 'pointOfSaleStores',
-        action: () => prisma.posStore.deleteMany({where: {userId}})
+        action: () => prisma.actor.deleteMany({
+          where: {userId, type: ActorType.POINT_OF_SALE_STORE},
+        })
       },
       {
         key: 'culinaryPrepTasks',

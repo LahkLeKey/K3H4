@@ -48,6 +48,7 @@ enum ActorType {
   PERSONA                      @map("persona")
   STAFFING                     @map("staffing")
   ASSIGNMENT                   @map("assignment")
+  POINT_OF_SALE_STORE          @map("point-of-sale-store")
 }
 
 enum EntityDirection {
@@ -90,6 +91,7 @@ enum EntityKind {
   STAFFING_PLACEMENT             @map("staffing_placement")
   ASSIGNMENT                     @map("assignment")
   ASSIGNMENT_TIMECARD            @map("assignment_timecard")
+  POINT_OF_SALE_TICKET           @map("point-of-sale_ticket")
 }
 
 enum EngagementPriority {

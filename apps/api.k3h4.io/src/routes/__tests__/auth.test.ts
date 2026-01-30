@@ -7,6 +7,7 @@ import {type RecordTelemetryFn} from '../types';
 
 const recordTelemetry = vi.fn() as unknown as RecordTelemetryFn;
 const userId = 'user-1';
+const nativeFetch = globalThis.fetch;
 
 function buildServer(prisma: any) {
   const server = Fastify();
@@ -33,13 +34,14 @@ async function getLinkedinState(server: ReturnType<typeof buildServer>) {
 describe('auth routes', () => {
   beforeEach(() => {
     recordTelemetry.mockClear();
+    globalThis.fetch = nativeFetch;
     process.env.GITHUB_CLIENT_ID = 'gh-id';
     process.env.GITHUB_CLIENT_SECRET = 'gh-secret';
   });
 
   afterEach(() => {
     vi.restoreAllMocks();
-    vi.unstubAllGlobals();
+    globalThis.fetch = nativeFetch;
   });
 
   it('returns authorize url for github', async () => {
@@ -78,7 +80,7 @@ describe('auth routes', () => {
       }
       return Promise.resolve({ok: false, json: async () => ({})} as Response);
     });
-    vi.stubGlobal('fetch', fetchMock);
+    globalThis.fetch = fetchMock;
 
     const prisma = {
       refreshToken: {create: vi.fn().mockResolvedValue({})},
@@ -121,7 +123,7 @@ describe('auth routes', () => {
       }
       return Promise.resolve({ok: false, json: async () => ({})} as Response);
     });
-    vi.stubGlobal('fetch', fetchMock);
+    globalThis.fetch = fetchMock;
 
     const prisma = {
       refreshToken: {create: vi.fn().mockResolvedValue({})},
@@ -146,7 +148,7 @@ describe('auth routes', () => {
     const fetchMock = vi.fn().mockResolvedValue(
         {ok: false, json: async () => ({error: 'bad_verification_code'})} as
         Response);
-    vi.stubGlobal('fetch', fetchMock);
+    globalThis.fetch = fetchMock;
     const prisma = {refreshToken: {create: vi.fn()}, user: {upsert: vi.fn()}};
     const server = buildServer(prisma);
     const res = await server.inject({
@@ -207,7 +209,7 @@ describe('auth routes', () => {
           {ok: false, status: 500, json: async () => ({message: 'boom'})} as
           Response);
     });
-    vi.stubGlobal('fetch', fetchMock);
+    globalThis.fetch = fetchMock;
     const server =
         buildServer({user: {upsert: vi.fn()}, refreshToken: {create: vi.fn()}});
     const res = await server.inject({
@@ -236,7 +238,7 @@ describe('auth routes', () => {
           {ok: false, status: 401, json: async () => ({message: 'denied'})} as
           Response);
     });
-    vi.stubGlobal('fetch', fetchMock);
+    globalThis.fetch = fetchMock;
     const server =
         buildServer({user: {upsert: vi.fn()}, refreshToken: {create: vi.fn()}});
     const res = await server.inject({
@@ -262,7 +264,7 @@ describe('auth routes', () => {
             {ok: true, json: async () => ([] as any[])} as Response);
       return Promise.resolve({ok: false, json: async () => ({})} as Response);
     });
-    vi.stubGlobal('fetch', fetchMock);
+    globalThis.fetch = fetchMock;
     const server =
         buildServer({user: {upsert: vi.fn()}, refreshToken: {create: vi.fn()}});
     const res = await server.inject({
@@ -287,7 +289,7 @@ describe('auth routes', () => {
         return Promise.reject(new Error('network'));
       return Promise.resolve({ok: false, json: async () => ({})} as Response);
     });
-    vi.stubGlobal('fetch', fetchMock);
+    globalThis.fetch = fetchMock;
     const server =
         buildServer({user: {upsert: vi.fn()}, refreshToken: {create: vi.fn()}});
     const res = await server.inject({
@@ -300,7 +302,7 @@ describe('auth routes', () => {
 
   it('handles callback exceptions', async () => {
     const fetchMock = vi.fn().mockRejectedValue(new Error('network'));
-    vi.stubGlobal('fetch', fetchMock);
+    globalThis.fetch = fetchMock;
     const server =
         buildServer({user: {upsert: vi.fn()}, refreshToken: {create: vi.fn()}});
     const res = await server.inject({
@@ -327,7 +329,7 @@ describe('auth routes', () => {
         json: async () => ({sub: 'ln-1', name: 'L', email: 'l@test.com'})
       } as Response);
     });
-    vi.stubGlobal('fetch', fetchMock);
+    globalThis.fetch = fetchMock;
     process.env.LINKEDIN_CLIENT_ID = 'ln-id';
     process.env.LINKEDIN_CLIENT_SECRET = 'ln-secret';
     const prisma = {
@@ -350,7 +352,7 @@ describe('auth routes', () => {
   it('handles linkedin token failure', async () => {
     const fetchMock = vi.fn().mockResolvedValue(
         {ok: false, json: async () => ({error: 'bad'})} as Response);
-    vi.stubGlobal('fetch', fetchMock);
+    globalThis.fetch = fetchMock;
     process.env.LINKEDIN_CLIENT_ID = 'ln-id';
     process.env.LINKEDIN_CLIENT_SECRET = 'ln-secret';
     const server =
@@ -373,7 +375,7 @@ describe('auth routes', () => {
             Response);
       return Promise.resolve({ok: false, json: async () => ({})} as Response);
     });
-    vi.stubGlobal('fetch', fetchMock);
+    globalThis.fetch = fetchMock;
     process.env.LINKEDIN_CLIENT_ID = 'ln-id';
     process.env.LINKEDIN_CLIENT_SECRET = 'ln-secret';
     const server =

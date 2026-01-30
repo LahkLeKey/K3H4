@@ -1,7 +1,7 @@
 {
   "version": "1.0",
   "generatorVersion": "0.0.1",
-  "generatedAt": "2026-01-30T11:20:48.905Z",
+  "generatedAt": "2026-01-30T11:55:48.442Z",
   "outputPath": "C:\\Github\\K3H4\\apps\\api.k3h4.io\\prisma\\generated",
   "files": [
     "schemas\\enums\\TransactionIsolationLevel.schema.ts",

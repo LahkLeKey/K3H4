@@ -1,5 +1,5 @@
 import Fastify from 'fastify';
-import {beforeEach, describe, expect, it, vi} from 'vitest';
+import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 
 import * as personaLedger from '../../services/persona-ledger';
 import type {PersonaRecord} from '../../services/persona-ledger';
