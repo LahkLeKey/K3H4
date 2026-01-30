@@ -90,7 +90,6 @@ enum EntityKind {
   STAFFING_PLACEMENT             @map("staffing_placement")
   ASSIGNMENT                     @map("assignment")
   ASSIGNMENT_TIMECARD            @map("assignment_timecard")
-  ASSIGNMENT_PAYOUT              @map("assignment_payout")
 }
 
 enum EngagementPriority {
