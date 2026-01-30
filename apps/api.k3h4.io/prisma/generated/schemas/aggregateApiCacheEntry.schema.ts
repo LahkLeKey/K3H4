@@ -1,0 +1,12 @@
+import type { Prisma } from '@prisma/client';
+import * as z from 'zod';
+import { ApiCacheEntryOrderByWithRelationInputObjectSchema as ApiCacheEntryOrderByWithRelationInputObjectSchema } from './objects/ApiCacheEntryOrderByWithRelationInput.schema';
+import { ApiCacheEntryWhereInputObjectSchema as ApiCacheEntryWhereInputObjectSchema } from './objects/ApiCacheEntryWhereInput.schema';
+import { ApiCacheEntryWhereUniqueInputObjectSchema as ApiCacheEntryWhereUniqueInputObjectSchema } from './objects/ApiCacheEntryWhereUniqueInput.schema';
+import { ApiCacheEntryCountAggregateInputObjectSchema as ApiCacheEntryCountAggregateInputObjectSchema } from './objects/ApiCacheEntryCountAggregateInput.schema';
+import { ApiCacheEntryMinAggregateInputObjectSchema as ApiCacheEntryMinAggregateInputObjectSchema } from './objects/ApiCacheEntryMinAggregateInput.schema';
+import { ApiCacheEntryMaxAggregateInputObjectSchema as ApiCacheEntryMaxAggregateInputObjectSchema } from './objects/ApiCacheEntryMaxAggregateInput.schema';
+
+export const ApiCacheEntryAggregateSchema: z.ZodType<Prisma.ApiCacheEntryAggregateArgs> = z.object({ orderBy: z.union([ApiCacheEntryOrderByWithRelationInputObjectSchema, ApiCacheEntryOrderByWithRelationInputObjectSchema.array()]).optional(), where: ApiCacheEntryWhereInputObjectSchema.optional(), cursor: ApiCacheEntryWhereUniqueInputObjectSchema.optional(), take: z.number().optional(), skip: z.number().optional(), _count: z.union([ z.literal(true), ApiCacheEntryCountAggregateInputObjectSchema ]).optional(), _min: ApiCacheEntryMinAggregateInputObjectSchema.optional(), _max: ApiCacheEntryMaxAggregateInputObjectSchema.optional() }).strict() as unknown as z.ZodType<Prisma.ApiCacheEntryAggregateArgs>;
+
+export const ApiCacheEntryAggregateZodSchema = z.object({ orderBy: z.union([ApiCacheEntryOrderByWithRelationInputObjectSchema, ApiCacheEntryOrderByWithRelationInputObjectSchema.array()]).optional(), where: ApiCacheEntryWhereInputObjectSchema.optional(), cursor: ApiCacheEntryWhereUniqueInputObjectSchema.optional(), take: z.number().optional(), skip: z.number().optional(), _count: z.union([ z.literal(true), ApiCacheEntryCountAggregateInputObjectSchema ]).optional(), _min: ApiCacheEntryMinAggregateInputObjectSchema.optional(), _max: ApiCacheEntryMaxAggregateInputObjectSchema.optional() }).strict();

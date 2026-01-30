@@ -28,7 +28,6 @@ export const FreightLoadFindFirstOrThrowSelectSchema: z.ZodType<Prisma.FreightLo
     createdAt: z.boolean().optional(),
     updatedAt: z.boolean().optional(),
     warehouseItems: z.boolean().optional(),
-    agricultureShipments: z.boolean().optional(),
     _count: z.boolean().optional()
   }).strict() as unknown as z.ZodType<Prisma.FreightLoadSelect>;
 
@@ -51,7 +50,6 @@ export const FreightLoadFindFirstOrThrowSelectZodSchema = z.object({
     createdAt: z.boolean().optional(),
     updatedAt: z.boolean().optional(),
     warehouseItems: z.boolean().optional(),
-    agricultureShipments: z.boolean().optional(),
     _count: z.boolean().optional()
   }).strict();
 

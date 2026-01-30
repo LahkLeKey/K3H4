@@ -2,8 +2,7 @@ import * as z from 'zod';
 import { Prisma } from '@prisma/client';
 import { LifecycleStatusSchema } from '../enums/LifecycleStatus.schema';
 import { NullableJsonNullValueInputSchema } from '../enums/NullableJsonNullValueInput.schema';
-import { UserCreateNestedOneWithoutFreightLoadsInputObjectSchema as UserCreateNestedOneWithoutFreightLoadsInputObjectSchema } from './UserCreateNestedOneWithoutFreightLoadsInput.schema';
-import { AgricultureShipmentCreateNestedManyWithoutFreightLoadInputObjectSchema as AgricultureShipmentCreateNestedManyWithoutFreightLoadInputObjectSchema } from './AgricultureShipmentCreateNestedManyWithoutFreightLoadInput.schema'
+import { UserCreateNestedOneWithoutFreightLoadsInputObjectSchema as UserCreateNestedOneWithoutFreightLoadsInputObjectSchema } from './UserCreateNestedOneWithoutFreightLoadsInput.schema'
 
 import { JsonValueSchema as jsonSchema } from '../../helpers/json-helpers';
 
@@ -38,8 +37,7 @@ const makeSchema = () => z.object({
   routeGeoJson: z.union([NullableJsonNullValueInputSchema, jsonSchema]).optional(),
   createdAt: z.coerce.date().optional(),
   updatedAt: z.coerce.date().optional(),
-  user: z.lazy(() => UserCreateNestedOneWithoutFreightLoadsInputObjectSchema),
-  agricultureShipments: z.lazy(() => AgricultureShipmentCreateNestedManyWithoutFreightLoadInputObjectSchema).optional()
+  user: z.lazy(() => UserCreateNestedOneWithoutFreightLoadsInputObjectSchema)
 }).strict();
 export const FreightLoadCreateWithoutWarehouseItemsInputObjectSchema: z.ZodType<Prisma.FreightLoadCreateWithoutWarehouseItemsInput> = makeSchema() as unknown as z.ZodType<Prisma.FreightLoadCreateWithoutWarehouseItemsInput>;
 export const FreightLoadCreateWithoutWarehouseItemsInputObjectZodSchema = makeSchema();

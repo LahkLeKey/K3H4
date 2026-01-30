@@ -3,8 +3,7 @@ import type { Prisma } from '@prisma/client';
 import { SortOrderSchema } from '../enums/SortOrder.schema';
 import { SortOrderInputObjectSchema as SortOrderInputObjectSchema } from './SortOrderInput.schema';
 import { UserOrderByWithRelationInputObjectSchema as UserOrderByWithRelationInputObjectSchema } from './UserOrderByWithRelationInput.schema';
-import { WarehouseItemOrderByRelationAggregateInputObjectSchema as WarehouseItemOrderByRelationAggregateInputObjectSchema } from './WarehouseItemOrderByRelationAggregateInput.schema';
-import { AgricultureShipmentOrderByRelationAggregateInputObjectSchema as AgricultureShipmentOrderByRelationAggregateInputObjectSchema } from './AgricultureShipmentOrderByRelationAggregateInput.schema'
+import { WarehouseItemOrderByRelationAggregateInputObjectSchema as WarehouseItemOrderByRelationAggregateInputObjectSchema } from './WarehouseItemOrderByRelationAggregateInput.schema'
 
 const makeSchema = () => z.object({
   id: SortOrderSchema.optional(),
@@ -24,8 +23,7 @@ const makeSchema = () => z.object({
   createdAt: SortOrderSchema.optional(),
   updatedAt: SortOrderSchema.optional(),
   user: z.lazy(() => UserOrderByWithRelationInputObjectSchema).optional(),
-  warehouseItems: z.lazy(() => WarehouseItemOrderByRelationAggregateInputObjectSchema).optional(),
-  agricultureShipments: z.lazy(() => AgricultureShipmentOrderByRelationAggregateInputObjectSchema).optional()
+  warehouseItems: z.lazy(() => WarehouseItemOrderByRelationAggregateInputObjectSchema).optional()
 }).strict();
 export const FreightLoadOrderByWithRelationInputObjectSchema: z.ZodType<Prisma.FreightLoadOrderByWithRelationInput> = makeSchema() as unknown as z.ZodType<Prisma.FreightLoadOrderByWithRelationInput>;
 export const FreightLoadOrderByWithRelationInputObjectZodSchema = makeSchema();

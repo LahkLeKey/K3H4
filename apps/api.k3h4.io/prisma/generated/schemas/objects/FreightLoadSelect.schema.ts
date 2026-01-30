@@ -2,7 +2,6 @@ import * as z from 'zod';
 import type { Prisma } from '@prisma/client';
 import { UserArgsObjectSchema as UserArgsObjectSchema } from './UserArgs.schema';
 import { WarehouseItemFindManySchema as WarehouseItemFindManySchema } from '../findManyWarehouseItem.schema';
-import { AgricultureShipmentFindManySchema as AgricultureShipmentFindManySchema } from '../findManyAgricultureShipment.schema';
 import { FreightLoadCountOutputTypeArgsObjectSchema as FreightLoadCountOutputTypeArgsObjectSchema } from './FreightLoadCountOutputTypeArgs.schema'
 
 const makeSchema = () => z.object({
@@ -24,7 +23,6 @@ const makeSchema = () => z.object({
   createdAt: z.boolean().optional(),
   updatedAt: z.boolean().optional(),
   warehouseItems: z.union([z.boolean(), z.lazy(() => WarehouseItemFindManySchema)]).optional(),
-  agricultureShipments: z.union([z.boolean(), z.lazy(() => AgricultureShipmentFindManySchema)]).optional(),
   _count: z.union([z.boolean(), z.lazy(() => FreightLoadCountOutputTypeArgsObjectSchema)]).optional()
 }).strict();
 export const FreightLoadSelectObjectSchema: z.ZodType<Prisma.FreightLoadSelect> = makeSchema() as unknown as z.ZodType<Prisma.FreightLoadSelect>;

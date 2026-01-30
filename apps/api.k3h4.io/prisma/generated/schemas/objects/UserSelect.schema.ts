@@ -14,14 +14,6 @@ import { FreightLoadFindManySchema as FreightLoadFindManySchema } from '../findM
 import { WarehouseItemFindManySchema as WarehouseItemFindManySchema } from '../findManyWarehouseItem.schema';
 import { PosStoreFindManySchema as PosStoreFindManySchema } from '../findManyPosStore.schema';
 import { PosTicketFindManySchema as PosTicketFindManySchema } from '../findManyPosTicket.schema';
-import { AgriculturePlotFindManySchema as AgriculturePlotFindManySchema } from '../findManyAgriculturePlot.schema';
-import { AgricultureTaskFindManySchema as AgricultureTaskFindManySchema } from '../findManyAgricultureTask.schema';
-import { AgricultureShipmentFindManySchema as AgricultureShipmentFindManySchema } from '../findManyAgricultureShipment.schema';
-import { AgricultureCropPlanFindManySchema as AgricultureCropPlanFindManySchema } from '../findManyAgricultureCropPlan.schema';
-import { AgriculturePlotConditionFindManySchema as AgriculturePlotConditionFindManySchema } from '../findManyAgriculturePlotCondition.schema';
-import { AgricultureInventoryFindManySchema as AgricultureInventoryFindManySchema } from '../findManyAgricultureInventory.schema';
-import { AgricultureInventoryMovementFindManySchema as AgricultureInventoryMovementFindManySchema } from '../findManyAgricultureInventoryMovement.schema';
-import { AgricultureSlotFindManySchema as AgricultureSlotFindManySchema } from '../findManyAgricultureSlot.schema';
 import { CulinaryMenuItemFindManySchema as CulinaryMenuItemFindManySchema } from '../findManyCulinaryMenuItem.schema';
 import { CulinaryPrepTaskFindManySchema as CulinaryPrepTaskFindManySchema } from '../findManyCulinaryPrepTask.schema';
 import { CulinarySupplierNeedFindManySchema as CulinarySupplierNeedFindManySchema } from '../findManyCulinarySupplierNeed.schema';
@@ -68,14 +60,6 @@ const makeSchema = () => z.object({
   warehouseItems: z.union([z.boolean(), z.lazy(() => WarehouseItemFindManySchema)]).optional(),
   posStores: z.union([z.boolean(), z.lazy(() => PosStoreFindManySchema)]).optional(),
   posTickets: z.union([z.boolean(), z.lazy(() => PosTicketFindManySchema)]).optional(),
-  agriculturePlots: z.union([z.boolean(), z.lazy(() => AgriculturePlotFindManySchema)]).optional(),
-  agricultureTasks: z.union([z.boolean(), z.lazy(() => AgricultureTaskFindManySchema)]).optional(),
-  agricultureShipments: z.union([z.boolean(), z.lazy(() => AgricultureShipmentFindManySchema)]).optional(),
-  agricultureCropPlans: z.union([z.boolean(), z.lazy(() => AgricultureCropPlanFindManySchema)]).optional(),
-  agriculturePlotConditions: z.union([z.boolean(), z.lazy(() => AgriculturePlotConditionFindManySchema)]).optional(),
-  agricultureInventories: z.union([z.boolean(), z.lazy(() => AgricultureInventoryFindManySchema)]).optional(),
-  agricultureInventoryMovements: z.union([z.boolean(), z.lazy(() => AgricultureInventoryMovementFindManySchema)]).optional(),
-  agricultureSlots: z.union([z.boolean(), z.lazy(() => AgricultureSlotFindManySchema)]).optional(),
   culinaryMenuItems: z.union([z.boolean(), z.lazy(() => CulinaryMenuItemFindManySchema)]).optional(),
   culinaryPrepTasks: z.union([z.boolean(), z.lazy(() => CulinaryPrepTaskFindManySchema)]).optional(),
   culinarySupplierNeeds: z.union([z.boolean(), z.lazy(() => CulinarySupplierNeedFindManySchema)]).optional(),

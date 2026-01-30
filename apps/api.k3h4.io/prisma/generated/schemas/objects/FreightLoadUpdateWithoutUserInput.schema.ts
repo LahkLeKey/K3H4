@@ -8,8 +8,7 @@ import { LifecycleStatusSchema } from '../enums/LifecycleStatus.schema';
 import { EnumLifecycleStatusFieldUpdateOperationsInputObjectSchema as EnumLifecycleStatusFieldUpdateOperationsInputObjectSchema } from './EnumLifecycleStatusFieldUpdateOperationsInput.schema';
 import { NullableJsonNullValueInputSchema } from '../enums/NullableJsonNullValueInput.schema';
 import { DateTimeFieldUpdateOperationsInputObjectSchema as DateTimeFieldUpdateOperationsInputObjectSchema } from './DateTimeFieldUpdateOperationsInput.schema';
-import { WarehouseItemUpdateManyWithoutFreightLoadNestedInputObjectSchema as WarehouseItemUpdateManyWithoutFreightLoadNestedInputObjectSchema } from './WarehouseItemUpdateManyWithoutFreightLoadNestedInput.schema';
-import { AgricultureShipmentUpdateManyWithoutFreightLoadNestedInputObjectSchema as AgricultureShipmentUpdateManyWithoutFreightLoadNestedInputObjectSchema } from './AgricultureShipmentUpdateManyWithoutFreightLoadNestedInput.schema'
+import { WarehouseItemUpdateManyWithoutFreightLoadNestedInputObjectSchema as WarehouseItemUpdateManyWithoutFreightLoadNestedInputObjectSchema } from './WarehouseItemUpdateManyWithoutFreightLoadNestedInput.schema'
 
 import { JsonValueSchema as jsonSchema } from '../../helpers/json-helpers';
 
@@ -44,8 +43,7 @@ const makeSchema = () => z.object({
   routeGeoJson: z.union([NullableJsonNullValueInputSchema, jsonSchema]).optional(),
   createdAt: z.union([z.coerce.date(), z.lazy(() => DateTimeFieldUpdateOperationsInputObjectSchema)]).optional(),
   updatedAt: z.union([z.coerce.date(), z.lazy(() => DateTimeFieldUpdateOperationsInputObjectSchema)]).optional(),
-  warehouseItems: z.lazy(() => WarehouseItemUpdateManyWithoutFreightLoadNestedInputObjectSchema).optional(),
-  agricultureShipments: z.lazy(() => AgricultureShipmentUpdateManyWithoutFreightLoadNestedInputObjectSchema).optional()
+  warehouseItems: z.lazy(() => WarehouseItemUpdateManyWithoutFreightLoadNestedInputObjectSchema).optional()
 }).strict();
 export const FreightLoadUpdateWithoutUserInputObjectSchema: z.ZodType<Prisma.FreightLoadUpdateWithoutUserInput> = makeSchema() as unknown as z.ZodType<Prisma.FreightLoadUpdateWithoutUserInput>;
 export const FreightLoadUpdateWithoutUserInputObjectZodSchema = makeSchema();

@@ -19,8 +19,7 @@ export const FreightLoadResultSchema = z.object({
     routeGeoJson: z.unknown().nullable(),
     createdAt: z.date(),
     updatedAt: z.date(),
-    warehouseItems: z.array(z.unknown()),
-    agricultureShipments: z.array(z.unknown())
+    warehouseItems: z.array(z.unknown())
 }).strict();
 
 export type FreightLoadResultType = z.infer<typeof FreightLoadResultSchema>;

@@ -16,14 +16,6 @@ import { FreightLoadOrderByRelationAggregateInputObjectSchema as FreightLoadOrde
 import { WarehouseItemOrderByRelationAggregateInputObjectSchema as WarehouseItemOrderByRelationAggregateInputObjectSchema } from './WarehouseItemOrderByRelationAggregateInput.schema';
 import { PosStoreOrderByRelationAggregateInputObjectSchema as PosStoreOrderByRelationAggregateInputObjectSchema } from './PosStoreOrderByRelationAggregateInput.schema';
 import { PosTicketOrderByRelationAggregateInputObjectSchema as PosTicketOrderByRelationAggregateInputObjectSchema } from './PosTicketOrderByRelationAggregateInput.schema';
-import { AgriculturePlotOrderByRelationAggregateInputObjectSchema as AgriculturePlotOrderByRelationAggregateInputObjectSchema } from './AgriculturePlotOrderByRelationAggregateInput.schema';
-import { AgricultureTaskOrderByRelationAggregateInputObjectSchema as AgricultureTaskOrderByRelationAggregateInputObjectSchema } from './AgricultureTaskOrderByRelationAggregateInput.schema';
-import { AgricultureShipmentOrderByRelationAggregateInputObjectSchema as AgricultureShipmentOrderByRelationAggregateInputObjectSchema } from './AgricultureShipmentOrderByRelationAggregateInput.schema';
-import { AgricultureCropPlanOrderByRelationAggregateInputObjectSchema as AgricultureCropPlanOrderByRelationAggregateInputObjectSchema } from './AgricultureCropPlanOrderByRelationAggregateInput.schema';
-import { AgriculturePlotConditionOrderByRelationAggregateInputObjectSchema as AgriculturePlotConditionOrderByRelationAggregateInputObjectSchema } from './AgriculturePlotConditionOrderByRelationAggregateInput.schema';
-import { AgricultureInventoryOrderByRelationAggregateInputObjectSchema as AgricultureInventoryOrderByRelationAggregateInputObjectSchema } from './AgricultureInventoryOrderByRelationAggregateInput.schema';
-import { AgricultureInventoryMovementOrderByRelationAggregateInputObjectSchema as AgricultureInventoryMovementOrderByRelationAggregateInputObjectSchema } from './AgricultureInventoryMovementOrderByRelationAggregateInput.schema';
-import { AgricultureSlotOrderByRelationAggregateInputObjectSchema as AgricultureSlotOrderByRelationAggregateInputObjectSchema } from './AgricultureSlotOrderByRelationAggregateInput.schema';
 import { CulinaryMenuItemOrderByRelationAggregateInputObjectSchema as CulinaryMenuItemOrderByRelationAggregateInputObjectSchema } from './CulinaryMenuItemOrderByRelationAggregateInput.schema';
 import { CulinaryPrepTaskOrderByRelationAggregateInputObjectSchema as CulinaryPrepTaskOrderByRelationAggregateInputObjectSchema } from './CulinaryPrepTaskOrderByRelationAggregateInput.schema';
 import { CulinarySupplierNeedOrderByRelationAggregateInputObjectSchema as CulinarySupplierNeedOrderByRelationAggregateInputObjectSchema } from './CulinarySupplierNeedOrderByRelationAggregateInput.schema';
@@ -69,14 +61,6 @@ const makeSchema = () => z.object({
   warehouseItems: z.lazy(() => WarehouseItemOrderByRelationAggregateInputObjectSchema).optional(),
   posStores: z.lazy(() => PosStoreOrderByRelationAggregateInputObjectSchema).optional(),
   posTickets: z.lazy(() => PosTicketOrderByRelationAggregateInputObjectSchema).optional(),
-  agriculturePlots: z.lazy(() => AgriculturePlotOrderByRelationAggregateInputObjectSchema).optional(),
-  agricultureTasks: z.lazy(() => AgricultureTaskOrderByRelationAggregateInputObjectSchema).optional(),
-  agricultureShipments: z.lazy(() => AgricultureShipmentOrderByRelationAggregateInputObjectSchema).optional(),
-  agricultureCropPlans: z.lazy(() => AgricultureCropPlanOrderByRelationAggregateInputObjectSchema).optional(),
-  agriculturePlotConditions: z.lazy(() => AgriculturePlotConditionOrderByRelationAggregateInputObjectSchema).optional(),
-  agricultureInventories: z.lazy(() => AgricultureInventoryOrderByRelationAggregateInputObjectSchema).optional(),
-  agricultureInventoryMovements: z.lazy(() => AgricultureInventoryMovementOrderByRelationAggregateInputObjectSchema).optional(),
-  agricultureSlots: z.lazy(() => AgricultureSlotOrderByRelationAggregateInputObjectSchema).optional(),
   culinaryMenuItems: z.lazy(() => CulinaryMenuItemOrderByRelationAggregateInputObjectSchema).optional(),
   culinaryPrepTasks: z.lazy(() => CulinaryPrepTaskOrderByRelationAggregateInputObjectSchema).optional(),
   culinarySupplierNeeds: z.lazy(() => CulinarySupplierNeedOrderByRelationAggregateInputObjectSchema).optional(),
