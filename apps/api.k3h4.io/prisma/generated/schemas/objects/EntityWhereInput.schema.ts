@@ -1,10 +1,10 @@
 import * as z from 'zod';
 import type { Prisma } from '@prisma/client';
 import { StringFilterObjectSchema as StringFilterObjectSchema } from './StringFilter.schema';
-import { EnumBankTransactionKindFilterObjectSchema as EnumBankTransactionKindFilterObjectSchema } from './EnumBankTransactionKindFilter.schema';
-import { BankTransactionKindSchema } from '../enums/BankTransactionKind.schema';
-import { EnumBankTransactionDirectionNullableFilterObjectSchema as EnumBankTransactionDirectionNullableFilterObjectSchema } from './EnumBankTransactionDirectionNullableFilter.schema';
-import { BankTransactionDirectionSchema } from '../enums/BankTransactionDirection.schema';
+import { EnumEntityKindFilterObjectSchema as EnumEntityKindFilterObjectSchema } from './EnumEntityKindFilter.schema';
+import { EntityKindSchema } from '../enums/EntityKind.schema';
+import { EnumEntityDirectionNullableFilterObjectSchema as EnumEntityDirectionNullableFilterObjectSchema } from './EnumEntityDirectionNullableFilter.schema';
+import { EntityDirectionSchema } from '../enums/EntityDirection.schema';
 import { StringNullableFilterObjectSchema as StringNullableFilterObjectSchema } from './StringNullableFilter.schema';
 import { JsonNullableFilterObjectSchema as JsonNullableFilterObjectSchema } from './JsonNullableFilter.schema';
 import { DateTimeFilterObjectSchema as DateTimeFilterObjectSchema } from './DateTimeFilter.schema';
@@ -17,8 +17,8 @@ const entitywhereinputSchema = z.object({
   NOT: z.union([z.lazy(() => EntityWhereInputObjectSchema), z.lazy(() => EntityWhereInputObjectSchema).array()]).optional(),
   id: z.union([z.lazy(() => StringFilterObjectSchema), z.string()]).optional(),
   actorId: z.union([z.lazy(() => StringFilterObjectSchema), z.string()]).optional(),
-  kind: z.union([z.lazy(() => EnumBankTransactionKindFilterObjectSchema), BankTransactionKindSchema]).optional(),
-  direction: z.union([z.lazy(() => EnumBankTransactionDirectionNullableFilterObjectSchema), BankTransactionDirectionSchema]).optional().nullable(),
+  kind: z.union([z.lazy(() => EnumEntityKindFilterObjectSchema), EntityKindSchema]).optional(),
+  direction: z.union([z.lazy(() => EnumEntityDirectionNullableFilterObjectSchema), EntityDirectionSchema]).optional().nullable(),
   name: z.union([z.lazy(() => StringNullableFilterObjectSchema), z.string()]).optional().nullable(),
   targetType: z.union([z.lazy(() => StringNullableFilterObjectSchema), z.string()]).optional().nullable(),
   targetId: z.union([z.lazy(() => StringNullableFilterObjectSchema), z.string()]).optional().nullable(),

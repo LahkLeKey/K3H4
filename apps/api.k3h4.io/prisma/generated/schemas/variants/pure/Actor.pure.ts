@@ -1,12 +1,12 @@
 import * as z from 'zod';
-import { BankActorTypeSchema } from '../../enums/BankActorType.schema';
+import { ActorTypeSchema } from '../../enums/ActorType.schema';
 // prettier-ignore
 export const ActorModelSchema = z.object({
     id: z.string(),
     userId: z.string().nullable(),
     user: z.unknown().nullable(),
     label: z.string(),
-    type: BankActorTypeSchema,
+    type: ActorTypeSchema,
     note: z.string().nullable(),
     source: z.string().nullable(),
     metadata: z.unknown().nullable(),

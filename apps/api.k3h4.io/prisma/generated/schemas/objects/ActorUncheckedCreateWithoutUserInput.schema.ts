@@ -1,6 +1,6 @@
 import * as z from 'zod';
 import type { Prisma } from '@prisma/client';
-import { BankActorTypeSchema } from '../enums/BankActorType.schema';
+import { ActorTypeSchema } from '../enums/ActorType.schema';
 import { NullableJsonNullValueInputSchema } from '../enums/NullableJsonNullValueInput.schema';
 import { EntityUncheckedCreateNestedManyWithoutActorInputObjectSchema as EntityUncheckedCreateNestedManyWithoutActorInputObjectSchema } from './EntityUncheckedCreateNestedManyWithoutActorInput.schema'
 
@@ -9,7 +9,7 @@ import { JsonValueSchema as jsonSchema } from '../../helpers/json-helpers';
 const makeSchema = () => z.object({
   id: z.string().optional(),
   label: z.string(),
-  type: BankActorTypeSchema,
+  type: ActorTypeSchema,
   note: z.string().optional().nullable(),
   source: z.string().optional().nullable(),
   metadata: z.union([NullableJsonNullValueInputSchema, jsonSchema]).optional(),

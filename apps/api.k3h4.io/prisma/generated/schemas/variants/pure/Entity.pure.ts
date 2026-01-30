@@ -1,13 +1,13 @@
 import * as z from 'zod';
-import { BankTransactionKindSchema } from '../../enums/BankTransactionKind.schema';
-import { BankTransactionDirectionSchema } from '../../enums/BankTransactionDirection.schema';
+import { EntityKindSchema } from '../../enums/EntityKind.schema';
+import { EntityDirectionSchema } from '../../enums/EntityDirection.schema';
 // prettier-ignore
 export const EntityModelSchema = z.object({
     id: z.string(),
     actorId: z.string(),
     actor: z.unknown(),
-    kind: BankTransactionKindSchema,
-    direction: BankTransactionDirectionSchema.nullable(),
+    kind: EntityKindSchema,
+    direction: EntityDirectionSchema.nullable(),
     name: z.string().nullable(),
     targetType: z.string().nullable(),
     targetId: z.string().nullable(),
