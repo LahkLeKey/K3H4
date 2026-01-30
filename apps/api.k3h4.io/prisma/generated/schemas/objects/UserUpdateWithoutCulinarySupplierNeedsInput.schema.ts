@@ -7,7 +7,6 @@ import { DateTimeFieldUpdateOperationsInputObjectSchema as DateTimeFieldUpdateOp
 import { RefreshTokenUpdateManyWithoutUserNestedInputObjectSchema as RefreshTokenUpdateManyWithoutUserNestedInputObjectSchema } from './RefreshTokenUpdateManyWithoutUserNestedInput.schema';
 import { UserPreferenceUpdateOneWithoutUserNestedInputObjectSchema as UserPreferenceUpdateOneWithoutUserNestedInputObjectSchema } from './UserPreferenceUpdateOneWithoutUserNestedInput.schema';
 import { TelemetryEventUpdateManyWithoutUserNestedInputObjectSchema as TelemetryEventUpdateManyWithoutUserNestedInputObjectSchema } from './TelemetryEventUpdateManyWithoutUserNestedInput.schema';
-import { BankTransactionUpdateManyWithoutUserNestedInputObjectSchema as BankTransactionUpdateManyWithoutUserNestedInputObjectSchema } from './BankTransactionUpdateManyWithoutUserNestedInput.schema';
 import { PersonaUpdateManyWithoutUserNestedInputObjectSchema as PersonaUpdateManyWithoutUserNestedInputObjectSchema } from './PersonaUpdateManyWithoutUserNestedInput.schema';
 import { AssignmentUpdateManyWithoutUserNestedInputObjectSchema as AssignmentUpdateManyWithoutUserNestedInputObjectSchema } from './AssignmentUpdateManyWithoutUserNestedInput.schema';
 import { StaffingEngagementUpdateManyWithoutUserNestedInputObjectSchema as StaffingEngagementUpdateManyWithoutUserNestedInputObjectSchema } from './StaffingEngagementUpdateManyWithoutUserNestedInput.schema';
@@ -29,12 +28,6 @@ import { AgricultureInventoryMovementUpdateManyWithoutUserNestedInputObjectSchem
 import { AgricultureSlotUpdateManyWithoutUserNestedInputObjectSchema as AgricultureSlotUpdateManyWithoutUserNestedInputObjectSchema } from './AgricultureSlotUpdateManyWithoutUserNestedInput.schema';
 import { CulinaryMenuItemUpdateManyWithoutUserNestedInputObjectSchema as CulinaryMenuItemUpdateManyWithoutUserNestedInputObjectSchema } from './CulinaryMenuItemUpdateManyWithoutUserNestedInput.schema';
 import { CulinaryPrepTaskUpdateManyWithoutUserNestedInputObjectSchema as CulinaryPrepTaskUpdateManyWithoutUserNestedInputObjectSchema } from './CulinaryPrepTaskUpdateManyWithoutUserNestedInput.schema';
-import { ArcadeMachineUpdateManyWithoutUserNestedInputObjectSchema as ArcadeMachineUpdateManyWithoutUserNestedInputObjectSchema } from './ArcadeMachineUpdateManyWithoutUserNestedInput.schema';
-import { ArcadeCardUpdateManyWithoutUserNestedInputObjectSchema as ArcadeCardUpdateManyWithoutUserNestedInputObjectSchema } from './ArcadeCardUpdateManyWithoutUserNestedInput.schema';
-import { ArcadeTopUpUpdateManyWithoutUserNestedInputObjectSchema as ArcadeTopUpUpdateManyWithoutUserNestedInputObjectSchema } from './ArcadeTopUpUpdateManyWithoutUserNestedInput.schema';
-import { ArcadePrizeUpdateManyWithoutUserNestedInputObjectSchema as ArcadePrizeUpdateManyWithoutUserNestedInputObjectSchema } from './ArcadePrizeUpdateManyWithoutUserNestedInput.schema';
-import { ArcadeSessionUpdateManyWithoutUserNestedInputObjectSchema as ArcadeSessionUpdateManyWithoutUserNestedInputObjectSchema } from './ArcadeSessionUpdateManyWithoutUserNestedInput.schema';
-import { ArcadeRedemptionUpdateManyWithoutUserNestedInputObjectSchema as ArcadeRedemptionUpdateManyWithoutUserNestedInputObjectSchema } from './ArcadeRedemptionUpdateManyWithoutUserNestedInput.schema';
 import { ProviderGrantUpdateManyWithoutUserNestedInputObjectSchema as ProviderGrantUpdateManyWithoutUserNestedInputObjectSchema } from './ProviderGrantUpdateManyWithoutUserNestedInput.schema';
 import { GeoRouteCacheUpdateManyWithoutUserNestedInputObjectSchema as GeoRouteCacheUpdateManyWithoutUserNestedInputObjectSchema } from './GeoRouteCacheUpdateManyWithoutUserNestedInput.schema';
 import { GeoDirectionUpdateManyWithoutUserNestedInputObjectSchema as GeoDirectionUpdateManyWithoutUserNestedInputObjectSchema } from './GeoDirectionUpdateManyWithoutUserNestedInput.schema';
@@ -50,7 +43,8 @@ import { PersonaCompatibilityUpdateManyWithoutUserNestedInputObjectSchema as Per
 import { GeoViewHistoryUpdateManyWithoutUserNestedInputObjectSchema as GeoViewHistoryUpdateManyWithoutUserNestedInputObjectSchema } from './GeoViewHistoryUpdateManyWithoutUserNestedInput.schema';
 import { ChatSessionUpdateManyWithoutUserNestedInputObjectSchema as ChatSessionUpdateManyWithoutUserNestedInputObjectSchema } from './ChatSessionUpdateManyWithoutUserNestedInput.schema';
 import { AiInsightUpdateManyWithoutUserNestedInputObjectSchema as AiInsightUpdateManyWithoutUserNestedInputObjectSchema } from './AiInsightUpdateManyWithoutUserNestedInput.schema';
-import { OllamaOperationUpdateManyWithoutUserNestedInputObjectSchema as OllamaOperationUpdateManyWithoutUserNestedInputObjectSchema } from './OllamaOperationUpdateManyWithoutUserNestedInput.schema'
+import { OllamaOperationUpdateManyWithoutUserNestedInputObjectSchema as OllamaOperationUpdateManyWithoutUserNestedInputObjectSchema } from './OllamaOperationUpdateManyWithoutUserNestedInput.schema';
+import { ActorUpdateManyWithoutUserNestedInputObjectSchema as ActorUpdateManyWithoutUserNestedInputObjectSchema } from './ActorUpdateManyWithoutUserNestedInput.schema'
 
 import { DecimalJSLikeSchema, isValidDecimalInput } from '../../helpers/decimal-helpers';
 const makeSchema = () => z.object({
@@ -73,7 +67,6 @@ const makeSchema = () => z.object({
   refreshTokens: z.lazy(() => RefreshTokenUpdateManyWithoutUserNestedInputObjectSchema).optional(),
   preference: z.lazy(() => UserPreferenceUpdateOneWithoutUserNestedInputObjectSchema).optional(),
   telemetry: z.lazy(() => TelemetryEventUpdateManyWithoutUserNestedInputObjectSchema).optional(),
-  bankTransactions: z.lazy(() => BankTransactionUpdateManyWithoutUserNestedInputObjectSchema).optional(),
   personas: z.lazy(() => PersonaUpdateManyWithoutUserNestedInputObjectSchema).optional(),
   assignments: z.lazy(() => AssignmentUpdateManyWithoutUserNestedInputObjectSchema).optional(),
   staffingEngagements: z.lazy(() => StaffingEngagementUpdateManyWithoutUserNestedInputObjectSchema).optional(),
@@ -95,12 +88,6 @@ const makeSchema = () => z.object({
   agricultureSlots: z.lazy(() => AgricultureSlotUpdateManyWithoutUserNestedInputObjectSchema).optional(),
   culinaryMenuItems: z.lazy(() => CulinaryMenuItemUpdateManyWithoutUserNestedInputObjectSchema).optional(),
   culinaryPrepTasks: z.lazy(() => CulinaryPrepTaskUpdateManyWithoutUserNestedInputObjectSchema).optional(),
-  arcadeMachines: z.lazy(() => ArcadeMachineUpdateManyWithoutUserNestedInputObjectSchema).optional(),
-  arcadeCards: z.lazy(() => ArcadeCardUpdateManyWithoutUserNestedInputObjectSchema).optional(),
-  arcadeTopUps: z.lazy(() => ArcadeTopUpUpdateManyWithoutUserNestedInputObjectSchema).optional(),
-  arcadePrizes: z.lazy(() => ArcadePrizeUpdateManyWithoutUserNestedInputObjectSchema).optional(),
-  arcadeSessions: z.lazy(() => ArcadeSessionUpdateManyWithoutUserNestedInputObjectSchema).optional(),
-  arcadeRedemptions: z.lazy(() => ArcadeRedemptionUpdateManyWithoutUserNestedInputObjectSchema).optional(),
   providerGrants: z.lazy(() => ProviderGrantUpdateManyWithoutUserNestedInputObjectSchema).optional(),
   geoRouteCaches: z.lazy(() => GeoRouteCacheUpdateManyWithoutUserNestedInputObjectSchema).optional(),
   geoDirections: z.lazy(() => GeoDirectionUpdateManyWithoutUserNestedInputObjectSchema).optional(),
@@ -116,7 +103,8 @@ const makeSchema = () => z.object({
   geoViewHistories: z.lazy(() => GeoViewHistoryUpdateManyWithoutUserNestedInputObjectSchema).optional(),
   chatSessions: z.lazy(() => ChatSessionUpdateManyWithoutUserNestedInputObjectSchema).optional(),
   aiInsights: z.lazy(() => AiInsightUpdateManyWithoutUserNestedInputObjectSchema).optional(),
-  ollamaOperations: z.lazy(() => OllamaOperationUpdateManyWithoutUserNestedInputObjectSchema).optional()
+  ollamaOperations: z.lazy(() => OllamaOperationUpdateManyWithoutUserNestedInputObjectSchema).optional(),
+  actors: z.lazy(() => ActorUpdateManyWithoutUserNestedInputObjectSchema).optional()
 }).strict();
 export const UserUpdateWithoutCulinarySupplierNeedsInputObjectSchema: z.ZodType<Prisma.UserUpdateWithoutCulinarySupplierNeedsInput> = makeSchema() as unknown as z.ZodType<Prisma.UserUpdateWithoutCulinarySupplierNeedsInput>;
 export const UserUpdateWithoutCulinarySupplierNeedsInputObjectZodSchema = makeSchema();

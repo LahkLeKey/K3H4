@@ -3,6 +3,7 @@ import {type FastifyInstance} from 'fastify';
 
 import {routeSignature} from '../lib/geo-signature';
 import {fetchOsrm} from '../lib/osrm-client';
+import {EntityDirection, EntityKind, recordBankTransactionEntity,} from '../services/bank-actor';
 
 import {withTelemetryBase} from './telemetry';
 import {type RecordTelemetryFn} from './types';
@@ -394,15 +395,17 @@ export function registerFreightRoutes(
             osrmResponse: osrm,
           });
         } catch (err) {
-          request.log.error({err, signature}, 'failed to persist direction');
+          request.log.error({err, signature}, 'freight directions failed');
+          return reply.status(502).send({
+            error: err instanceof Error ? err.message :
+                                          'Unable to cache directions',
+          });
         }
-
         await rt({
           eventType: 'freight.create',
           source: 'api',
-          payload: {distanceKm: distance, cost: cost.toFixed(2)}
+          payload: {id: load.id, title: load.title},
         });
-
         return {load: serializeLoad(load)};
       },
   );
@@ -477,15 +480,16 @@ export function registerFreightRoutes(
             const nextBalance = user.k3h4CoinBalance.sub(cost);
             const savedUser = await tx.user.update(
                 {where: {id: userId}, data: {k3h4CoinBalance: nextBalance}});
-            await tx.bankTransaction.create({
-              data: {
-                userId,
-                amount: cost,
-                direction: 'debit',
-                kind: 'freight_payment',
-                note: `Freight load ${load.title}`,
-                balanceAfter: savedUser.k3h4CoinBalance,
-              },
+            await recordBankTransactionEntity(tx, {
+              userId,
+              amount: cost,
+              direction: EntityDirection.DEBIT,
+              kind: EntityKind.FREIGHT_PAYMENT,
+              note: `Freight load ${load.title}`,
+              balanceAfter: savedUser.k3h4CoinBalance,
+              targetType: 'freight_load',
+              targetId: load.id,
+              name: load.title,
             });
 
             const updated = await tx.freightLoad.update(

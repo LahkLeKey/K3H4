@@ -8,7 +8,6 @@ import { RefreshTokenListRelationFilterObjectSchema as RefreshTokenListRelationF
 import { UserPreferenceNullableScalarRelationFilterObjectSchema as UserPreferenceNullableScalarRelationFilterObjectSchema } from './UserPreferenceNullableScalarRelationFilter.schema';
 import { UserPreferenceWhereInputObjectSchema as UserPreferenceWhereInputObjectSchema } from './UserPreferenceWhereInput.schema';
 import { TelemetryEventListRelationFilterObjectSchema as TelemetryEventListRelationFilterObjectSchema } from './TelemetryEventListRelationFilter.schema';
-import { BankTransactionListRelationFilterObjectSchema as BankTransactionListRelationFilterObjectSchema } from './BankTransactionListRelationFilter.schema';
 import { PersonaListRelationFilterObjectSchema as PersonaListRelationFilterObjectSchema } from './PersonaListRelationFilter.schema';
 import { AssignmentListRelationFilterObjectSchema as AssignmentListRelationFilterObjectSchema } from './AssignmentListRelationFilter.schema';
 import { StaffingEngagementListRelationFilterObjectSchema as StaffingEngagementListRelationFilterObjectSchema } from './StaffingEngagementListRelationFilter.schema';
@@ -31,12 +30,6 @@ import { AgricultureSlotListRelationFilterObjectSchema as AgricultureSlotListRel
 import { CulinaryMenuItemListRelationFilterObjectSchema as CulinaryMenuItemListRelationFilterObjectSchema } from './CulinaryMenuItemListRelationFilter.schema';
 import { CulinaryPrepTaskListRelationFilterObjectSchema as CulinaryPrepTaskListRelationFilterObjectSchema } from './CulinaryPrepTaskListRelationFilter.schema';
 import { CulinarySupplierNeedListRelationFilterObjectSchema as CulinarySupplierNeedListRelationFilterObjectSchema } from './CulinarySupplierNeedListRelationFilter.schema';
-import { ArcadeMachineListRelationFilterObjectSchema as ArcadeMachineListRelationFilterObjectSchema } from './ArcadeMachineListRelationFilter.schema';
-import { ArcadeCardListRelationFilterObjectSchema as ArcadeCardListRelationFilterObjectSchema } from './ArcadeCardListRelationFilter.schema';
-import { ArcadeTopUpListRelationFilterObjectSchema as ArcadeTopUpListRelationFilterObjectSchema } from './ArcadeTopUpListRelationFilter.schema';
-import { ArcadePrizeListRelationFilterObjectSchema as ArcadePrizeListRelationFilterObjectSchema } from './ArcadePrizeListRelationFilter.schema';
-import { ArcadeSessionListRelationFilterObjectSchema as ArcadeSessionListRelationFilterObjectSchema } from './ArcadeSessionListRelationFilter.schema';
-import { ArcadeRedemptionListRelationFilterObjectSchema as ArcadeRedemptionListRelationFilterObjectSchema } from './ArcadeRedemptionListRelationFilter.schema';
 import { ProviderGrantListRelationFilterObjectSchema as ProviderGrantListRelationFilterObjectSchema } from './ProviderGrantListRelationFilter.schema';
 import { GeoRouteCacheListRelationFilterObjectSchema as GeoRouteCacheListRelationFilterObjectSchema } from './GeoRouteCacheListRelationFilter.schema';
 import { GeoDirectionListRelationFilterObjectSchema as GeoDirectionListRelationFilterObjectSchema } from './GeoDirectionListRelationFilter.schema';
@@ -52,7 +45,8 @@ import { PersonaCompatibilityListRelationFilterObjectSchema as PersonaCompatibil
 import { GeoViewHistoryListRelationFilterObjectSchema as GeoViewHistoryListRelationFilterObjectSchema } from './GeoViewHistoryListRelationFilter.schema';
 import { ChatSessionListRelationFilterObjectSchema as ChatSessionListRelationFilterObjectSchema } from './ChatSessionListRelationFilter.schema';
 import { AiInsightListRelationFilterObjectSchema as AiInsightListRelationFilterObjectSchema } from './AiInsightListRelationFilter.schema';
-import { OllamaOperationListRelationFilterObjectSchema as OllamaOperationListRelationFilterObjectSchema } from './OllamaOperationListRelationFilter.schema'
+import { OllamaOperationListRelationFilterObjectSchema as OllamaOperationListRelationFilterObjectSchema } from './OllamaOperationListRelationFilter.schema';
+import { ActorListRelationFilterObjectSchema as ActorListRelationFilterObjectSchema } from './ActorListRelationFilter.schema'
 
 import { DecimalJSLikeSchema, isValidDecimalInput } from '../../helpers/decimal-helpers';
 const userwhereinputSchema = z.object({
@@ -78,7 +72,6 @@ const userwhereinputSchema = z.object({
   refreshTokens: z.lazy(() => RefreshTokenListRelationFilterObjectSchema).optional(),
   preference: z.union([z.lazy(() => UserPreferenceNullableScalarRelationFilterObjectSchema), z.lazy(() => UserPreferenceWhereInputObjectSchema)]).optional(),
   telemetry: z.lazy(() => TelemetryEventListRelationFilterObjectSchema).optional(),
-  bankTransactions: z.lazy(() => BankTransactionListRelationFilterObjectSchema).optional(),
   personas: z.lazy(() => PersonaListRelationFilterObjectSchema).optional(),
   assignments: z.lazy(() => AssignmentListRelationFilterObjectSchema).optional(),
   staffingEngagements: z.lazy(() => StaffingEngagementListRelationFilterObjectSchema).optional(),
@@ -101,12 +94,6 @@ const userwhereinputSchema = z.object({
   culinaryMenuItems: z.lazy(() => CulinaryMenuItemListRelationFilterObjectSchema).optional(),
   culinaryPrepTasks: z.lazy(() => CulinaryPrepTaskListRelationFilterObjectSchema).optional(),
   culinarySupplierNeeds: z.lazy(() => CulinarySupplierNeedListRelationFilterObjectSchema).optional(),
-  arcadeMachines: z.lazy(() => ArcadeMachineListRelationFilterObjectSchema).optional(),
-  arcadeCards: z.lazy(() => ArcadeCardListRelationFilterObjectSchema).optional(),
-  arcadeTopUps: z.lazy(() => ArcadeTopUpListRelationFilterObjectSchema).optional(),
-  arcadePrizes: z.lazy(() => ArcadePrizeListRelationFilterObjectSchema).optional(),
-  arcadeSessions: z.lazy(() => ArcadeSessionListRelationFilterObjectSchema).optional(),
-  arcadeRedemptions: z.lazy(() => ArcadeRedemptionListRelationFilterObjectSchema).optional(),
   providerGrants: z.lazy(() => ProviderGrantListRelationFilterObjectSchema).optional(),
   geoRouteCaches: z.lazy(() => GeoRouteCacheListRelationFilterObjectSchema).optional(),
   geoDirections: z.lazy(() => GeoDirectionListRelationFilterObjectSchema).optional(),
@@ -122,7 +109,8 @@ const userwhereinputSchema = z.object({
   geoViewHistories: z.lazy(() => GeoViewHistoryListRelationFilterObjectSchema).optional(),
   chatSessions: z.lazy(() => ChatSessionListRelationFilterObjectSchema).optional(),
   aiInsights: z.lazy(() => AiInsightListRelationFilterObjectSchema).optional(),
-  ollamaOperations: z.lazy(() => OllamaOperationListRelationFilterObjectSchema).optional()
+  ollamaOperations: z.lazy(() => OllamaOperationListRelationFilterObjectSchema).optional(),
+  actors: z.lazy(() => ActorListRelationFilterObjectSchema).optional()
 }).strict();
 export const UserWhereInputObjectSchema: z.ZodType<Prisma.UserWhereInput> = userwhereinputSchema as unknown as z.ZodType<Prisma.UserWhereInput>;
 export const UserWhereInputObjectZodSchema = userwhereinputSchema;

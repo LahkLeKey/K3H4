@@ -3,7 +3,6 @@ import type { Prisma } from '@prisma/client';
 import { RefreshTokenFindManySchema as RefreshTokenFindManySchema } from '../findManyRefreshToken.schema';
 import { UserPreferenceArgsObjectSchema as UserPreferenceArgsObjectSchema } from './UserPreferenceArgs.schema';
 import { TelemetryEventFindManySchema as TelemetryEventFindManySchema } from '../findManyTelemetryEvent.schema';
-import { BankTransactionFindManySchema as BankTransactionFindManySchema } from '../findManyBankTransaction.schema';
 import { PersonaFindManySchema as PersonaFindManySchema } from '../findManyPersona.schema';
 import { AssignmentFindManySchema as AssignmentFindManySchema } from '../findManyAssignment.schema';
 import { StaffingEngagementFindManySchema as StaffingEngagementFindManySchema } from '../findManyStaffingEngagement.schema';
@@ -26,12 +25,6 @@ import { AgricultureSlotFindManySchema as AgricultureSlotFindManySchema } from '
 import { CulinaryMenuItemFindManySchema as CulinaryMenuItemFindManySchema } from '../findManyCulinaryMenuItem.schema';
 import { CulinaryPrepTaskFindManySchema as CulinaryPrepTaskFindManySchema } from '../findManyCulinaryPrepTask.schema';
 import { CulinarySupplierNeedFindManySchema as CulinarySupplierNeedFindManySchema } from '../findManyCulinarySupplierNeed.schema';
-import { ArcadeMachineFindManySchema as ArcadeMachineFindManySchema } from '../findManyArcadeMachine.schema';
-import { ArcadeCardFindManySchema as ArcadeCardFindManySchema } from '../findManyArcadeCard.schema';
-import { ArcadeTopUpFindManySchema as ArcadeTopUpFindManySchema } from '../findManyArcadeTopUp.schema';
-import { ArcadePrizeFindManySchema as ArcadePrizeFindManySchema } from '../findManyArcadePrize.schema';
-import { ArcadeSessionFindManySchema as ArcadeSessionFindManySchema } from '../findManyArcadeSession.schema';
-import { ArcadeRedemptionFindManySchema as ArcadeRedemptionFindManySchema } from '../findManyArcadeRedemption.schema';
 import { ProviderGrantFindManySchema as ProviderGrantFindManySchema } from '../findManyProviderGrant.schema';
 import { GeoRouteCacheFindManySchema as GeoRouteCacheFindManySchema } from '../findManyGeoRouteCache.schema';
 import { GeoDirectionFindManySchema as GeoDirectionFindManySchema } from '../findManyGeoDirection.schema';
@@ -48,13 +41,13 @@ import { GeoViewHistoryFindManySchema as GeoViewHistoryFindManySchema } from '..
 import { ChatSessionFindManySchema as ChatSessionFindManySchema } from '../findManyChatSession.schema';
 import { AiInsightFindManySchema as AiInsightFindManySchema } from '../findManyAiInsight.schema';
 import { OllamaOperationFindManySchema as OllamaOperationFindManySchema } from '../findManyOllamaOperation.schema';
+import { ActorFindManySchema as ActorFindManySchema } from '../findManyActor.schema';
 import { UserCountOutputTypeArgsObjectSchema as UserCountOutputTypeArgsObjectSchema } from './UserCountOutputTypeArgs.schema'
 
 const makeSchema = () => z.object({
   refreshTokens: z.union([z.boolean(), z.lazy(() => RefreshTokenFindManySchema)]).optional(),
   preference: z.union([z.boolean(), z.lazy(() => UserPreferenceArgsObjectSchema)]).optional(),
   telemetry: z.union([z.boolean(), z.lazy(() => TelemetryEventFindManySchema)]).optional(),
-  bankTransactions: z.union([z.boolean(), z.lazy(() => BankTransactionFindManySchema)]).optional(),
   personas: z.union([z.boolean(), z.lazy(() => PersonaFindManySchema)]).optional(),
   assignments: z.union([z.boolean(), z.lazy(() => AssignmentFindManySchema)]).optional(),
   staffingEngagements: z.union([z.boolean(), z.lazy(() => StaffingEngagementFindManySchema)]).optional(),
@@ -77,12 +70,6 @@ const makeSchema = () => z.object({
   culinaryMenuItems: z.union([z.boolean(), z.lazy(() => CulinaryMenuItemFindManySchema)]).optional(),
   culinaryPrepTasks: z.union([z.boolean(), z.lazy(() => CulinaryPrepTaskFindManySchema)]).optional(),
   culinarySupplierNeeds: z.union([z.boolean(), z.lazy(() => CulinarySupplierNeedFindManySchema)]).optional(),
-  arcadeMachines: z.union([z.boolean(), z.lazy(() => ArcadeMachineFindManySchema)]).optional(),
-  arcadeCards: z.union([z.boolean(), z.lazy(() => ArcadeCardFindManySchema)]).optional(),
-  arcadeTopUps: z.union([z.boolean(), z.lazy(() => ArcadeTopUpFindManySchema)]).optional(),
-  arcadePrizes: z.union([z.boolean(), z.lazy(() => ArcadePrizeFindManySchema)]).optional(),
-  arcadeSessions: z.union([z.boolean(), z.lazy(() => ArcadeSessionFindManySchema)]).optional(),
-  arcadeRedemptions: z.union([z.boolean(), z.lazy(() => ArcadeRedemptionFindManySchema)]).optional(),
   providerGrants: z.union([z.boolean(), z.lazy(() => ProviderGrantFindManySchema)]).optional(),
   geoRouteCaches: z.union([z.boolean(), z.lazy(() => GeoRouteCacheFindManySchema)]).optional(),
   geoDirections: z.union([z.boolean(), z.lazy(() => GeoDirectionFindManySchema)]).optional(),
@@ -99,6 +86,7 @@ const makeSchema = () => z.object({
   chatSessions: z.union([z.boolean(), z.lazy(() => ChatSessionFindManySchema)]).optional(),
   aiInsights: z.union([z.boolean(), z.lazy(() => AiInsightFindManySchema)]).optional(),
   ollamaOperations: z.union([z.boolean(), z.lazy(() => OllamaOperationFindManySchema)]).optional(),
+  actors: z.union([z.boolean(), z.lazy(() => ActorFindManySchema)]).optional(),
   _count: z.union([z.boolean(), z.lazy(() => UserCountOutputTypeArgsObjectSchema)]).optional()
 }).strict();
 export const UserIncludeObjectSchema: z.ZodType<Prisma.UserInclude> = makeSchema() as unknown as z.ZodType<Prisma.UserInclude>;

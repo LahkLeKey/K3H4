@@ -2,6 +2,7 @@ import {LifecycleStatus, Prisma, PrismaClient} from '@prisma/client';
 import {type FastifyInstance} from 'fastify';
 
 import {parseLifecycleStatus} from '../lib/status-utils';
+import {EntityDirection, EntityKind, recordBankTransactionEntity} from '../services/bank-actor';
 
 import {buildTelemetryBase} from './telemetry';
 import {type RecordTelemetryFn} from './types';
@@ -150,6 +151,11 @@ export function registerPosRoutes(
         if (!finalStoreId)
           return reply.status(400).send(
               {error: 'storeId or storeName required'});
+        const finalStoreName = store?.name ?? storeName;
+        const ticketNote =
+            ['Point of Sale (Arcade Ticket)', finalStoreName, channel]
+                .filter((value) => !!value)
+                .join(' · ');
 
         const items = body.items || [];
         const total = new Prisma.Decimal(Number(body.total).toFixed(2));
@@ -161,39 +167,76 @@ export function registerPosRoutes(
           ticketStatus = parsedStatus;
         }
 
-        const ticket = await prisma.posTicket.create({
-          data: {
-            userId,
-            storeId: finalStoreId,
-            channel,
-            total,
-            itemsCount:
-                items.reduce<number>((sum, i) => sum + (i.quantity ?? 1), 0),
-            status: ticketStatus,
-            lineItems: {
-              create: items.map(
-                  (item) => ({
-                    name: item.name,
-                    quantity: item.quantity ?? 1,
-                    price: new Prisma.Decimal(Number(item.price).toFixed(2)),
-                  })),
+        try {
+          const {ticket} = await prisma.$transaction(async (tx) => {
+            const user = await tx.user.findUnique({
+              where: {id: userId},
+              select: {k3h4CoinBalance: true},
+            });
+            if (!user) throw new Error('User not found');
+
+            const nextBalance = user.k3h4CoinBalance.add(total);
+            const createdTicket = await tx.posTicket.create({
+              data: {
+                userId,
+                storeId: finalStoreId,
+                channel,
+                total,
+                itemsCount: items.reduce<number>(
+                    (sum, i) => sum + (i.quantity ?? 1), 0),
+                status: ticketStatus,
+                lineItems: {
+                  create: items.map((item) => ({
+                                      name: item.name,
+                                      quantity: item.quantity ?? 1,
+                                      price: new Prisma.Decimal(
+                                          Number(item.price).toFixed(2)),
+                                    })),
+                },
+              },
+              include: {lineItems: true},
+            });
+
+            await tx.user.update({
+              where: {id: userId},
+              data: {k3h4CoinBalance: nextBalance},
+            });
+
+            await recordBankTransactionEntity(tx, {
+              userId,
+              amount: total,
+              direction: EntityDirection.CREDIT,
+              kind: EntityKind.DEPOSIT,
+              balanceAfter: nextBalance,
+              targetType: 'pos_ticket',
+              targetId: createdTicket.id,
+              name: `POS ticket ${createdTicket.id}`,
+              metadata: {storeId: finalStoreId, channel, status: ticketStatus},
+              note: ticketNote,
+            });
+
+            return {ticket: createdTicket};
+          });
+
+          await recordTelemetry(request, {
+            ...buildTelemetryBase(request),
+            eventType: 'pos.ticket.create',
+            source: 'api',
+            payload: {
+              channel,
+              items: ticket.itemsCount,
+              total: ticket.total.toFixed(2)
             },
-          },
-          include: {lineItems: true},
-        });
+          });
 
-        await recordTelemetry(request, {
-          ...buildTelemetryBase(request),
-          eventType: 'pos.ticket.create',
-          source: 'api',
-          payload: {
-            channel,
-            items: ticket.itemsCount,
-            total: ticket.total.toFixed(2)
-          },
-        });
-
-        return {ticket};
+          return {ticket};
+        } catch (err) {
+          request.log.error({err}, 'pos ticket creation failed');
+          return reply.status(400).send({
+            error: err instanceof Error ? err.message :
+                                          'Unable to create ticket'
+          });
+        }
       },
   );
 

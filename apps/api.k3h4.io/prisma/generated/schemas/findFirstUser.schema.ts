@@ -22,7 +22,6 @@ export const UserFindFirstSelectSchema: z.ZodType<Prisma.UserSelect> = z.object(
     refreshTokens: z.boolean().optional(),
     preference: z.boolean().optional(),
     telemetry: z.boolean().optional(),
-    bankTransactions: z.boolean().optional(),
     personas: z.boolean().optional(),
     assignments: z.boolean().optional(),
     staffingEngagements: z.boolean().optional(),
@@ -45,12 +44,6 @@ export const UserFindFirstSelectSchema: z.ZodType<Prisma.UserSelect> = z.object(
     culinaryMenuItems: z.boolean().optional(),
     culinaryPrepTasks: z.boolean().optional(),
     culinarySupplierNeeds: z.boolean().optional(),
-    arcadeMachines: z.boolean().optional(),
-    arcadeCards: z.boolean().optional(),
-    arcadeTopUps: z.boolean().optional(),
-    arcadePrizes: z.boolean().optional(),
-    arcadeSessions: z.boolean().optional(),
-    arcadeRedemptions: z.boolean().optional(),
     providerGrants: z.boolean().optional(),
     geoRouteCaches: z.boolean().optional(),
     geoDirections: z.boolean().optional(),
@@ -67,6 +60,7 @@ export const UserFindFirstSelectSchema: z.ZodType<Prisma.UserSelect> = z.object(
     chatSessions: z.boolean().optional(),
     aiInsights: z.boolean().optional(),
     ollamaOperations: z.boolean().optional(),
+    actors: z.boolean().optional(),
     _count: z.boolean().optional()
   }).strict() as unknown as z.ZodType<Prisma.UserSelect>;
 
@@ -83,7 +77,6 @@ export const UserFindFirstSelectZodSchema = z.object({
     refreshTokens: z.boolean().optional(),
     preference: z.boolean().optional(),
     telemetry: z.boolean().optional(),
-    bankTransactions: z.boolean().optional(),
     personas: z.boolean().optional(),
     assignments: z.boolean().optional(),
     staffingEngagements: z.boolean().optional(),
@@ -106,12 +99,6 @@ export const UserFindFirstSelectZodSchema = z.object({
     culinaryMenuItems: z.boolean().optional(),
     culinaryPrepTasks: z.boolean().optional(),
     culinarySupplierNeeds: z.boolean().optional(),
-    arcadeMachines: z.boolean().optional(),
-    arcadeCards: z.boolean().optional(),
-    arcadeTopUps: z.boolean().optional(),
-    arcadePrizes: z.boolean().optional(),
-    arcadeSessions: z.boolean().optional(),
-    arcadeRedemptions: z.boolean().optional(),
     providerGrants: z.boolean().optional(),
     geoRouteCaches: z.boolean().optional(),
     geoDirections: z.boolean().optional(),
@@ -128,6 +115,7 @@ export const UserFindFirstSelectZodSchema = z.object({
     chatSessions: z.boolean().optional(),
     aiInsights: z.boolean().optional(),
     ollamaOperations: z.boolean().optional(),
+    actors: z.boolean().optional(),
     _count: z.boolean().optional()
   }).strict();
 

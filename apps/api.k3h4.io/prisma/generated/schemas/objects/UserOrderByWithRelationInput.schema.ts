@@ -5,7 +5,6 @@ import { SortOrderInputObjectSchema as SortOrderInputObjectSchema } from './Sort
 import { RefreshTokenOrderByRelationAggregateInputObjectSchema as RefreshTokenOrderByRelationAggregateInputObjectSchema } from './RefreshTokenOrderByRelationAggregateInput.schema';
 import { UserPreferenceOrderByWithRelationInputObjectSchema as UserPreferenceOrderByWithRelationInputObjectSchema } from './UserPreferenceOrderByWithRelationInput.schema';
 import { TelemetryEventOrderByRelationAggregateInputObjectSchema as TelemetryEventOrderByRelationAggregateInputObjectSchema } from './TelemetryEventOrderByRelationAggregateInput.schema';
-import { BankTransactionOrderByRelationAggregateInputObjectSchema as BankTransactionOrderByRelationAggregateInputObjectSchema } from './BankTransactionOrderByRelationAggregateInput.schema';
 import { PersonaOrderByRelationAggregateInputObjectSchema as PersonaOrderByRelationAggregateInputObjectSchema } from './PersonaOrderByRelationAggregateInput.schema';
 import { AssignmentOrderByRelationAggregateInputObjectSchema as AssignmentOrderByRelationAggregateInputObjectSchema } from './AssignmentOrderByRelationAggregateInput.schema';
 import { StaffingEngagementOrderByRelationAggregateInputObjectSchema as StaffingEngagementOrderByRelationAggregateInputObjectSchema } from './StaffingEngagementOrderByRelationAggregateInput.schema';
@@ -28,12 +27,6 @@ import { AgricultureSlotOrderByRelationAggregateInputObjectSchema as Agriculture
 import { CulinaryMenuItemOrderByRelationAggregateInputObjectSchema as CulinaryMenuItemOrderByRelationAggregateInputObjectSchema } from './CulinaryMenuItemOrderByRelationAggregateInput.schema';
 import { CulinaryPrepTaskOrderByRelationAggregateInputObjectSchema as CulinaryPrepTaskOrderByRelationAggregateInputObjectSchema } from './CulinaryPrepTaskOrderByRelationAggregateInput.schema';
 import { CulinarySupplierNeedOrderByRelationAggregateInputObjectSchema as CulinarySupplierNeedOrderByRelationAggregateInputObjectSchema } from './CulinarySupplierNeedOrderByRelationAggregateInput.schema';
-import { ArcadeMachineOrderByRelationAggregateInputObjectSchema as ArcadeMachineOrderByRelationAggregateInputObjectSchema } from './ArcadeMachineOrderByRelationAggregateInput.schema';
-import { ArcadeCardOrderByRelationAggregateInputObjectSchema as ArcadeCardOrderByRelationAggregateInputObjectSchema } from './ArcadeCardOrderByRelationAggregateInput.schema';
-import { ArcadeTopUpOrderByRelationAggregateInputObjectSchema as ArcadeTopUpOrderByRelationAggregateInputObjectSchema } from './ArcadeTopUpOrderByRelationAggregateInput.schema';
-import { ArcadePrizeOrderByRelationAggregateInputObjectSchema as ArcadePrizeOrderByRelationAggregateInputObjectSchema } from './ArcadePrizeOrderByRelationAggregateInput.schema';
-import { ArcadeSessionOrderByRelationAggregateInputObjectSchema as ArcadeSessionOrderByRelationAggregateInputObjectSchema } from './ArcadeSessionOrderByRelationAggregateInput.schema';
-import { ArcadeRedemptionOrderByRelationAggregateInputObjectSchema as ArcadeRedemptionOrderByRelationAggregateInputObjectSchema } from './ArcadeRedemptionOrderByRelationAggregateInput.schema';
 import { ProviderGrantOrderByRelationAggregateInputObjectSchema as ProviderGrantOrderByRelationAggregateInputObjectSchema } from './ProviderGrantOrderByRelationAggregateInput.schema';
 import { GeoRouteCacheOrderByRelationAggregateInputObjectSchema as GeoRouteCacheOrderByRelationAggregateInputObjectSchema } from './GeoRouteCacheOrderByRelationAggregateInput.schema';
 import { GeoDirectionOrderByRelationAggregateInputObjectSchema as GeoDirectionOrderByRelationAggregateInputObjectSchema } from './GeoDirectionOrderByRelationAggregateInput.schema';
@@ -49,7 +42,8 @@ import { PersonaCompatibilityOrderByRelationAggregateInputObjectSchema as Person
 import { GeoViewHistoryOrderByRelationAggregateInputObjectSchema as GeoViewHistoryOrderByRelationAggregateInputObjectSchema } from './GeoViewHistoryOrderByRelationAggregateInput.schema';
 import { ChatSessionOrderByRelationAggregateInputObjectSchema as ChatSessionOrderByRelationAggregateInputObjectSchema } from './ChatSessionOrderByRelationAggregateInput.schema';
 import { AiInsightOrderByRelationAggregateInputObjectSchema as AiInsightOrderByRelationAggregateInputObjectSchema } from './AiInsightOrderByRelationAggregateInput.schema';
-import { OllamaOperationOrderByRelationAggregateInputObjectSchema as OllamaOperationOrderByRelationAggregateInputObjectSchema } from './OllamaOperationOrderByRelationAggregateInput.schema'
+import { OllamaOperationOrderByRelationAggregateInputObjectSchema as OllamaOperationOrderByRelationAggregateInputObjectSchema } from './OllamaOperationOrderByRelationAggregateInput.schema';
+import { ActorOrderByRelationAggregateInputObjectSchema as ActorOrderByRelationAggregateInputObjectSchema } from './ActorOrderByRelationAggregateInput.schema'
 
 const makeSchema = () => z.object({
   id: SortOrderSchema.optional(),
@@ -64,7 +58,6 @@ const makeSchema = () => z.object({
   refreshTokens: z.lazy(() => RefreshTokenOrderByRelationAggregateInputObjectSchema).optional(),
   preference: z.lazy(() => UserPreferenceOrderByWithRelationInputObjectSchema).optional(),
   telemetry: z.lazy(() => TelemetryEventOrderByRelationAggregateInputObjectSchema).optional(),
-  bankTransactions: z.lazy(() => BankTransactionOrderByRelationAggregateInputObjectSchema).optional(),
   personas: z.lazy(() => PersonaOrderByRelationAggregateInputObjectSchema).optional(),
   assignments: z.lazy(() => AssignmentOrderByRelationAggregateInputObjectSchema).optional(),
   staffingEngagements: z.lazy(() => StaffingEngagementOrderByRelationAggregateInputObjectSchema).optional(),
@@ -87,12 +80,6 @@ const makeSchema = () => z.object({
   culinaryMenuItems: z.lazy(() => CulinaryMenuItemOrderByRelationAggregateInputObjectSchema).optional(),
   culinaryPrepTasks: z.lazy(() => CulinaryPrepTaskOrderByRelationAggregateInputObjectSchema).optional(),
   culinarySupplierNeeds: z.lazy(() => CulinarySupplierNeedOrderByRelationAggregateInputObjectSchema).optional(),
-  arcadeMachines: z.lazy(() => ArcadeMachineOrderByRelationAggregateInputObjectSchema).optional(),
-  arcadeCards: z.lazy(() => ArcadeCardOrderByRelationAggregateInputObjectSchema).optional(),
-  arcadeTopUps: z.lazy(() => ArcadeTopUpOrderByRelationAggregateInputObjectSchema).optional(),
-  arcadePrizes: z.lazy(() => ArcadePrizeOrderByRelationAggregateInputObjectSchema).optional(),
-  arcadeSessions: z.lazy(() => ArcadeSessionOrderByRelationAggregateInputObjectSchema).optional(),
-  arcadeRedemptions: z.lazy(() => ArcadeRedemptionOrderByRelationAggregateInputObjectSchema).optional(),
   providerGrants: z.lazy(() => ProviderGrantOrderByRelationAggregateInputObjectSchema).optional(),
   geoRouteCaches: z.lazy(() => GeoRouteCacheOrderByRelationAggregateInputObjectSchema).optional(),
   geoDirections: z.lazy(() => GeoDirectionOrderByRelationAggregateInputObjectSchema).optional(),
@@ -108,7 +95,8 @@ const makeSchema = () => z.object({
   geoViewHistories: z.lazy(() => GeoViewHistoryOrderByRelationAggregateInputObjectSchema).optional(),
   chatSessions: z.lazy(() => ChatSessionOrderByRelationAggregateInputObjectSchema).optional(),
   aiInsights: z.lazy(() => AiInsightOrderByRelationAggregateInputObjectSchema).optional(),
-  ollamaOperations: z.lazy(() => OllamaOperationOrderByRelationAggregateInputObjectSchema).optional()
+  ollamaOperations: z.lazy(() => OllamaOperationOrderByRelationAggregateInputObjectSchema).optional(),
+  actors: z.lazy(() => ActorOrderByRelationAggregateInputObjectSchema).optional()
 }).strict();
 export const UserOrderByWithRelationInputObjectSchema: z.ZodType<Prisma.UserOrderByWithRelationInput> = makeSchema() as unknown as z.ZodType<Prisma.UserOrderByWithRelationInput>;
 export const UserOrderByWithRelationInputObjectZodSchema = makeSchema();

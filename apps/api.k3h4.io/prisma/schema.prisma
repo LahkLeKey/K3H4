@@ -23,17 +23,40 @@ enum ChatRole {
 }
 
 enum LifecycleStatus {
-  ACTIVE     @map("active")
-  INACTIVE   @map("inactive")
-  OPEN       @map("open")
-  CLOSED     @map("closed")
-  PENDING    @map("pending")
-  PLANNING   @map("planning")
-  COMPLETED  @map("completed")
-  STORED     @map("stored")
-  IDLE       @map("idle")
-  SCHEDULED  @map("scheduled")
-  UNFILLED   @map("unfilled")
+  ACTIVE    @map("active")
+  INACTIVE  @map("inactive")
+  OPEN      @map("open")
+  CLOSED    @map("closed")
+  PENDING   @map("pending")
+  PLANNING  @map("planning")
+  COMPLETED @map("completed")
+  STORED    @map("stored")
+  IDLE      @map("idle")
+  SCHEDULED @map("scheduled")
+  UNFILLED  @map("unfilled")
+}
+
+enum ActorType {
+  BANK_ACCOUNT       @map("bank-account")
+  ARCADE_MACHINE     @map("arcade-machine")
+  ARCADE_PLAYER_CARD @map("arcade-player-card")
+  ARCADE_PRIZE       @map("arcade-prize")
+}
+
+enum EntityDirection {
+  CREDIT @map("credit")
+  DEBIT  @map("debit")
+}
+
+enum EntityKind {
+  DEPOSIT                 @map("deposit")
+  WITHDRAWAL              @map("withdrawal")
+  SET                     @map("set")
+  ASSIGNMENT_PAYOUT       @map("assignment_payout")
+  FREIGHT_PAYMENT         @map("freight_payment")
+  ARCADE_TOPUP            @map("arcade_topup")
+  ARCADE_SESSION          @map("arcade_session")
+  ARCADE_PRIZE_REDEMPTION @map("arcade_prize_redemption")
 }
 
 enum EngagementPriority {
@@ -71,63 +94,57 @@ model Building {
 }
 
 model User {
-  id             String          @id @default(cuid())
-  email          String          @unique
-  provider       String
-  providerId     String
-  k3h4CoinBalance Decimal         @default("25000") @db.Decimal(18, 2) // sandbox-only play balance
-  displayName    String?
-  avatarUrl      String?
-  createdAt      DateTime        @default(now())
-  updatedAt      DateTime        @updatedAt
-  refreshTokens  RefreshToken[]
-  preference     UserPreference?
-  telemetry      TelemetryEvent[]
-  bankTransactions BankTransaction[]
-  personas       Persona[]
-  assignments    Assignment[]
-  staffingEngagements StaffingEngagement[]
-  staffingRoles      StaffingRole[]
-  staffingCandidates StaffingCandidate[]
-  staffingShifts     StaffingShift[]
-  staffingPlacements StaffingPlacement[]
-  freightLoads   FreightLoad[]
-  warehouseItems WarehouseItem[]
-  posStores      PosStore[]
-  posTickets     PosTicket[]
-  agriculturePlots AgriculturePlot[]
-  agricultureTasks AgricultureTask[]
-  agricultureShipments AgricultureShipment[]
-  agricultureCropPlans AgricultureCropPlan[]
-  agriculturePlotConditions AgriculturePlotCondition[]
-  agricultureInventories AgricultureInventory[]
+  id                            String                         @id @default(cuid())
+  email                         String                         @unique
+  provider                      String
+  providerId                    String
+  k3h4CoinBalance               Decimal                        @default("25000") @db.Decimal(18, 2) // sandbox-only play balance
+  displayName                   String?
+  avatarUrl                     String?
+  createdAt                     DateTime                       @default(now())
+  updatedAt                     DateTime                       @updatedAt
+  refreshTokens                 RefreshToken[]
+  preference                    UserPreference?
+  telemetry                     TelemetryEvent[]
+  personas                      Persona[]
+  assignments                   Assignment[]
+  staffingEngagements           StaffingEngagement[]
+  staffingRoles                 StaffingRole[]
+  staffingCandidates            StaffingCandidate[]
+  staffingShifts                StaffingShift[]
+  staffingPlacements            StaffingPlacement[]
+  freightLoads                  FreightLoad[]
+  warehouseItems                WarehouseItem[]
+  posStores                     PosStore[]
+  posTickets                    PosTicket[]
+  agriculturePlots              AgriculturePlot[]
+  agricultureTasks              AgricultureTask[]
+  agricultureShipments          AgricultureShipment[]
+  agricultureCropPlans          AgricultureCropPlan[]
+  agriculturePlotConditions     AgriculturePlotCondition[]
+  agricultureInventories        AgricultureInventory[]
   agricultureInventoryMovements AgricultureInventoryMovement[]
-  agricultureSlots AgricultureSlot[]
-  culinaryMenuItems CulinaryMenuItem[]
-  culinaryPrepTasks CulinaryPrepTask[]
-  culinarySupplierNeeds CulinarySupplierNeed[]
-  arcadeMachines ArcadeMachine[]
-  arcadeCards    ArcadeCard[]
-  arcadeTopUps   ArcadeTopUp[]
-  arcadePrizes   ArcadePrize[]
-  arcadeSessions ArcadeSession[]
-  arcadeRedemptions ArcadeRedemption[]
-  providerGrants ProviderGrant[]
-  geoRouteCaches GeoRouteCache[]
-  geoDirections  GeoDirection[]
-  geoPoiCaches   GeoPoiCache[]
-  geoQueryCaches GeoQueryCache[]
-  maptilerQueries MaptilerQuery[]
-  maptilerCacheEntries MaptilerCacheEntry[]
-  osrmCacheEntries OsrmCacheEntry[]
-  geoStatusLogs GeoStatusLog[]
-  geoDemTileCaches GeoDemTileCache[]
-  personaAttributes PersonaAttribute[]
-  personaCompatibilities PersonaCompatibility[]
-  geoViewHistories GeoViewHistory[]
-  chatSessions ChatSession[]
-  aiInsights     AiInsight[]
-  ollamaOperations OllamaOperation[]
+  agricultureSlots              AgricultureSlot[]
+  culinaryMenuItems             CulinaryMenuItem[]
+  culinaryPrepTasks             CulinaryPrepTask[]
+  culinarySupplierNeeds         CulinarySupplierNeed[]
+  providerGrants                ProviderGrant[]
+  geoRouteCaches                GeoRouteCache[]
+  geoDirections                 GeoDirection[]
+  geoPoiCaches                  GeoPoiCache[]
+  geoQueryCaches                GeoQueryCache[]
+  maptilerQueries               MaptilerQuery[]
+  maptilerCacheEntries          MaptilerCacheEntry[]
+  osrmCacheEntries              OsrmCacheEntry[]
+  geoStatusLogs                 GeoStatusLog[]
+  geoDemTileCaches              GeoDemTileCache[]
+  personaAttributes             PersonaAttribute[]
+  personaCompatibilities        PersonaCompatibility[]
+  geoViewHistories              GeoViewHistory[]
+  chatSessions                  ChatSession[]
+  aiInsights                    AiInsight[]
+  ollamaOperations              OllamaOperation[]
+  actors                        Actor[]
 
   @@unique([provider, providerId])
 }
@@ -162,14 +179,14 @@ model Persona {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  assignments Assignment[]
-  assignmentPayouts AssignmentPayout[]
-  staffingCandidates StaffingCandidate[] @relation("StaffingCandidatePersona")
-  staffingShiftsAssigned StaffingShift[] @relation("StaffingShiftAssignedPersona")
-  staffingPlacements StaffingPlacement[] @relation("StaffingPlacementPersona")
-  attributes PersonaAttribute[]
-  compatibilitySources PersonaCompatibility[] @relation("PersonaCompatibilitySource")
-  compatibilityTargets PersonaCompatibility[] @relation("PersonaCompatibilityTarget")
+  assignments            Assignment[]
+  assignmentPayouts      AssignmentPayout[]
+  staffingCandidates     StaffingCandidate[]    @relation("StaffingCandidatePersona")
+  staffingShiftsAssigned StaffingShift[]        @relation("StaffingShiftAssignedPersona")
+  staffingPlacements     StaffingPlacement[]    @relation("StaffingPlacementPersona")
+  attributes             PersonaAttribute[]
+  compatibilitySources   PersonaCompatibility[] @relation("PersonaCompatibilitySource")
+  compatibilityTargets   PersonaCompatibility[] @relation("PersonaCompatibilityTarget")
 
   @@index([userId, alias])
 }
@@ -186,25 +203,25 @@ model PersonaAttribute {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  @@index([userId, category])
   @@unique([personaId, category, value])
+  @@index([userId, category])
 }
 
 model PersonaCompatibility {
-  id                 String   @id @default(cuid())
-  userId             String
-  user               User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  sourceId           String
-  source             Persona  @relation("PersonaCompatibilitySource", fields: [sourceId], references: [id], onDelete: Cascade)
-  targetId           String
-  target             Persona  @relation("PersonaCompatibilityTarget", fields: [targetId], references: [id], onDelete: Cascade)
-  jaccardScore       Float
-  intersectionCount  Int
-  unionCount         Int
-  overlappingTokens  Json?
-  computedAt         DateTime @default(now())
-  rationale          String?
-  status             LifecycleStatus @default(ACTIVE)
+  id                String          @id @default(cuid())
+  userId            String
+  user              User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  sourceId          String
+  source            Persona         @relation("PersonaCompatibilitySource", fields: [sourceId], references: [id], onDelete: Cascade)
+  targetId          String
+  target            Persona         @relation("PersonaCompatibilityTarget", fields: [targetId], references: [id], onDelete: Cascade)
+  jaccardScore      Float
+  intersectionCount Int
+  unionCount        Int
+  overlappingTokens Json?
+  computedAt        DateTime        @default(now())
+  rationale         String?
+  status            LifecycleStatus @default(ACTIVE)
 
   @@unique([userId, sourceId, targetId])
   @@index([userId, computedAt])
@@ -220,53 +237,53 @@ model RefreshToken {
 }
 
 model ProviderGrant {
-  id         String   @id @default(cuid())
-  userId     String
-  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  provider   String
-  providerId String
+  id          String    @id @default(cuid())
+  userId      String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  provider    String
+  providerId  String
   accessToken String
-  scope      String?
-  expiresAt  DateTime?
-  createdAt  DateTime @default(now())
+  scope       String?
+  expiresAt   DateTime?
+  createdAt   DateTime  @default(now())
 
   @@unique([provider, providerId])
 }
 
 model GeoRouteCache {
-  id               String   @id @default(cuid())
-  userId           String?
-  user             User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
-  provider         String   @default("osrm")
-  signature        String   @unique
-  originLat        Decimal  @db.Decimal(11, 6)
-  originLng        Decimal  @db.Decimal(11, 6)
-  destinationLat   Decimal  @db.Decimal(11, 6)
-  destinationLng   Decimal  @db.Decimal(11, 6)
-  distanceKm       Decimal  @db.Decimal(14, 4)
-  durationMinutes  Int?
-  geojson          Json?
-  expiresAt        DateTime
-  createdAt        DateTime @default(now())
-  directions       GeoDirection[] @relation("GeoDirectionsToRouteCache")
+  id              String         @id @default(cuid())
+  userId          String?
+  user            User?          @relation(fields: [userId], references: [id], onDelete: SetNull)
+  provider        String         @default("osrm")
+  signature       String         @unique
+  originLat       Decimal        @db.Decimal(11, 6)
+  originLng       Decimal        @db.Decimal(11, 6)
+  destinationLat  Decimal        @db.Decimal(11, 6)
+  destinationLng  Decimal        @db.Decimal(11, 6)
+  distanceKm      Decimal        @db.Decimal(14, 4)
+  durationMinutes Int?
+  geojson         Json?
+  expiresAt       DateTime
+  createdAt       DateTime       @default(now())
+  directions      GeoDirection[] @relation("GeoDirectionsToRouteCache")
 
   @@index([expiresAt])
 }
 
 // Aggregated driving directives sourced from OSRM, Nominatim, Overpass, etc.
 model GeoDirection {
-  id              String   @id @default(cuid())
+  id              String         @id @default(cuid())
   userId          String?
-  user            User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  user            User?          @relation(fields: [userId], references: [id], onDelete: SetNull)
   provider        String
   profile         String?
-  signature       String   @unique
-  inputPoints     Json?    // ordered lat/lng stops that powered the request
-  originLat       Decimal? @db.Decimal(11, 6)
-  originLng       Decimal? @db.Decimal(11, 6)
-  destinationLat  Decimal? @db.Decimal(11, 6)
-  destinationLng  Decimal? @db.Decimal(11, 6)
-  distanceMeters  Decimal? @db.Decimal(14, 3)
+  signature       String         @unique
+  inputPoints     Json? // ordered lat/lng stops that powered the request
+  originLat       Decimal?       @db.Decimal(11, 6)
+  originLng       Decimal?       @db.Decimal(11, 6)
+  destinationLat  Decimal?       @db.Decimal(11, 6)
+  destinationLng  Decimal?       @db.Decimal(11, 6)
+  distanceMeters  Decimal?       @db.Decimal(14, 3)
   durationSeconds Int?
   geometry        Json?
   instructions    Json?
@@ -276,8 +293,8 @@ model GeoDirection {
   expiresAt       DateTime?
   routeCacheId    String?
   routeCache      GeoRouteCache? @relation("GeoDirectionsToRouteCache", fields: [routeCacheId], references: [id], onDelete: SetNull)
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
 
   stops    GeoDirectionStop[]
   segments GeoDirectionSegment[]
@@ -286,71 +303,71 @@ model GeoDirection {
 }
 
 model GeoDirectionStop {
-  id          String   @id @default(cuid())
+  id          String       @id @default(cuid())
   directionId String
   direction   GeoDirection @relation(fields: [directionId], references: [id], onDelete: Cascade)
   sequence    Int
-  latitude    Decimal  @db.Decimal(11, 6)
-  longitude   Decimal  @db.Decimal(11, 6)
+  latitude    Decimal      @db.Decimal(11, 6)
+  longitude   Decimal      @db.Decimal(11, 6)
   label       String?
   address     String?
-  source      String?  // e.g., nominatim, overpass, osrm
+  source      String? // e.g., nominatim, overpass, osrm
   osmId       BigInt?
   metadata    Json?
-  createdAt   DateTime @default(now())
+  createdAt   DateTime     @default(now())
 
   @@index([directionId, sequence])
 }
 
 model GeoDirectionSegment {
-  id               String   @id @default(cuid())
+  id               String       @id @default(cuid())
   directionId      String
   direction        GeoDirection @relation(fields: [directionId], references: [id], onDelete: Cascade)
   sequence         Int
   instruction      String?
   maneuverType     String?
   maneuverModifier String?
-  distanceMeters   Decimal  @db.Decimal(14, 3)
+  distanceMeters   Decimal      @db.Decimal(14, 3)
   durationSeconds  Int?
-  startLat         Decimal  @db.Decimal(11, 6)
-  startLng         Decimal  @db.Decimal(11, 6)
-  endLat           Decimal  @db.Decimal(11, 6)
-  endLng           Decimal  @db.Decimal(11, 6)
+  startLat         Decimal      @db.Decimal(11, 6)
+  startLng         Decimal      @db.Decimal(11, 6)
+  endLat           Decimal      @db.Decimal(11, 6)
+  endLng           Decimal      @db.Decimal(11, 6)
   geometry         Json?
   metadata         Json?
-  createdAt        DateTime @default(now())
+  createdAt        DateTime     @default(now())
 
   @@index([directionId, sequence])
 }
 
 model GeoPoiCache {
-  id          String   @id @default(cuid())
-  userId      String?
-  user        User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
-  signature   String   @unique
-  centerLat   Decimal  @db.Decimal(11, 6)
-  centerLng   Decimal  @db.Decimal(11, 6)
-  radiusM     Int
-  kinds       String
-  pois        Json
-  count       Int
-  expiresAt   DateTime
-  createdAt   DateTime @default(now())
+  id        String   @id @default(cuid())
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  signature String   @unique
+  centerLat Decimal  @db.Decimal(11, 6)
+  centerLng Decimal  @db.Decimal(11, 6)
+  radiusM   Int
+  kinds     String
+  pois      Json
+  count     Int
+  expiresAt DateTime
+  createdAt DateTime @default(now())
 
   @@index([expiresAt])
 }
 
 model GeoQueryCache {
-  id         String   @id @default(cuid())
-  userId     String?
-  user       User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
-  type       String
-  signature  String   @unique
-  params     Json
-  payload    Json
-  count      Int?
-  expiresAt  DateTime
-  createdAt  DateTime @default(now())
+  id        String   @id @default(cuid())
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  type      String
+  signature String   @unique
+  params    Json
+  payload   Json
+  count     Int?
+  expiresAt DateTime
+  createdAt DateTime @default(now())
 
   @@index([type])
   @@index([expiresAt])
@@ -358,20 +375,20 @@ model GeoQueryCache {
 
 // Tracks user map view tiles and the POIs seen for reuse/offline
 model GeoViewHistory {
-  id            String   @id @default(cuid())
+  id            String    @id @default(cuid())
   userId        String
-  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   signature     String
   zoomBand      Int
-  bboxMinLat    Decimal  @db.Decimal(11, 6)
-  bboxMinLng    Decimal  @db.Decimal(11, 6)
-  bboxMaxLat    Decimal  @db.Decimal(11, 6)
-  bboxMaxLng    Decimal  @db.Decimal(11, 6)
+  bboxMinLat    Decimal   @db.Decimal(11, 6)
+  bboxMinLng    Decimal   @db.Decimal(11, 6)
+  bboxMaxLat    Decimal   @db.Decimal(11, 6)
+  bboxMaxLng    Decimal   @db.Decimal(11, 6)
   lastPoiIds    Json?
   lastPoiCount  Int?
-  firstViewedAt DateTime @default(now())
-  lastViewedAt  DateTime @default(now())
-  viewCount     Int      @default(1)
+  firstViewedAt DateTime  @default(now())
+  lastViewedAt  DateTime  @default(now())
+  viewCount     Int       @default(1)
   staleAfter    DateTime?
 
   @@unique([userId, signature], name: "geo_view_user_signature")
@@ -379,16 +396,16 @@ model GeoViewHistory {
 }
 
 model GeoStatusLog {
-  id         String   @id @default(cuid())
-  userId     String?
-  user       User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
-  status     String
-  poiStatus  String?
-  centerLat  Decimal? @db.Decimal(11, 6)
-  centerLng  Decimal? @db.Decimal(11, 6)
-  error      String?
-  userAgent  String?
-  createdAt  DateTime @default(now())
+  id        String   @id @default(cuid())
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  status    String
+  poiStatus String?
+  centerLat Decimal? @db.Decimal(11, 6)
+  centerLng Decimal? @db.Decimal(11, 6)
+  error     String?
+  userAgent String?
+  createdAt DateTime @default(now())
 
   @@index([createdAt])
 }
@@ -418,26 +435,26 @@ model Poi {
 
 // DEM / terrain tile cache for reuse per user
 model GeoDemTileCache {
-  id            String   @id @default(cuid())
-  userId        String?
-  user          User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
-  provider      String   @default("maptiler")
-  source        String?  // dataset or variant name
-  signature     String   @unique // provider:z/x/y:format
-  z             Int
-  x             Int
-  y             Int
-  format        String   @default("png")
-  url           String?
-  data          Bytes?
-  byteLength    Int?
-  etag          String?
-  cacheControl  String?
-  expiresAt     DateTime?
-  fetchedAt     DateTime @default(now())
-  lastAccessed  DateTime @default(now())
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id           String    @id @default(cuid())
+  userId       String?
+  user         User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
+  provider     String    @default("maptiler")
+  source       String? // dataset or variant name
+  signature    String    @unique // provider:z/x/y:format
+  z            Int
+  x            Int
+  y            Int
+  format       String    @default("png")
+  url          String?
+  data         Bytes?
+  byteLength   Int?
+  etag         String?
+  cacheControl String?
+  expiresAt    DateTime?
+  fetchedAt    DateTime  @default(now())
+  lastAccessed DateTime  @default(now())
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
 
   @@index([provider, z, x, y])
   @@index([expiresAt])
@@ -462,28 +479,28 @@ model MaptilerQuery {
 }
 
 model MaptilerCacheEntry {
-  id           String   @id @default(cuid())
+  id           String         @id @default(cuid())
   userId       String?
-  user         User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  user         User?          @relation(fields: [userId], references: [id], onDelete: SetNull)
   queryId      String?
   query        MaptilerQuery? @relation(fields: [queryId], references: [id], onDelete: SetNull)
   kind         String
   path         String
   params       Json?
   paramsHash   String
-  signature    String   @unique
-  method       String   @default("GET")
-  responseType String   @default("json")
+  signature    String         @unique
+  method       String         @default("GET")
+  responseType String         @default("json")
   url          String
   statusCode   Int?
   payload      Json?
   data         Bytes?
   contentType  String?
   cacheControl String?
-  fetchedAt    DateTime @default(now())
+  fetchedAt    DateTime       @default(now())
   expiresAt    DateTime?
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
 
   @@index([kind, path])
   @@index([expiresAt])
@@ -491,22 +508,22 @@ model MaptilerCacheEntry {
 
 // OSRM upstream cache entries (1:1 pass-through)
 model OsrmCacheEntry {
-  id          String   @id @default(cuid())
+  id          String    @id @default(cuid())
   userId      String?
-  user        User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  user        User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
   service     String
   profile     String
   coordinates String?
   params      Json?
   paramsHash  String
-  signature   String   @unique
+  signature   String    @unique
   url         String
   statusCode  Int?
   payload     Json?
-  fetchedAt   DateTime @default(now())
+  fetchedAt   DateTime  @default(now())
   expiresAt   DateTime?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
 
   @@index([service, profile])
   @@index([expiresAt])
@@ -514,7 +531,7 @@ model OsrmCacheEntry {
 
 // Composite POI enrichment cache (assembled response by include hash)
 model PoiEnrichmentCache {
-  id          String   // format: "node/123456"
+  id          String // format: "node/123456"
   includeHash String
   payload     Json
   fetchedAt   DateTime @default(now())
@@ -525,47 +542,47 @@ model PoiEnrichmentCache {
 }
 
 model UserPreference {
-  id             String   @id @default(cuid())
-  userId         String   @unique
-  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  theme          String   @default("system")
-  locale         String   @default("en-US")
-  timezone       String   @default("UTC")
-  marketingOptIn Boolean  @default(false)
-  note           String?
-  lastCenterLat  Decimal? @db.Decimal(11, 6)
-  lastCenterLng  Decimal? @db.Decimal(11, 6)
-  lastZoom       Float?
-  lastBearing    Float?
-  lastPitch      Float?
-  lastPoiSignature String?
-  lastPoiKinds     String?
-  lastPoiRadiusM   Int?
-  lastPoiCount     Int?
-  lastPoiFetchedAt DateTime?
-  maptilerStyle    String  @default("streets-v2")
-  maptilerLanguage String  @default("en")
-  maptilerLastPath String?
-  maptilerLastParams Json?
-  maptilerLastKind String?
+  id                    String    @id @default(cuid())
+  userId                String    @unique
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  theme                 String    @default("system")
+  locale                String    @default("en-US")
+  timezone              String    @default("UTC")
+  marketingOptIn        Boolean   @default(false)
+  note                  String?
+  lastCenterLat         Decimal?  @db.Decimal(11, 6)
+  lastCenterLng         Decimal?  @db.Decimal(11, 6)
+  lastZoom              Float?
+  lastBearing           Float?
+  lastPitch             Float?
+  lastPoiSignature      String?
+  lastPoiKinds          String?
+  lastPoiRadiusM        Int?
+  lastPoiCount          Int?
+  lastPoiFetchedAt      DateTime?
+  maptilerStyle         String    @default("streets-v2")
+  maptilerLanguage      String    @default("en")
+  maptilerLastPath      String?
+  maptilerLastParams    Json?
+  maptilerLastKind      String?
   maptilerLastSignature String?
   maptilerLastFetchedAt DateTime?
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
 }
 
 model TelemetryEvent {
-  id        String   @id @default(cuid())
-  userId    String?
-  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
-  sessionId String
-  eventType String
-  source    String
-  path      String?
-  payload   Json?
+  id         String   @id @default(cuid())
+  userId     String?
+  user       User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  sessionId  String
+  eventType  String
+  source     String
+  path       String?
+  payload    Json?
   durationMs Int?
-  error     Boolean  @default(false)
-  createdAt DateTime @default(now())
+  error      Boolean  @default(false)
+  createdAt  DateTime @default(now())
 
   @@index([userId])
   @@index([sessionId])
@@ -573,52 +590,38 @@ model TelemetryEvent {
   @@index([createdAt, id])
 }
 
-model BankTransaction {
-  id           String   @id @default(cuid())
-  userId       String
-  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  amount       Decimal  @db.Decimal(18, 2)
-  kind         String
-  direction    String
-  note         String?
-  balanceAfter Decimal  @db.Decimal(18, 2)
-  createdAt    DateTime @default(now())
-
-  @@index([userId, createdAt])
-}
-
 model Assignment {
-  id           String    @id @default(cuid())
-  userId       String
-  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  personaId    String
-  persona      Persona   @relation(fields: [personaId], references: [id], onDelete: Cascade)
-  title        String
-  hourlyRate   Decimal   @db.Decimal(18, 2)
-  status       LifecycleStatus @default(OPEN)
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
-  timecards    AssignmentTimecard[]
-  payouts      AssignmentPayout[]
+  id         String               @id @default(cuid())
+  userId     String
+  user       User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  personaId  String
+  persona    Persona              @relation(fields: [personaId], references: [id], onDelete: Cascade)
+  title      String
+  hourlyRate Decimal              @db.Decimal(18, 2)
+  status     LifecycleStatus      @default(OPEN)
+  createdAt  DateTime             @default(now())
+  updatedAt  DateTime             @updatedAt
+  timecards  AssignmentTimecard[]
+  payouts    AssignmentPayout[]
 
   @@index([userId, personaId])
 }
 
 model StaffingEngagement {
-  id        String   @id @default(cuid())
+  id        String             @id @default(cuid())
   userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user      User               @relation(fields: [userId], references: [id], onDelete: Cascade)
   name      String
   client    String?
   priority  EngagementPriority @default(MEDIUM)
-  status    LifecycleStatus     @default(ACTIVE)
+  status    LifecycleStatus    @default(ACTIVE)
   startDate DateTime?
   endDate   DateTime?
-  budget    Decimal? @db.Decimal(18, 2)
-  forecast  Decimal? @db.Decimal(18, 2)
+  budget    Decimal?           @db.Decimal(18, 2)
+  forecast  Decimal?           @db.Decimal(18, 2)
   notes     String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt DateTime           @default(now())
+  updatedAt DateTime           @updatedAt
 
   roles      StaffingRole[]
   candidates StaffingCandidate[] @relation("StaffingCandidateEngagement")
@@ -628,21 +631,21 @@ model StaffingEngagement {
 }
 
 model AgricultureCropPlan {
-  id              String          @id @default(cuid())
-  userId          String
-  plotId          String
-  user            User            @relation(fields: [userId], references: [id], onDelete: Cascade)
-  plot            AgriculturePlot @relation(fields: [plotId], references: [id], onDelete: Cascade)
-  crop            String
-  phase           String          @default("planned")
-  status          LifecycleStatus @default(ACTIVE)
-  startDate       DateTime
+  id                String            @id @default(cuid())
+  userId            String
+  plotId            String
+  user              User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  plot              AgriculturePlot   @relation(fields: [plotId], references: [id], onDelete: Cascade)
+  crop              String
+  phase             String            @default("planned")
+  status            LifecycleStatus   @default(ACTIVE)
+  startDate         DateTime
   targetHarvestDate DateTime?
-  endDate         DateTime?
-  notes           String?
-  createdAt       DateTime        @default(now())
-  updatedAt       DateTime        @updatedAt
-  tasks           AgricultureTask[]
+  endDate           DateTime?
+  notes             String?
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+  tasks             AgricultureTask[]
 
   @@index([userId, plotId])
   @@index([userId, phase])
@@ -667,35 +670,35 @@ model AgriculturePlotCondition {
 }
 
 model AgricultureInventory {
-  id            String                        @id @default(cuid())
+  id            String                         @id @default(cuid())
   userId        String
-  user          User                          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user          User                           @relation(fields: [userId], references: [id], onDelete: Cascade)
   sku           String
   description   String?
-  totalQuantity Decimal                       @db.Decimal(18, 2) @default("0")
+  totalQuantity Decimal                        @default("0") @db.Decimal(18, 2)
   unit          String
   location      String?
-  status        LifecycleStatus               @default(ACTIVE)
-  createdAt     DateTime                      @default(now())
-  updatedAt     DateTime                      @updatedAt
+  status        LifecycleStatus                @default(ACTIVE)
+  createdAt     DateTime                       @default(now())
+  updatedAt     DateTime                       @updatedAt
   movements     AgricultureInventoryMovement[]
 
   @@index([userId, sku])
 }
 
 model AgricultureInventoryMovement {
-  id            String             @id @default(cuid())
-  userId        String
-  user          User                @relation(fields: [userId], references: [id], onDelete: Cascade)
-  inventoryId   String
-  inventory     AgricultureInventory @relation(fields: [inventoryId], references: [id], onDelete: Cascade)
-  shipmentId    String?
-  shipment      AgricultureShipment? @relation(fields: [shipmentId], references: [id], onDelete: SetNull)
-  type          String
-  quantity      Decimal            @db.Decimal(18, 2)
-  reason        String?
-  createdAt     DateTime           @default(now())
-  updatedAt     DateTime           @updatedAt
+  id          String               @id @default(cuid())
+  userId      String
+  user        User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  inventoryId String
+  inventory   AgricultureInventory @relation(fields: [inventoryId], references: [id], onDelete: Cascade)
+  shipmentId  String?
+  shipment    AgricultureShipment? @relation(fields: [shipmentId], references: [id], onDelete: SetNull)
+  type        String
+  quantity    Decimal              @db.Decimal(18, 2)
+  reason      String?
+  createdAt   DateTime             @default(now())
+  updatedAt   DateTime             @updatedAt
 
   @@index([userId])
   @@index([inventoryId])
@@ -703,144 +706,144 @@ model AgricultureInventoryMovement {
 }
 
 model AssignmentTimecard {
-  id           String   @id @default(cuid())
+  id           String     @id @default(cuid())
   assignmentId String
   assignment   Assignment @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
-  hours        Decimal  @db.Decimal(10, 2)
-  amount       Decimal  @db.Decimal(18, 2)
+  hours        Decimal    @db.Decimal(10, 2)
+  amount       Decimal    @db.Decimal(18, 2)
   note         String?
-  status       String   @default("approved")
-  createdAt    DateTime @default(now())
+  status       String     @default("approved")
+  createdAt    DateTime   @default(now())
 
   @@index([assignmentId, status])
 }
 
 model AssignmentPayout {
-  id           String   @id @default(cuid())
+  id           String     @id @default(cuid())
   assignmentId String
   assignment   Assignment @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
   personaId    String
-  persona      Persona  @relation(fields: [personaId], references: [id], onDelete: Cascade)
-  amount       Decimal  @db.Decimal(18, 2)
+  persona      Persona    @relation(fields: [personaId], references: [id], onDelete: Cascade)
+  amount       Decimal    @db.Decimal(18, 2)
   note         String?
   invoiceUrl   String?
-  status       String   @default("paid")
-  createdAt    DateTime @default(now())
+  status       String     @default("paid")
+  createdAt    DateTime   @default(now())
 
   @@index([assignmentId, personaId])
 }
 
 model StaffingRole {
-  id           String   @id @default(cuid())
+  id           String              @id @default(cuid())
   userId       String
-  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user         User                @relation(fields: [userId], references: [id], onDelete: Cascade)
   engagementId String?
   engagement   StaffingEngagement? @relation(fields: [engagementId], references: [id], onDelete: SetNull)
   title        String
   location     String?
-  modality     String?  // remote, hybrid, onsite
-  openings     Int      @default(1)
-  filled       Int      @default(0)
-  priority     EngagementPriority @default(NORMAL)
+  modality     String? // remote, hybrid, onsite
+  openings     Int                 @default(1)
+  filled       Int                 @default(0)
+  priority     EngagementPriority  @default(NORMAL)
   status       LifecycleStatus     @default(OPEN)
-  rateMin      Decimal? @db.Decimal(18, 2)
-  rateMax      Decimal? @db.Decimal(18, 2)
-  billRate     Decimal? @db.Decimal(18, 2)
-  payRate      Decimal? @db.Decimal(18, 2)
+  rateMin      Decimal?            @db.Decimal(18, 2)
+  rateMax      Decimal?            @db.Decimal(18, 2)
+  billRate     Decimal?            @db.Decimal(18, 2)
+  payRate      Decimal?            @db.Decimal(18, 2)
   tags         String?
   skills       Json?
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  createdAt    DateTime            @default(now())
+  updatedAt    DateTime            @updatedAt
 
   candidates StaffingCandidate[] @relation("StaffingCandidateRole")
-  shifts     StaffingShift[] @relation("StaffingShiftRole")
+  shifts     StaffingShift[]     @relation("StaffingShiftRole")
   placements StaffingPlacement[] @relation("StaffingPlacementRole")
 
   @@index([userId, status])
 }
 
 model StaffingCandidate {
-  id             String   @id @default(cuid())
-  userId         String
-  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  engagementId   String?
-  engagement     StaffingEngagement? @relation("StaffingCandidateEngagement", fields: [engagementId], references: [id], onDelete: SetNull)
-  roleId         String?
-  role           StaffingRole? @relation("StaffingCandidateRole", fields: [roleId], references: [id], onDelete: SetNull)
-  personaId      String?
-  persona        Persona? @relation("StaffingCandidatePersona", fields: [personaId], references: [id], onDelete: SetNull)
-  fullName       String
-  email          String?
-  phone          String?
-  source         String?
-  stage          String   @default("prospect")
-  score          Decimal? @db.Decimal(5, 2)
-  desiredRate    Decimal? @db.Decimal(18, 2)
-  availability   String?
-  location       String?
-  note           String?
-  tags           Json?
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  id           String              @id @default(cuid())
+  userId       String
+  user         User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  engagementId String?
+  engagement   StaffingEngagement? @relation("StaffingCandidateEngagement", fields: [engagementId], references: [id], onDelete: SetNull)
+  roleId       String?
+  role         StaffingRole?       @relation("StaffingCandidateRole", fields: [roleId], references: [id], onDelete: SetNull)
+  personaId    String?
+  persona      Persona?            @relation("StaffingCandidatePersona", fields: [personaId], references: [id], onDelete: SetNull)
+  fullName     String
+  email        String?
+  phone        String?
+  source       String?
+  stage        String              @default("prospect")
+  score        Decimal?            @db.Decimal(5, 2)
+  desiredRate  Decimal?            @db.Decimal(18, 2)
+  availability String?
+  location     String?
+  note         String?
+  tags         Json?
+  createdAt    DateTime            @default(now())
+  updatedAt    DateTime            @updatedAt
 
   placements     StaffingPlacement[] @relation("StaffingPlacementCandidate")
-  shiftsAssigned StaffingShift[] @relation("StaffingShiftCandidate")
+  shiftsAssigned StaffingShift[]     @relation("StaffingShiftCandidate")
 
   @@index([userId, stage])
 }
 
 model StaffingShift {
-  id                  String   @id @default(cuid())
+  id                  String             @id @default(cuid())
   userId              String
-  user                User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user                User               @relation(fields: [userId], references: [id], onDelete: Cascade)
   roleId              String?
-  role                StaffingRole? @relation("StaffingShiftRole", fields: [roleId], references: [id], onDelete: SetNull)
+  role                StaffingRole?      @relation("StaffingShiftRole", fields: [roleId], references: [id], onDelete: SetNull)
   title               String
   location            String?
   startsAt            DateTime
   endsAt              DateTime
-  status              LifecycleStatus @default(SCHEDULED)
-  coverageStatus      CoverageStatus  @default(UNFILLED)
+  status              LifecycleStatus    @default(SCHEDULED)
+  coverageStatus      CoverageStatus     @default(UNFILLED)
   assignedPersonaId   String?
-  assignedPersona     Persona? @relation("StaffingShiftAssignedPersona", fields: [assignedPersonaId], references: [id], onDelete: SetNull)
+  assignedPersona     Persona?           @relation("StaffingShiftAssignedPersona", fields: [assignedPersonaId], references: [id], onDelete: SetNull)
   assignedCandidateId String?
   assignedCandidate   StaffingCandidate? @relation("StaffingShiftCandidate", fields: [assignedCandidateId], references: [id], onDelete: SetNull)
   notes               String?
-  createdAt           DateTime @default(now())
-  updatedAt           DateTime @updatedAt
+  createdAt           DateTime           @default(now())
+  updatedAt           DateTime           @updatedAt
 
   @@index([userId, status])
 }
 
 model StaffingPlacement {
-  id           String   @id @default(cuid())
+  id           String              @id @default(cuid())
   userId       String
-  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user         User                @relation(fields: [userId], references: [id], onDelete: Cascade)
   engagementId String?
   engagement   StaffingEngagement? @relation("StaffingPlacementEngagement", fields: [engagementId], references: [id], onDelete: SetNull)
   roleId       String?
-  role         StaffingRole? @relation("StaffingPlacementRole", fields: [roleId], references: [id], onDelete: SetNull)
+  role         StaffingRole?       @relation("StaffingPlacementRole", fields: [roleId], references: [id], onDelete: SetNull)
   candidateId  String?
-  candidate    StaffingCandidate? @relation("StaffingPlacementCandidate", fields: [candidateId], references: [id], onDelete: SetNull)
+  candidate    StaffingCandidate?  @relation("StaffingPlacementCandidate", fields: [candidateId], references: [id], onDelete: SetNull)
   personaId    String?
-  persona      Persona? @relation("StaffingPlacementPersona", fields: [personaId], references: [id], onDelete: SetNull)
+  persona      Persona?            @relation("StaffingPlacementPersona", fields: [personaId], references: [id], onDelete: SetNull)
   startDate    DateTime
   endDate      DateTime?
-  status       LifecycleStatus @default(ACTIVE)
-  billRate     Decimal? @db.Decimal(18, 2)
-  payRate      Decimal? @db.Decimal(18, 2)
-  margin       Decimal? @db.Decimal(18, 2)
+  status       LifecycleStatus     @default(ACTIVE)
+  billRate     Decimal?            @db.Decimal(18, 2)
+  payRate      Decimal?            @db.Decimal(18, 2)
+  margin       Decimal?            @db.Decimal(18, 2)
   note         String?
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  createdAt    DateTime            @default(now())
+  updatedAt    DateTime            @updatedAt
 
   @@index([userId, status])
 }
 
 model FreightLoad {
-  id              String   @id @default(cuid())
+  id              String          @id @default(cuid())
   userId          String
-  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user            User            @relation(fields: [userId], references: [id], onDelete: Cascade)
   title           String
   originName      String
   originLat       Float
@@ -848,35 +851,35 @@ model FreightLoad {
   destinationName String
   destinationLat  Float
   destinationLng  Float
-  distanceKm      Decimal  @db.Decimal(10, 2)
+  distanceKm      Decimal         @db.Decimal(10, 2)
   durationMinutes Int
-  cost            Decimal  @db.Decimal(18, 2)
+  cost            Decimal         @db.Decimal(18, 2)
   status          LifecycleStatus @default(PLANNING)
   routeGeoJson    Json?
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
 
-  warehouseItems  WarehouseItem[]
+  warehouseItems       WarehouseItem[]
   agricultureShipments AgricultureShipment[]
 
   @@index([userId, status])
 }
 
 model WarehouseItem {
-  id            String        @id @default(cuid())
+  id            String            @id @default(cuid())
   userId        String
-  user          User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user          User              @relation(fields: [userId], references: [id], onDelete: Cascade)
   sku           String
   description   String?
-  quantity      Int           @default(0)
+  quantity      Int               @default(0)
   location      String
-  status        LifecycleStatus @default(STORED)
+  status        LifecycleStatus   @default(STORED)
   freightLoadId String?
-  freightLoad   FreightLoad?  @relation(fields: [freightLoadId], references: [id], onDelete: SetNull)
+  freightLoad   FreightLoad?      @relation(fields: [freightLoadId], references: [id], onDelete: SetNull)
   category      WarehouseCategory @default(OTHER)
   metadata      Json?
-  createdAt     DateTime      @default(now())
-  updatedAt     DateTime      @updatedAt
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
 
   @@index([userId, status])
   @@index([userId, freightLoadId])
@@ -884,31 +887,31 @@ model WarehouseItem {
 }
 
 model PosStore {
-  id      String @id @default(cuid())
-  userId  String
-  user    User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-  name    String
-  channel String
-  tickets PosTicket[]
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id        String      @id @default(cuid())
+  userId    String
+  user      User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name      String
+  channel   String
+  tickets   PosTicket[]
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
 
-  @@index([userId])
   @@unique([userId, name])
+  @@index([userId])
 }
 
 model PosTicket {
-  id         String   @id @default(cuid())
+  id         String          @id @default(cuid())
   userId     String
-  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user       User            @relation(fields: [userId], references: [id], onDelete: Cascade)
   storeId    String
-  store      PosStore @relation(fields: [storeId], references: [id], onDelete: Cascade)
-  total      Decimal  @db.Decimal(18, 2)
-  itemsCount Int      @default(0)
+  store      PosStore        @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  total      Decimal         @db.Decimal(18, 2)
+  itemsCount Int             @default(0)
   channel    String
   status     LifecycleStatus @default(OPEN)
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  createdAt  DateTime        @default(now())
+  updatedAt  DateTime        @updatedAt
   lineItems  PosLineItem[]
 
   @@index([userId, storeId])
@@ -917,50 +920,50 @@ model PosTicket {
 }
 
 model PosLineItem {
-  id        String   @id @default(cuid())
+  id        String    @id @default(cuid())
   ticketId  String
   ticket    PosTicket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
   name      String
-  quantity  Int      @default(1)
-  price     Decimal  @db.Decimal(18, 2)
-  createdAt DateTime @default(now())
+  quantity  Int       @default(1)
+  price     Decimal   @db.Decimal(18, 2)
+  createdAt DateTime  @default(now())
 
   @@index([ticketId])
 }
 
 model AgriculturePlot {
-  id        String   @id @default(cuid())
-  userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  name      String
-  fieldCode String?
-  crop      String
-  stage     String
-  acres     Decimal  @db.Decimal(10, 2)
-  health    String   @default("Unknown")
-  soilType  String?
-  irrigationZone String?
-  notes     String?
+  id              String    @id @default(cuid())
+  userId          String
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name            String
+  fieldCode       String?
+  crop            String
+  stage           String
+  acres           Decimal   @db.Decimal(10, 2)
+  health          String    @default("Unknown")
+  soilType        String?
+  irrigationZone  String?
+  notes           String?
   lastConditionAt DateTime?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
 
-  cropPlans AgricultureCropPlan[]
+  cropPlans  AgricultureCropPlan[]
   conditions AgriculturePlotCondition[]
-  tasks AgricultureTask[]
-  slots AgricultureSlot[]
+  tasks      AgricultureTask[]
+  slots      AgricultureSlot[]
 
   @@index([userId, crop])
   @@index([userId, fieldCode])
 }
 
 model AgricultureSlot {
-  id         String   @id @default(cuid())
+  id         String           @id @default(cuid())
   userId     String
-  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user       User             @relation(fields: [userId], references: [id], onDelete: Cascade)
   slotIndex  Int
-  unlockedAt DateTime @default(now())
-  costPaid   Decimal  @db.Decimal(18, 2) @default("0")
+  unlockedAt DateTime         @default(now())
+  costPaid   Decimal          @default("0") @db.Decimal(18, 2)
   plotId     String?
   plot       AgriculturePlot? @relation(fields: [plotId], references: [id], onDelete: SetNull)
 
@@ -969,22 +972,22 @@ model AgricultureSlot {
 }
 
 model AgricultureTask {
-  id        String   @id @default(cuid())
-  userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  plotId    String?
-  plot      AgriculturePlot? @relation(fields: [plotId], references: [id], onDelete: SetNull)
+  id         String               @id @default(cuid())
+  userId     String
+  user       User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  plotId     String?
+  plot       AgriculturePlot?     @relation(fields: [plotId], references: [id], onDelete: SetNull)
   cropPlanId String?
   cropPlan   AgricultureCropPlan? @relation(fields: [cropPlanId], references: [id], onDelete: SetNull)
-  title     String
-  assignee  String?
-  priority  Int      @default(2)
-  tags      Json?
-  notes     String?
-  dueDate   DateTime?
-  status    LifecycleStatus @default(PENDING)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  title      String
+  assignee   String?
+  priority   Int                  @default(2)
+  tags       Json?
+  notes      String?
+  dueDate    DateTime?
+  status     LifecycleStatus      @default(PENDING)
+  createdAt  DateTime             @default(now())
+  updatedAt  DateTime             @updatedAt
 
   @@index([userId, status])
   @@index([userId, dueDate])
@@ -993,200 +996,102 @@ model AgricultureTask {
 }
 
 model AgricultureShipment {
-  id            String   @id @default(cuid())
-  userId        String
-  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  lot           String
-  destination   String
-  mode          String
-  eta           DateTime?
-  freightLoadId String?
-  freightLoad   FreightLoad? @relation(fields: [freightLoadId], references: [id], onDelete: SetNull)
+  id                 String                         @id @default(cuid())
+  userId             String
+  user               User                           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lot                String
+  destination        String
+  mode               String
+  eta                DateTime?
+  freightLoadId      String?
+  freightLoad        FreightLoad?                   @relation(fields: [freightLoadId], references: [id], onDelete: SetNull)
   inventoryMovements AgricultureInventoryMovement[]
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  createdAt          DateTime                       @default(now())
+  updatedAt          DateTime                       @updatedAt
 
   @@index([userId])
   @@index([userId, freightLoadId])
 }
 
 model AgricultureResourceCategory {
-  id          String                     @id @default(cuid())
-  slug        String                     @unique
+  id          String   @id @default(cuid())
+  slug        String   @unique
   title       String
   description String?
-  createdAt   DateTime                   @default(now())
-  updatedAt   DateTime                   @updatedAt
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
-  resources   AgricultureResource[]
+  resources AgricultureResource[]
 }
 
 model AgricultureResource {
-  id          String                     @id @default(cuid())
-  categoryId  String
-  category    AgricultureResourceCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
-  title       String
-  summary     String
-  url         String
-  tags        String[]                   @default([])
-  source      String?
-  createdAt   DateTime                   @default(now())
-  updatedAt   DateTime                   @updatedAt
+  id         String                      @id @default(cuid())
+  categoryId String
+  category   AgricultureResourceCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  title      String
+  summary    String
+  url        String
+  tags       String[]                    @default([])
+  source     String?
+  createdAt  DateTime                    @default(now())
+  updatedAt  DateTime                    @updatedAt
 
   @@index([categoryId])
 }
 
 model CulinaryMenuItem {
-  id        String   @id @default(cuid())
-  userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  name      String
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name        String
   prepMinutes Int
-  cost      Decimal  @db.Decimal(18, 2)
-  price     Decimal  @db.Decimal(18, 2)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  cost        Decimal  @db.Decimal(18, 2)
+  price       Decimal  @db.Decimal(18, 2)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
   @@index([userId, name])
 }
 
 model CulinaryPrepTask {
-  id        String   @id @default(cuid())
+  id        String          @id @default(cuid())
   userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user      User            @relation(fields: [userId], references: [id], onDelete: Cascade)
   task      String
   station   String
   dueAt     DateTime?
   status    LifecycleStatus @default(PENDING)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt DateTime        @default(now())
+  updatedAt DateTime        @updatedAt
 
   @@index([userId, status])
 }
 
 model CulinarySupplierNeed {
-  id        String   @id @default(cuid())
+  id        String          @id @default(cuid())
   userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user      User            @relation(fields: [userId], references: [id], onDelete: Cascade)
   item      String
   quantity  String
   status    LifecycleStatus @default(OPEN)
   dueDate   DateTime?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt DateTime        @default(now())
+  updatedAt DateTime        @updatedAt
 
   @@index([userId, status])
-}
-
-model ArcadeMachine {
-  id          String   @id @default(cuid())
-  userId      String
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  name        String
-  gameTitle   String
-  status      LifecycleStatus @default(IDLE)
-  location    String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  sessions    ArcadeSession[]
-
-  @@index([userId, status])
-}
-
-model ArcadeCard {
-  id        String   @id @default(cuid())
-  userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  label     String?
-  balance   Decimal  @db.Decimal(18, 2) @default("0")
-  status    LifecycleStatus @default(ACTIVE)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  topUps    ArcadeTopUp[]
-  sessions  ArcadeSession[]
-  redemptions ArcadeRedemption[]
-
-  @@index([userId, status])
-}
-
-model ArcadeTopUp {
-  id        String   @id @default(cuid())
-  userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  cardId    String
-  card      ArcadeCard @relation(fields: [cardId], references: [id], onDelete: Cascade)
-  amount    Decimal  @db.Decimal(18, 2)
-  source    String   @default("k3h4-coin")
-  createdAt DateTime @default(now())
-
-  @@index([userId, cardId])
-}
-
-model ArcadePrize {
-  id        String   @id @default(cuid())
-  userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  name      String
-  sku       String?
-  costCoins Decimal  @db.Decimal(18, 2)
-  stock     Int      @default(0)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  redemptions ArcadeRedemption[]
-
-  @@index([userId, name])
-}
-
-model ArcadeSession {
-  id          String   @id @default(cuid())
-  userId      String
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  machineId   String
-  machine     ArcadeMachine @relation(fields: [machineId], references: [id], onDelete: Cascade)
-  cardId      String
-  card        ArcadeCard @relation(fields: [cardId], references: [id], onDelete: Cascade)
-  creditsSpent Decimal  @db.Decimal(18, 2)
-  score       Int?
-  rewardRedemptionId String?
-  rewardRedemption   ArcadeRedemption? @relation(fields: [rewardRedemptionId], references: [id], onDelete: SetNull)
-  startedAt   DateTime @default(now())
-  endedAt     DateTime?
-
-  @@index([userId, machineId])
-  @@index([userId, cardId])
-}
-
-model ArcadeRedemption {
-  id        String   @id @default(cuid())
-  userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  cardId    String?
-  card      ArcadeCard? @relation(fields: [cardId], references: [id], onDelete: SetNull)
-  prizeId   String
-  prize     ArcadePrize @relation(fields: [prizeId], references: [id], onDelete: Cascade)
-  status    LifecycleStatus @default(PENDING)
-  fulfilledAt DateTime?
-  createdAt DateTime @default(now())
-
-  sessions  ArcadeSession[]
-
-  @@index([userId, prizeId])
 }
 
 // USDA FAS datasets (ESR, GATS, PSD) cached artifacts and reference data
 model UsdaRegion {
-  id        String   @id @default(cuid())
-  dataset   String
-  code      String
-  name      String?
+  id         String   @id @default(cuid())
+  dataset    String
+  code       String
+  name       String?
   wikidataId String?
   enrichment Json?
-  extra     Json?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  extra      Json?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 
   @@unique([dataset, code])
   @@index([dataset])
@@ -1209,30 +1114,30 @@ model UsdaCountry {
 }
 
 model UsdaCommodity {
-  id        String   @id @default(cuid())
-  dataset   String
-  code      String
-  name      String?
+  id         String   @id @default(cuid())
+  dataset    String
+  code       String
+  name       String?
   wikidataId String?
   enrichment Json?
-  extra     Json?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  extra      Json?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 
   @@unique([dataset, code])
   @@index([dataset])
 }
 
 model UsdaUnit {
-  id        String   @id @default(cuid())
-  dataset   String
-  code      String
-  name      String?
+  id         String   @id @default(cuid())
+  dataset    String
+  code       String
+  name       String?
   wikidataId String?
   enrichment Json?
-  extra     Json?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  extra      Json?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 
   @@unique([dataset, code])
   @@index([dataset])
@@ -1253,52 +1158,52 @@ model UsdaRelease {
 }
 
 model UsdaCommodityAttribute {
-  id        String   @id @default(cuid())
-  dataset   String
-  code      String
-  name      String?
+  id         String   @id @default(cuid())
+  dataset    String
+  code       String
+  name       String?
   wikidataId String?
   enrichment Json?
-  extra     Json?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  extra      Json?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 
   @@unique([dataset, code])
   @@index([dataset])
 }
 
 model UsdaCacheEntry {
-  id         String   @id @default(cuid())
+  id         String    @id @default(cuid())
   dataset    String
   endpoint   String
   params     Json?
   paramsHash String
   payload    Json?
-  fetchedAt  DateTime @default(now())
+  fetchedAt  DateTime  @default(now())
   expiresAt  DateTime?
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
 
   @@unique([dataset, endpoint, paramsHash])
   @@index([dataset, endpoint])
 }
 
 model UsdaSyncState {
-  id            String   @id @default(cuid())
+  id            String    @id @default(cuid())
   dataset       String
   scope         String
   lastReleaseOn DateTime?
   lastSyncedAt  DateTime?
   note          String?
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
 
   @@unique([dataset, scope])
 }
 
 // Wikidata REST API cache entries
 model WikidataCacheEntry {
-  id                  String   @id @default(cuid())
+  id                  String    @id @default(cuid())
   resource            String
   endpoint            String
   params              Json?
@@ -1306,12 +1211,12 @@ model WikidataCacheEntry {
   url                 String
   statusCode          Int
   payload             Json?
-  fetchedAt           DateTime @default(now())
+  fetchedAt           DateTime  @default(now())
   expiresAt           DateTime?
   cacheControlSeconds Int?
   etag                String?
-  createdAt           DateTime @default(now())
-  updatedAt           DateTime @updatedAt
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
 
   @@unique([resource, endpoint, paramsHash])
   @@index([resource, fetchedAt])
@@ -1319,16 +1224,16 @@ model WikidataCacheEntry {
 
 // Prevents repeated enrichment calls against Wikidata for the same source entity
 model EnrichmentCache {
-  id         String   @id @default(cuid())
-  provider   String   @default("wikidata")
-  namespace  String   // e.g., "usda" or domain-specific namespace
-  kind       String   // e.g., "region", "unit", "commodity"
-  sourceKey  String   // upstream identifier/code for the entity
+  id         String    @id @default(cuid())
+  provider   String    @default("wikidata")
+  namespace  String // e.g., "usda" or domain-specific namespace
+  kind       String // e.g., "region", "unit", "commodity"
+  sourceKey  String // upstream identifier/code for the entity
   paramsHash String?
   wikidataId String?
   payload    Json?
-  status     String?  // success, error, skipped
-  fetchedAt  DateTime @default(now())
+  status     String? // success, error, skipped
+  fetchedAt  DateTime  @default(now())
   expiresAt  DateTime?
   note       String?
 
@@ -1337,39 +1242,39 @@ model EnrichmentCache {
 }
 
 model ChatSession {
-  id           String     @id @default(cuid())
+  id           String   @id @default(cuid())
   userId       String
-  user         User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   title        String?
   systemPrompt String?
   model        String?
   temperature  Float?
   metadata     Json?
-  createdAt    DateTime   @default(now())
-  updatedAt    DateTime   @updatedAt
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
-  messages     ChatMessage[]
+  messages         ChatMessage[]
   ollamaOperations OllamaOperation[]
 
   @@index([userId, updatedAt])
 }
 
 model ChatMessage {
-  id        String     @id @default(cuid())
+  id        String      @id @default(cuid())
   sessionId String
   session   ChatSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
   role      ChatRole
   content   String
   metadata  Json?
-  createdAt DateTime   @default(now())
+  createdAt DateTime    @default(now())
 
   @@index([sessionId, createdAt])
 }
 
 model OllamaOperation {
-  id           String    @id @default(cuid())
+  id           String       @id @default(cuid())
   userId       String
-  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
   source       String
   sessionId    String?
   session      ChatSession? @relation(fields: [sessionId], references: [id], onDelete: SetNull)
@@ -1381,11 +1286,49 @@ model OllamaOperation {
   statusCode   Int?
   errorMessage String?
   metadata     Json?
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
 
   @@index([userId])
   @@index([sessionId])
   @@index([source])
   @@index([createdAt])
+}
+
+model Actor {
+  id        String    @id @default(cuid())
+  userId    String?
+  user      User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
+  label     String
+  type      ActorType
+  note      String?
+  source    String?
+  metadata  Json?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  entities Entity[]
+
+  @@index([userId])
+  @@index([type])
+}
+
+model Entity {
+  id         String           @id @default(cuid())
+  actorId    String
+  actor      Actor            @relation(fields: [actorId], references: [id], onDelete: Cascade)
+  kind       EntityKind
+  direction  EntityDirection?
+  name       String?
+  targetType String?
+  targetId   String?
+  source     String?
+  metadata   Json?
+  createdAt  DateTime         @default(now())
+  updatedAt  DateTime         @updatedAt
+
+  @@index([actorId])
+  @@index([kind])
+  @@index([targetType, targetId])
+  @@index([direction])
 }

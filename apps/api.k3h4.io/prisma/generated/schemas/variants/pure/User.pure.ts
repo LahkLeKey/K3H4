@@ -13,7 +13,6 @@ export const UserModelSchema = z.object({
     refreshTokens: z.array(z.unknown()),
     preference: z.unknown().nullable(),
     telemetry: z.array(z.unknown()),
-    bankTransactions: z.array(z.unknown()),
     personas: z.array(z.unknown()),
     assignments: z.array(z.unknown()),
     staffingEngagements: z.array(z.unknown()),
@@ -36,12 +35,6 @@ export const UserModelSchema = z.object({
     culinaryMenuItems: z.array(z.unknown()),
     culinaryPrepTasks: z.array(z.unknown()),
     culinarySupplierNeeds: z.array(z.unknown()),
-    arcadeMachines: z.array(z.unknown()),
-    arcadeCards: z.array(z.unknown()),
-    arcadeTopUps: z.array(z.unknown()),
-    arcadePrizes: z.array(z.unknown()),
-    arcadeSessions: z.array(z.unknown()),
-    arcadeRedemptions: z.array(z.unknown()),
     providerGrants: z.array(z.unknown()),
     geoRouteCaches: z.array(z.unknown()),
     geoDirections: z.array(z.unknown()),
@@ -57,7 +50,8 @@ export const UserModelSchema = z.object({
     geoViewHistories: z.array(z.unknown()),
     chatSessions: z.array(z.unknown()),
     aiInsights: z.array(z.unknown()),
-    ollamaOperations: z.array(z.unknown())
+    ollamaOperations: z.array(z.unknown()),
+    actors: z.array(z.unknown())
 }).strict();
 
 export type UserPureType = z.infer<typeof UserModelSchema>;

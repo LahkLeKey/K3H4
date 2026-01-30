@@ -22,7 +22,6 @@ export const UserGroupByResultSchema = z.array(z.object({
     refreshTokens: z.number(),
     preference: z.number(),
     telemetry: z.number(),
-    bankTransactions: z.number(),
     personas: z.number(),
     assignments: z.number(),
     staffingEngagements: z.number(),
@@ -45,12 +44,6 @@ export const UserGroupByResultSchema = z.array(z.object({
     culinaryMenuItems: z.number(),
     culinaryPrepTasks: z.number(),
     culinarySupplierNeeds: z.number(),
-    arcadeMachines: z.number(),
-    arcadeCards: z.number(),
-    arcadeTopUps: z.number(),
-    arcadePrizes: z.number(),
-    arcadeSessions: z.number(),
-    arcadeRedemptions: z.number(),
     providerGrants: z.number(),
     geoRouteCaches: z.number(),
     geoDirections: z.number(),
@@ -66,7 +59,8 @@ export const UserGroupByResultSchema = z.array(z.object({
     geoViewHistories: z.number(),
     chatSessions: z.number(),
     aiInsights: z.number(),
-    ollamaOperations: z.number()
+    ollamaOperations: z.number(),
+    actors: z.number()
   }).optional(),
   _sum: z.object({
     k3h4CoinBalance: z.number().nullable()
