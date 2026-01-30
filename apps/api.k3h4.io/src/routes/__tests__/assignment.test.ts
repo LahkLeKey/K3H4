@@ -5,55 +5,64 @@ import {beforeEach, describe, expect, it, vi} from 'vitest';
 import * as assignmentActor from '../../services/assignment-actor';
 import * as personaLedger from '../../services/persona-ledger';
 import type {PersonaRecord} from '../../services/persona-ledger';
-
-let detailCallCount = 0;
-const findFirstSpy = vi.fn().mockImplementation(async () => {
-  detailCallCount += 1;
-  if (detailCallCount === 1) return assignment;
-  return null;
-});
-const findManySpy = vi.fn(({where}) => {
-  if (where.kind === EntityKind.ASSIGNMENT_TIMECARD) return [timecard];
-  if (where.kind === EntityKind.ASSIGNMENT_PAYOUT) return [];
-  return [];
-});
 import {registerAssignmentRoutes} from '../assignment';
-entity: {findFirst: findFirstSpy, findMany: findManySpy}, actor: txActor,
-    assignmentPayout: txPayout, assignmentTimecard: {update: vi.fn()},
-    user: txUser, $transaction: vi.fn(async (cb) => cb({
-                                        user: txUser,
-                                        actor: txActor,
-                                        entity: txEntity,
-                                        assignmentPayout: txPayout,
-                                        assignmentTimecard: {update: vi.fn()}
-                                      } as any)),
-    personaId: personaRecord.id, hourlyRate: '100.00',
-}
-;
-return {
-  id: 'a1',
-  actorId: assignmentActorStub.id,
-  kind: EntityKind.ASSIGNMENT,
-  targetType: ASSIGNMENT_TARGET_TYPE,
+import {type RecordTelemetryFn} from '../types';
+
+const recordTelemetry = vi.fn() as unknown as RecordTelemetryFn;
+const userId = 'user-1';
+const personaActor = {
+  id: 'actor-1',
+  userId,
+  type: 'persona'
+};
+const personaRecord: PersonaRecord = {
+  id: 'p1',
+  alias: 'Alias',
+  account: 'alias@test.com',
+  handle: '@alias',
+  note: null,
+  tags: [],
+  attributes: [],
   createdAt: new Date(),
   updatedAt: new Date(),
-  ...overrides,
-  metadata: {...baseMetadata, ...(overrides.metadata ?? {})},
 };
-}
-;
+const assignmentActorStub = {
+  id: 'assignment-actor-1',
+  userId,
+  type: 'assignment'
+};
+
+const buildAssignmentEntity = (overrides: Partial<any> = {}) => {
+  const baseMetadata = {
+    title: 'Gig',
+    hourlyRate: '100.00',
+    personaId: personaRecord.id,
+  };
+  return {
+    id: 'a1',
+    actorId: assignmentActorStub.id,
+    kind: EntityKind.ASSIGNMENT,
+    targetType: assignmentActor.ASSIGNMENT_TARGET_TYPE,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+    ...overrides,
+    metadata: {...baseMetadata, ...(overrides.metadata ?? {})},
+  };
+};
 
 const buildTimecardEntity =
     (assignmentId: string, overrides: Partial<any> = {}) => {
       const baseMetadata = {
-        expect(findFirstSpy).toHaveBeenCalledTimes(2);
-        amount: '100.00', status: 'approved', note: 'demo',
+        hours: '1.00',
+        amount: '100.00',
+        status: 'approved',
+        note: 'demo',
       };
       return {
         id: 't1',
         actorId: assignmentActorStub.id,
         kind: EntityKind.ASSIGNMENT_TIMECARD,
-        targetType: ASSIGNMENT_TARGET_TYPE,
+        targetType: assignmentActor.ASSIGNMENT_TARGET_TYPE,
         targetId: assignmentId,
         createdAt: new Date(),
         updatedAt: new Date(),
@@ -74,7 +83,7 @@ const buildPayoutEntity =
         id: 'p1',
         actorId: assignmentActorStub.id,
         kind: EntityKind.ASSIGNMENT_PAYOUT,
-        targetType: ASSIGNMENT_TARGET_TYPE,
+        targetType: assignmentActor.ASSIGNMENT_TARGET_TYPE,
         targetId: assignmentId,
         createdAt: new Date(),
         updatedAt: new Date(),
