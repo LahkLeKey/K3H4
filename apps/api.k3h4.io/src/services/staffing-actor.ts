@@ -78,3 +78,16 @@ export async function loadStaffingEntityByKind(
     },
   });
 }
+
+export async function deleteStaffingActorWithEntities(
+    tx: PrismaTx, userId: string) {
+  const entities = await tx.entity.deleteMany({
+    where: {
+      actor: {userId, type: ActorType.STAFFING},
+    },
+  });
+  const actors = await tx.actor.deleteMany({
+    where: {userId, type: ActorType.STAFFING},
+  });
+  return {entities, actors};
+}

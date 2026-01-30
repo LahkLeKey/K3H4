@@ -5,6 +5,7 @@ import {URLSearchParams} from 'node:url';
 
 import {deleteAgricultureActorWithEntities} from '../services/agriculture-actor';
 import {deleteBankActorWithEntities} from '../services/bank-actor';
+import {deleteStaffingActorWithEntities} from '../services/staffing-actor';
 import {deleteWarehouseActorWithEntities} from '../services/warehouse-actor';
 
 import {withTelemetryBase} from './telemetry';
@@ -142,24 +143,8 @@ const runDeleteJob = async (
         action: () => prisma.persona.deleteMany({where: {userId}})
       },
       {
-        key: 'staffingPlacements',
-        action: () => prisma.staffingPlacement.deleteMany({where: {userId}})
-      },
-      {
-        key: 'staffingShifts',
-        action: () => prisma.staffingShift.deleteMany({where: {userId}})
-      },
-      {
-        key: 'staffingCandidates',
-        action: () => prisma.staffingCandidate.deleteMany({where: {userId}})
-      },
-      {
-        key: 'staffingRoles',
-        action: () => prisma.staffingRole.deleteMany({where: {userId}})
-      },
-      {
-        key: 'staffingEngagements',
-        action: () => prisma.staffingEngagement.deleteMany({where: {userId}})
+        key: 'staffingLedger',
+        action: () => deleteStaffingActorWithEntities(prisma, userId)
       },
       {
         key: 'assignmentTimecards',

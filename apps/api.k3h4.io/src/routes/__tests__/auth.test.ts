@@ -2,6 +2,7 @@ import Fastify from 'fastify';
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 
 import {registerAuthRoutes} from '../auth';
+import * as staffingActor from '../services/staffing-actor';
 import {type RecordTelemetryFn} from '../types';
 
 const recordTelemetry = vi.fn() as unknown as RecordTelemetryFn;
@@ -37,6 +38,7 @@ describe('auth routes', () => {
   });
 
   afterEach(() => {
+    vi.restoreAllMocks();
     vi.unstubAllGlobals();
   });
 
@@ -404,11 +406,6 @@ describe('auth routes', () => {
       entity: {deleteMany: vi.fn().mockResolvedValue({count: 0})},
       actor: {deleteMany: vi.fn().mockResolvedValue({count: 0})},
       persona: {deleteMany: vi.fn().mockResolvedValue({count: 0})},
-      staffingPlacement: {deleteMany: vi.fn().mockResolvedValue({count: 0})},
-      staffingShift: {deleteMany: vi.fn().mockResolvedValue({count: 0})},
-      staffingCandidate: {deleteMany: vi.fn().mockResolvedValue({count: 0})},
-      staffingRole: {deleteMany: vi.fn().mockResolvedValue({count: 0})},
-      staffingEngagement: {deleteMany: vi.fn().mockResolvedValue({count: 0})},
       assignmentTimecard: {deleteMany: vi.fn().mockResolvedValue({count: 0})},
       assignmentPayout: {deleteMany: vi.fn().mockResolvedValue({count: 0})},
       assignment: {deleteMany: vi.fn().mockResolvedValue({count: 0})},
@@ -430,6 +427,9 @@ describe('auth routes', () => {
       $transaction: vi.fn(
           async (operations: Promise<unknown>[]) => Promise.all(operations)),
     };
+    const deleteStaffingSpy =
+        vi.spyOn(staffingActor, 'deleteStaffingActorWithEntities')
+            .mockResolvedValue({entities: {count: 0}, actors: {count: 0}});
     const server = buildServer(prisma);
     const res = await server.inject({
       method: 'POST',
@@ -446,6 +446,7 @@ describe('auth routes', () => {
     expect(statusRes.statusCode).toBe(200);
     expect(statusRes.json().status).toBe('done');
     expect(prisma.user.delete).toHaveBeenCalledWith({where: {id: userId}});
+    expect(deleteStaffingSpy).toHaveBeenCalledWith(prisma, userId);
   });
 
   it('rejects delete when confirmation text is wrong', async () => {
