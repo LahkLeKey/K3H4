@@ -18,8 +18,7 @@ export const FreightLoadModelSchema = z.object({
     status: LifecycleStatusSchema,
     routeGeoJson: z.unknown().nullable(),
     createdAt: z.date(),
-    updatedAt: z.date(),
-    warehouseItems: z.array(z.unknown())
+    updatedAt: z.date()
 }).strict();
 
 export type FreightLoadPureType = z.infer<typeof FreightLoadModelSchema>;

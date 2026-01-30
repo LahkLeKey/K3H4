@@ -7,8 +7,7 @@ import { IntFieldUpdateOperationsInputObjectSchema as IntFieldUpdateOperationsIn
 import { LifecycleStatusSchema } from '../enums/LifecycleStatus.schema';
 import { EnumLifecycleStatusFieldUpdateOperationsInputObjectSchema as EnumLifecycleStatusFieldUpdateOperationsInputObjectSchema } from './EnumLifecycleStatusFieldUpdateOperationsInput.schema';
 import { NullableJsonNullValueInputSchema } from '../enums/NullableJsonNullValueInput.schema';
-import { DateTimeFieldUpdateOperationsInputObjectSchema as DateTimeFieldUpdateOperationsInputObjectSchema } from './DateTimeFieldUpdateOperationsInput.schema';
-import { WarehouseItemUncheckedUpdateManyWithoutFreightLoadNestedInputObjectSchema as WarehouseItemUncheckedUpdateManyWithoutFreightLoadNestedInputObjectSchema } from './WarehouseItemUncheckedUpdateManyWithoutFreightLoadNestedInput.schema'
+import { DateTimeFieldUpdateOperationsInputObjectSchema as DateTimeFieldUpdateOperationsInputObjectSchema } from './DateTimeFieldUpdateOperationsInput.schema'
 
 import { JsonValueSchema as jsonSchema } from '../../helpers/json-helpers';
 
@@ -43,8 +42,7 @@ const makeSchema = () => z.object({
   status: z.union([LifecycleStatusSchema, z.lazy(() => EnumLifecycleStatusFieldUpdateOperationsInputObjectSchema)]).optional(),
   routeGeoJson: z.union([NullableJsonNullValueInputSchema, jsonSchema]).optional(),
   createdAt: z.union([z.coerce.date(), z.lazy(() => DateTimeFieldUpdateOperationsInputObjectSchema)]).optional(),
-  updatedAt: z.union([z.coerce.date(), z.lazy(() => DateTimeFieldUpdateOperationsInputObjectSchema)]).optional(),
-  warehouseItems: z.lazy(() => WarehouseItemUncheckedUpdateManyWithoutFreightLoadNestedInputObjectSchema).optional()
+  updatedAt: z.union([z.coerce.date(), z.lazy(() => DateTimeFieldUpdateOperationsInputObjectSchema)]).optional()
 }).strict();
 export const FreightLoadUncheckedUpdateInputObjectSchema: z.ZodType<Prisma.FreightLoadUncheckedUpdateInput> = makeSchema() as unknown as z.ZodType<Prisma.FreightLoadUncheckedUpdateInput>;
 export const FreightLoadUncheckedUpdateInputObjectZodSchema = makeSchema();

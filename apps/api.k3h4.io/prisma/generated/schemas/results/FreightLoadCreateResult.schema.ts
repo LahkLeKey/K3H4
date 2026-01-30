@@ -16,6 +16,5 @@ export const FreightLoadCreateResultSchema = z.object({
   status: z.unknown(),
   routeGeoJson: z.unknown().optional(),
   createdAt: z.date(),
-  updatedAt: z.date(),
-  warehouseItems: z.array(z.unknown())
+  updatedAt: z.date()
 });

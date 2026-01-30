@@ -11,7 +11,6 @@ import { StaffingCandidateFindManySchema as StaffingCandidateFindManySchema } fr
 import { StaffingShiftFindManySchema as StaffingShiftFindManySchema } from '../findManyStaffingShift.schema';
 import { StaffingPlacementFindManySchema as StaffingPlacementFindManySchema } from '../findManyStaffingPlacement.schema';
 import { FreightLoadFindManySchema as FreightLoadFindManySchema } from '../findManyFreightLoad.schema';
-import { WarehouseItemFindManySchema as WarehouseItemFindManySchema } from '../findManyWarehouseItem.schema';
 import { PosStoreFindManySchema as PosStoreFindManySchema } from '../findManyPosStore.schema';
 import { PosTicketFindManySchema as PosTicketFindManySchema } from '../findManyPosTicket.schema';
 import { CulinaryMenuItemFindManySchema as CulinaryMenuItemFindManySchema } from '../findManyCulinaryMenuItem.schema';
@@ -48,7 +47,6 @@ const makeSchema = () => z.object({
   staffingShifts: z.union([z.boolean(), z.lazy(() => StaffingShiftFindManySchema)]).optional(),
   staffingPlacements: z.union([z.boolean(), z.lazy(() => StaffingPlacementFindManySchema)]).optional(),
   freightLoads: z.union([z.boolean(), z.lazy(() => FreightLoadFindManySchema)]).optional(),
-  warehouseItems: z.union([z.boolean(), z.lazy(() => WarehouseItemFindManySchema)]).optional(),
   posStores: z.union([z.boolean(), z.lazy(() => PosStoreFindManySchema)]).optional(),
   posTickets: z.union([z.boolean(), z.lazy(() => PosTicketFindManySchema)]).optional(),
   culinaryMenuItems: z.union([z.boolean(), z.lazy(() => CulinaryMenuItemFindManySchema)]).optional(),

@@ -20,7 +20,6 @@ export const UserAggregateResultSchema = z.object({  _count: z.object({
     staffingShifts: z.number(),
     staffingPlacements: z.number(),
     freightLoads: z.number(),
-    warehouseItems: z.number(),
     posStores: z.number(),
     posTickets: z.number(),
     culinaryMenuItems: z.number(),

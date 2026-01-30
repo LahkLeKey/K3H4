@@ -1,18 +1,36 @@
-import {LifecycleStatus, Prisma, type PrismaClient, WarehouseCategory} from '@prisma/client';
+import {EntityKind, LifecycleStatus, Prisma, type PrismaClient, WarehouseCategory,} from '@prisma/client';
 import {type FastifyInstance} from 'fastify';
 
 import {lifecycleStatusOrDefault, parseLifecycleStatus} from '../lib/status-utils';
 import {AgricultureSlotSnapshot, resolveAgricultureSlotSnapshot,} from '../services/agriculture-actor';
+import {buildWarehouseItemPayload, ensureWarehouseActor} from '../services/warehouse-actor';
 
 import {buildTelemetryBase} from './telemetry';
 import {type RecordTelemetryFn} from './types';
 
-const serializeItem = (item: any) => ({
-  ...item,
-  quantity: Number(item.quantity),
-  category: item.category,
-  metadata: item.metadata ?? null,
-});
+const cloneMetadata = (value?: Record<string, unknown>|null) => {
+  if (value && typeof value === 'object' && !Array.isArray(value))
+    return {...value};
+  return {} as Record<string, unknown>;
+};
+
+const metadataRecord = (value: Prisma.JsonValue|null|undefined) => {
+  if (value && typeof value === 'object' && !Array.isArray(value))
+    return value as Record<string, unknown>;
+  return {} as Record<string, unknown>;
+};
+
+const metadataString = (record: Record<string, unknown>, key: string) => {
+  const value = record[key];
+  if (typeof value === 'string') return value;
+  if (value != null) return String(value);
+  return null;
+};
+
+const toJsonValue = (record: Record<string, unknown>) => {
+  return Object.keys(record).length ? (record as Prisma.InputJsonValue) :
+                                      Prisma.JsonNull;
+};
 
 const normalizeCategory = (value?: string) =>
     value === WarehouseCategory.AGRICULTURE ? WarehouseCategory.AGRICULTURE :
@@ -25,16 +43,22 @@ export function registerWarehouseRoutes(
       '/warehouse/items',
       {preHandler: [server.authenticate]},
       async (request) => {
+        const rt = buildTelemetryBase(request);
         const userId = (request.user as {sub: string}).sub;
-        const items = await prisma.warehouseItem.findMany(
-            {where: {userId}, orderBy: {createdAt: 'desc'}});
+        const actor = await ensureWarehouseActor(prisma, userId);
+        const items = await prisma.entity.findMany({
+          where: {actorId: actor.id, kind: EntityKind.WAREHOUSE_ITEM},
+          orderBy: {createdAt: 'desc'},
+        });
         await recordTelemetry(request, {
-          ...buildTelemetryBase(request),
+          ...rt,
           eventType: 'warehouse.list',
           source: 'api',
           payload: {count: items.length},
         });
-        return {items: items.map(serializeItem)};
+        return {
+          items: items.map((item) => buildWarehouseItemPayload(item, userId))
+        };
       },
   );
 
@@ -66,12 +90,13 @@ export function registerWarehouseRoutes(
               {error: 'quantity must be a non-negative number'});
         }
 
-        const freightLoadId = body.freightLoadId?.trim() || undefined;
+        const freightLoadId = body?.freightLoadId?.trim() || undefined;
         if (freightLoadId) {
           const load = await prisma.freightLoad.findFirst(
               {where: {id: freightLoadId, userId}});
-          if (!load)
+          if (!load) {
             return reply.status(404).send({error: 'Freight load not found'});
+          }
         }
 
         const category = normalizeCategory(body?.category);
@@ -85,33 +110,31 @@ export function registerWarehouseRoutes(
                 {error: 'Agriculture slot not found'});
           }
         }
-        const baseMetadata = body?.metadata &&
-                typeof body.metadata === 'object' &&
-                !Array.isArray(body.metadata) ?
-            {...body.metadata} :
-            {} as Record<string, unknown>;
+
+        const metadata = cloneMetadata(body?.metadata);
+        metadata.sku = body.sku.trim();
+        metadata.description = body.description?.trim() ?? null;
+        metadata.quantity = qty;
+        metadata.location = body.location.trim();
+        const status =
+            lifecycleStatusOrDefault(body?.status, LifecycleStatus.STORED);
+        metadata.status = status;
+        metadata.freightLoadId = freightLoadId ?? null;
+        metadata.category = category;
         if (category === WarehouseCategory.AGRICULTURE) {
-          baseMetadata.source = 'agriculture';
-          if (agricultureSlot) baseMetadata.slot = agricultureSlot;
+          metadata.source = 'agriculture';
+          if (agricultureSlot) metadata.slot = agricultureSlot;
         } else {
-          baseMetadata.source = 'manual';
+          metadata.source = 'manual';
         }
 
-        const metadataPayload = Object.keys(baseMetadata).length ?
-            (baseMetadata as Prisma.InputJsonValue) :
-            Prisma.JsonNull;
-        const item = await prisma.warehouseItem.create({
+        const actor = await ensureWarehouseActor(prisma, userId);
+        const entity = await prisma.entity.create({
           data: {
-            userId,
-            sku: body.sku.trim(),
-            description: body.description?.trim() || null,
-            quantity: qty,
-            location: body.location.trim(),
-            status:
-                lifecycleStatusOrDefault(body.status, LifecycleStatus.STORED),
-            freightLoadId,
-            category,
-            metadata: metadataPayload,
+            actorId: actor.id,
+            kind: EntityKind.WAREHOUSE_ITEM,
+            source: 'k3h4-warehouse',
+            metadata: toJsonValue(metadata),
           },
         });
 
@@ -121,7 +144,7 @@ export function registerWarehouseRoutes(
           source: 'api',
           payload: {sku: body.sku, freightLoadId},
         });
-        return {item: serializeItem(item)};
+        return {item: buildWarehouseItemPayload(entity, userId)};
       },
   );
 
@@ -131,10 +154,16 @@ export function registerWarehouseRoutes(
       async (request, reply) => {
         const userId = (request.user as {sub: string}).sub;
         const id = (request.params as {id: string}).id;
-        const item =
-            await prisma.warehouseItem.findFirst({where: {id, userId}});
-        if (!item) return reply.status(404).send({error: 'Item not found'});
-        await prisma.warehouseItem.delete({where: {id}});
+        const actor = await ensureWarehouseActor(prisma, userId);
+        const entity = await prisma.entity.findFirst({
+          where: {
+            id,
+            actorId: actor.id,
+            kind: EntityKind.WAREHOUSE_ITEM,
+          },
+        });
+        if (!entity) return reply.status(404).send({error: 'Item not found'});
+        await prisma.entity.delete({where: {id}});
         await recordTelemetry(request, {
           ...buildTelemetryBase(request),
           eventType: 'warehouse.delete',
@@ -152,7 +181,8 @@ export function registerWarehouseRoutes(
         const userId = (request.user as {sub: string}).sub;
         const id = (request.params as {id: string}).id;
         const body = request.body as {
-          description?: string;
+          sku?: string;
+          description?: string|null;
           quantity?: number;
           location?: string;
           status?: string;
@@ -163,9 +193,15 @@ export function registerWarehouseRoutes(
         }
         |undefined;
 
-        const item =
-            await prisma.warehouseItem.findFirst({where: {id, userId}});
-        if (!item) return reply.status(404).send({error: 'Item not found'});
+        const actor = await ensureWarehouseActor(prisma, userId);
+        const entity = await prisma.entity.findFirst({
+          where: {
+            id,
+            actorId: actor.id,
+            kind: EntityKind.WAREHOUSE_ITEM,
+          },
+        });
+        if (!entity) return reply.status(404).send({error: 'Item not found'});
 
         const qty =
             body?.quantity !== undefined ? Number(body.quantity) : undefined;
@@ -174,19 +210,53 @@ export function registerWarehouseRoutes(
               {error: 'quantity must be a non-negative number'});
         }
 
-        const freightLoadId = body?.freightLoadId?.trim() || undefined;
+        let freightLoadId: string|null|undefined = undefined;
+        if (body?.freightLoadId === null) {
+          freightLoadId = null;
+        } else if (body?.freightLoadId) {
+          freightLoadId = body.freightLoadId.trim() || undefined;
+        }
         if (freightLoadId) {
           const load = await prisma.freightLoad.findFirst(
               {where: {id: freightLoadId, userId}});
-          if (!load)
+          if (!load) {
             return reply.status(404).send({error: 'Freight load not found'});
+          }
         }
 
-        const category =
-            body?.category ? normalizeCategory(body.category) : item.category;
+        const existingMetadata = metadataRecord(entity.metadata);
+        const mergedMetadata = {
+          ...existingMetadata,
+          ...cloneMetadata(body?.metadata ?? undefined),
+        };
+        if (body?.sku) mergedMetadata.sku = body.sku.trim();
+        if (body?.description !== undefined)
+          mergedMetadata.description = body.description?.trim() ?? null;
+        if (body?.location) mergedMetadata.location = body.location.trim();
+        if (qty !== undefined) mergedMetadata.quantity = qty;
+        if (freightLoadId !== undefined)
+          mergedMetadata.freightLoadId = freightLoadId;
+
+        const existingCategory = normalizeCategory(
+            metadataString(existingMetadata, 'category') ??
+            WarehouseCategory.OTHER);
+        const category = body?.category ? normalizeCategory(body.category) :
+                                          existingCategory;
+        mergedMetadata.category = category;
+
+        let nextStatus =
+            (metadataString(existingMetadata, 'status') as LifecycleStatus) ??
+            LifecycleStatus.STORED;
+        if (body?.status !== undefined) {
+          const parsedStatus = parseLifecycleStatus(body.status);
+          if (!parsedStatus)
+            return reply.status(400).send({error: 'Invalid status'});
+          nextStatus = parsedStatus;
+        }
+        mergedMetadata.status = nextStatus;
+
         let agricultureSlot: AgricultureSlotSnapshot|null = null;
-        if (category === WarehouseCategory.AGRICULTURE &&
-            body?.agricultureSlotId) {
+        if (body?.agricultureSlotId) {
           agricultureSlot = await resolveAgricultureSlotSnapshot(
               prisma, userId, body.agricultureSlotId);
           if (!agricultureSlot) {
@@ -194,56 +264,28 @@ export function registerWarehouseRoutes(
                 {error: 'Agriculture slot not found'});
           }
         }
-        const existingMetadata = item.metadata &&
-                typeof item.metadata === 'object' &&
-                !Array.isArray(item.metadata) ?
-            {...item.metadata} :
-            {};
-        const metadataSource = body?.metadata &&
-                typeof body.metadata === 'object' &&
-                !Array.isArray(body.metadata) ?
-            {...body.metadata} :
-            existingMetadata;
+
         if (category === WarehouseCategory.AGRICULTURE) {
-          metadataSource.source = 'agriculture';
-          if (agricultureSlot) metadataSource.slot = agricultureSlot;
+          mergedMetadata.source = 'agriculture';
+          if (agricultureSlot) mergedMetadata.slot = agricultureSlot;
         } else {
-          metadataSource.source = 'manual';
+          mergedMetadata.source = 'manual';
+          delete mergedMetadata.slot;
         }
 
-        let nextStatus = item.status;
-        if (body?.status !== undefined) {
-          const parsedStatus = parseLifecycleStatus(body.status);
-          if (!parsedStatus)
-            return reply.status(400).send({error: 'Invalid status'});
-          nextStatus = parsedStatus;
-        }
-
-        const metadataPayload = Object.keys(metadataSource).length ?
-            (metadataSource as Prisma.InputJsonValue) :
-            Prisma.JsonNull;
-        const updated = await prisma.warehouseItem.update({
+        const updated = await prisma.entity.update({
           where: {id},
-          data: {
-            description: body?.description?.trim() ?? item.description,
-            quantity: qty ?? item.quantity,
-            location: body?.location?.trim() ?? item.location,
-            status: nextStatus,
-            freightLoadId: body?.freightLoadId === null ?
-                null :
-                freightLoadId ?? item.freightLoadId,
-            category,
-            metadata: metadataPayload,
-          },
+          data: {metadata: toJsonValue(mergedMetadata)},
         });
-
+        const telemetryFreightId =
+            metadataString(mergedMetadata, 'freightLoadId') || undefined;
         await recordTelemetry(request, {
           ...buildTelemetryBase(request),
           eventType: 'warehouse.update',
           source: 'api',
-          payload: {id, freightLoadId: updated.freightLoadId},
+          payload: {id, freightLoadId: telemetryFreightId},
         });
-        return {item: serializeItem(updated)};
+        return {item: buildWarehouseItemPayload(updated, userId)};
       },
   );
 }

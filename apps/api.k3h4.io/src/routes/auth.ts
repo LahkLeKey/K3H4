@@ -4,6 +4,7 @@ import {randomBytes} from 'node:crypto';
 import {URLSearchParams} from 'node:url';
 
 import {deleteBankActorWithEntities} from '../services/bank-actor';
+import {deleteWarehouseActorWithEntities} from '../services/warehouse-actor';
 
 import {withTelemetryBase} from './telemetry';
 import {type RecordTelemetryFn} from './types';
@@ -179,7 +180,7 @@ const runDeleteJob = async (
       },
       {
         key: 'warehouseItems',
-        action: () => prisma.warehouseItem.deleteMany({where: {userId}})
+        action: () => deleteWarehouseActorWithEntities(prisma, userId)
       },
       {
         key: 'posLineItems',
