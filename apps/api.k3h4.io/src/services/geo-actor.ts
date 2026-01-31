@@ -3,6 +3,8 @@ import {ActorType, Prisma, PrismaClient} from '@prisma/client';
 const GEO_ACTOR_LABEL = 'Geo Cache';
 const GEO_ACTOR_NOTE = 'Actor owner for geo caches, routes, and views';
 const GEO_ACTOR_SOURCE = 'k3h4-geo';
+const GEO_GLOBAL_ACTOR_LABEL = 'Geo Cache (global)';
+const GEO_GLOBAL_ACTOR_SOURCE = 'k3h4-geo-global';
 
 type PrismaTx = PrismaClient|Prisma.TransactionClient;
 
@@ -36,4 +38,29 @@ export async function ensureGeoActorId(
 export async function findGeoActor(
     prisma: PrismaClient|Prisma.TransactionClient, userId: string) {
   return prisma.actor.findFirst({where: {userId, type: ActorType.GEO}});
+}
+
+export async function ensureGeoGlobalActor(
+    prisma: PrismaClient|Prisma.TransactionClient) {
+  const existing = await prisma.actor.findFirst({
+    where: {
+      userId: null,
+      type: ActorType.GEO,
+      source: GEO_GLOBAL_ACTOR_SOURCE,
+    },
+  });
+  if (existing) return existing;
+  return prisma.actor.create({
+    data: {
+      label: GEO_GLOBAL_ACTOR_LABEL,
+      type: ActorType.GEO,
+      source: GEO_GLOBAL_ACTOR_SOURCE,
+    },
+  });
+}
+
+export async function ensureGeoGlobalActorId(
+    prisma: PrismaClient|Prisma.TransactionClient) {
+  const actor = await ensureGeoGlobalActor(prisma);
+  return actor.id;
 }

@@ -149,16 +149,10 @@ model User {
   telemetry            TelemetryEvent[]
   freightLoads         FreightLoad[]
   providerGrants       ProviderGrant[]
-  geoRouteCaches       GeoRouteCache[]
   geoDirections        GeoDirection[]
-  geoPoiCaches         GeoPoiCache[]
-  geoQueryCaches       GeoQueryCache[]
   maptilerQueries      MaptilerQuery[]
   maptilerCacheEntries MaptilerCacheEntry[]
   osrmCacheEntries     OsrmCacheEntry[]
-  geoStatusLogs        GeoStatusLog[]
-  geoDemTileCaches     GeoDemTileCache[]
-  geoViewHistories     GeoViewHistory[]
   chatSessions         ChatSession[]
   aiInsights           AiInsight[]
   ollamaOperations     OllamaOperation[]
@@ -208,45 +202,22 @@ model ProviderGrant {
   @@unique([provider, providerId])
 }
 
-model GeoRouteCache {
-  id              String         @id @default(cuid())
-  userId          String?
-  user            User?          @relation(fields: [userId], references: [id], onDelete: SetNull)
-  actorId         String?
-  actor           Actor?         @relation(fields: [actorId], references: [id], onDelete: SetNull)
-  provider        String         @default("osrm")
-  signature       String         @unique
-  originLat       Decimal        @db.Decimal(11, 6)
-  originLng       Decimal        @db.Decimal(11, 6)
-  destinationLat  Decimal        @db.Decimal(11, 6)
-  destinationLng  Decimal        @db.Decimal(11, 6)
-  distanceKm      Decimal        @db.Decimal(14, 4)
-  durationMinutes Int?
-  geojson         Json?
-  expiresAt       DateTime
-  createdAt       DateTime       @default(now())
-  directions      GeoDirection[] @relation("GeoDirectionsToRouteCache")
-
-  @@index([expiresAt])
-  @@index([actorId])
-}
-
 // Aggregated driving directives sourced from OSRM, Nominatim, Overpass, etc.
 model GeoDirection {
-  id              String         @id @default(cuid())
+  id              String    @id @default(cuid())
   userId          String?
-  user            User?          @relation(fields: [userId], references: [id], onDelete: SetNull)
+  user            User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
   actorId         String?
-  actor           Actor?         @relation(fields: [actorId], references: [id], onDelete: SetNull)
+  actor           Actor?    @relation(fields: [actorId], references: [id], onDelete: SetNull)
   provider        String
   profile         String?
-  signature       String         @unique
+  signature       String    @unique
   inputPoints     Json? // ordered lat/lng stops that powered the request
-  originLat       Decimal?       @db.Decimal(11, 6)
-  originLng       Decimal?       @db.Decimal(11, 6)
-  destinationLat  Decimal?       @db.Decimal(11, 6)
-  destinationLng  Decimal?       @db.Decimal(11, 6)
-  distanceMeters  Decimal?       @db.Decimal(14, 3)
+  originLat       Decimal?  @db.Decimal(11, 6)
+  originLng       Decimal?  @db.Decimal(11, 6)
+  destinationLat  Decimal?  @db.Decimal(11, 6)
+  destinationLng  Decimal?  @db.Decimal(11, 6)
+  distanceMeters  Decimal?  @db.Decimal(14, 3)
   durationSeconds Int?
   geometry        Json?
   instructions    Json?
@@ -254,10 +225,8 @@ model GeoDirection {
   statusCode      Int?
   statusMessage   String?
   expiresAt       DateTime?
-  routeCacheId    String?
-  routeCache      GeoRouteCache? @relation("GeoDirectionsToRouteCache", fields: [routeCacheId], references: [id], onDelete: SetNull)
-  createdAt       DateTime       @default(now())
-  updatedAt       DateTime       @updatedAt
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
 
   stops    GeoDirectionStop[]
   segments GeoDirectionSegment[]
@@ -304,88 +273,6 @@ model GeoDirectionSegment {
   @@index([directionId, sequence])
 }
 
-model GeoPoiCache {
-  id        String   @id @default(cuid())
-  userId    String?
-  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
-  actorId   String?
-  actor     Actor?   @relation(fields: [actorId], references: [id], onDelete: SetNull)
-  signature String   @unique
-  centerLat Decimal  @db.Decimal(11, 6)
-  centerLng Decimal  @db.Decimal(11, 6)
-  radiusM   Int
-  kinds     String
-  pois      Json
-  count     Int
-  expiresAt DateTime
-  createdAt DateTime @default(now())
-
-  @@index([expiresAt])
-  @@index([actorId])
-}
-
-model GeoQueryCache {
-  id        String   @id @default(cuid())
-  userId    String?
-  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
-  actorId   String?
-  actor     Actor?   @relation(fields: [actorId], references: [id], onDelete: SetNull)
-  type      String
-  signature String   @unique
-  params    Json
-  payload   Json
-  count     Int?
-  expiresAt DateTime
-  createdAt DateTime @default(now())
-
-  @@index([type])
-  @@index([expiresAt])
-  @@index([actorId])
-}
-
-// Tracks user map view tiles and the POIs seen for reuse/offline
-model GeoViewHistory {
-  id            String    @id @default(cuid())
-  userId        String
-  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  actorId       String?
-  actor         Actor?    @relation(fields: [actorId], references: [id], onDelete: SetNull)
-  signature     String
-  zoomBand      Int
-  bboxMinLat    Decimal   @db.Decimal(11, 6)
-  bboxMinLng    Decimal   @db.Decimal(11, 6)
-  bboxMaxLat    Decimal   @db.Decimal(11, 6)
-  bboxMaxLng    Decimal   @db.Decimal(11, 6)
-  lastPoiIds    Json?
-  lastPoiCount  Int?
-  firstViewedAt DateTime  @default(now())
-  lastViewedAt  DateTime  @default(now())
-  viewCount     Int       @default(1)
-  staleAfter    DateTime?
-
-  @@unique([userId, signature], name: "geo_view_user_signature")
-  @@index([userId, lastViewedAt])
-  @@index([actorId, lastViewedAt])
-}
-
-model GeoStatusLog {
-  id        String   @id @default(cuid())
-  userId    String?
-  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
-  actorId   String?
-  actor     Actor?   @relation(fields: [actorId], references: [id], onDelete: SetNull)
-  status    String
-  poiStatus String?
-  centerLat Decimal? @db.Decimal(11, 6)
-  centerLng Decimal? @db.Decimal(11, 6)
-  error     String?
-  userAgent String?
-  createdAt DateTime @default(now())
-
-  @@index([createdAt])
-  @@index([actorId])
-}
-
 model Poi {
   id         String   @id @default(cuid())
   osmType    String   @default("node")
@@ -407,36 +294,6 @@ model Poi {
   @@index([latitude, longitude])
   @@index([category])
   @@index([buildingId])
-}
-
-// DEM / terrain tile cache for reuse per user
-model GeoDemTileCache {
-  id           String    @id @default(cuid())
-  userId       String?
-  user         User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
-  actorId      String?
-  actor        Actor?    @relation(fields: [actorId], references: [id], onDelete: SetNull)
-  provider     String    @default("maptiler")
-  source       String? // dataset or variant name
-  signature    String    @unique // provider:z/x/y:format
-  z            Int
-  x            Int
-  y            Int
-  format       String    @default("png")
-  url          String?
-  data         Bytes?
-  byteLength   Int?
-  etag         String?
-  cacheControl String?
-  expiresAt    DateTime?
-  fetchedAt    DateTime  @default(now())
-  lastAccessed DateTime  @default(now())
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
-
-  @@index([provider, z, x, y])
-  @@index([expiresAt])
-  @@index([actorId])
 }
 
 // MapTiler Cloud API queries and caches
@@ -723,13 +580,7 @@ model Actor {
 
   entities             Entity[]
   caches               ActorCache[]
-  geoRouteCaches       GeoRouteCache[]
   geoDirections        GeoDirection[]
-  geoPoiCaches         GeoPoiCache[]
-  geoQueryCaches       GeoQueryCache[]
-  geoViewHistories     GeoViewHistory[]
-  geoStatusLogs        GeoStatusLog[]
-  geoDemTileCaches     GeoDemTileCache[]
   maptilerQueries      MaptilerQuery[]
   maptilerCacheEntries MaptilerCacheEntry[]
   osrmCacheEntries     OsrmCacheEntry[]

@@ -37,7 +37,9 @@ export async function writeActorCache(
     payload: Prisma.JsonValue,
     ttlMs?: number|null,
 ) {
-  const expiresAt = buildExpiresAt(coerceTtl(ttlMs ?? ACTOR_CACHE_TTL_MS));
+  const resolvedTtl =
+      ttlMs === null ? null : coerceTtl(ttlMs ?? ACTOR_CACHE_TTL_MS);
+  const expiresAt = buildExpiresAt(resolvedTtl);
   await prisma.actorCache.upsert({
     where: {actorId_key: {actorId, key}},
     create: {actorId, key, payload, expiresAt},

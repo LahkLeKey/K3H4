@@ -1,8 +1,9 @@
-import {Prisma, type PrismaClient} from '@prisma/client';
+import {type PrismaClient} from '@prisma/client';
 import {type FastifyInstance} from 'fastify';
 
-import {ensureGeoActor} from '../services/geo-actor';
-import {cleanupDemCache, DEM_TTL_MS, demSignature, TERRAIN_PROVIDER} from '../services/geo-dem-cache';
+import {ensureGeoActor, ensureGeoGlobalActor} from '../services/geo-actor';
+import {GEO_DEM_TTL_MS, readGeoDemTileCache, writeGeoDemTileCache} from '../services/geo-cache';
+import {demSignature, TERRAIN_PROVIDER} from '../services/geo-dem-cache';
 
 import {buildTelemetryBase} from './telemetry';
 import {type RecordTelemetryFn} from './types';
@@ -74,24 +75,25 @@ export function registerDemRoutes(
         const signature = demSignature(provider, z, x, y, fmt);
         const now = new Date();
 
+        let cacheActorId: string|null = actorId;
+        let globalActorId: string|null = null;
+        const resolveCacheActorId = async () => {
+          if (cacheActorId) return cacheActorId;
+          if (!globalActorId) {
+            const globalActor = await ensureGeoGlobalActor(prisma);
+            globalActorId = globalActor.id;
+          }
+          return globalActorId;
+        };
+        const storageActorId = await resolveCacheActorId();
         const cached =
-            await prisma.geoDemTileCache.findUnique({where: {signature}});
-        if (cached && (!cached.expiresAt || cached.expiresAt > now) &&
-            cached.data) {
-          await prisma.geoDemTileCache.update({
-            where: {id: cached.id},
-            data: {
-              lastAccessed: now,
-              userId: userId ?? cached.userId ?? null,
-              actorId: actorId ?? cached.actorId ?? null,
-            },
-          });
-
+            await readGeoDemTileCache(prisma, storageActorId, signature);
+        if (cached && cached.dataBase64) {
+          const tile = Buffer.from(cached.dataBase64, 'base64');
+          const cacheControlHeader = cached.cacheControl ??
+              `public, max-age=${Math.floor(GEO_DEM_TTL_MS / 1000)}`;
           reply.header('Content-Type', `image/${fmt}`);
-          reply.header(
-              'Cache-Control',
-              cached.cacheControl ??
-                  `public, max-age=${Math.floor(DEM_TTL_MS / 1000)}`);
+          reply.header('Cache-Control', cacheControlHeader);
           if (cached.etag) reply.header('ETag', cached.etag);
           reply.header('X-Cache', 'HIT');
           await recordTelemetry(request, {
@@ -100,7 +102,7 @@ export function registerDemRoutes(
             source: 'api',
             payload: {signature, provider},
           });
-          return reply.send(Buffer.from(cached.data));
+          return reply.send(tile);
         }
 
         const apiKey = process.env.MAPTILER_API_KEY;
@@ -136,53 +138,18 @@ export function registerDemRoutes(
         const cacheControl = upstreamRes.headers.get('cache-control') ??
             `public, max-age=${Math.floor(DEM_TTL_MS / 1000)}`;
         const etag = upstreamRes.headers.get('etag') ?? undefined;
-        const expiresAt = new Date(Date.now() + DEM_TTL_MS);
-
-        await prisma.geoDemTileCache.upsert({
-          where: {signature},
-          update: {
-            provider,
-            source: 'terrain-rgb',
-            z,
-            x,
-            y,
-            format: fmt,
-            url: upstream,
-            data,
-            byteLength: data.byteLength,
-            cacheControl,
-            etag,
-            expiresAt,
-            fetchedAt: now,
-            lastAccessed: now,
-            userId,
-            actorId,
-          },
-          create: {
-            signature,
-            provider,
-            source: 'terrain-rgb',
-            z,
-            x,
-            y,
-            format: fmt,
-            url: upstream,
-            data,
-            byteLength: data.byteLength,
-            cacheControl,
-            etag,
-            expiresAt,
-            fetchedAt: now,
-            lastAccessed: now,
-            userId,
-            actorId,
-          },
+        const expiresAt = new Date(Date.now() + GEO_DEM_TTL_MS);
+        await writeGeoDemTileCache(prisma, storageActorId, {
+          signature,
+          provider,
+          format: fmt,
+          dataBase64: data.toString('base64'),
+          cacheControl,
+          etag: etag ?? undefined,
+          url: upstream,
+          fetchedAt: now.toISOString(),
+          expiresAt: expiresAt.toISOString(),
         });
-
-        void cleanupDemCache(prisma, server.log)
-            .catch(
-                (err) => server.log.error(
-                    {err}, 'dem cache cleanup post-write failed'));
         await recordTelemetry(request, {
           ...buildTelemetryBase(request),
           eventType: 'geo.dem.fetched',

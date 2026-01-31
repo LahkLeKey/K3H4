@@ -5,6 +5,7 @@ import {createHash} from 'node:crypto';
 import {enqueueOverpass} from '../lib/overpass-queue';
 import {enrichPoi} from '../modules/poi-enrich/enrich';
 import {ensureGeoActor} from '../services/geo-actor';
+import {readGeoQueryCache, readGeoQueryCacheStale, readGeoViewEntry, readGeoViewHistory, writeGeoQueryCache, writeGeoViewEntry,} from '../services/geo-cache';
 
 import {withTelemetryBase} from './telemetry';
 import {type RecordTelemetryFn} from './types';
@@ -259,27 +260,17 @@ export function registerPoiRoutes(
       latitude: {gte: bounds.minLat, lte: bounds.maxLat},
       longitude: {gte: bounds.minLng, lte: bounds.maxLng},
     };
-    const cachedQuery = await prisma.geoQueryCache.findFirst({
-      where: {signature: cacheSignature, type: 'poi.list'},
-      orderBy: {expiresAt: 'desc'},
-    });
-
-    const cachedPayload = cachedQuery?.payload as | {
-      items?: any[];
-      total?: number;
-      returned?: number;
-      clustered?: boolean;
-      bbox?: Bbox;
-      zoom?: number;
-      etag?: string;
-    }
-    |undefined;
-
-    const cacheAgeMs = cachedQuery?.expiresAt ?
-        now.getTime() - new Date(cachedQuery.expiresAt).getTime() :
+    const cachedEntry = actorId ?
+        await readGeoQueryCache(prisma, actorId, cacheSignature) :
         null;
-    const hasFreshCache = cachedQuery?.expiresAt && cachedQuery.expiresAt > now;
-    const hasStaleCache = !hasFreshCache && cachedPayload &&
+    const staleEntry = actorId && !cachedEntry ?
+        await readGeoQueryCacheStale(prisma, actorId, cacheSignature) :
+        null;
+    const expiresAt =
+        staleEntry?.expiresAt ? new Date(staleEntry.expiresAt) : null;
+    const cacheAgeMs = expiresAt ? now.getTime() - expiresAt.getTime() : null;
+    const hasFreshCache = Boolean(cachedEntry);
+    const hasStaleCache = !hasFreshCache && Boolean(staleEntry) &&
         cacheAgeMs !== null && cacheAgeMs <= POI_LIST_STALE_MAX_MS;
 
     const refreshCache = async (allowOverpass: boolean) => {
@@ -329,30 +320,19 @@ export function registerPoiRoutes(
         etag
       };
       const expiresAt = new Date(Date.now() + POI_LIST_CACHE_TTL_MS);
-      const userId = (request.user as {sub?: string} | undefined)?.sub ?? null;
-
-      await prisma.geoQueryCache.upsert({
-        where: {signature: cacheSignature},
-        update: {
-          type: 'poi.list',
-          params: {bbox: bounds, zoom, limit: takeLimit},
-          payload,
-          count: total,
-          expiresAt,
-          userId,
-          actorId,
-        },
-        create: {
-          type: 'poi.list',
-          signature: cacheSignature,
-          params: {bbox: bounds, zoom, limit: takeLimit},
-          payload,
-          count: total,
-          expiresAt,
-          userId,
-          actorId,
-        },
-      });
+      if (actorId) {
+        await writeGeoQueryCache(
+            prisma, actorId, {
+              signature: cacheSignature,
+              type: 'poi.list',
+              params: {bbox: bounds, zoom, limit: takeLimit},
+              payload,
+              count: total,
+              fetchedAt: now.toISOString(),
+              expiresAt: expiresAt.toISOString(),
+            },
+            POI_LIST_CACHE_TTL_MS);
+      }
 
       if (total === 0 && allowOverpass) {
         void coalesce(`overpass:${cacheSignature}`, async () => {
@@ -378,12 +358,62 @@ export function registerPoiRoutes(
       return payload;
     };
 
+    const recordViewHistory = async (items: unknown[]) => {
+      if (!actorId) return {existing: null, isStale: true};
+      const signature = viewSignature(bounds, zoom);
+      const now = new Date();
+      const existing = await readGeoViewEntry(prisma, actorId, signature);
+      const poiIds = items
+                         .filter(
+                             (entry) =>
+                                 !(entry && typeof entry === 'object' &&
+                                   'cluster' in entry &&
+                                   (entry as {cluster?: unknown}).cluster))
+                         .map((entry) => `${(entry as {id?: string}).id ?? ''}`)
+                         .filter(Boolean)
+                         .slice(0, 500);
+      const staleAfter =
+          new Date(now.getTime() + VIEW_STALE_MINUTES * 60 * 1000);
+      await writeGeoViewEntry(prisma, actorId, {
+        signature,
+        zoomBand: Math.round(zoom ?? 0),
+        bbox: {
+          minLat: bounds.minLat,
+          minLng: bounds.minLng,
+          maxLat: bounds.maxLat,
+          maxLng: bounds.maxLng,
+        },
+        lastPoiIds: poiIds,
+        lastPoiCount: items.length,
+        firstViewedAt: existing?.firstViewedAt ?? now.toISOString(),
+        lastViewedAt: now.toISOString(),
+        viewCount: (existing?.viewCount ?? 0) + 1,
+        staleAfter: staleAfter.toISOString(),
+      });
+      return {
+        existing,
+        isStale: existing?.staleAfter ? new Date(existing.staleAfter) < now :
+                                        true,
+      };
+    };
+
     if (hasFreshCache || hasStaleCache) {
+      const cacheEntry = hasFreshCache ? cachedEntry : staleEntry;
+      const cachedPayload = cacheEntry?.payload as | {
+        items?: any[];
+        total?: number;
+        returned?: number;
+        clustered?: boolean;
+        bbox?: Bbox;
+        zoom?: number;
+        etag?: string;
+      }
+      |undefined;
       const cachedItems =
           Array.isArray(cachedPayload?.items) ? cachedPayload?.items ?? [] : [];
       const cachedTotal = typeof cachedPayload?.total === 'number' ?
           cachedPayload.total :
-          cachedQuery?.count ?? 0;
+          cacheEntry?.count ?? 0;
       const cachedClustered = cachedPayload?.clustered === true;
       const cachedEtag =
           typeof cachedPayload?.etag === 'string' ? cachedPayload.etag : null;
@@ -399,54 +429,11 @@ export function registerPoiRoutes(
         void coalesce(cacheSignature, () => refreshCache(true));
       }
 
-      const userId = (request.user as {sub?: string} | undefined)?.sub ?? null;
-      if (userId) {
-        const actor = await ensureGeoActor(prisma, userId);
-        const actorId = actor.id;
-        const now = new Date();
-        const sig = viewSignature(bounds, zoom);
-        const zoomBand = Math.round(zoom ?? 0);
-        const poiIds = cachedItems.filter((i) => !('cluster' in i && i.cluster))
-                           .map((i) => i.id)
-                           .slice(0, 500);
-        const staleAfter =
-            new Date(now.getTime() + VIEW_STALE_MINUTES * 60 * 1000);
-
-        const existingView = await prisma.geoViewHistory.findUnique(
-            {where: {geo_view_user_signature: {userId, signature: sig}}});
-
-        await prisma.geoViewHistory.upsert({
-          where: {geo_view_user_signature: {userId, signature: sig}},
-          update: {
-            lastViewedAt: now,
-            viewCount: {increment: 1},
-            lastPoiIds: poiIds,
-            lastPoiCount: cachedItems.length,
-            staleAfter,
-            zoomBand,
-            actorId,
-          },
-          create: {
-            userId,
-            actorId,
-            signature: sig,
-            zoomBand,
-            bboxMinLat: new Prisma.Decimal(bounds.minLat.toFixed(6)),
-            bboxMinLng: new Prisma.Decimal(bounds.minLng.toFixed(6)),
-            bboxMaxLat: new Prisma.Decimal(bounds.maxLat.toFixed(6)),
-            bboxMaxLng: new Prisma.Decimal(bounds.maxLng.toFixed(6)),
-            lastPoiIds: poiIds,
-            lastPoiCount: cachedItems.length,
-            firstViewedAt: now,
-            lastViewedAt: now,
-            staleAfter,
-            viewCount: 1,
-          },
-        });
-
-        const isStale =
-            existingView?.staleAfter ? existingView.staleAfter < now : true;
-        if (isStale) {
+      if (actorId) {
+        const viewMeta = await recordViewHistory(cachedItems);
+        if (viewMeta.isStale) {
+          const now = new Date();
+          const sig = viewSignature(bounds, zoom);
           void (async () => {
             try {
               const kinds = DEFAULT_KINDS;
@@ -498,54 +485,11 @@ export function registerPoiRoutes(
     reply.header(
         'Cache-Control', 'public, max-age=120, stale-while-revalidate=900');
 
-    const userId = (request.user as {sub?: string} | undefined)?.sub ?? null;
-    if (userId) {
-      const actor = await ensureGeoActor(prisma, userId);
-      const actorId = actor.id;
-      const now = new Date();
-      const sig = viewSignature(bounds, zoom);
-      const zoomBand = Math.round(zoom ?? 0);
-      const poiIds = items.filter((i) => !('cluster' in i && i.cluster))
-                         .map((i) => i.id)
-                         .slice(0, 500);
-      const staleAfter =
-          new Date(now.getTime() + VIEW_STALE_MINUTES * 60 * 1000);
-
-      const existingView = await prisma.geoViewHistory.findUnique(
-          {where: {geo_view_user_signature: {userId, signature: sig}}});
-
-      await prisma.geoViewHistory.upsert({
-        where: {geo_view_user_signature: {userId, signature: sig}},
-        update: {
-          lastViewedAt: now,
-          viewCount: {increment: 1},
-          lastPoiIds: poiIds,
-          lastPoiCount: items.length,
-          staleAfter,
-          zoomBand,
-          actorId,
-        },
-        create: {
-          userId,
-          actorId,
-          signature: sig,
-          zoomBand,
-          bboxMinLat: new Prisma.Decimal(bounds.minLat.toFixed(6)),
-          bboxMinLng: new Prisma.Decimal(bounds.minLng.toFixed(6)),
-          bboxMaxLat: new Prisma.Decimal(bounds.maxLat.toFixed(6)),
-          bboxMaxLng: new Prisma.Decimal(bounds.maxLng.toFixed(6)),
-          lastPoiIds: poiIds,
-          lastPoiCount: items.length,
-          firstViewedAt: now,
-          lastViewedAt: now,
-          staleAfter,
-          viewCount: 1,
-        },
-      });
-
-      const isStale =
-          existingView?.staleAfter ? existingView.staleAfter < now : true;
-      if (isStale) {
+    if (actorId) {
+      const viewMeta = await recordViewHistory(items);
+      if (viewMeta.isStale) {
+        const now = new Date();
+        const sig = viewSignature(bounds, zoom);
         void (async () => {
           try {
             const kinds = DEFAULT_KINDS;
@@ -565,6 +509,7 @@ export function registerPoiRoutes(
     await rt({
       eventType: 'poi.list',
       source: 'api',
+
       payload: {zoom, total, returned: items.length, clustered, cache: 'miss'}
     });
 
