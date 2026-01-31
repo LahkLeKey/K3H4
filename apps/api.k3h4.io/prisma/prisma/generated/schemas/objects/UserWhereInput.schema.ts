@@ -10,7 +10,6 @@ import { UserPreferenceWhereInputObjectSchema as UserPreferenceWhereInputObjectS
 import { TelemetryEventListRelationFilterObjectSchema as TelemetryEventListRelationFilterObjectSchema } from './TelemetryEventListRelationFilter.schema';
 import { FreightLoadListRelationFilterObjectSchema as FreightLoadListRelationFilterObjectSchema } from './FreightLoadListRelationFilter.schema';
 import { ProviderGrantListRelationFilterObjectSchema as ProviderGrantListRelationFilterObjectSchema } from './ProviderGrantListRelationFilter.schema';
-import { GeoDirectionListRelationFilterObjectSchema as GeoDirectionListRelationFilterObjectSchema } from './GeoDirectionListRelationFilter.schema';
 import { ChatSessionListRelationFilterObjectSchema as ChatSessionListRelationFilterObjectSchema } from './ChatSessionListRelationFilter.schema';
 import { AiInsightListRelationFilterObjectSchema as AiInsightListRelationFilterObjectSchema } from './AiInsightListRelationFilter.schema';
 import { OllamaOperationListRelationFilterObjectSchema as OllamaOperationListRelationFilterObjectSchema } from './OllamaOperationListRelationFilter.schema';
@@ -42,7 +41,6 @@ const userwhereinputSchema = z.object({
   telemetry: z.lazy(() => TelemetryEventListRelationFilterObjectSchema).optional(),
   freightLoads: z.lazy(() => FreightLoadListRelationFilterObjectSchema).optional(),
   providerGrants: z.lazy(() => ProviderGrantListRelationFilterObjectSchema).optional(),
-  geoDirections: z.lazy(() => GeoDirectionListRelationFilterObjectSchema).optional(),
   chatSessions: z.lazy(() => ChatSessionListRelationFilterObjectSchema).optional(),
   aiInsights: z.lazy(() => AiInsightListRelationFilterObjectSchema).optional(),
   ollamaOperations: z.lazy(() => OllamaOperationListRelationFilterObjectSchema).optional(),

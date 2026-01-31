@@ -12,8 +12,7 @@ export const ActorFindManyResultSchema = z.object({
   createdAt: z.date(),
   updatedAt: z.date(),
   entities: z.array(z.unknown()),
-  caches: z.array(z.unknown()),
-  geoDirections: z.array(z.unknown())
+  caches: z.array(z.unknown())
 })),
   pagination: z.object({
   page: z.number().int().min(1),

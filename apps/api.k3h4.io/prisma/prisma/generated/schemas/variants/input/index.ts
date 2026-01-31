@@ -3,15 +3,11 @@
  * Auto-generated - do not edit manually
  */
 
-export { BuildingInputSchema } from './Building.input';
 export { UserInputSchema } from './User.input';
 export { AiInsightInputSchema } from './AiInsight.input';
 export { RefreshTokenInputSchema } from './RefreshToken.input';
 export { ProviderGrantInputSchema } from './ProviderGrant.input';
-export { GeoDirectionInputSchema } from './GeoDirection.input';
-export { GeoDirectionStopInputSchema } from './GeoDirectionStop.input';
-export { GeoDirectionSegmentInputSchema } from './GeoDirectionSegment.input';
-export { PoiInputSchema } from './Poi.input';
+export { PointOfInterestInputSchema } from './PointOfInterest.input';
 export { PoiEnrichmentCacheInputSchema } from './PoiEnrichmentCache.input';
 export { UserPreferenceInputSchema } from './UserPreference.input';
 export { TelemetryEventInputSchema } from './TelemetryEvent.input';

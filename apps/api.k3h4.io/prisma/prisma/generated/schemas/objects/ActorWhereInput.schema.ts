@@ -9,8 +9,7 @@ import { DateTimeFilterObjectSchema as DateTimeFilterObjectSchema } from './Date
 import { UserNullableScalarRelationFilterObjectSchema as UserNullableScalarRelationFilterObjectSchema } from './UserNullableScalarRelationFilter.schema';
 import { UserWhereInputObjectSchema as UserWhereInputObjectSchema } from './UserWhereInput.schema';
 import { EntityListRelationFilterObjectSchema as EntityListRelationFilterObjectSchema } from './EntityListRelationFilter.schema';
-import { ActorCacheListRelationFilterObjectSchema as ActorCacheListRelationFilterObjectSchema } from './ActorCacheListRelationFilter.schema';
-import { GeoDirectionListRelationFilterObjectSchema as GeoDirectionListRelationFilterObjectSchema } from './GeoDirectionListRelationFilter.schema'
+import { ActorCacheListRelationFilterObjectSchema as ActorCacheListRelationFilterObjectSchema } from './ActorCacheListRelationFilter.schema'
 
 const actorwhereinputSchema = z.object({
   AND: z.union([z.lazy(() => ActorWhereInputObjectSchema), z.lazy(() => ActorWhereInputObjectSchema).array()]).optional(),
@@ -27,8 +26,7 @@ const actorwhereinputSchema = z.object({
   updatedAt: z.union([z.lazy(() => DateTimeFilterObjectSchema), z.coerce.date()]).optional(),
   user: z.union([z.lazy(() => UserNullableScalarRelationFilterObjectSchema), z.lazy(() => UserWhereInputObjectSchema)]).optional(),
   entities: z.lazy(() => EntityListRelationFilterObjectSchema).optional(),
-  caches: z.lazy(() => ActorCacheListRelationFilterObjectSchema).optional(),
-  geoDirections: z.lazy(() => GeoDirectionListRelationFilterObjectSchema).optional()
+  caches: z.lazy(() => ActorCacheListRelationFilterObjectSchema).optional()
 }).strict();
 export const ActorWhereInputObjectSchema: z.ZodType<Prisma.ActorWhereInput> = actorwhereinputSchema as unknown as z.ZodType<Prisma.ActorWhereInput>;
 export const ActorWhereInputObjectZodSchema = actorwhereinputSchema;

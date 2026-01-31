@@ -6,8 +6,7 @@ import { ActorTypeSchema } from '../enums/ActorType.schema';
 import { EnumActorTypeFieldUpdateOperationsInputObjectSchema as EnumActorTypeFieldUpdateOperationsInputObjectSchema } from './EnumActorTypeFieldUpdateOperationsInput.schema';
 import { NullableJsonNullValueInputSchema } from '../enums/NullableJsonNullValueInput.schema';
 import { DateTimeFieldUpdateOperationsInputObjectSchema as DateTimeFieldUpdateOperationsInputObjectSchema } from './DateTimeFieldUpdateOperationsInput.schema';
-import { ActorCacheUncheckedUpdateManyWithoutActorNestedInputObjectSchema as ActorCacheUncheckedUpdateManyWithoutActorNestedInputObjectSchema } from './ActorCacheUncheckedUpdateManyWithoutActorNestedInput.schema';
-import { GeoDirectionUncheckedUpdateManyWithoutActorNestedInputObjectSchema as GeoDirectionUncheckedUpdateManyWithoutActorNestedInputObjectSchema } from './GeoDirectionUncheckedUpdateManyWithoutActorNestedInput.schema'
+import { ActorCacheUncheckedUpdateManyWithoutActorNestedInputObjectSchema as ActorCacheUncheckedUpdateManyWithoutActorNestedInputObjectSchema } from './ActorCacheUncheckedUpdateManyWithoutActorNestedInput.schema'
 
 import { JsonValueSchema as jsonSchema } from '../helpers/json-helpers';
 
@@ -21,8 +20,7 @@ const makeSchema = () => z.object({
   metadata: z.union([NullableJsonNullValueInputSchema, jsonSchema]).optional(),
   createdAt: z.union([z.coerce.date(), z.lazy(() => DateTimeFieldUpdateOperationsInputObjectSchema)]).optional(),
   updatedAt: z.union([z.coerce.date(), z.lazy(() => DateTimeFieldUpdateOperationsInputObjectSchema)]).optional(),
-  caches: z.lazy(() => ActorCacheUncheckedUpdateManyWithoutActorNestedInputObjectSchema).optional(),
-  geoDirections: z.lazy(() => GeoDirectionUncheckedUpdateManyWithoutActorNestedInputObjectSchema).optional()
+  caches: z.lazy(() => ActorCacheUncheckedUpdateManyWithoutActorNestedInputObjectSchema).optional()
 }).strict();
 export const ActorUncheckedUpdateWithoutEntitiesInputObjectSchema: z.ZodType<Prisma.ActorUncheckedUpdateWithoutEntitiesInput> = makeSchema() as unknown as z.ZodType<Prisma.ActorUncheckedUpdateWithoutEntitiesInput>;
 export const ActorUncheckedUpdateWithoutEntitiesInputObjectZodSchema = makeSchema();

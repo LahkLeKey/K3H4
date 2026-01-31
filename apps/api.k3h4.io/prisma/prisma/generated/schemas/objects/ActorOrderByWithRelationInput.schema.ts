@@ -4,8 +4,7 @@ import { SortOrderSchema } from '../enums/SortOrder.schema';
 import { SortOrderInputObjectSchema as SortOrderInputObjectSchema } from './SortOrderInput.schema';
 import { UserOrderByWithRelationInputObjectSchema as UserOrderByWithRelationInputObjectSchema } from './UserOrderByWithRelationInput.schema';
 import { EntityOrderByRelationAggregateInputObjectSchema as EntityOrderByRelationAggregateInputObjectSchema } from './EntityOrderByRelationAggregateInput.schema';
-import { ActorCacheOrderByRelationAggregateInputObjectSchema as ActorCacheOrderByRelationAggregateInputObjectSchema } from './ActorCacheOrderByRelationAggregateInput.schema';
-import { GeoDirectionOrderByRelationAggregateInputObjectSchema as GeoDirectionOrderByRelationAggregateInputObjectSchema } from './GeoDirectionOrderByRelationAggregateInput.schema'
+import { ActorCacheOrderByRelationAggregateInputObjectSchema as ActorCacheOrderByRelationAggregateInputObjectSchema } from './ActorCacheOrderByRelationAggregateInput.schema'
 
 const makeSchema = () => z.object({
   id: SortOrderSchema.optional(),
@@ -19,8 +18,7 @@ const makeSchema = () => z.object({
   updatedAt: SortOrderSchema.optional(),
   user: z.lazy(() => UserOrderByWithRelationInputObjectSchema).optional(),
   entities: z.lazy(() => EntityOrderByRelationAggregateInputObjectSchema).optional(),
-  caches: z.lazy(() => ActorCacheOrderByRelationAggregateInputObjectSchema).optional(),
-  geoDirections: z.lazy(() => GeoDirectionOrderByRelationAggregateInputObjectSchema).optional()
+  caches: z.lazy(() => ActorCacheOrderByRelationAggregateInputObjectSchema).optional()
 }).strict();
 export const ActorOrderByWithRelationInputObjectSchema: z.ZodType<Prisma.ActorOrderByWithRelationInput> = makeSchema() as unknown as z.ZodType<Prisma.ActorOrderByWithRelationInput>;
 export const ActorOrderByWithRelationInputObjectZodSchema = makeSchema();

@@ -7,8 +7,7 @@ import { NullableStringFieldUpdateOperationsInputObjectSchema as NullableStringF
 import { NullableJsonNullValueInputSchema } from '../enums/NullableJsonNullValueInput.schema';
 import { DateTimeFieldUpdateOperationsInputObjectSchema as DateTimeFieldUpdateOperationsInputObjectSchema } from './DateTimeFieldUpdateOperationsInput.schema';
 import { UserUpdateOneWithoutActorsNestedInputObjectSchema as UserUpdateOneWithoutActorsNestedInputObjectSchema } from './UserUpdateOneWithoutActorsNestedInput.schema';
-import { EntityUpdateManyWithoutActorNestedInputObjectSchema as EntityUpdateManyWithoutActorNestedInputObjectSchema } from './EntityUpdateManyWithoutActorNestedInput.schema';
-import { GeoDirectionUpdateManyWithoutActorNestedInputObjectSchema as GeoDirectionUpdateManyWithoutActorNestedInputObjectSchema } from './GeoDirectionUpdateManyWithoutActorNestedInput.schema'
+import { EntityUpdateManyWithoutActorNestedInputObjectSchema as EntityUpdateManyWithoutActorNestedInputObjectSchema } from './EntityUpdateManyWithoutActorNestedInput.schema'
 
 import { JsonValueSchema as jsonSchema } from '../helpers/json-helpers';
 
@@ -22,8 +21,7 @@ const makeSchema = () => z.object({
   createdAt: z.union([z.coerce.date(), z.lazy(() => DateTimeFieldUpdateOperationsInputObjectSchema)]).optional(),
   updatedAt: z.union([z.coerce.date(), z.lazy(() => DateTimeFieldUpdateOperationsInputObjectSchema)]).optional(),
   user: z.lazy(() => UserUpdateOneWithoutActorsNestedInputObjectSchema).optional(),
-  entities: z.lazy(() => EntityUpdateManyWithoutActorNestedInputObjectSchema).optional(),
-  geoDirections: z.lazy(() => GeoDirectionUpdateManyWithoutActorNestedInputObjectSchema).optional()
+  entities: z.lazy(() => EntityUpdateManyWithoutActorNestedInputObjectSchema).optional()
 }).strict();
 export const ActorUpdateWithoutCachesInputObjectSchema: z.ZodType<Prisma.ActorUpdateWithoutCachesInput> = makeSchema() as unknown as z.ZodType<Prisma.ActorUpdateWithoutCachesInput>;
 export const ActorUpdateWithoutCachesInputObjectZodSchema = makeSchema();

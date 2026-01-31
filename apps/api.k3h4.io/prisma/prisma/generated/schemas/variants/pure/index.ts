@@ -3,15 +3,11 @@
  * Auto-generated - do not edit manually
  */
 
-export { BuildingModelSchema } from './Building.pure';
 export { UserModelSchema } from './User.pure';
 export { AiInsightModelSchema } from './AiInsight.pure';
 export { RefreshTokenModelSchema } from './RefreshToken.pure';
 export { ProviderGrantModelSchema } from './ProviderGrant.pure';
-export { GeoDirectionModelSchema } from './GeoDirection.pure';
-export { GeoDirectionStopModelSchema } from './GeoDirectionStop.pure';
-export { GeoDirectionSegmentModelSchema } from './GeoDirectionSegment.pure';
-export { PoiModelSchema } from './Poi.pure';
+export { PointOfInterestModelSchema } from './PointOfInterest.pure';
 export { PoiEnrichmentCacheModelSchema } from './PoiEnrichmentCache.pure';
 export { UserPreferenceModelSchema } from './UserPreference.pure';
 export { TelemetryEventModelSchema } from './TelemetryEvent.pure';

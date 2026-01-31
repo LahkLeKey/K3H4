@@ -3,8 +3,7 @@ import type { Prisma } from '@prisma/client';
 import { ActorTypeSchema } from '../enums/ActorType.schema';
 import { NullableJsonNullValueInputSchema } from '../enums/NullableJsonNullValueInput.schema';
 import { UserCreateNestedOneWithoutActorsInputObjectSchema as UserCreateNestedOneWithoutActorsInputObjectSchema } from './UserCreateNestedOneWithoutActorsInput.schema';
-import { EntityCreateNestedManyWithoutActorInputObjectSchema as EntityCreateNestedManyWithoutActorInputObjectSchema } from './EntityCreateNestedManyWithoutActorInput.schema';
-import { GeoDirectionCreateNestedManyWithoutActorInputObjectSchema as GeoDirectionCreateNestedManyWithoutActorInputObjectSchema } from './GeoDirectionCreateNestedManyWithoutActorInput.schema'
+import { EntityCreateNestedManyWithoutActorInputObjectSchema as EntityCreateNestedManyWithoutActorInputObjectSchema } from './EntityCreateNestedManyWithoutActorInput.schema'
 
 import { JsonValueSchema as jsonSchema } from '../helpers/json-helpers';
 
@@ -18,8 +17,7 @@ const makeSchema = () => z.object({
   createdAt: z.coerce.date().optional(),
   updatedAt: z.coerce.date().optional(),
   user: z.lazy(() => UserCreateNestedOneWithoutActorsInputObjectSchema).optional(),
-  entities: z.lazy(() => EntityCreateNestedManyWithoutActorInputObjectSchema).optional(),
-  geoDirections: z.lazy(() => GeoDirectionCreateNestedManyWithoutActorInputObjectSchema).optional()
+  entities: z.lazy(() => EntityCreateNestedManyWithoutActorInputObjectSchema).optional()
 }).strict();
 export const ActorCreateWithoutCachesInputObjectSchema: z.ZodType<Prisma.ActorCreateWithoutCachesInput> = makeSchema() as unknown as z.ZodType<Prisma.ActorCreateWithoutCachesInput>;
 export const ActorCreateWithoutCachesInputObjectZodSchema = makeSchema();

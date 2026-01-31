@@ -5,7 +5,6 @@ import { UserPreferenceArgsObjectSchema as UserPreferenceArgsObjectSchema } from
 import { TelemetryEventFindManySchema as TelemetryEventFindManySchema } from '../findManyTelemetryEvent.schema';
 import { FreightLoadFindManySchema as FreightLoadFindManySchema } from '../findManyFreightLoad.schema';
 import { ProviderGrantFindManySchema as ProviderGrantFindManySchema } from '../findManyProviderGrant.schema';
-import { GeoDirectionFindManySchema as GeoDirectionFindManySchema } from '../findManyGeoDirection.schema';
 import { ChatSessionFindManySchema as ChatSessionFindManySchema } from '../findManyChatSession.schema';
 import { AiInsightFindManySchema as AiInsightFindManySchema } from '../findManyAiInsight.schema';
 import { OllamaOperationFindManySchema as OllamaOperationFindManySchema } from '../findManyOllamaOperation.schema';
@@ -18,7 +17,6 @@ const makeSchema = () => z.object({
   telemetry: z.union([z.boolean(), z.lazy(() => TelemetryEventFindManySchema)]).optional(),
   freightLoads: z.union([z.boolean(), z.lazy(() => FreightLoadFindManySchema)]).optional(),
   providerGrants: z.union([z.boolean(), z.lazy(() => ProviderGrantFindManySchema)]).optional(),
-  geoDirections: z.union([z.boolean(), z.lazy(() => GeoDirectionFindManySchema)]).optional(),
   chatSessions: z.union([z.boolean(), z.lazy(() => ChatSessionFindManySchema)]).optional(),
   aiInsights: z.union([z.boolean(), z.lazy(() => AiInsightFindManySchema)]).optional(),
   ollamaOperations: z.union([z.boolean(), z.lazy(() => OllamaOperationFindManySchema)]).optional(),

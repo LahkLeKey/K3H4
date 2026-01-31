@@ -8,8 +8,7 @@ import { NullableJsonNullValueInputSchema } from '../enums/NullableJsonNullValue
 import { DateTimeFieldUpdateOperationsInputObjectSchema as DateTimeFieldUpdateOperationsInputObjectSchema } from './DateTimeFieldUpdateOperationsInput.schema';
 import { UserUpdateOneWithoutActorsNestedInputObjectSchema as UserUpdateOneWithoutActorsNestedInputObjectSchema } from './UserUpdateOneWithoutActorsNestedInput.schema';
 import { EntityUpdateManyWithoutActorNestedInputObjectSchema as EntityUpdateManyWithoutActorNestedInputObjectSchema } from './EntityUpdateManyWithoutActorNestedInput.schema';
-import { ActorCacheUpdateManyWithoutActorNestedInputObjectSchema as ActorCacheUpdateManyWithoutActorNestedInputObjectSchema } from './ActorCacheUpdateManyWithoutActorNestedInput.schema';
-import { GeoDirectionUpdateManyWithoutActorNestedInputObjectSchema as GeoDirectionUpdateManyWithoutActorNestedInputObjectSchema } from './GeoDirectionUpdateManyWithoutActorNestedInput.schema'
+import { ActorCacheUpdateManyWithoutActorNestedInputObjectSchema as ActorCacheUpdateManyWithoutActorNestedInputObjectSchema } from './ActorCacheUpdateManyWithoutActorNestedInput.schema'
 
 import { JsonValueSchema as jsonSchema } from '../helpers/json-helpers';
 
@@ -24,8 +23,7 @@ const makeSchema = () => z.object({
   updatedAt: z.union([z.coerce.date(), z.lazy(() => DateTimeFieldUpdateOperationsInputObjectSchema)]).optional(),
   user: z.lazy(() => UserUpdateOneWithoutActorsNestedInputObjectSchema).optional(),
   entities: z.lazy(() => EntityUpdateManyWithoutActorNestedInputObjectSchema).optional(),
-  caches: z.lazy(() => ActorCacheUpdateManyWithoutActorNestedInputObjectSchema).optional(),
-  geoDirections: z.lazy(() => GeoDirectionUpdateManyWithoutActorNestedInputObjectSchema).optional()
+  caches: z.lazy(() => ActorCacheUpdateManyWithoutActorNestedInputObjectSchema).optional()
 }).strict();
 export const ActorUpdateInputObjectSchema: z.ZodType<Prisma.ActorUpdateInput> = makeSchema() as unknown as z.ZodType<Prisma.ActorUpdateInput>;
 export const ActorUpdateInputObjectZodSchema = makeSchema();

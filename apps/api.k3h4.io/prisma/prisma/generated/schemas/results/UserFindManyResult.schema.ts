@@ -15,7 +15,6 @@ export const UserFindManyResultSchema = z.object({
   telemetry: z.array(z.unknown()),
   freightLoads: z.array(z.unknown()),
   providerGrants: z.array(z.unknown()),
-  geoDirections: z.array(z.unknown()),
   chatSessions: z.array(z.unknown()),
   aiInsights: z.array(z.unknown()),
   ollamaOperations: z.array(z.unknown()),

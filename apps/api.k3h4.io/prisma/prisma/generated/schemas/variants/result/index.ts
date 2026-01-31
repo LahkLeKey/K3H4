@@ -3,15 +3,11 @@
  * Auto-generated - do not edit manually
  */
 
-export { BuildingResultSchema } from './Building.result';
 export { UserResultSchema } from './User.result';
 export { AiInsightResultSchema } from './AiInsight.result';
 export { RefreshTokenResultSchema } from './RefreshToken.result';
 export { ProviderGrantResultSchema } from './ProviderGrant.result';
-export { GeoDirectionResultSchema } from './GeoDirection.result';
-export { GeoDirectionStopResultSchema } from './GeoDirectionStop.result';
-export { GeoDirectionSegmentResultSchema } from './GeoDirectionSegment.result';
-export { PoiResultSchema } from './Poi.result';
+export { PointOfInterestResultSchema } from './PointOfInterest.result';
 export { PoiEnrichmentCacheResultSchema } from './PoiEnrichmentCache.result';
 export { UserPreferenceResultSchema } from './UserPreference.result';
 export { TelemetryEventResultSchema } from './TelemetryEvent.result';

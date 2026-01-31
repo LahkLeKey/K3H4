@@ -1,0 +1,14 @@
+import type { Prisma } from '@prisma/client';
+import * as z from 'zod';
+import { PointOfInterestOrderByWithRelationInputObjectSchema as PointOfInterestOrderByWithRelationInputObjectSchema } from './objects/PointOfInterestOrderByWithRelationInput.schema';
+import { PointOfInterestWhereInputObjectSchema as PointOfInterestWhereInputObjectSchema } from './objects/PointOfInterestWhereInput.schema';
+import { PointOfInterestWhereUniqueInputObjectSchema as PointOfInterestWhereUniqueInputObjectSchema } from './objects/PointOfInterestWhereUniqueInput.schema';
+import { PointOfInterestCountAggregateInputObjectSchema as PointOfInterestCountAggregateInputObjectSchema } from './objects/PointOfInterestCountAggregateInput.schema';
+import { PointOfInterestMinAggregateInputObjectSchema as PointOfInterestMinAggregateInputObjectSchema } from './objects/PointOfInterestMinAggregateInput.schema';
+import { PointOfInterestMaxAggregateInputObjectSchema as PointOfInterestMaxAggregateInputObjectSchema } from './objects/PointOfInterestMaxAggregateInput.schema';
+import { PointOfInterestAvgAggregateInputObjectSchema as PointOfInterestAvgAggregateInputObjectSchema } from './objects/PointOfInterestAvgAggregateInput.schema';
+import { PointOfInterestSumAggregateInputObjectSchema as PointOfInterestSumAggregateInputObjectSchema } from './objects/PointOfInterestSumAggregateInput.schema';
+
+export const PointOfInterestAggregateSchema: z.ZodType<Prisma.PointOfInterestAggregateArgs> = z.object({ orderBy: z.union([PointOfInterestOrderByWithRelationInputObjectSchema, PointOfInterestOrderByWithRelationInputObjectSchema.array()]).optional(), where: PointOfInterestWhereInputObjectSchema.optional(), cursor: PointOfInterestWhereUniqueInputObjectSchema.optional(), take: z.number().optional(), skip: z.number().optional(), _count: z.union([ z.literal(true), PointOfInterestCountAggregateInputObjectSchema ]).optional(), _min: PointOfInterestMinAggregateInputObjectSchema.optional(), _max: PointOfInterestMaxAggregateInputObjectSchema.optional(), _avg: PointOfInterestAvgAggregateInputObjectSchema.optional(), _sum: PointOfInterestSumAggregateInputObjectSchema.optional() }).strict() as unknown as z.ZodType<Prisma.PointOfInterestAggregateArgs>;
+
+export const PointOfInterestAggregateZodSchema = z.object({ orderBy: z.union([PointOfInterestOrderByWithRelationInputObjectSchema, PointOfInterestOrderByWithRelationInputObjectSchema.array()]).optional(), where: PointOfInterestWhereInputObjectSchema.optional(), cursor: PointOfInterestWhereUniqueInputObjectSchema.optional(), take: z.number().optional(), skip: z.number().optional(), _count: z.union([ z.literal(true), PointOfInterestCountAggregateInputObjectSchema ]).optional(), _min: PointOfInterestMinAggregateInputObjectSchema.optional(), _max: PointOfInterestMaxAggregateInputObjectSchema.optional(), _avg: PointOfInterestAvgAggregateInputObjectSchema.optional(), _sum: PointOfInterestSumAggregateInputObjectSchema.optional() }).strict();
