@@ -3,6 +3,7 @@ import {type FastifyInstance} from 'fastify';
 
 import {routeSignature} from '../lib/geo-signature';
 import {enqueueOverpass} from '../lib/overpass-queue';
+import {ensureGeoActor} from '../services/geo-actor';
 
 import {buildTelemetryBase} from './telemetry';
 import {type RecordTelemetryFn} from './types';
@@ -61,6 +62,12 @@ export function registerGeoRoutes(
     server: FastifyInstance, prisma: PrismaClient,
     recordTelemetry: RecordTelemetryFn) {
   const db = prisma as any;
+
+  const actorWhere = (actorId: string|null|undefined) =>
+      actorId ? {actorId} : {actorId: null};
+
+  const actorOrUserWhere = (actorId: string|null|undefined, userId: string) =>
+      actorId ? {OR: [{actorId}, {actorId: null, userId}]} : {userId};
 
   const persistUserGeoPrefs = async (userId: string|null, prefs: {
     center?: {lat: number; lng: number}|null;
@@ -125,6 +132,8 @@ export function registerGeoRoutes(
       {preHandler: [server.authenticate]},
       async (request, reply) => {
         const userId = (request.user as {sub: string}).sub;
+        const actor = await ensureGeoActor(prisma, userId);
+        const actorId = actor.id;
         const query = request.query as any;
         const originLat = Number(query.originLat);
         const originLng = Number(query.originLng);
@@ -144,7 +153,7 @@ export function registerGeoRoutes(
         const now = new Date();
 
         const cached = await db.geoRouteCache.findFirst(
-            {where: {signature, expiresAt: {gt: now}}});
+            {where: {signature, expiresAt: {gt: now}, actorId}});
         if (cached) {
           await recordTelemetry(request, {
             ...buildTelemetryBase(request),
@@ -172,6 +181,7 @@ export function registerGeoRoutes(
               geojson: osrm.geojson,
               expiresAt: new Date(Date.now() + ROUTE_TTL_MS),
               userId,
+              actorId,
             },
             create: {
               signature,
@@ -185,6 +195,7 @@ export function registerGeoRoutes(
               geojson: osrm.geojson,
               expiresAt: new Date(Date.now() + ROUTE_TTL_MS),
               userId,
+              actorId,
             },
           });
 
@@ -224,12 +235,17 @@ export function registerGeoRoutes(
             ];
 
         let userId: string|null = null;
+        let actorId: string|null = null;
         const hasAuth = typeof request.headers.authorization === 'string' &&
             request.headers.authorization.trim().length > 0;
         if (hasAuth) {
           try {
             await request.jwtVerify();
             userId = (request.user as {sub?: string})?.sub ?? null;
+            if (userId) {
+              const actor = await ensureGeoActor(prisma, userId);
+              actorId = actor.id;
+            }
           } catch (err) {
             request.log.debug({err}, 'geo pois optional auth failed');
           }
@@ -244,7 +260,7 @@ export function registerGeoRoutes(
         const now = new Date();
 
         const cached = await db.geoPoiCache.findFirst(
-            {where: {signature, expiresAt: {gt: now}}});
+            {where: {...actorWhere(actorId), signature, expiresAt: {gt: now}}});
         if (cached) {
           const expiresAt = cached.expiresAt instanceof Date ?
               cached.expiresAt :
@@ -257,7 +273,8 @@ export function registerGeoRoutes(
               payload: {pois: cached.pois},
               count: cached.count,
               expiresAt,
-              userId
+              userId,
+              actorId,
             },
             create: {
               type: 'poi',
@@ -266,7 +283,8 @@ export function registerGeoRoutes(
               payload: {pois: cached.pois},
               count: cached.count,
               expiresAt,
-              userId
+              userId,
+              actorId,
             },
           });
           await persistUserGeoPrefs(userId, {
@@ -307,6 +325,7 @@ export function registerGeoRoutes(
               count: pois.length,
               expiresAt: new Date(Date.now() + POI_TTL_MS),
               userId,
+              actorId,
             },
             create: {
               signature,
@@ -318,6 +337,7 @@ export function registerGeoRoutes(
               count: pois.length,
               expiresAt: new Date(Date.now() + POI_TTL_MS),
               userId,
+              actorId,
             },
           });
 
@@ -330,7 +350,8 @@ export function registerGeoRoutes(
               payload: {pois},
               count: pois.length,
               expiresAt,
-              userId
+              userId,
+              actorId
             },
             create: {
               type: 'poi',
@@ -339,7 +360,8 @@ export function registerGeoRoutes(
               payload: {pois},
               count: pois.length,
               expiresAt,
-              userId
+              userId,
+              actorId
             },
           });
 
@@ -364,8 +386,10 @@ export function registerGeoRoutes(
         } catch (err) {
           // Fall back to the most recent cache (even if expired) so the UI
           // degrades gracefully.
-          const stale = await db.geoPoiCache.findFirst(
-              {where: {signature}, orderBy: {expiresAt: 'desc'}});
+          const stale = await db.geoPoiCache.findFirst({
+            where: {...actorWhere(actorId), signature},
+            orderBy: {expiresAt: 'desc'}
+          });
           if (stale) {
             await recordTelemetry(request, {
               ...buildTelemetryBase(request),
@@ -394,13 +418,15 @@ export function registerGeoRoutes(
       {preHandler: [server.authenticate]},
       async (request, reply) => {
         const userId = (request.user as {sub: string}).sub;
+        const actor = await ensureGeoActor(prisma, userId);
+        const actorId = actor.id;
         const limitParam = Number((request.query as any)?.limit ?? 40);
         const take = Number.isFinite(limitParam) ?
             Math.min(Math.max(1, Math.trunc(limitParam)), 200) :
             40;
 
         const rows = await prisma.geoViewHistory.findMany({
-          where: {userId},
+          where: actorOrUserWhere(actorId, userId),
           orderBy: {lastViewedAt: 'desc'},
           take,
         });
@@ -532,6 +558,8 @@ export function registerGeoRoutes(
       {preHandler: [server.authenticate]},
       async (request, reply) => {
         const userId = (request.user as {sub: string}).sub;
+        const actor = await ensureGeoActor(prisma, userId);
+        const actorId = actor.id;
         const body = request.body as {
           center?: {lat?: number; lng?: number};
           view?: {zoom?: number; bearing?: number; pitch?: number};
@@ -604,6 +632,7 @@ export function registerGeoRoutes(
               count: poiCount ?? (body.poi?.pois?.length ?? null),
               expiresAt: poiExpiresAt,
               userId,
+              actorId,
             },
             create: {
               type: 'poi',
@@ -618,6 +647,7 @@ export function registerGeoRoutes(
               count: poiCount ?? (body.poi?.pois?.length ?? null),
               expiresAt: poiExpiresAt,
               userId,
+              actorId,
             },
           });
         }
@@ -663,12 +693,17 @@ export function registerGeoRoutes(
             null;
 
         let userId: string|null = null;
+        let actorId: string|null = null;
         const hasAuth = typeof request.headers.authorization === 'string' &&
             request.headers.authorization.length > 0;
         if (hasAuth) {
           try {
             await request.jwtVerify();
             userId = (request.user as {sub?: string})?.sub ?? null;
+            if (userId) {
+              const actor = await ensureGeoActor(prisma, userId);
+              actorId = actor.id;
+            }
           } catch (err) {
             // ignore auth failures; status logging is allowed unauthenticated
           }
@@ -678,6 +713,7 @@ export function registerGeoRoutes(
           await prisma.geoStatusLog.create({
             data: {
               userId,
+              actorId,
               status,
               poiStatus: body?.poiStatus?.trim() || null,
               centerLat: centerLat !== null ?

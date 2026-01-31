@@ -4,6 +4,7 @@ import {type FastifyInstance} from 'fastify';
 import {routeSignature} from '../lib/geo-signature';
 import {fetchOsrm} from '../lib/osrm-client';
 import {EntityDirection, EntityKind, recordBankTransactionEntity,} from '../services/bank-actor';
+import {ensureGeoActor} from '../services/geo-actor';
 
 import {withTelemetryBase} from './telemetry';
 import {type RecordTelemetryFn} from './types';
@@ -132,7 +133,7 @@ const buildStops =
     };
 
 async function upsertGeoDirectionFromRoute(params: {
-  prisma: PrismaClient; signature: string; userId: string;
+  prisma: PrismaClient; signature: string; userId: string; actorId: string;
   origin: {lat: number; lng: number};
   destination: {lat: number; lng: number};
   originName: string | null;
@@ -143,6 +144,7 @@ async function upsertGeoDirectionFromRoute(params: {
     prisma,
     signature,
     userId,
+    actorId,
     origin,
     destination,
     originName,
@@ -175,6 +177,7 @@ async function upsertGeoDirectionFromRoute(params: {
 
   const shared = {
     userId,
+    actorId,
     provider: 'osrm',
     profile: 'driving',
     inputPoints: [
@@ -219,6 +222,7 @@ type EnsureGeoDirectionParams = {
   prisma: PrismaClient; userId: string; signature: string;
   origin: {lat: number; lng: number};
   destination: {lat: number; lng: number};
+  actorId: string;
   originName: string | null;
   destinationName: string | null;
   osrmResponse?: OsrmRouteDetails;
@@ -240,6 +244,7 @@ async function ensureGeoDirectionForLoad(params: EnsureGeoDirectionParams) {
     prisma: params.prisma,
     signature: params.signature,
     userId: params.userId,
+    actorId: params.actorId,
     origin: params.origin,
     destination: params.destination,
     originName: params.originName,
@@ -384,9 +389,12 @@ export function registerFreightRoutes(
             {lat: originLat, lng: originLng},
             {lat: destinationLat, lng: destinationLng});
         try {
+          const actor = await ensureGeoActor(prisma, userId);
+          const actorId = actor.id;
           await ensureGeoDirectionForLoad({
             prisma,
             userId,
+            actorId,
             signature,
             origin: {lat: originLat, lng: originLng},
             destination: {lat: destinationLat, lng: destinationLng},
@@ -427,9 +435,12 @@ export function registerFreightRoutes(
               lng: Number(load.destinationLng)
             });
         try {
+          const actor = await ensureGeoActor(prisma, userId);
+          const actorId = actor.id;
           const direction = await ensureGeoDirectionForLoad({
             prisma,
             userId,
+            actorId,
             signature,
             origin: {lat: Number(load.originLat), lng: Number(load.originLng)},
             destination: {
