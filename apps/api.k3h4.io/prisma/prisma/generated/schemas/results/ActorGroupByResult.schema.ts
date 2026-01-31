@@ -21,10 +21,7 @@ export const ActorGroupByResultSchema = z.array(z.object({
     updatedAt: z.number(),
     entities: z.number(),
     caches: z.number(),
-    geoDirections: z.number(),
-    maptilerQueries: z.number(),
-    maptilerCacheEntries: z.number(),
-    osrmCacheEntries: z.number()
+    geoDirections: z.number()
   }).optional(),
   _min: z.object({
     id: z.string().nullable(),

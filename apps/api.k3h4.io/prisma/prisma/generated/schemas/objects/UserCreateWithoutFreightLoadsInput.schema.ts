@@ -5,9 +5,6 @@ import { UserPreferenceCreateNestedOneWithoutUserInputObjectSchema as UserPrefer
 import { TelemetryEventCreateNestedManyWithoutUserInputObjectSchema as TelemetryEventCreateNestedManyWithoutUserInputObjectSchema } from './TelemetryEventCreateNestedManyWithoutUserInput.schema';
 import { ProviderGrantCreateNestedManyWithoutUserInputObjectSchema as ProviderGrantCreateNestedManyWithoutUserInputObjectSchema } from './ProviderGrantCreateNestedManyWithoutUserInput.schema';
 import { GeoDirectionCreateNestedManyWithoutUserInputObjectSchema as GeoDirectionCreateNestedManyWithoutUserInputObjectSchema } from './GeoDirectionCreateNestedManyWithoutUserInput.schema';
-import { MaptilerQueryCreateNestedManyWithoutUserInputObjectSchema as MaptilerQueryCreateNestedManyWithoutUserInputObjectSchema } from './MaptilerQueryCreateNestedManyWithoutUserInput.schema';
-import { MaptilerCacheEntryCreateNestedManyWithoutUserInputObjectSchema as MaptilerCacheEntryCreateNestedManyWithoutUserInputObjectSchema } from './MaptilerCacheEntryCreateNestedManyWithoutUserInput.schema';
-import { OsrmCacheEntryCreateNestedManyWithoutUserInputObjectSchema as OsrmCacheEntryCreateNestedManyWithoutUserInputObjectSchema } from './OsrmCacheEntryCreateNestedManyWithoutUserInput.schema';
 import { ChatSessionCreateNestedManyWithoutUserInputObjectSchema as ChatSessionCreateNestedManyWithoutUserInputObjectSchema } from './ChatSessionCreateNestedManyWithoutUserInput.schema';
 import { AiInsightCreateNestedManyWithoutUserInputObjectSchema as AiInsightCreateNestedManyWithoutUserInputObjectSchema } from './AiInsightCreateNestedManyWithoutUserInput.schema';
 import { OllamaOperationCreateNestedManyWithoutUserInputObjectSchema as OllamaOperationCreateNestedManyWithoutUserInputObjectSchema } from './OllamaOperationCreateNestedManyWithoutUserInput.schema';
@@ -36,9 +33,6 @@ const makeSchema = () => z.object({
   telemetry: z.lazy(() => TelemetryEventCreateNestedManyWithoutUserInputObjectSchema).optional(),
   providerGrants: z.lazy(() => ProviderGrantCreateNestedManyWithoutUserInputObjectSchema).optional(),
   geoDirections: z.lazy(() => GeoDirectionCreateNestedManyWithoutUserInputObjectSchema).optional(),
-  maptilerQueries: z.lazy(() => MaptilerQueryCreateNestedManyWithoutUserInputObjectSchema).optional(),
-  maptilerCacheEntries: z.lazy(() => MaptilerCacheEntryCreateNestedManyWithoutUserInputObjectSchema).optional(),
-  osrmCacheEntries: z.lazy(() => OsrmCacheEntryCreateNestedManyWithoutUserInputObjectSchema).optional(),
   chatSessions: z.lazy(() => ChatSessionCreateNestedManyWithoutUserInputObjectSchema).optional(),
   aiInsights: z.lazy(() => AiInsightCreateNestedManyWithoutUserInputObjectSchema).optional(),
   ollamaOperations: z.lazy(() => OllamaOperationCreateNestedManyWithoutUserInputObjectSchema).optional(),

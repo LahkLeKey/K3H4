@@ -10,10 +10,7 @@ import { UserNullableScalarRelationFilterObjectSchema as UserNullableScalarRelat
 import { UserWhereInputObjectSchema as UserWhereInputObjectSchema } from './UserWhereInput.schema';
 import { EntityListRelationFilterObjectSchema as EntityListRelationFilterObjectSchema } from './EntityListRelationFilter.schema';
 import { ActorCacheListRelationFilterObjectSchema as ActorCacheListRelationFilterObjectSchema } from './ActorCacheListRelationFilter.schema';
-import { GeoDirectionListRelationFilterObjectSchema as GeoDirectionListRelationFilterObjectSchema } from './GeoDirectionListRelationFilter.schema';
-import { MaptilerQueryListRelationFilterObjectSchema as MaptilerQueryListRelationFilterObjectSchema } from './MaptilerQueryListRelationFilter.schema';
-import { MaptilerCacheEntryListRelationFilterObjectSchema as MaptilerCacheEntryListRelationFilterObjectSchema } from './MaptilerCacheEntryListRelationFilter.schema';
-import { OsrmCacheEntryListRelationFilterObjectSchema as OsrmCacheEntryListRelationFilterObjectSchema } from './OsrmCacheEntryListRelationFilter.schema'
+import { GeoDirectionListRelationFilterObjectSchema as GeoDirectionListRelationFilterObjectSchema } from './GeoDirectionListRelationFilter.schema'
 
 const actorwhereinputSchema = z.object({
   AND: z.union([z.lazy(() => ActorWhereInputObjectSchema), z.lazy(() => ActorWhereInputObjectSchema).array()]).optional(),
@@ -31,10 +28,7 @@ const actorwhereinputSchema = z.object({
   user: z.union([z.lazy(() => UserNullableScalarRelationFilterObjectSchema), z.lazy(() => UserWhereInputObjectSchema)]).optional(),
   entities: z.lazy(() => EntityListRelationFilterObjectSchema).optional(),
   caches: z.lazy(() => ActorCacheListRelationFilterObjectSchema).optional(),
-  geoDirections: z.lazy(() => GeoDirectionListRelationFilterObjectSchema).optional(),
-  maptilerQueries: z.lazy(() => MaptilerQueryListRelationFilterObjectSchema).optional(),
-  maptilerCacheEntries: z.lazy(() => MaptilerCacheEntryListRelationFilterObjectSchema).optional(),
-  osrmCacheEntries: z.lazy(() => OsrmCacheEntryListRelationFilterObjectSchema).optional()
+  geoDirections: z.lazy(() => GeoDirectionListRelationFilterObjectSchema).optional()
 }).strict();
 export const ActorWhereInputObjectSchema: z.ZodType<Prisma.ActorWhereInput> = actorwhereinputSchema as unknown as z.ZodType<Prisma.ActorWhereInput>;
 export const ActorWhereInputObjectZodSchema = actorwhereinputSchema;

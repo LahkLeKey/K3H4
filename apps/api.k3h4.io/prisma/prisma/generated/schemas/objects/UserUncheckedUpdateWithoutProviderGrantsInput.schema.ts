@@ -9,9 +9,6 @@ import { UserPreferenceUncheckedUpdateOneWithoutUserNestedInputObjectSchema as U
 import { TelemetryEventUncheckedUpdateManyWithoutUserNestedInputObjectSchema as TelemetryEventUncheckedUpdateManyWithoutUserNestedInputObjectSchema } from './TelemetryEventUncheckedUpdateManyWithoutUserNestedInput.schema';
 import { FreightLoadUncheckedUpdateManyWithoutUserNestedInputObjectSchema as FreightLoadUncheckedUpdateManyWithoutUserNestedInputObjectSchema } from './FreightLoadUncheckedUpdateManyWithoutUserNestedInput.schema';
 import { GeoDirectionUncheckedUpdateManyWithoutUserNestedInputObjectSchema as GeoDirectionUncheckedUpdateManyWithoutUserNestedInputObjectSchema } from './GeoDirectionUncheckedUpdateManyWithoutUserNestedInput.schema';
-import { MaptilerQueryUncheckedUpdateManyWithoutUserNestedInputObjectSchema as MaptilerQueryUncheckedUpdateManyWithoutUserNestedInputObjectSchema } from './MaptilerQueryUncheckedUpdateManyWithoutUserNestedInput.schema';
-import { MaptilerCacheEntryUncheckedUpdateManyWithoutUserNestedInputObjectSchema as MaptilerCacheEntryUncheckedUpdateManyWithoutUserNestedInputObjectSchema } from './MaptilerCacheEntryUncheckedUpdateManyWithoutUserNestedInput.schema';
-import { OsrmCacheEntryUncheckedUpdateManyWithoutUserNestedInputObjectSchema as OsrmCacheEntryUncheckedUpdateManyWithoutUserNestedInputObjectSchema } from './OsrmCacheEntryUncheckedUpdateManyWithoutUserNestedInput.schema';
 import { ChatSessionUncheckedUpdateManyWithoutUserNestedInputObjectSchema as ChatSessionUncheckedUpdateManyWithoutUserNestedInputObjectSchema } from './ChatSessionUncheckedUpdateManyWithoutUserNestedInput.schema';
 import { AiInsightUncheckedUpdateManyWithoutUserNestedInputObjectSchema as AiInsightUncheckedUpdateManyWithoutUserNestedInputObjectSchema } from './AiInsightUncheckedUpdateManyWithoutUserNestedInput.schema';
 import { OllamaOperationUncheckedUpdateManyWithoutUserNestedInputObjectSchema as OllamaOperationUncheckedUpdateManyWithoutUserNestedInputObjectSchema } from './OllamaOperationUncheckedUpdateManyWithoutUserNestedInput.schema';
@@ -40,9 +37,6 @@ const makeSchema = () => z.object({
   telemetry: z.lazy(() => TelemetryEventUncheckedUpdateManyWithoutUserNestedInputObjectSchema).optional(),
   freightLoads: z.lazy(() => FreightLoadUncheckedUpdateManyWithoutUserNestedInputObjectSchema).optional(),
   geoDirections: z.lazy(() => GeoDirectionUncheckedUpdateManyWithoutUserNestedInputObjectSchema).optional(),
-  maptilerQueries: z.lazy(() => MaptilerQueryUncheckedUpdateManyWithoutUserNestedInputObjectSchema).optional(),
-  maptilerCacheEntries: z.lazy(() => MaptilerCacheEntryUncheckedUpdateManyWithoutUserNestedInputObjectSchema).optional(),
-  osrmCacheEntries: z.lazy(() => OsrmCacheEntryUncheckedUpdateManyWithoutUserNestedInputObjectSchema).optional(),
   chatSessions: z.lazy(() => ChatSessionUncheckedUpdateManyWithoutUserNestedInputObjectSchema).optional(),
   aiInsights: z.lazy(() => AiInsightUncheckedUpdateManyWithoutUserNestedInputObjectSchema).optional(),
   ollamaOperations: z.lazy(() => OllamaOperationUncheckedUpdateManyWithoutUserNestedInputObjectSchema).optional(),

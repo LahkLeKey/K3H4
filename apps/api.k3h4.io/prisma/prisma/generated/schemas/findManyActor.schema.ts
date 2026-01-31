@@ -23,9 +23,6 @@ export const ActorFindManySelectSchema: z.ZodType<Prisma.ActorSelect> = z.object
     entities: z.boolean().optional(),
     caches: z.boolean().optional(),
     geoDirections: z.boolean().optional(),
-    maptilerQueries: z.boolean().optional(),
-    maptilerCacheEntries: z.boolean().optional(),
-    osrmCacheEntries: z.boolean().optional(),
     _count: z.boolean().optional()
   }).strict() as unknown as z.ZodType<Prisma.ActorSelect>;
 
@@ -43,9 +40,6 @@ export const ActorFindManySelectZodSchema = z.object({
     entities: z.boolean().optional(),
     caches: z.boolean().optional(),
     geoDirections: z.boolean().optional(),
-    maptilerQueries: z.boolean().optional(),
-    maptilerCacheEntries: z.boolean().optional(),
-    osrmCacheEntries: z.boolean().optional(),
     _count: z.boolean().optional()
   }).strict();
 

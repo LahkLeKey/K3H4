@@ -8,9 +8,6 @@ import { TelemetryEventOrderByRelationAggregateInputObjectSchema as TelemetryEve
 import { FreightLoadOrderByRelationAggregateInputObjectSchema as FreightLoadOrderByRelationAggregateInputObjectSchema } from './FreightLoadOrderByRelationAggregateInput.schema';
 import { ProviderGrantOrderByRelationAggregateInputObjectSchema as ProviderGrantOrderByRelationAggregateInputObjectSchema } from './ProviderGrantOrderByRelationAggregateInput.schema';
 import { GeoDirectionOrderByRelationAggregateInputObjectSchema as GeoDirectionOrderByRelationAggregateInputObjectSchema } from './GeoDirectionOrderByRelationAggregateInput.schema';
-import { MaptilerQueryOrderByRelationAggregateInputObjectSchema as MaptilerQueryOrderByRelationAggregateInputObjectSchema } from './MaptilerQueryOrderByRelationAggregateInput.schema';
-import { MaptilerCacheEntryOrderByRelationAggregateInputObjectSchema as MaptilerCacheEntryOrderByRelationAggregateInputObjectSchema } from './MaptilerCacheEntryOrderByRelationAggregateInput.schema';
-import { OsrmCacheEntryOrderByRelationAggregateInputObjectSchema as OsrmCacheEntryOrderByRelationAggregateInputObjectSchema } from './OsrmCacheEntryOrderByRelationAggregateInput.schema';
 import { ChatSessionOrderByRelationAggregateInputObjectSchema as ChatSessionOrderByRelationAggregateInputObjectSchema } from './ChatSessionOrderByRelationAggregateInput.schema';
 import { AiInsightOrderByRelationAggregateInputObjectSchema as AiInsightOrderByRelationAggregateInputObjectSchema } from './AiInsightOrderByRelationAggregateInput.schema';
 import { OllamaOperationOrderByRelationAggregateInputObjectSchema as OllamaOperationOrderByRelationAggregateInputObjectSchema } from './OllamaOperationOrderByRelationAggregateInput.schema';
@@ -32,9 +29,6 @@ const makeSchema = () => z.object({
   freightLoads: z.lazy(() => FreightLoadOrderByRelationAggregateInputObjectSchema).optional(),
   providerGrants: z.lazy(() => ProviderGrantOrderByRelationAggregateInputObjectSchema).optional(),
   geoDirections: z.lazy(() => GeoDirectionOrderByRelationAggregateInputObjectSchema).optional(),
-  maptilerQueries: z.lazy(() => MaptilerQueryOrderByRelationAggregateInputObjectSchema).optional(),
-  maptilerCacheEntries: z.lazy(() => MaptilerCacheEntryOrderByRelationAggregateInputObjectSchema).optional(),
-  osrmCacheEntries: z.lazy(() => OsrmCacheEntryOrderByRelationAggregateInputObjectSchema).optional(),
   chatSessions: z.lazy(() => ChatSessionOrderByRelationAggregateInputObjectSchema).optional(),
   aiInsights: z.lazy(() => AiInsightOrderByRelationAggregateInputObjectSchema).optional(),
   ollamaOperations: z.lazy(() => OllamaOperationOrderByRelationAggregateInputObjectSchema).optional(),

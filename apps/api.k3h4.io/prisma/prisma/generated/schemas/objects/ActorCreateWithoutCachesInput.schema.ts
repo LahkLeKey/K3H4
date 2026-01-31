@@ -4,10 +4,7 @@ import { ActorTypeSchema } from '../enums/ActorType.schema';
 import { NullableJsonNullValueInputSchema } from '../enums/NullableJsonNullValueInput.schema';
 import { UserCreateNestedOneWithoutActorsInputObjectSchema as UserCreateNestedOneWithoutActorsInputObjectSchema } from './UserCreateNestedOneWithoutActorsInput.schema';
 import { EntityCreateNestedManyWithoutActorInputObjectSchema as EntityCreateNestedManyWithoutActorInputObjectSchema } from './EntityCreateNestedManyWithoutActorInput.schema';
-import { GeoDirectionCreateNestedManyWithoutActorInputObjectSchema as GeoDirectionCreateNestedManyWithoutActorInputObjectSchema } from './GeoDirectionCreateNestedManyWithoutActorInput.schema';
-import { MaptilerQueryCreateNestedManyWithoutActorInputObjectSchema as MaptilerQueryCreateNestedManyWithoutActorInputObjectSchema } from './MaptilerQueryCreateNestedManyWithoutActorInput.schema';
-import { MaptilerCacheEntryCreateNestedManyWithoutActorInputObjectSchema as MaptilerCacheEntryCreateNestedManyWithoutActorInputObjectSchema } from './MaptilerCacheEntryCreateNestedManyWithoutActorInput.schema';
-import { OsrmCacheEntryCreateNestedManyWithoutActorInputObjectSchema as OsrmCacheEntryCreateNestedManyWithoutActorInputObjectSchema } from './OsrmCacheEntryCreateNestedManyWithoutActorInput.schema'
+import { GeoDirectionCreateNestedManyWithoutActorInputObjectSchema as GeoDirectionCreateNestedManyWithoutActorInputObjectSchema } from './GeoDirectionCreateNestedManyWithoutActorInput.schema'
 
 import { JsonValueSchema as jsonSchema } from '../helpers/json-helpers';
 
@@ -22,10 +19,7 @@ const makeSchema = () => z.object({
   updatedAt: z.coerce.date().optional(),
   user: z.lazy(() => UserCreateNestedOneWithoutActorsInputObjectSchema).optional(),
   entities: z.lazy(() => EntityCreateNestedManyWithoutActorInputObjectSchema).optional(),
-  geoDirections: z.lazy(() => GeoDirectionCreateNestedManyWithoutActorInputObjectSchema).optional(),
-  maptilerQueries: z.lazy(() => MaptilerQueryCreateNestedManyWithoutActorInputObjectSchema).optional(),
-  maptilerCacheEntries: z.lazy(() => MaptilerCacheEntryCreateNestedManyWithoutActorInputObjectSchema).optional(),
-  osrmCacheEntries: z.lazy(() => OsrmCacheEntryCreateNestedManyWithoutActorInputObjectSchema).optional()
+  geoDirections: z.lazy(() => GeoDirectionCreateNestedManyWithoutActorInputObjectSchema).optional()
 }).strict();
 export const ActorCreateWithoutCachesInputObjectSchema: z.ZodType<Prisma.ActorCreateWithoutCachesInput> = makeSchema() as unknown as z.ZodType<Prisma.ActorCreateWithoutCachesInput>;
 export const ActorCreateWithoutCachesInputObjectZodSchema = makeSchema();
