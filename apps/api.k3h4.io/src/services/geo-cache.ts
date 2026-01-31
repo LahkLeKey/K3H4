@@ -1,4 +1,4 @@
-import type {PrismaClient} from '@prisma/client';
+import type {Prisma, PrismaClient} from '@prisma/client';
 
 import {readActorCache, writeActorCache} from './actor-cache';
 
@@ -49,7 +49,8 @@ export async function writeGeoRouteCache(
     payload: Omit<GeoRouteCachePayload, 'expiresAt'>) {
   if (!actorId) return;
   const key = buildKey(NAMESPACES.route, signature);
-  await writeActorCache(prisma, actorId, key, payload, GEO_ROUTE_TTL_MS);
+  await writeActorCache(
+      prisma, actorId, key, payload as Prisma.JsonValue, GEO_ROUTE_TTL_MS);
 }
 
 export type GeoPoiCachePayload = {
@@ -76,7 +77,8 @@ export async function writeGeoPoiCache(
   const key = buildKey(NAMESPACES.poi, payload.signature);
   const resolvedTtl =
       ttlMs ?? computeTtlFromExpires(payload.expiresAt) ?? GEO_POI_TTL_MS;
-  await writeActorCache(prisma, actorId, key, payload, resolvedTtl);
+  await writeActorCache(
+      prisma, actorId, key, payload as Prisma.JsonValue, resolvedTtl);
 }
 
 export type GeoQueryCachePayload = {
@@ -113,7 +115,8 @@ export async function writeGeoQueryCache(
   const key = buildKey(NAMESPACES.query, payload.signature);
   const resolvedTtl =
       ttlMs ?? computeTtlFromExpires(payload.expiresAt) ?? GEO_QUERY_TTL_MS;
-  await writeActorCache(prisma, actorId, key, payload, resolvedTtl);
+  await writeActorCache(
+      prisma, actorId, key, payload as Prisma.JsonValue, resolvedTtl);
 }
 
 export type GeoViewHistoryPayload = {
@@ -164,7 +167,8 @@ export async function writeGeoViewEntry(
     payload: GeoViewHistoryPayload) {
   if (!actorId) return;
   const key = buildKey(NAMESPACES.view, payload.signature);
-  await writeActorCache(prisma, actorId, key, payload, GEO_VIEW_TTL_MS);
+  await writeActorCache(
+      prisma, actorId, key, payload as Prisma.JsonValue, GEO_VIEW_TTL_MS);
 }
 
 export async function logGeoStatus(
@@ -172,7 +176,8 @@ export async function logGeoStatus(
   if (!actorId) return;
   const suffix = Date.now().toString(36);
   const key = `${NAMESPACES.status}:${suffix}`;
-  await writeActorCache(prisma, actorId, key, data, GEO_STATUS_TTL_MS);
+  await writeActorCache(
+      prisma, actorId, key, data as Prisma.JsonValue, GEO_STATUS_TTL_MS);
 }
 
 export type GeoDemTileCachePayload = {
@@ -195,7 +200,8 @@ export async function writeGeoDemTileCache(
     payload: GeoDemTileCachePayload) {
   if (!actorId) return;
   const key = buildKey(NAMESPACES.dem, payload.signature);
-  await writeActorCache(prisma, actorId, key, payload, GEO_DEM_TTL_MS);
+  await writeActorCache(
+      prisma, actorId, key, payload as Prisma.JsonValue, GEO_DEM_TTL_MS);
 }
 
 export async function readGeoPoiCacheStale(

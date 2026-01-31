@@ -1,4 +1,4 @@
-import type {PrismaClient} from '@prisma/client';
+import type {Prisma, PrismaClient} from '@prisma/client';
 
 import {readActorCache, writeActorCache} from './actor-cache';
 
@@ -60,7 +60,8 @@ export async function writeGeoDirectionCache(
   const expiresAt = payload.expiresAt ?
       payload.expiresAt :
       new Date(Date.now() + resolvedTtl).toISOString();
+  const record = {...payload, expiresAt};
   await writeActorCache(
-      prisma, actorId, buildKey(payload.signature), {...payload, expiresAt},
+      prisma, actorId, buildKey(payload.signature), record as Prisma.JsonValue,
       resolvedTtl);
 }

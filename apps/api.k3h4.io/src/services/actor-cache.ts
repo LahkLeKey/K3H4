@@ -1,4 +1,5 @@
-import type {Prisma, PrismaClient} from '@prisma/client';
+import {Prisma} from '@prisma/client';
+import type {PrismaClient} from '@prisma/client';
 
 const ACTOR_CACHE_TTL_MS =
     Number(process.env.ACTOR_CACHE_TTL_MS ?? 1000 * 60 * 5);
@@ -14,6 +15,10 @@ const buildExpiresAt = (ttlMs: number|null) =>
     ttlMs === null ? null : new Date(Date.now() + ttlMs);
 
 const now = () => new Date();
+
+const normalizePayload = (value: Prisma.JsonValue): Prisma.InputJsonValue|
+                         Prisma.NullableJsonNullValueInput =>
+    value === null ? Prisma.JsonNull : value as Prisma.InputJsonValue;
 
 export async function readActorCache(
     prisma: PrismaClient,
@@ -40,10 +45,11 @@ export async function writeActorCache(
   const resolvedTtl =
       ttlMs === null ? null : coerceTtl(ttlMs ?? ACTOR_CACHE_TTL_MS);
   const expiresAt = buildExpiresAt(resolvedTtl);
+  const normalizedPayload = normalizePayload(payload);
   await prisma.actorCache.upsert({
-    where: {actorId_key: {actorId, key}},
-    create: {actorId, key, payload, expiresAt},
-    update: {payload, expiresAt},
+    where: {actor_cache_key: {actorId, key}},
+    create: {actorId, key, payload: normalizedPayload, expiresAt},
+    update: {payload: normalizedPayload, expiresAt},
   });
 }
 
@@ -82,10 +88,11 @@ export async function writeEntityCache(
     ttlMs?: number|null,
 ) {
   const expiresAt = buildExpiresAt(coerceTtl(ttlMs ?? ENTITY_CACHE_TTL_MS));
+  const normalizedPayload = normalizePayload(payload);
   await prisma.entityCache.upsert({
-    where: {entityId_key: {entityId, key}},
-    create: {entityId, key, payload, expiresAt},
-    update: {payload, expiresAt},
+    where: {entity_cache_key: {entityId, key}},
+    create: {entityId, key, payload: normalizedPayload, expiresAt},
+    update: {payload: normalizedPayload, expiresAt},
   });
 }
 
