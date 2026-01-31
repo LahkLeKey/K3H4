@@ -4,12 +4,27 @@ import {Prisma} from '@prisma/client';
 import Fastify from 'fastify';
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 
+import {ensureGeoActor} from '../../services/geo-actor';
+import {readGeoDirectionCache, writeGeoDirectionCache,} from '../../services/geo-direction-cache';
 import {registerFreightRoutes} from '../freight';
 import {type RecordTelemetryFn} from '../types';
 
 const recordTelemetry = vi.fn() as unknown as RecordTelemetryFn;
 const userId = 'user-1';
+vi.mock('../../services/geo-actor', () => ({
+                                      ensureGeoActor: vi.fn(),
+                                    }));
+vi.mock('../../services/geo-direction-cache', () => ({
+                                                readGeoDirectionCache: vi.fn(),
+                                                writeGeoDirectionCache: vi.fn(),
+                                              }));
 const nativeFetch = globalThis.fetch;
+const ensureGeoActorMock =
+    ensureGeoActor as unknown as ReturnType<typeof vi.fn>;
+const readGeoDirectionCacheMock =
+    readGeoDirectionCache as unknown as ReturnType<typeof vi.fn>;
+const writeGeoDirectionCacheMock =
+    writeGeoDirectionCache as unknown as ReturnType<typeof vi.fn>;
 
 function buildServer(prisma: any) {
   const server = Fastify();
@@ -24,6 +39,9 @@ describe('freight routes', () => {
   beforeEach(() => {
     recordTelemetry.mockClear();
     globalThis.fetch = nativeFetch;
+    ensureGeoActorMock.mockResolvedValue({id: 'geo-actor-1'});
+    readGeoDirectionCacheMock.mockResolvedValue(null);
+    writeGeoDirectionCacheMock.mockResolvedValue(undefined);
   });
 
   afterEach(() => {

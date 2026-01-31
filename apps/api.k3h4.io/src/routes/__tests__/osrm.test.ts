@@ -3,6 +3,7 @@ import '../../test/vitest-setup.ts';
 import Fastify from 'fastify';
 import {beforeEach, describe, expect, it, vi} from 'vitest';
 
+import {ensureGeoActor} from '../../services/geo-actor';
 import * as cache from '../../services/osrm-cache';
 import {registerOsrmRoutes} from '../osrm';
 import {type RecordTelemetryFn} from '../types';
@@ -10,9 +11,14 @@ import {type RecordTelemetryFn} from '../types';
 vi.mock('../../services/osrm-cache', () => ({
                                        fetchOsrmWithCache: vi.fn(),
                                      }));
+vi.mock('../../services/geo-actor', () => ({
+                                      ensureGeoActor: vi.fn(),
+                                    }));
 
 const fetchOsrmWithCache =
     cache.fetchOsrmWithCache as unknown as ReturnType<typeof vi.fn>;
+const ensureGeoActorMock =
+    ensureGeoActor as unknown as ReturnType<typeof vi.fn>;
 const recordTelemetry = vi.fn() as unknown as RecordTelemetryFn;
 const userId = 'user-1';
 
@@ -34,6 +40,7 @@ describe('osrm routes', () => {
       response: {ok: true, status: 200, body: {ok: true}, url: 'http://osrm'}
     });
     recordTelemetry.mockClear();
+    ensureGeoActorMock.mockResolvedValue({id: 'geo-actor-1'});
   });
 
   it('proxies route requests with required params', async () => {

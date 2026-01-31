@@ -310,6 +310,8 @@ describe('assignment routes', () => {
         throw new Error('payout fail');
       }),
     };
+    const loadMapSpy =
+        vi.spyOn(personaLedger, 'loadPersonaMap').mockResolvedValue(new Map());
     const server = buildServer(prisma);
     const res = await server.inject({
       method: 'POST',
