@@ -5,6 +5,7 @@ import {routeSignature} from '../lib/geo-signature';
 import {fetchOsrm} from '../lib/osrm-client';
 import {EntityDirection, EntityKind, recordBankTransactionEntity,} from '../services/bank-actor';
 import {ensureGeoActor} from '../services/geo-actor';
+import {type GeoDirectionCachePayload, readGeoDirectionCache, writeGeoDirectionCache,} from '../services/geo-direction-cache';
 
 import {withTelemetryBase} from './telemetry';
 import {type RecordTelemetryFn} from './types';
@@ -132,92 +133,6 @@ const buildStops =
       ];
     };
 
-async function upsertGeoDirectionFromRoute(params: {
-  prisma: PrismaClient; signature: string; userId: string; actorId: string;
-  origin: {lat: number; lng: number};
-  destination: {lat: number; lng: number};
-  originName: string | null;
-  destinationName: string | null;
-  route: any;
-}) {
-  const {
-    prisma,
-    signature,
-    userId,
-    actorId,
-    origin,
-    destination,
-    originName,
-    destinationName,
-    route,
-  } = params;
-
-  const stops =
-      buildStops(
-          origin, destination, originName ?? 'Origin',
-          destinationName ?? 'Destination')
-          .map((stop) => ({
-                 ...stop,
-                 latitude: new Prisma.Decimal(stop.latitude.toFixed(6)),
-                 longitude: new Prisma.Decimal(stop.longitude.toFixed(6)),
-               }));
-
-  const steps = (route.legs ?? []).flatMap((leg: any) => leg.steps ?? []);
-  const segments =
-      buildSegments(steps, origin, destination)
-          .map((segment) => ({
-                 ...segment,
-                 distanceMeters:
-                     new Prisma.Decimal(segment.distanceMeters.toFixed(3)),
-                 startLat: new Prisma.Decimal(segment.startLat.toFixed(6)),
-                 startLng: new Prisma.Decimal(segment.startLng.toFixed(6)),
-                 endLat: new Prisma.Decimal(segment.endLat.toFixed(6)),
-                 endLng: new Prisma.Decimal(segment.endLng.toFixed(6)),
-               }));
-
-  const shared = {
-    userId,
-    actorId,
-    provider: 'osrm',
-    profile: 'driving',
-    inputPoints: [
-      {label: 'origin', lat: origin.lat, lng: origin.lng, name: originName},
-      {
-        label: 'destination',
-        lat: destination.lat,
-        lng: destination.lng,
-        name: destinationName
-      },
-    ],
-    originLat: new Prisma.Decimal(origin.lat.toFixed(6)),
-    originLng: new Prisma.Decimal(origin.lng.toFixed(6)),
-    destinationLat: new Prisma.Decimal(destination.lat.toFixed(6)),
-    destinationLng: new Prisma.Decimal(destination.lng.toFixed(6)),
-    distanceMeters: new Prisma.Decimal((route.distance ?? 0).toFixed(3)),
-    durationSeconds:
-        Number.isFinite(route.duration) ? Math.round(route.duration) : null,
-    geometry: route.geometry ?? null,
-    instructions: route.legs ?? [],
-    payload: route,
-    expiresAt: new Date(Date.now() + ROUTE_TTL_MS),
-  };
-
-  await prisma.geoDirection.upsert({
-    where: {signature},
-    update: {
-      ...shared,
-      stops: {deleteMany: {}, create: stops},
-      segments: {deleteMany: {}, create: segments},
-    },
-    create: {
-      signature,
-      ...shared,
-      stops: {create: stops},
-      segments: {create: segments},
-    },
-  });
-}
-
 type EnsureGeoDirectionParams = {
   prisma: PrismaClient; userId: string; signature: string;
   origin: {lat: number; lng: number};
@@ -228,37 +143,87 @@ type EnsureGeoDirectionParams = {
   osrmResponse?: OsrmRouteDetails;
 };
 
+const cacheStopData = (stops: ReturnType<typeof buildStops>) =>
+    stops.map((stop) => ({
+                sequence: stop.sequence,
+                latitude: stop.latitude,
+                longitude: stop.longitude,
+                label: stop.label,
+                address: stop.address,
+                source: stop.source,
+                metadata: stop.metadata,
+              }));
+
+const cacheSegmentData = (segments: ReturnType<typeof buildSegments>) =>
+    segments.map((segment) => ({
+                   sequence: segment.sequence,
+                   instruction: segment.instruction,
+                   maneuverType: segment.maneuverType,
+                   maneuverModifier: segment.maneuverModifier,
+                   distanceMeters: Number.isFinite(segment.distanceMeters) ?
+                       segment.distanceMeters :
+                       null,
+                   durationSeconds: Number.isFinite(segment.durationSeconds) ?
+                       Math.round(segment.durationSeconds) :
+                       null,
+                   startLat: segment.startLat,
+                   startLng: segment.startLng,
+                   endLat: segment.endLat,
+                   endLng: segment.endLng,
+                   geometry: segment.geometry ?? null,
+                   metadata: segment.metadata ?? null,
+                 }));
+
+const buildDirectionPayload =
+    (params: EnsureGeoDirectionParams,
+     route: OsrmRouteDetails): GeoDirectionCachePayload => {
+      const stops = cacheStopData(buildStops(
+          params.origin, params.destination, params.originName ?? 'Origin',
+          params.destinationName ?? 'Destination'));
+      const segments = cacheSegmentData(buildSegments(
+          (route.route.legs ?? []).flatMap((leg: any) => leg.steps ?? []),
+          params.origin, params.destination));
+      const distanceMeters = route.route.distance;  // already meters
+      const durationSeconds = Number.isFinite(route.route.duration) ?
+          Math.round(route.route.duration) :
+          null;
+      return {
+        signature: params.signature,
+        userId: params.userId,
+        provider: 'osrm',
+        profile: 'driving',
+        geometry: route.route.geometry ?? null,
+        originLat: params.origin.lat,
+        originLng: params.origin.lng,
+        destinationLat: params.destination.lat,
+        destinationLng: params.destination.lng,
+        distanceMeters: Number.isFinite(distanceMeters) ? distanceMeters : null,
+        durationSeconds,
+        route: route.route,
+        stops,
+        segments,
+        fetchedAt: new Date().toISOString(),
+        expiresAt: new Date(Date.now() + ROUTE_TTL_MS).toISOString(),
+      };
+    };
+
 async function ensureGeoDirectionForLoad(params: EnsureGeoDirectionParams) {
-  const include = {
-    stops: {orderBy: {sequence: 'asc'}},
-    segments: {orderBy: {sequence: 'asc'}},
-  } as const;
-  const existing = await params.prisma.geoDirection.findUnique({
-    where: {signature: params.signature},
-    include,
-  });
+  const existing = await readGeoDirectionCache(
+      params.prisma, params.actorId, params.signature);
   if (existing) return existing;
   const osrmDetails = params.osrmResponse ??
       await fetchOsrmRoute(params.origin, params.destination);
-  await upsertGeoDirectionFromRoute({
-    prisma: params.prisma,
-    signature: params.signature,
-    userId: params.userId,
-    actorId: params.actorId,
-    origin: params.origin,
-    destination: params.destination,
-    originName: params.originName,
-    destinationName: params.destinationName,
-    route: osrmDetails.route,
-  });
-  return params.prisma.geoDirection.findUnique(
-      {where: {signature: params.signature}, include});
+  const payload = buildDirectionPayload(params, osrmDetails);
+  await writeGeoDirectionCache(params.prisma, params.actorId, payload);
+  return payload;
 }
 
-const decimalToNumber = (value: Prisma.Decimal|null|undefined) =>
-    value === null || value === undefined ? null : Number(value);
+const decimalToNumber = (value: Prisma.Decimal|number|null|undefined) =>
+    value === null || value === undefined ? null :
+    typeof value === 'number'             ? value :
+                                            Number(value);
 
-const mapDirectionResponse = (direction: any) => ({
+const mapDirectionResponse = (direction: GeoDirectionCachePayload) => ({
   signature: direction.signature,
   provider: direction.provider,
   profile: direction.profile,
@@ -267,31 +232,32 @@ const mapDirectionResponse = (direction: any) => ({
   originLng: decimalToNumber(direction.originLng),
   destinationLat: decimalToNumber(direction.destinationLat),
   destinationLng: decimalToNumber(direction.destinationLng),
-  distanceMeters: decimalToNumber(direction.distanceMeters),
+  distanceMeters: direction.distanceMeters,
   durationSeconds: direction.durationSeconds,
-  stops: (direction.stops ?? []).map((stop: any) => ({
-                                       id: stop.id,
-                                       sequence: stop.sequence,
-                                       latitude: Number(stop.latitude),
-                                       longitude: Number(stop.longitude),
-                                       label: stop.label,
-                                       address: stop.address,
-                                       source: stop.source,
-                                       metadata: stop.metadata ?? null,
-                                     })),
+  stops: (direction.stops ??
+          []).map((stop) => ({
+                    id: `${direction.signature}:stop:${stop.sequence}`,
+                    sequence: stop.sequence,
+                    latitude: stop.latitude,
+                    longitude: stop.longitude,
+                    label: stop.label,
+                    address: stop.address,
+                    source: stop.source,
+                    metadata: stop.metadata ?? null,
+                  })),
   segments: (direction.segments ??
-             []).map((segment: any) => ({
-                       id: segment.id,
+             []).map((segment) => ({
+                       id: `${direction.signature}:segment:${segment.sequence}`,
                        sequence: segment.sequence,
                        instruction: segment.instruction,
                        maneuverType: segment.maneuverType,
                        maneuverModifier: segment.maneuverModifier,
-                       distanceMeters: Number(segment.distanceMeters),
+                       distanceMeters: segment.distanceMeters,
                        durationSeconds: segment.durationSeconds,
-                       startLat: Number(segment.startLat),
-                       startLng: Number(segment.startLng),
-                       endLat: Number(segment.endLat),
-                       endLng: Number(segment.endLng),
+                       startLat: segment.startLat,
+                       startLng: segment.startLng,
+                       endLat: segment.endLat,
+                       endLng: segment.endLng,
                        geometry: segment.geometry ?? null,
                        metadata: segment.metadata ?? null,
                      })),

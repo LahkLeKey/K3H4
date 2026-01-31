@@ -134,7 +134,6 @@ model User {
   telemetry        TelemetryEvent[]
   freightLoads     FreightLoad[]
   providerGrants   ProviderGrant[]
-  geoDirections    GeoDirection[]
   chatSessions     ChatSession[]
   aiInsights       AiInsight[]
   ollamaOperations OllamaOperation[]
@@ -185,76 +184,6 @@ model ProviderGrant {
 }
 
 // Aggregated driving directives sourced from OSRM, Nominatim, Overpass, etc.
-model GeoDirection {
-  id              String    @id @default(cuid())
-  userId          String?
-  user            User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
-  actorId         String?
-  actor           Actor?    @relation(fields: [actorId], references: [id], onDelete: SetNull)
-  provider        String
-  profile         String?
-  signature       String    @unique
-  inputPoints     Json? // ordered lat/lng stops that powered the request
-  originLat       Decimal?  @db.Decimal(11, 6)
-  originLng       Decimal?  @db.Decimal(11, 6)
-  destinationLat  Decimal?  @db.Decimal(11, 6)
-  destinationLng  Decimal?  @db.Decimal(11, 6)
-  distanceMeters  Decimal?  @db.Decimal(14, 3)
-  durationSeconds Int?
-  geometry        Json?
-  instructions    Json?
-  payload         Json?
-  statusCode      Int?
-  statusMessage   String?
-  expiresAt       DateTime?
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
-
-  stops    GeoDirectionStop[]
-  segments GeoDirectionSegment[]
-
-  @@index([provider, expiresAt])
-  @@index([actorId])
-}
-
-model GeoDirectionStop {
-  id          String       @id @default(cuid())
-  directionId String
-  direction   GeoDirection @relation(fields: [directionId], references: [id], onDelete: Cascade)
-  sequence    Int
-  latitude    Decimal      @db.Decimal(11, 6)
-  longitude   Decimal      @db.Decimal(11, 6)
-  label       String?
-  address     String?
-  source      String? // e.g., nominatim, overpass, osrm
-  osmId       BigInt?
-  metadata    Json?
-  createdAt   DateTime     @default(now())
-
-  @@index([directionId, sequence])
-}
-
-model GeoDirectionSegment {
-  id               String       @id @default(cuid())
-  directionId      String
-  direction        GeoDirection @relation(fields: [directionId], references: [id], onDelete: Cascade)
-  sequence         Int
-  instruction      String?
-  maneuverType     String?
-  maneuverModifier String?
-  distanceMeters   Decimal      @db.Decimal(14, 3)
-  durationSeconds  Int?
-  startLat         Decimal      @db.Decimal(11, 6)
-  startLng         Decimal      @db.Decimal(11, 6)
-  endLat           Decimal      @db.Decimal(11, 6)
-  endLng           Decimal      @db.Decimal(11, 6)
-  geometry         Json?
-  metadata         Json?
-  createdAt        DateTime     @default(now())
-
-  @@index([directionId, sequence])
-}
-
 model PointOfInterest {
   id         String   @id @default(cuid())
   osmType    String   @default("node")
@@ -479,9 +408,8 @@ model Actor {
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
 
-  entities      Entity[]
-  caches        ActorCache[]
-  geoDirections GeoDirection[]
+  entities Entity[]
+  caches   ActorCache[]
 
   @@index([userId])
   @@index([type])
