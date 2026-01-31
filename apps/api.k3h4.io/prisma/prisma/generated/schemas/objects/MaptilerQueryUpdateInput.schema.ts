@@ -4,6 +4,7 @@ import { StringFieldUpdateOperationsInputObjectSchema as StringFieldUpdateOperat
 import { NullableJsonNullValueInputSchema } from '../enums/NullableJsonNullValueInput.schema';
 import { DateTimeFieldUpdateOperationsInputObjectSchema as DateTimeFieldUpdateOperationsInputObjectSchema } from './DateTimeFieldUpdateOperationsInput.schema';
 import { UserUpdateOneWithoutMaptilerQueriesNestedInputObjectSchema as UserUpdateOneWithoutMaptilerQueriesNestedInputObjectSchema } from './UserUpdateOneWithoutMaptilerQueriesNestedInput.schema';
+import { ActorUpdateOneWithoutMaptilerQueriesNestedInputObjectSchema as ActorUpdateOneWithoutMaptilerQueriesNestedInputObjectSchema } from './ActorUpdateOneWithoutMaptilerQueriesNestedInput.schema';
 import { MaptilerCacheEntryUpdateManyWithoutQueryNestedInputObjectSchema as MaptilerCacheEntryUpdateManyWithoutQueryNestedInputObjectSchema } from './MaptilerCacheEntryUpdateManyWithoutQueryNestedInput.schema'
 
 import { JsonValueSchema as jsonSchema } from '../helpers/json-helpers';
@@ -18,6 +19,7 @@ const makeSchema = () => z.object({
   createdAt: z.union([z.coerce.date(), z.lazy(() => DateTimeFieldUpdateOperationsInputObjectSchema)]).optional(),
   updatedAt: z.union([z.coerce.date(), z.lazy(() => DateTimeFieldUpdateOperationsInputObjectSchema)]).optional(),
   user: z.lazy(() => UserUpdateOneWithoutMaptilerQueriesNestedInputObjectSchema).optional(),
+  actor: z.lazy(() => ActorUpdateOneWithoutMaptilerQueriesNestedInputObjectSchema).optional(),
   cacheEntries: z.lazy(() => MaptilerCacheEntryUpdateManyWithoutQueryNestedInputObjectSchema).optional()
 }).strict();
 export const MaptilerQueryUpdateInputObjectSchema: z.ZodType<Prisma.MaptilerQueryUpdateInput> = makeSchema() as unknown as z.ZodType<Prisma.MaptilerQueryUpdateInput>;

@@ -6,7 +6,8 @@ import { NullableJsonNullValueInputSchema } from '../enums/NullableJsonNullValue
 import { NullableIntFieldUpdateOperationsInputObjectSchema as NullableIntFieldUpdateOperationsInputObjectSchema } from './NullableIntFieldUpdateOperationsInput.schema';
 import { DateTimeFieldUpdateOperationsInputObjectSchema as DateTimeFieldUpdateOperationsInputObjectSchema } from './DateTimeFieldUpdateOperationsInput.schema';
 import { NullableDateTimeFieldUpdateOperationsInputObjectSchema as NullableDateTimeFieldUpdateOperationsInputObjectSchema } from './NullableDateTimeFieldUpdateOperationsInput.schema';
-import { UserUpdateOneWithoutOsrmCacheEntriesNestedInputObjectSchema as UserUpdateOneWithoutOsrmCacheEntriesNestedInputObjectSchema } from './UserUpdateOneWithoutOsrmCacheEntriesNestedInput.schema'
+import { UserUpdateOneWithoutOsrmCacheEntriesNestedInputObjectSchema as UserUpdateOneWithoutOsrmCacheEntriesNestedInputObjectSchema } from './UserUpdateOneWithoutOsrmCacheEntriesNestedInput.schema';
+import { ActorUpdateOneWithoutOsrmCacheEntriesNestedInputObjectSchema as ActorUpdateOneWithoutOsrmCacheEntriesNestedInputObjectSchema } from './ActorUpdateOneWithoutOsrmCacheEntriesNestedInput.schema'
 
 import { JsonValueSchema as jsonSchema } from '../helpers/json-helpers';
 
@@ -25,7 +26,8 @@ const makeSchema = () => z.object({
   expiresAt: z.union([z.coerce.date(), z.lazy(() => NullableDateTimeFieldUpdateOperationsInputObjectSchema)]).optional().nullable(),
   createdAt: z.union([z.coerce.date(), z.lazy(() => DateTimeFieldUpdateOperationsInputObjectSchema)]).optional(),
   updatedAt: z.union([z.coerce.date(), z.lazy(() => DateTimeFieldUpdateOperationsInputObjectSchema)]).optional(),
-  user: z.lazy(() => UserUpdateOneWithoutOsrmCacheEntriesNestedInputObjectSchema).optional()
+  user: z.lazy(() => UserUpdateOneWithoutOsrmCacheEntriesNestedInputObjectSchema).optional(),
+  actor: z.lazy(() => ActorUpdateOneWithoutOsrmCacheEntriesNestedInputObjectSchema).optional()
 }).strict();
 export const OsrmCacheEntryUpdateInputObjectSchema: z.ZodType<Prisma.OsrmCacheEntryUpdateInput> = makeSchema() as unknown as z.ZodType<Prisma.OsrmCacheEntryUpdateInput>;
 export const OsrmCacheEntryUpdateInputObjectZodSchema = makeSchema();

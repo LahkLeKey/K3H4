@@ -11,7 +11,11 @@ export const ActorAggregateResultSchema = z.object({  _count: z.object({
     createdAt: z.number(),
     updatedAt: z.number(),
     entities: z.number(),
-    caches: z.number()
+    caches: z.number(),
+    geoDirections: z.number(),
+    maptilerQueries: z.number(),
+    maptilerCacheEntries: z.number(),
+    osrmCacheEntries: z.number()
   }).optional(),
   _min: z.object({
     id: z.string().nullable(),

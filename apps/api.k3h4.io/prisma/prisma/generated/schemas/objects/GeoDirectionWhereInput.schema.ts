@@ -9,8 +9,8 @@ import { DateTimeNullableFilterObjectSchema as DateTimeNullableFilterObjectSchem
 import { DateTimeFilterObjectSchema as DateTimeFilterObjectSchema } from './DateTimeFilter.schema';
 import { UserNullableScalarRelationFilterObjectSchema as UserNullableScalarRelationFilterObjectSchema } from './UserNullableScalarRelationFilter.schema';
 import { UserWhereInputObjectSchema as UserWhereInputObjectSchema } from './UserWhereInput.schema';
-import { GeoRouteCacheNullableScalarRelationFilterObjectSchema as GeoRouteCacheNullableScalarRelationFilterObjectSchema } from './GeoRouteCacheNullableScalarRelationFilter.schema';
-import { GeoRouteCacheWhereInputObjectSchema as GeoRouteCacheWhereInputObjectSchema } from './GeoRouteCacheWhereInput.schema';
+import { ActorNullableScalarRelationFilterObjectSchema as ActorNullableScalarRelationFilterObjectSchema } from './ActorNullableScalarRelationFilter.schema';
+import { ActorWhereInputObjectSchema as ActorWhereInputObjectSchema } from './ActorWhereInput.schema';
 import { GeoDirectionStopListRelationFilterObjectSchema as GeoDirectionStopListRelationFilterObjectSchema } from './GeoDirectionStopListRelationFilter.schema';
 import { GeoDirectionSegmentListRelationFilterObjectSchema as GeoDirectionSegmentListRelationFilterObjectSchema } from './GeoDirectionSegmentListRelationFilter.schema'
 
@@ -21,6 +21,7 @@ const geodirectionwhereinputSchema = z.object({
   NOT: z.union([z.lazy(() => GeoDirectionWhereInputObjectSchema), z.lazy(() => GeoDirectionWhereInputObjectSchema).array()]).optional(),
   id: z.union([z.lazy(() => StringFilterObjectSchema), z.string()]).optional(),
   userId: z.union([z.lazy(() => StringNullableFilterObjectSchema), z.string()]).optional().nullable(),
+  actorId: z.union([z.lazy(() => StringNullableFilterObjectSchema), z.string()]).optional().nullable(),
   provider: z.union([z.lazy(() => StringFilterObjectSchema), z.string()]).optional(),
   profile: z.union([z.lazy(() => StringNullableFilterObjectSchema), z.string()]).optional().nullable(),
   signature: z.union([z.lazy(() => StringFilterObjectSchema), z.string()]).optional(),
@@ -72,11 +73,10 @@ const geodirectionwhereinputSchema = z.object({
   statusCode: z.union([z.lazy(() => IntNullableFilterObjectSchema), z.number().int()]).optional().nullable(),
   statusMessage: z.union([z.lazy(() => StringNullableFilterObjectSchema), z.string()]).optional().nullable(),
   expiresAt: z.union([z.lazy(() => DateTimeNullableFilterObjectSchema), z.coerce.date()]).optional().nullable(),
-  routeCacheId: z.union([z.lazy(() => StringNullableFilterObjectSchema), z.string()]).optional().nullable(),
   createdAt: z.union([z.lazy(() => DateTimeFilterObjectSchema), z.coerce.date()]).optional(),
   updatedAt: z.union([z.lazy(() => DateTimeFilterObjectSchema), z.coerce.date()]).optional(),
   user: z.union([z.lazy(() => UserNullableScalarRelationFilterObjectSchema), z.lazy(() => UserWhereInputObjectSchema)]).optional(),
-  routeCache: z.union([z.lazy(() => GeoRouteCacheNullableScalarRelationFilterObjectSchema), z.lazy(() => GeoRouteCacheWhereInputObjectSchema)]).optional(),
+  actor: z.union([z.lazy(() => ActorNullableScalarRelationFilterObjectSchema), z.lazy(() => ActorWhereInputObjectSchema)]).optional(),
   stops: z.lazy(() => GeoDirectionStopListRelationFilterObjectSchema).optional(),
   segments: z.lazy(() => GeoDirectionSegmentListRelationFilterObjectSchema).optional()
 }).strict();

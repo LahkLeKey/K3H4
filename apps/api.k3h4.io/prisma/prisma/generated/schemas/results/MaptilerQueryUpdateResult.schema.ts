@@ -3,6 +3,8 @@ export const MaptilerQueryUpdateResultSchema = z.nullable(z.object({
   id: z.string(),
   userId: z.string().optional(),
   user: z.unknown().optional(),
+  actorId: z.string().optional(),
+  actor: z.unknown().optional(),
   signature: z.string(),
   kind: z.string(),
   path: z.string(),

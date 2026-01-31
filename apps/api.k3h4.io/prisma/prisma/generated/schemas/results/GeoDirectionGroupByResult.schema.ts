@@ -2,6 +2,7 @@ import * as z from 'zod';
 export const GeoDirectionGroupByResultSchema = z.array(z.object({
   id: z.string(),
   userId: z.string(),
+  actorId: z.string(),
   provider: z.string(),
   profile: z.string(),
   signature: z.string(),
@@ -18,13 +19,14 @@ export const GeoDirectionGroupByResultSchema = z.array(z.object({
   statusCode: z.number().int(),
   statusMessage: z.string(),
   expiresAt: z.date(),
-  routeCacheId: z.string(),
   createdAt: z.date(),
   updatedAt: z.date(),
   _count: z.object({
     id: z.number(),
     userId: z.number(),
     user: z.number(),
+    actorId: z.number(),
+    actor: z.number(),
     provider: z.number(),
     profile: z.number(),
     signature: z.number(),
@@ -41,8 +43,6 @@ export const GeoDirectionGroupByResultSchema = z.array(z.object({
     statusCode: z.number(),
     statusMessage: z.number(),
     expiresAt: z.number(),
-    routeCacheId: z.number(),
-    routeCache: z.number(),
     createdAt: z.number(),
     updatedAt: z.number(),
     stops: z.number(),
@@ -69,6 +69,7 @@ export const GeoDirectionGroupByResultSchema = z.array(z.object({
   _min: z.object({
     id: z.string().nullable(),
     userId: z.string().nullable(),
+    actorId: z.string().nullable(),
     provider: z.string().nullable(),
     profile: z.string().nullable(),
     signature: z.string().nullable(),
@@ -81,13 +82,13 @@ export const GeoDirectionGroupByResultSchema = z.array(z.object({
     statusCode: z.number().int().nullable(),
     statusMessage: z.string().nullable(),
     expiresAt: z.date().nullable(),
-    routeCacheId: z.string().nullable(),
     createdAt: z.date().nullable(),
     updatedAt: z.date().nullable()
   }).nullable().optional(),
   _max: z.object({
     id: z.string().nullable(),
     userId: z.string().nullable(),
+    actorId: z.string().nullable(),
     provider: z.string().nullable(),
     profile: z.string().nullable(),
     signature: z.string().nullable(),
@@ -100,7 +101,6 @@ export const GeoDirectionGroupByResultSchema = z.array(z.object({
     statusCode: z.number().int().nullable(),
     statusMessage: z.string().nullable(),
     expiresAt: z.date().nullable(),
-    routeCacheId: z.string().nullable(),
     createdAt: z.date().nullable(),
     updatedAt: z.date().nullable()
   }).nullable().optional()

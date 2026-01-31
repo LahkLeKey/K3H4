@@ -3,6 +3,8 @@ export const OsrmCacheEntryFindFirstResultSchema = z.nullable(z.object({
   id: z.string(),
   userId: z.string().optional(),
   user: z.unknown().optional(),
+  actorId: z.string().optional(),
+  actor: z.unknown().optional(),
   service: z.string(),
   profile: z.string(),
   coordinates: z.string().optional(),

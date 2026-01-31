@@ -22,6 +22,10 @@ export const ActorFindFirstSelectSchema: z.ZodType<Prisma.ActorSelect> = z.objec
     updatedAt: z.boolean().optional(),
     entities: z.boolean().optional(),
     caches: z.boolean().optional(),
+    geoDirections: z.boolean().optional(),
+    maptilerQueries: z.boolean().optional(),
+    maptilerCacheEntries: z.boolean().optional(),
+    osrmCacheEntries: z.boolean().optional(),
     _count: z.boolean().optional()
   }).strict() as unknown as z.ZodType<Prisma.ActorSelect>;
 
@@ -38,6 +42,10 @@ export const ActorFindFirstSelectZodSchema = z.object({
     updatedAt: z.boolean().optional(),
     entities: z.boolean().optional(),
     caches: z.boolean().optional(),
+    geoDirections: z.boolean().optional(),
+    maptilerQueries: z.boolean().optional(),
+    maptilerCacheEntries: z.boolean().optional(),
+    osrmCacheEntries: z.boolean().optional(),
     _count: z.boolean().optional()
   }).strict();
 

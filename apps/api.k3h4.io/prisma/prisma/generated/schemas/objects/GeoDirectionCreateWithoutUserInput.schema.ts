@@ -1,7 +1,7 @@
 import * as z from 'zod';
 import { Prisma } from '@prisma/client';
 import { NullableJsonNullValueInputSchema } from '../enums/NullableJsonNullValueInput.schema';
-import { GeoRouteCacheCreateNestedOneWithoutDirectionsInputObjectSchema as GeoRouteCacheCreateNestedOneWithoutDirectionsInputObjectSchema } from './GeoRouteCacheCreateNestedOneWithoutDirectionsInput.schema';
+import { ActorCreateNestedOneWithoutGeoDirectionsInputObjectSchema as ActorCreateNestedOneWithoutGeoDirectionsInputObjectSchema } from './ActorCreateNestedOneWithoutGeoDirectionsInput.schema';
 import { GeoDirectionStopCreateNestedManyWithoutDirectionInputObjectSchema as GeoDirectionStopCreateNestedManyWithoutDirectionInputObjectSchema } from './GeoDirectionStopCreateNestedManyWithoutDirectionInput.schema';
 import { GeoDirectionSegmentCreateNestedManyWithoutDirectionInputObjectSchema as GeoDirectionSegmentCreateNestedManyWithoutDirectionInputObjectSchema } from './GeoDirectionSegmentCreateNestedManyWithoutDirectionInput.schema'
 
@@ -63,7 +63,7 @@ const makeSchema = () => z.object({
   expiresAt: z.coerce.date().optional().nullable(),
   createdAt: z.coerce.date().optional(),
   updatedAt: z.coerce.date().optional(),
-  routeCache: z.lazy(() => GeoRouteCacheCreateNestedOneWithoutDirectionsInputObjectSchema).optional(),
+  actor: z.lazy(() => ActorCreateNestedOneWithoutGeoDirectionsInputObjectSchema).optional(),
   stops: z.lazy(() => GeoDirectionStopCreateNestedManyWithoutDirectionInputObjectSchema).optional(),
   segments: z.lazy(() => GeoDirectionSegmentCreateNestedManyWithoutDirectionInputObjectSchema).optional()
 }).strict();

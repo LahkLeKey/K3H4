@@ -1,7 +1,8 @@
 import * as z from 'zod';
 import type { Prisma } from '@prisma/client';
 import { NullableJsonNullValueInputSchema } from '../enums/NullableJsonNullValueInput.schema';
-import { UserCreateNestedOneWithoutOsrmCacheEntriesInputObjectSchema as UserCreateNestedOneWithoutOsrmCacheEntriesInputObjectSchema } from './UserCreateNestedOneWithoutOsrmCacheEntriesInput.schema'
+import { UserCreateNestedOneWithoutOsrmCacheEntriesInputObjectSchema as UserCreateNestedOneWithoutOsrmCacheEntriesInputObjectSchema } from './UserCreateNestedOneWithoutOsrmCacheEntriesInput.schema';
+import { ActorCreateNestedOneWithoutOsrmCacheEntriesInputObjectSchema as ActorCreateNestedOneWithoutOsrmCacheEntriesInputObjectSchema } from './ActorCreateNestedOneWithoutOsrmCacheEntriesInput.schema'
 
 import { JsonValueSchema as jsonSchema } from '../helpers/json-helpers';
 
@@ -19,7 +20,8 @@ const makeSchema = () => z.object({
   fetchedAt: z.coerce.date().optional(),
   expiresAt: z.coerce.date().optional().nullable(),
   createdAt: z.coerce.date().optional(),
-  user: z.lazy(() => UserCreateNestedOneWithoutOsrmCacheEntriesInputObjectSchema).optional()
+  user: z.lazy(() => UserCreateNestedOneWithoutOsrmCacheEntriesInputObjectSchema).optional(),
+  actor: z.lazy(() => ActorCreateNestedOneWithoutOsrmCacheEntriesInputObjectSchema).optional()
 }).strict();
 export const OsrmCacheEntryCreateInputObjectSchema: z.ZodType<Prisma.OsrmCacheEntryCreateInput> = makeSchema() as unknown as z.ZodType<Prisma.OsrmCacheEntryCreateInput>;
 export const OsrmCacheEntryCreateInputObjectZodSchema = makeSchema();

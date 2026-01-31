@@ -2,7 +2,11 @@ import * as z from 'zod';
 import type { Prisma } from '@prisma/client';
 import { ActorTypeSchema } from '../enums/ActorType.schema';
 import { NullableJsonNullValueInputSchema } from '../enums/NullableJsonNullValueInput.schema';
-import { EntityUncheckedCreateNestedManyWithoutActorInputObjectSchema as EntityUncheckedCreateNestedManyWithoutActorInputObjectSchema } from './EntityUncheckedCreateNestedManyWithoutActorInput.schema'
+import { EntityUncheckedCreateNestedManyWithoutActorInputObjectSchema as EntityUncheckedCreateNestedManyWithoutActorInputObjectSchema } from './EntityUncheckedCreateNestedManyWithoutActorInput.schema';
+import { GeoDirectionUncheckedCreateNestedManyWithoutActorInputObjectSchema as GeoDirectionUncheckedCreateNestedManyWithoutActorInputObjectSchema } from './GeoDirectionUncheckedCreateNestedManyWithoutActorInput.schema';
+import { MaptilerQueryUncheckedCreateNestedManyWithoutActorInputObjectSchema as MaptilerQueryUncheckedCreateNestedManyWithoutActorInputObjectSchema } from './MaptilerQueryUncheckedCreateNestedManyWithoutActorInput.schema';
+import { MaptilerCacheEntryUncheckedCreateNestedManyWithoutActorInputObjectSchema as MaptilerCacheEntryUncheckedCreateNestedManyWithoutActorInputObjectSchema } from './MaptilerCacheEntryUncheckedCreateNestedManyWithoutActorInput.schema';
+import { OsrmCacheEntryUncheckedCreateNestedManyWithoutActorInputObjectSchema as OsrmCacheEntryUncheckedCreateNestedManyWithoutActorInputObjectSchema } from './OsrmCacheEntryUncheckedCreateNestedManyWithoutActorInput.schema'
 
 import { JsonValueSchema as jsonSchema } from '../helpers/json-helpers';
 
@@ -16,7 +20,11 @@ const makeSchema = () => z.object({
   metadata: z.union([NullableJsonNullValueInputSchema, jsonSchema]).optional(),
   createdAt: z.coerce.date().optional(),
   updatedAt: z.coerce.date().optional(),
-  entities: z.lazy(() => EntityUncheckedCreateNestedManyWithoutActorInputObjectSchema).optional()
+  entities: z.lazy(() => EntityUncheckedCreateNestedManyWithoutActorInputObjectSchema).optional(),
+  geoDirections: z.lazy(() => GeoDirectionUncheckedCreateNestedManyWithoutActorInputObjectSchema).optional(),
+  maptilerQueries: z.lazy(() => MaptilerQueryUncheckedCreateNestedManyWithoutActorInputObjectSchema).optional(),
+  maptilerCacheEntries: z.lazy(() => MaptilerCacheEntryUncheckedCreateNestedManyWithoutActorInputObjectSchema).optional(),
+  osrmCacheEntries: z.lazy(() => OsrmCacheEntryUncheckedCreateNestedManyWithoutActorInputObjectSchema).optional()
 }).strict();
 export const ActorUncheckedCreateWithoutCachesInputObjectSchema: z.ZodType<Prisma.ActorUncheckedCreateWithoutCachesInput> = makeSchema() as unknown as z.ZodType<Prisma.ActorUncheckedCreateWithoutCachesInput>;
 export const ActorUncheckedCreateWithoutCachesInputObjectZodSchema = makeSchema();

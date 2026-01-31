@@ -7,6 +7,7 @@ import { JsonValueSchema as jsonSchema } from '../helpers/json-helpers';
 const makeSchema = () => z.object({
   id: z.string().optional(),
   userId: z.string().optional().nullable(),
+  actorId: z.string().optional().nullable(),
   service: z.string(),
   profile: z.string(),
   coordinates: z.string().optional().nullable(),

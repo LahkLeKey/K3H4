@@ -11,6 +11,7 @@ import { GeoDirectionSumOrderByAggregateInputObjectSchema as GeoDirectionSumOrde
 const makeSchema = () => z.object({
   id: SortOrderSchema.optional(),
   userId: z.union([SortOrderSchema, z.lazy(() => SortOrderInputObjectSchema)]).optional(),
+  actorId: z.union([SortOrderSchema, z.lazy(() => SortOrderInputObjectSchema)]).optional(),
   provider: SortOrderSchema.optional(),
   profile: z.union([SortOrderSchema, z.lazy(() => SortOrderInputObjectSchema)]).optional(),
   signature: SortOrderSchema.optional(),
@@ -27,7 +28,6 @@ const makeSchema = () => z.object({
   statusCode: z.union([SortOrderSchema, z.lazy(() => SortOrderInputObjectSchema)]).optional(),
   statusMessage: z.union([SortOrderSchema, z.lazy(() => SortOrderInputObjectSchema)]).optional(),
   expiresAt: z.union([SortOrderSchema, z.lazy(() => SortOrderInputObjectSchema)]).optional(),
-  routeCacheId: z.union([SortOrderSchema, z.lazy(() => SortOrderInputObjectSchema)]).optional(),
   createdAt: SortOrderSchema.optional(),
   updatedAt: SortOrderSchema.optional(),
   _count: z.lazy(() => GeoDirectionCountOrderByAggregateInputObjectSchema).optional(),

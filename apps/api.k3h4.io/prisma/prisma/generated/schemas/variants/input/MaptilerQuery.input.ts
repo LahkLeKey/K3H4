@@ -4,6 +4,8 @@ export const MaptilerQueryInputSchema = z.object({
     id: z.string(),
     userId: z.string().optional().nullable(),
     user: z.unknown().optional().nullable(),
+    actorId: z.string().optional().nullable(),
+    actor: z.unknown().optional().nullable(),
     signature: z.string(),
     kind: z.string(),
     path: z.string(),

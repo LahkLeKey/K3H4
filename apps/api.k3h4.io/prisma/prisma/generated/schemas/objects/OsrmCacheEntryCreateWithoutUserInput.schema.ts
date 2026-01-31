@@ -1,6 +1,7 @@
 import * as z from 'zod';
 import type { Prisma } from '@prisma/client';
-import { NullableJsonNullValueInputSchema } from '../enums/NullableJsonNullValueInput.schema'
+import { NullableJsonNullValueInputSchema } from '../enums/NullableJsonNullValueInput.schema';
+import { ActorCreateNestedOneWithoutOsrmCacheEntriesInputObjectSchema as ActorCreateNestedOneWithoutOsrmCacheEntriesInputObjectSchema } from './ActorCreateNestedOneWithoutOsrmCacheEntriesInput.schema'
 
 import { JsonValueSchema as jsonSchema } from '../helpers/json-helpers';
 
@@ -18,7 +19,8 @@ const makeSchema = () => z.object({
   fetchedAt: z.coerce.date().optional(),
   expiresAt: z.coerce.date().optional().nullable(),
   createdAt: z.coerce.date().optional(),
-  updatedAt: z.coerce.date().optional()
+  updatedAt: z.coerce.date().optional(),
+  actor: z.lazy(() => ActorCreateNestedOneWithoutOsrmCacheEntriesInputObjectSchema).optional()
 }).strict();
 export const OsrmCacheEntryCreateWithoutUserInputObjectSchema: z.ZodType<Prisma.OsrmCacheEntryCreateWithoutUserInput> = makeSchema() as unknown as z.ZodType<Prisma.OsrmCacheEntryCreateWithoutUserInput>;
 export const OsrmCacheEntryCreateWithoutUserInputObjectZodSchema = makeSchema();

@@ -7,7 +7,7 @@ import { NullableDecimalFieldUpdateOperationsInputObjectSchema as NullableDecima
 import { NullableIntFieldUpdateOperationsInputObjectSchema as NullableIntFieldUpdateOperationsInputObjectSchema } from './NullableIntFieldUpdateOperationsInput.schema';
 import { NullableDateTimeFieldUpdateOperationsInputObjectSchema as NullableDateTimeFieldUpdateOperationsInputObjectSchema } from './NullableDateTimeFieldUpdateOperationsInput.schema';
 import { DateTimeFieldUpdateOperationsInputObjectSchema as DateTimeFieldUpdateOperationsInputObjectSchema } from './DateTimeFieldUpdateOperationsInput.schema';
-import { GeoRouteCacheUpdateOneWithoutDirectionsNestedInputObjectSchema as GeoRouteCacheUpdateOneWithoutDirectionsNestedInputObjectSchema } from './GeoRouteCacheUpdateOneWithoutDirectionsNestedInput.schema';
+import { ActorUpdateOneWithoutGeoDirectionsNestedInputObjectSchema as ActorUpdateOneWithoutGeoDirectionsNestedInputObjectSchema } from './ActorUpdateOneWithoutGeoDirectionsNestedInput.schema';
 import { GeoDirectionStopUpdateManyWithoutDirectionNestedInputObjectSchema as GeoDirectionStopUpdateManyWithoutDirectionNestedInputObjectSchema } from './GeoDirectionStopUpdateManyWithoutDirectionNestedInput.schema';
 import { GeoDirectionSegmentUpdateManyWithoutDirectionNestedInputObjectSchema as GeoDirectionSegmentUpdateManyWithoutDirectionNestedInputObjectSchema } from './GeoDirectionSegmentUpdateManyWithoutDirectionNestedInput.schema'
 
@@ -69,7 +69,7 @@ const makeSchema = () => z.object({
   expiresAt: z.union([z.coerce.date(), z.lazy(() => NullableDateTimeFieldUpdateOperationsInputObjectSchema)]).optional().nullable(),
   createdAt: z.union([z.coerce.date(), z.lazy(() => DateTimeFieldUpdateOperationsInputObjectSchema)]).optional(),
   updatedAt: z.union([z.coerce.date(), z.lazy(() => DateTimeFieldUpdateOperationsInputObjectSchema)]).optional(),
-  routeCache: z.lazy(() => GeoRouteCacheUpdateOneWithoutDirectionsNestedInputObjectSchema).optional(),
+  actor: z.lazy(() => ActorUpdateOneWithoutGeoDirectionsNestedInputObjectSchema).optional(),
   stops: z.lazy(() => GeoDirectionStopUpdateManyWithoutDirectionNestedInputObjectSchema).optional(),
   segments: z.lazy(() => GeoDirectionSegmentUpdateManyWithoutDirectionNestedInputObjectSchema).optional()
 }).strict();

@@ -4,6 +4,8 @@ export const MaptilerCacheEntryInputSchema = z.object({
     id: z.string(),
     userId: z.string().optional().nullable(),
     user: z.unknown().optional().nullable(),
+    actorId: z.string().optional().nullable(),
+    actor: z.unknown().optional().nullable(),
     queryId: z.string().optional().nullable(),
     query: z.unknown().optional().nullable(),
     kind: z.string(),

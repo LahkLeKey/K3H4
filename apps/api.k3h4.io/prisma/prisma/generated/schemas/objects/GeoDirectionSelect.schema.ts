@@ -1,7 +1,7 @@
 import * as z from 'zod';
 import type { Prisma } from '@prisma/client';
 import { UserArgsObjectSchema as UserArgsObjectSchema } from './UserArgs.schema';
-import { GeoRouteCacheArgsObjectSchema as GeoRouteCacheArgsObjectSchema } from './GeoRouteCacheArgs.schema';
+import { ActorArgsObjectSchema as ActorArgsObjectSchema } from './ActorArgs.schema';
 import { GeoDirectionStopFindManySchema as GeoDirectionStopFindManySchema } from '../findManyGeoDirectionStop.schema';
 import { GeoDirectionSegmentFindManySchema as GeoDirectionSegmentFindManySchema } from '../findManyGeoDirectionSegment.schema';
 import { GeoDirectionCountOutputTypeArgsObjectSchema as GeoDirectionCountOutputTypeArgsObjectSchema } from './GeoDirectionCountOutputTypeArgs.schema'
@@ -10,6 +10,8 @@ const makeSchema = () => z.object({
   id: z.boolean().optional(),
   userId: z.boolean().optional(),
   user: z.union([z.boolean(), z.lazy(() => UserArgsObjectSchema)]).optional(),
+  actorId: z.boolean().optional(),
+  actor: z.union([z.boolean(), z.lazy(() => ActorArgsObjectSchema)]).optional(),
   provider: z.boolean().optional(),
   profile: z.boolean().optional(),
   signature: z.boolean().optional(),
@@ -26,8 +28,6 @@ const makeSchema = () => z.object({
   statusCode: z.boolean().optional(),
   statusMessage: z.boolean().optional(),
   expiresAt: z.boolean().optional(),
-  routeCacheId: z.boolean().optional(),
-  routeCache: z.union([z.boolean(), z.lazy(() => GeoRouteCacheArgsObjectSchema)]).optional(),
   createdAt: z.boolean().optional(),
   updatedAt: z.boolean().optional(),
   stops: z.union([z.boolean(), z.lazy(() => GeoDirectionStopFindManySchema)]).optional(),

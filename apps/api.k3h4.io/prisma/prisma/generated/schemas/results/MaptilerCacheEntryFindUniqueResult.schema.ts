@@ -3,6 +3,8 @@ export const MaptilerCacheEntryFindUniqueResultSchema = z.nullable(z.object({
   id: z.string(),
   userId: z.string().optional(),
   user: z.unknown().optional(),
+  actorId: z.string().optional(),
+  actor: z.unknown().optional(),
   queryId: z.string().optional(),
   query: z.unknown().optional(),
   kind: z.string(),

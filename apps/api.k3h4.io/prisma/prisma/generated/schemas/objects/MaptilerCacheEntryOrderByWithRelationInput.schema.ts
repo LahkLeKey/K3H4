@@ -3,11 +3,13 @@ import type { Prisma } from '@prisma/client';
 import { SortOrderSchema } from '../enums/SortOrder.schema';
 import { SortOrderInputObjectSchema as SortOrderInputObjectSchema } from './SortOrderInput.schema';
 import { UserOrderByWithRelationInputObjectSchema as UserOrderByWithRelationInputObjectSchema } from './UserOrderByWithRelationInput.schema';
+import { ActorOrderByWithRelationInputObjectSchema as ActorOrderByWithRelationInputObjectSchema } from './ActorOrderByWithRelationInput.schema';
 import { MaptilerQueryOrderByWithRelationInputObjectSchema as MaptilerQueryOrderByWithRelationInputObjectSchema } from './MaptilerQueryOrderByWithRelationInput.schema'
 
 const makeSchema = () => z.object({
   id: SortOrderSchema.optional(),
   userId: z.union([SortOrderSchema, z.lazy(() => SortOrderInputObjectSchema)]).optional(),
+  actorId: z.union([SortOrderSchema, z.lazy(() => SortOrderInputObjectSchema)]).optional(),
   queryId: z.union([SortOrderSchema, z.lazy(() => SortOrderInputObjectSchema)]).optional(),
   kind: SortOrderSchema.optional(),
   path: SortOrderSchema.optional(),
@@ -27,6 +29,7 @@ const makeSchema = () => z.object({
   createdAt: SortOrderSchema.optional(),
   updatedAt: SortOrderSchema.optional(),
   user: z.lazy(() => UserOrderByWithRelationInputObjectSchema).optional(),
+  actor: z.lazy(() => ActorOrderByWithRelationInputObjectSchema).optional(),
   query: z.lazy(() => MaptilerQueryOrderByWithRelationInputObjectSchema).optional()
 }).strict();
 export const MaptilerCacheEntryOrderByWithRelationInputObjectSchema: z.ZodType<Prisma.MaptilerCacheEntryOrderByWithRelationInput> = makeSchema() as unknown as z.ZodType<Prisma.MaptilerCacheEntryOrderByWithRelationInput>;

@@ -11,6 +11,7 @@ import { MaptilerCacheEntrySumOrderByAggregateInputObjectSchema as MaptilerCache
 const makeSchema = () => z.object({
   id: SortOrderSchema.optional(),
   userId: z.union([SortOrderSchema, z.lazy(() => SortOrderInputObjectSchema)]).optional(),
+  actorId: z.union([SortOrderSchema, z.lazy(() => SortOrderInputObjectSchema)]).optional(),
   queryId: z.union([SortOrderSchema, z.lazy(() => SortOrderInputObjectSchema)]).optional(),
   kind: SortOrderSchema.optional(),
   path: SortOrderSchema.optional(),

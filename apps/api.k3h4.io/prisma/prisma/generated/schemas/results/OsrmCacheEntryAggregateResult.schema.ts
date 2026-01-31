@@ -3,6 +3,8 @@ export const OsrmCacheEntryAggregateResultSchema = z.object({  _count: z.object(
     id: z.number(),
     userId: z.number(),
     user: z.number(),
+    actorId: z.number(),
+    actor: z.number(),
     service: z.number(),
     profile: z.number(),
     coordinates: z.number(),
@@ -26,6 +28,7 @@ export const OsrmCacheEntryAggregateResultSchema = z.object({  _count: z.object(
   _min: z.object({
     id: z.string().nullable(),
     userId: z.string().nullable(),
+    actorId: z.string().nullable(),
     service: z.string().nullable(),
     profile: z.string().nullable(),
     coordinates: z.string().nullable(),
@@ -41,6 +44,7 @@ export const OsrmCacheEntryAggregateResultSchema = z.object({  _count: z.object(
   _max: z.object({
     id: z.string().nullable(),
     userId: z.string().nullable(),
+    actorId: z.string().nullable(),
     service: z.string().nullable(),
     profile: z.string().nullable(),
     coordinates: z.string().nullable(),

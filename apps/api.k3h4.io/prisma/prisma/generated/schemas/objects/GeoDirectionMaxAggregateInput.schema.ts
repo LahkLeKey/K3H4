@@ -5,6 +5,7 @@ import type { Prisma } from '@prisma/client';
 const makeSchema = () => z.object({
   id: z.literal(true).optional(),
   userId: z.literal(true).optional(),
+  actorId: z.literal(true).optional(),
   provider: z.literal(true).optional(),
   profile: z.literal(true).optional(),
   signature: z.literal(true).optional(),
@@ -17,7 +18,6 @@ const makeSchema = () => z.object({
   statusCode: z.literal(true).optional(),
   statusMessage: z.literal(true).optional(),
   expiresAt: z.literal(true).optional(),
-  routeCacheId: z.literal(true).optional(),
   createdAt: z.literal(true).optional(),
   updatedAt: z.literal(true).optional()
 }).strict();

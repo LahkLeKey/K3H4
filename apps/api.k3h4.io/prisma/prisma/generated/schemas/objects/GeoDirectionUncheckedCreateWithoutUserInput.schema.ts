@@ -9,6 +9,7 @@ import { JsonValueSchema as jsonSchema } from '../helpers/json-helpers';
 import { DecimalJSLikeSchema, isValidDecimalInput } from '../helpers/decimal-helpers';
 const makeSchema = () => z.object({
   id: z.string().optional(),
+  actorId: z.string().optional().nullable(),
   provider: z.string(),
   profile: z.string().optional().nullable(),
   signature: z.string(),
@@ -60,7 +61,6 @@ const makeSchema = () => z.object({
   statusCode: z.number().int().optional().nullable(),
   statusMessage: z.string().optional().nullable(),
   expiresAt: z.coerce.date().optional().nullable(),
-  routeCacheId: z.string().optional().nullable(),
   createdAt: z.coerce.date().optional(),
   updatedAt: z.coerce.date().optional(),
   stops: z.lazy(() => GeoDirectionStopUncheckedCreateNestedManyWithoutDirectionInputObjectSchema).optional(),

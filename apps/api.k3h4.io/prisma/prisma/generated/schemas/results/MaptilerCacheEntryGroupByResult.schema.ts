@@ -2,6 +2,7 @@ import * as z from 'zod';
 export const MaptilerCacheEntryGroupByResultSchema = z.array(z.object({
   id: z.string(),
   userId: z.string(),
+  actorId: z.string(),
   queryId: z.string(),
   kind: z.string(),
   path: z.string(),
@@ -24,6 +25,8 @@ export const MaptilerCacheEntryGroupByResultSchema = z.array(z.object({
     id: z.number(),
     userId: z.number(),
     user: z.number(),
+    actorId: z.number(),
+    actor: z.number(),
     queryId: z.number(),
     query: z.number(),
     kind: z.number(),
@@ -53,6 +56,7 @@ export const MaptilerCacheEntryGroupByResultSchema = z.array(z.object({
   _min: z.object({
     id: z.string().nullable(),
     userId: z.string().nullable(),
+    actorId: z.string().nullable(),
     queryId: z.string().nullable(),
     kind: z.string().nullable(),
     path: z.string().nullable(),
@@ -72,6 +76,7 @@ export const MaptilerCacheEntryGroupByResultSchema = z.array(z.object({
   _max: z.object({
     id: z.string().nullable(),
     userId: z.string().nullable(),
+    actorId: z.string().nullable(),
     queryId: z.string().nullable(),
     kind: z.string().nullable(),
     path: z.string().nullable(),

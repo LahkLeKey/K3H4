@@ -11,5 +11,9 @@ export const ActorUpsertResultSchema = z.object({
   createdAt: z.date(),
   updatedAt: z.date(),
   entities: z.array(z.unknown()),
-  caches: z.array(z.unknown())
+  caches: z.array(z.unknown()),
+  geoDirections: z.array(z.unknown()),
+  maptilerQueries: z.array(z.unknown()),
+  maptilerCacheEntries: z.array(z.unknown()),
+  osrmCacheEntries: z.array(z.unknown())
 });

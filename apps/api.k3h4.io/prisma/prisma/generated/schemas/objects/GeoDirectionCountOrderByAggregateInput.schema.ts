@@ -5,6 +5,7 @@ import { SortOrderSchema } from '../enums/SortOrder.schema'
 const makeSchema = () => z.object({
   id: SortOrderSchema.optional(),
   userId: SortOrderSchema.optional(),
+  actorId: SortOrderSchema.optional(),
   provider: SortOrderSchema.optional(),
   profile: SortOrderSchema.optional(),
   signature: SortOrderSchema.optional(),
@@ -21,7 +22,6 @@ const makeSchema = () => z.object({
   statusCode: SortOrderSchema.optional(),
   statusMessage: SortOrderSchema.optional(),
   expiresAt: SortOrderSchema.optional(),
-  routeCacheId: SortOrderSchema.optional(),
   createdAt: SortOrderSchema.optional(),
   updatedAt: SortOrderSchema.optional()
 }).strict();

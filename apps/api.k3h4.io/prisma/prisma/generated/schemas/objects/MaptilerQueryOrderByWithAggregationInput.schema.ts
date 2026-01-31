@@ -9,6 +9,7 @@ import { MaptilerQueryMinOrderByAggregateInputObjectSchema as MaptilerQueryMinOr
 const makeSchema = () => z.object({
   id: SortOrderSchema.optional(),
   userId: z.union([SortOrderSchema, z.lazy(() => SortOrderInputObjectSchema)]).optional(),
+  actorId: z.union([SortOrderSchema, z.lazy(() => SortOrderInputObjectSchema)]).optional(),
   signature: SortOrderSchema.optional(),
   kind: SortOrderSchema.optional(),
   path: SortOrderSchema.optional(),

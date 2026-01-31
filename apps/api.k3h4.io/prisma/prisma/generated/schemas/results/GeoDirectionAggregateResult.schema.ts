@@ -3,6 +3,8 @@ export const GeoDirectionAggregateResultSchema = z.object({  _count: z.object({
     id: z.number(),
     userId: z.number(),
     user: z.number(),
+    actorId: z.number(),
+    actor: z.number(),
     provider: z.number(),
     profile: z.number(),
     signature: z.number(),
@@ -19,8 +21,6 @@ export const GeoDirectionAggregateResultSchema = z.object({  _count: z.object({
     statusCode: z.number(),
     statusMessage: z.number(),
     expiresAt: z.number(),
-    routeCacheId: z.number(),
-    routeCache: z.number(),
     createdAt: z.number(),
     updatedAt: z.number(),
     stops: z.number(),
@@ -47,6 +47,7 @@ export const GeoDirectionAggregateResultSchema = z.object({  _count: z.object({
   _min: z.object({
     id: z.string().nullable(),
     userId: z.string().nullable(),
+    actorId: z.string().nullable(),
     provider: z.string().nullable(),
     profile: z.string().nullable(),
     signature: z.string().nullable(),
@@ -59,13 +60,13 @@ export const GeoDirectionAggregateResultSchema = z.object({  _count: z.object({
     statusCode: z.number().int().nullable(),
     statusMessage: z.string().nullable(),
     expiresAt: z.date().nullable(),
-    routeCacheId: z.string().nullable(),
     createdAt: z.date().nullable(),
     updatedAt: z.date().nullable()
   }).nullable().optional(),
   _max: z.object({
     id: z.string().nullable(),
     userId: z.string().nullable(),
+    actorId: z.string().nullable(),
     provider: z.string().nullable(),
     profile: z.string().nullable(),
     signature: z.string().nullable(),
@@ -78,7 +79,6 @@ export const GeoDirectionAggregateResultSchema = z.object({  _count: z.object({
     statusCode: z.number().int().nullable(),
     statusMessage: z.string().nullable(),
     expiresAt: z.date().nullable(),
-    routeCacheId: z.string().nullable(),
     createdAt: z.date().nullable(),
     updatedAt: z.date().nullable()
   }).nullable().optional()});

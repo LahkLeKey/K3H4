@@ -3,6 +3,8 @@ export const MaptilerCacheEntryAggregateResultSchema = z.object({  _count: z.obj
     id: z.number(),
     userId: z.number(),
     user: z.number(),
+    actorId: z.number(),
+    actor: z.number(),
     queryId: z.number(),
     query: z.number(),
     kind: z.number(),
@@ -32,6 +34,7 @@ export const MaptilerCacheEntryAggregateResultSchema = z.object({  _count: z.obj
   _min: z.object({
     id: z.string().nullable(),
     userId: z.string().nullable(),
+    actorId: z.string().nullable(),
     queryId: z.string().nullable(),
     kind: z.string().nullable(),
     path: z.string().nullable(),
@@ -51,6 +54,7 @@ export const MaptilerCacheEntryAggregateResultSchema = z.object({  _count: z.obj
   _max: z.object({
     id: z.string().nullable(),
     userId: z.string().nullable(),
+    actorId: z.string().nullable(),
     queryId: z.string().nullable(),
     kind: z.string().nullable(),
     path: z.string().nullable(),

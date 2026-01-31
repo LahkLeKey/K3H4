@@ -3,7 +3,8 @@ import type { Prisma } from '@prisma/client';
 import { StringFieldUpdateOperationsInputObjectSchema as StringFieldUpdateOperationsInputObjectSchema } from './StringFieldUpdateOperationsInput.schema';
 import { NullableJsonNullValueInputSchema } from '../enums/NullableJsonNullValueInput.schema';
 import { DateTimeFieldUpdateOperationsInputObjectSchema as DateTimeFieldUpdateOperationsInputObjectSchema } from './DateTimeFieldUpdateOperationsInput.schema';
-import { UserUpdateOneWithoutMaptilerQueriesNestedInputObjectSchema as UserUpdateOneWithoutMaptilerQueriesNestedInputObjectSchema } from './UserUpdateOneWithoutMaptilerQueriesNestedInput.schema'
+import { UserUpdateOneWithoutMaptilerQueriesNestedInputObjectSchema as UserUpdateOneWithoutMaptilerQueriesNestedInputObjectSchema } from './UserUpdateOneWithoutMaptilerQueriesNestedInput.schema';
+import { ActorUpdateOneWithoutMaptilerQueriesNestedInputObjectSchema as ActorUpdateOneWithoutMaptilerQueriesNestedInputObjectSchema } from './ActorUpdateOneWithoutMaptilerQueriesNestedInput.schema'
 
 import { JsonValueSchema as jsonSchema } from '../helpers/json-helpers';
 
@@ -16,7 +17,8 @@ const makeSchema = () => z.object({
   lastUsedAt: z.union([z.coerce.date(), z.lazy(() => DateTimeFieldUpdateOperationsInputObjectSchema)]).optional(),
   createdAt: z.union([z.coerce.date(), z.lazy(() => DateTimeFieldUpdateOperationsInputObjectSchema)]).optional(),
   updatedAt: z.union([z.coerce.date(), z.lazy(() => DateTimeFieldUpdateOperationsInputObjectSchema)]).optional(),
-  user: z.lazy(() => UserUpdateOneWithoutMaptilerQueriesNestedInputObjectSchema).optional()
+  user: z.lazy(() => UserUpdateOneWithoutMaptilerQueriesNestedInputObjectSchema).optional(),
+  actor: z.lazy(() => ActorUpdateOneWithoutMaptilerQueriesNestedInputObjectSchema).optional()
 }).strict();
 export const MaptilerQueryUpdateWithoutCacheEntriesInputObjectSchema: z.ZodType<Prisma.MaptilerQueryUpdateWithoutCacheEntriesInput> = makeSchema() as unknown as z.ZodType<Prisma.MaptilerQueryUpdateWithoutCacheEntriesInput>;
 export const MaptilerQueryUpdateWithoutCacheEntriesInputObjectZodSchema = makeSchema();

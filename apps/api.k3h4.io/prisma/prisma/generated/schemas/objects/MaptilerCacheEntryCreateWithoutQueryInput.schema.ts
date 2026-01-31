@@ -1,7 +1,8 @@
 import * as z from 'zod';
 import type { Prisma } from '@prisma/client';
 import { NullableJsonNullValueInputSchema } from '../enums/NullableJsonNullValueInput.schema';
-import { UserCreateNestedOneWithoutMaptilerCacheEntriesInputObjectSchema as UserCreateNestedOneWithoutMaptilerCacheEntriesInputObjectSchema } from './UserCreateNestedOneWithoutMaptilerCacheEntriesInput.schema'
+import { UserCreateNestedOneWithoutMaptilerCacheEntriesInputObjectSchema as UserCreateNestedOneWithoutMaptilerCacheEntriesInputObjectSchema } from './UserCreateNestedOneWithoutMaptilerCacheEntriesInput.schema';
+import { ActorCreateNestedOneWithoutMaptilerCacheEntriesInputObjectSchema as ActorCreateNestedOneWithoutMaptilerCacheEntriesInputObjectSchema } from './ActorCreateNestedOneWithoutMaptilerCacheEntriesInput.schema'
 
 import { JsonValueSchema as jsonSchema } from '../helpers/json-helpers';
 
@@ -24,7 +25,8 @@ const makeSchema = () => z.object({
   expiresAt: z.coerce.date().optional().nullable(),
   createdAt: z.coerce.date().optional(),
   updatedAt: z.coerce.date().optional(),
-  user: z.lazy(() => UserCreateNestedOneWithoutMaptilerCacheEntriesInputObjectSchema).optional()
+  user: z.lazy(() => UserCreateNestedOneWithoutMaptilerCacheEntriesInputObjectSchema).optional(),
+  actor: z.lazy(() => ActorCreateNestedOneWithoutMaptilerCacheEntriesInputObjectSchema).optional()
 }).strict();
 export const MaptilerCacheEntryCreateWithoutQueryInputObjectSchema: z.ZodType<Prisma.MaptilerCacheEntryCreateWithoutQueryInput> = makeSchema() as unknown as z.ZodType<Prisma.MaptilerCacheEntryCreateWithoutQueryInput>;
 export const MaptilerCacheEntryCreateWithoutQueryInputObjectZodSchema = makeSchema();

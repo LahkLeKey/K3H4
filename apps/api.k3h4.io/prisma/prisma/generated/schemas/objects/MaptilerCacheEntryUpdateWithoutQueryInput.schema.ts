@@ -7,7 +7,8 @@ import { NullableBytesFieldUpdateOperationsInputObjectSchema as NullableBytesFie
 import { NullableStringFieldUpdateOperationsInputObjectSchema as NullableStringFieldUpdateOperationsInputObjectSchema } from './NullableStringFieldUpdateOperationsInput.schema';
 import { DateTimeFieldUpdateOperationsInputObjectSchema as DateTimeFieldUpdateOperationsInputObjectSchema } from './DateTimeFieldUpdateOperationsInput.schema';
 import { NullableDateTimeFieldUpdateOperationsInputObjectSchema as NullableDateTimeFieldUpdateOperationsInputObjectSchema } from './NullableDateTimeFieldUpdateOperationsInput.schema';
-import { UserUpdateOneWithoutMaptilerCacheEntriesNestedInputObjectSchema as UserUpdateOneWithoutMaptilerCacheEntriesNestedInputObjectSchema } from './UserUpdateOneWithoutMaptilerCacheEntriesNestedInput.schema'
+import { UserUpdateOneWithoutMaptilerCacheEntriesNestedInputObjectSchema as UserUpdateOneWithoutMaptilerCacheEntriesNestedInputObjectSchema } from './UserUpdateOneWithoutMaptilerCacheEntriesNestedInput.schema';
+import { ActorUpdateOneWithoutMaptilerCacheEntriesNestedInputObjectSchema as ActorUpdateOneWithoutMaptilerCacheEntriesNestedInputObjectSchema } from './ActorUpdateOneWithoutMaptilerCacheEntriesNestedInput.schema'
 
 import { JsonValueSchema as jsonSchema } from '../helpers/json-helpers';
 
@@ -30,7 +31,8 @@ const makeSchema = () => z.object({
   expiresAt: z.union([z.coerce.date(), z.lazy(() => NullableDateTimeFieldUpdateOperationsInputObjectSchema)]).optional().nullable(),
   createdAt: z.union([z.coerce.date(), z.lazy(() => DateTimeFieldUpdateOperationsInputObjectSchema)]).optional(),
   updatedAt: z.union([z.coerce.date(), z.lazy(() => DateTimeFieldUpdateOperationsInputObjectSchema)]).optional(),
-  user: z.lazy(() => UserUpdateOneWithoutMaptilerCacheEntriesNestedInputObjectSchema).optional()
+  user: z.lazy(() => UserUpdateOneWithoutMaptilerCacheEntriesNestedInputObjectSchema).optional(),
+  actor: z.lazy(() => ActorUpdateOneWithoutMaptilerCacheEntriesNestedInputObjectSchema).optional()
 }).strict();
 export const MaptilerCacheEntryUpdateWithoutQueryInputObjectSchema: z.ZodType<Prisma.MaptilerCacheEntryUpdateWithoutQueryInput> = makeSchema() as unknown as z.ZodType<Prisma.MaptilerCacheEntryUpdateWithoutQueryInput>;
 export const MaptilerCacheEntryUpdateWithoutQueryInputObjectZodSchema = makeSchema();

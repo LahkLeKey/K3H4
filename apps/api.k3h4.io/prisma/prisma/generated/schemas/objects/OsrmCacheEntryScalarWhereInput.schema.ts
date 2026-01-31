@@ -13,6 +13,7 @@ const osrmcacheentryscalarwhereinputSchema = z.object({
   NOT: z.union([z.lazy(() => OsrmCacheEntryScalarWhereInputObjectSchema), z.lazy(() => OsrmCacheEntryScalarWhereInputObjectSchema).array()]).optional(),
   id: z.union([z.lazy(() => StringFilterObjectSchema), z.string()]).optional(),
   userId: z.union([z.lazy(() => StringNullableFilterObjectSchema), z.string()]).optional().nullable(),
+  actorId: z.union([z.lazy(() => StringNullableFilterObjectSchema), z.string()]).optional().nullable(),
   service: z.union([z.lazy(() => StringFilterObjectSchema), z.string()]).optional(),
   profile: z.union([z.lazy(() => StringFilterObjectSchema), z.string()]).optional(),
   coordinates: z.union([z.lazy(() => StringNullableFilterObjectSchema), z.string()]).optional().nullable(),

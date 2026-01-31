@@ -14,6 +14,7 @@ const maptilercacheentryscalarwherewithaggregatesinputSchema = z.object({
   NOT: z.union([z.lazy(() => MaptilerCacheEntryScalarWhereWithAggregatesInputObjectSchema), z.lazy(() => MaptilerCacheEntryScalarWhereWithAggregatesInputObjectSchema).array()]).optional(),
   id: z.union([z.lazy(() => StringWithAggregatesFilterObjectSchema), z.string()]).optional(),
   userId: z.union([z.lazy(() => StringNullableWithAggregatesFilterObjectSchema), z.string()]).optional().nullable(),
+  actorId: z.union([z.lazy(() => StringNullableWithAggregatesFilterObjectSchema), z.string()]).optional().nullable(),
   queryId: z.union([z.lazy(() => StringNullableWithAggregatesFilterObjectSchema), z.string()]).optional().nullable(),
   kind: z.union([z.lazy(() => StringWithAggregatesFilterObjectSchema), z.string()]).optional(),
   path: z.union([z.lazy(() => StringWithAggregatesFilterObjectSchema), z.string()]).optional(),

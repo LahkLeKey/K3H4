@@ -6,6 +6,8 @@ import { JsonNullableFilterObjectSchema as JsonNullableFilterObjectSchema } from
 import { DateTimeFilterObjectSchema as DateTimeFilterObjectSchema } from './DateTimeFilter.schema';
 import { UserNullableScalarRelationFilterObjectSchema as UserNullableScalarRelationFilterObjectSchema } from './UserNullableScalarRelationFilter.schema';
 import { UserWhereInputObjectSchema as UserWhereInputObjectSchema } from './UserWhereInput.schema';
+import { ActorNullableScalarRelationFilterObjectSchema as ActorNullableScalarRelationFilterObjectSchema } from './ActorNullableScalarRelationFilter.schema';
+import { ActorWhereInputObjectSchema as ActorWhereInputObjectSchema } from './ActorWhereInput.schema';
 import { MaptilerCacheEntryListRelationFilterObjectSchema as MaptilerCacheEntryListRelationFilterObjectSchema } from './MaptilerCacheEntryListRelationFilter.schema'
 
 const maptilerquerywhereinputSchema = z.object({
@@ -14,6 +16,7 @@ const maptilerquerywhereinputSchema = z.object({
   NOT: z.union([z.lazy(() => MaptilerQueryWhereInputObjectSchema), z.lazy(() => MaptilerQueryWhereInputObjectSchema).array()]).optional(),
   id: z.union([z.lazy(() => StringFilterObjectSchema), z.string()]).optional(),
   userId: z.union([z.lazy(() => StringNullableFilterObjectSchema), z.string()]).optional().nullable(),
+  actorId: z.union([z.lazy(() => StringNullableFilterObjectSchema), z.string()]).optional().nullable(),
   signature: z.union([z.lazy(() => StringFilterObjectSchema), z.string()]).optional(),
   kind: z.union([z.lazy(() => StringFilterObjectSchema), z.string()]).optional(),
   path: z.union([z.lazy(() => StringFilterObjectSchema), z.string()]).optional(),
@@ -22,6 +25,7 @@ const maptilerquerywhereinputSchema = z.object({
   createdAt: z.union([z.lazy(() => DateTimeFilterObjectSchema), z.coerce.date()]).optional(),
   updatedAt: z.union([z.lazy(() => DateTimeFilterObjectSchema), z.coerce.date()]).optional(),
   user: z.union([z.lazy(() => UserNullableScalarRelationFilterObjectSchema), z.lazy(() => UserWhereInputObjectSchema)]).optional(),
+  actor: z.union([z.lazy(() => ActorNullableScalarRelationFilterObjectSchema), z.lazy(() => ActorWhereInputObjectSchema)]).optional(),
   cacheEntries: z.lazy(() => MaptilerCacheEntryListRelationFilterObjectSchema).optional()
 }).strict();
 export const MaptilerQueryWhereInputObjectSchema: z.ZodType<Prisma.MaptilerQueryWhereInput> = maptilerquerywhereinputSchema as unknown as z.ZodType<Prisma.MaptilerQueryWhereInput>;

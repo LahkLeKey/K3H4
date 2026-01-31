@@ -4,6 +4,8 @@ export const OsrmCacheEntryInputSchema = z.object({
     id: z.string(),
     userId: z.string().optional().nullable(),
     user: z.unknown().optional().nullable(),
+    actorId: z.string().optional().nullable(),
+    actor: z.unknown().optional().nullable(),
     service: z.string(),
     profile: z.string(),
     coordinates: z.string().optional().nullable(),

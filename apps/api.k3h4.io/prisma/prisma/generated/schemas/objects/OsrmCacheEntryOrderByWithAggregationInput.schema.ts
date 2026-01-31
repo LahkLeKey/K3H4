@@ -11,6 +11,7 @@ import { OsrmCacheEntrySumOrderByAggregateInputObjectSchema as OsrmCacheEntrySum
 const makeSchema = () => z.object({
   id: SortOrderSchema.optional(),
   userId: z.union([SortOrderSchema, z.lazy(() => SortOrderInputObjectSchema)]).optional(),
+  actorId: z.union([SortOrderSchema, z.lazy(() => SortOrderInputObjectSchema)]).optional(),
   service: SortOrderSchema.optional(),
   profile: SortOrderSchema.optional(),
   coordinates: z.union([SortOrderSchema, z.lazy(() => SortOrderInputObjectSchema)]).optional(),

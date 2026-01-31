@@ -8,7 +8,7 @@ import { NullableIntFieldUpdateOperationsInputObjectSchema as NullableIntFieldUp
 import { NullableDateTimeFieldUpdateOperationsInputObjectSchema as NullableDateTimeFieldUpdateOperationsInputObjectSchema } from './NullableDateTimeFieldUpdateOperationsInput.schema';
 import { DateTimeFieldUpdateOperationsInputObjectSchema as DateTimeFieldUpdateOperationsInputObjectSchema } from './DateTimeFieldUpdateOperationsInput.schema';
 import { UserUpdateOneWithoutGeoDirectionsNestedInputObjectSchema as UserUpdateOneWithoutGeoDirectionsNestedInputObjectSchema } from './UserUpdateOneWithoutGeoDirectionsNestedInput.schema';
-import { GeoRouteCacheUpdateOneWithoutDirectionsNestedInputObjectSchema as GeoRouteCacheUpdateOneWithoutDirectionsNestedInputObjectSchema } from './GeoRouteCacheUpdateOneWithoutDirectionsNestedInput.schema';
+import { ActorUpdateOneWithoutGeoDirectionsNestedInputObjectSchema as ActorUpdateOneWithoutGeoDirectionsNestedInputObjectSchema } from './ActorUpdateOneWithoutGeoDirectionsNestedInput.schema';
 import { GeoDirectionStopUpdateManyWithoutDirectionNestedInputObjectSchema as GeoDirectionStopUpdateManyWithoutDirectionNestedInputObjectSchema } from './GeoDirectionStopUpdateManyWithoutDirectionNestedInput.schema'
 
 import { JsonValueSchema as jsonSchema } from '../helpers/json-helpers';
@@ -70,7 +70,7 @@ const makeSchema = () => z.object({
   createdAt: z.union([z.coerce.date(), z.lazy(() => DateTimeFieldUpdateOperationsInputObjectSchema)]).optional(),
   updatedAt: z.union([z.coerce.date(), z.lazy(() => DateTimeFieldUpdateOperationsInputObjectSchema)]).optional(),
   user: z.lazy(() => UserUpdateOneWithoutGeoDirectionsNestedInputObjectSchema).optional(),
-  routeCache: z.lazy(() => GeoRouteCacheUpdateOneWithoutDirectionsNestedInputObjectSchema).optional(),
+  actor: z.lazy(() => ActorUpdateOneWithoutGeoDirectionsNestedInputObjectSchema).optional(),
   stops: z.lazy(() => GeoDirectionStopUpdateManyWithoutDirectionNestedInputObjectSchema).optional()
 }).strict();
 export const GeoDirectionUpdateWithoutSegmentsInputObjectSchema: z.ZodType<Prisma.GeoDirectionUpdateWithoutSegmentsInput> = makeSchema() as unknown as z.ZodType<Prisma.GeoDirectionUpdateWithoutSegmentsInput>;
