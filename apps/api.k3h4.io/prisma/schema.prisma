@@ -135,28 +135,25 @@ model Building {
 }
 
 model User {
-  id                   String               @id @default(cuid())
-  email                String               @unique
-  provider             String
-  providerId           String
-  k3h4CoinBalance      Decimal              @default("25000") @db.Decimal(18, 2) // sandbox-only play balance
-  displayName          String?
-  avatarUrl            String?
-  createdAt            DateTime             @default(now())
-  updatedAt            DateTime             @updatedAt
-  refreshTokens        RefreshToken[]
-  preference           UserPreference?
-  telemetry            TelemetryEvent[]
-  freightLoads         FreightLoad[]
-  providerGrants       ProviderGrant[]
-  geoDirections        GeoDirection[]
-  maptilerQueries      MaptilerQuery[]
-  maptilerCacheEntries MaptilerCacheEntry[]
-  osrmCacheEntries     OsrmCacheEntry[]
-  chatSessions         ChatSession[]
-  aiInsights           AiInsight[]
-  ollamaOperations     OllamaOperation[]
-  actors               Actor[]
+  id               String            @id @default(cuid())
+  email            String            @unique
+  provider         String
+  providerId       String
+  k3h4CoinBalance  Decimal           @default("25000") @db.Decimal(18, 2) // sandbox-only play balance
+  displayName      String?
+  avatarUrl        String?
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+  refreshTokens    RefreshToken[]
+  preference       UserPreference?
+  telemetry        TelemetryEvent[]
+  freightLoads     FreightLoad[]
+  providerGrants   ProviderGrant[]
+  geoDirections    GeoDirection[]
+  chatSessions     ChatSession[]
+  aiInsights       AiInsight[]
+  ollamaOperations OllamaOperation[]
+  actors           Actor[]
 
   @@unique([provider, providerId])
 }
@@ -297,83 +294,6 @@ model Poi {
 }
 
 // MapTiler Cloud API queries and caches
-model MaptilerQuery {
-  id         String   @id @default(cuid())
-  userId     String?
-  user       User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
-  actorId    String?
-  actor      Actor?   @relation(fields: [actorId], references: [id], onDelete: SetNull)
-  signature  String   @unique
-  kind       String
-  path       String
-  params     Json?
-  lastUsedAt DateTime @default(now())
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
-
-  cacheEntries MaptilerCacheEntry[]
-
-  @@index([userId, kind])
-  @@index([actorId, kind])
-}
-
-model MaptilerCacheEntry {
-  id           String         @id @default(cuid())
-  userId       String?
-  user         User?          @relation(fields: [userId], references: [id], onDelete: SetNull)
-  actorId      String?
-  actor        Actor?         @relation(fields: [actorId], references: [id], onDelete: SetNull)
-  queryId      String?
-  query        MaptilerQuery? @relation(fields: [queryId], references: [id], onDelete: SetNull)
-  kind         String
-  path         String
-  params       Json?
-  paramsHash   String
-  signature    String         @unique
-  method       String         @default("GET")
-  responseType String         @default("json")
-  url          String
-  statusCode   Int?
-  payload      Json?
-  data         Bytes?
-  contentType  String?
-  cacheControl String?
-  fetchedAt    DateTime       @default(now())
-  expiresAt    DateTime?
-  createdAt    DateTime       @default(now())
-  updatedAt    DateTime       @updatedAt
-
-  @@index([kind, path])
-  @@index([expiresAt])
-  @@index([actorId, kind])
-}
-
-// OSRM upstream cache entries (1:1 pass-through)
-model OsrmCacheEntry {
-  id          String    @id @default(cuid())
-  userId      String?
-  user        User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
-  actorId     String?
-  actor       Actor?    @relation(fields: [actorId], references: [id], onDelete: SetNull)
-  service     String
-  profile     String
-  coordinates String?
-  params      Json?
-  paramsHash  String
-  signature   String    @unique
-  url         String
-  statusCode  Int?
-  payload     Json?
-  fetchedAt   DateTime  @default(now())
-  expiresAt   DateTime?
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-
-  @@index([service, profile])
-  @@index([expiresAt])
-  @@index([actorId, service])
-}
-
 // Composite POI enrichment cache (assembled response by include hash)
 model PoiEnrichmentCache {
   id          String // format: "node/123456"
@@ -578,12 +498,9 @@ model Actor {
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
 
-  entities             Entity[]
-  caches               ActorCache[]
-  geoDirections        GeoDirection[]
-  maptilerQueries      MaptilerQuery[]
-  maptilerCacheEntries MaptilerCacheEntry[]
-  osrmCacheEntries     OsrmCacheEntry[]
+  entities      Entity[]
+  caches        ActorCache[]
+  geoDirections GeoDirection[]
 
   @@index([userId])
   @@index([type])
