@@ -8,7 +8,7 @@ export async function readCachedEnrichment(
   id: string,
   includeHash: string,
 ): Promise<EnrichedPoi | null> {
-  const cached = await prisma.poiEnrichmentCache.findUnique({ where: { id_includeHash: { id, includeHash } } });
+  const cached = await prisma.pointOfInterestEnrichmentCache.findUnique({ where: { id_includeHash: { id, includeHash } } });
   if (!cached) return null;
   if (cached.expiresAt && cached.expiresAt.getTime() <= Date.now()) return null;
   return cached.payload as EnrichedPoi;
@@ -23,7 +23,7 @@ export async function writeCachedEnrichment(
 ): Promise<void> {
   const now = Date.now();
   const expiresAt = new Date(now + ttlMs);
-  await prisma.poiEnrichmentCache.upsert({
+  await prisma.pointOfInterestEnrichmentCache.upsert({
     where: { id_includeHash: { id, includeHash } },
     create: { id, includeHash, payload, fetchedAt: new Date(now), expiresAt },
     update: { payload, fetchedAt: new Date(now), expiresAt },

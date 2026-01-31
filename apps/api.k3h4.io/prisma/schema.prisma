@@ -119,21 +119,6 @@ enum WarehouseCategory {
   OTHER       @map("other")
 }
 
-model Building {
-  id                 Int          @id @default(autoincrement())
-  osmId              BigInt?      @unique
-  type               BuildingType
-  addressHouseNumber String?
-  addressStreet      String?
-  addressCity        String?
-  addressPostcode    String?
-  addressState       String?
-  addressCountry     String?
-  geometry           Json?
-
-  POIs Poi[]
-}
-
 model User {
   id               String            @id @default(cuid())
   email            String            @unique
@@ -270,7 +255,7 @@ model GeoDirectionSegment {
   @@index([directionId, sequence])
 }
 
-model Poi {
+model PointOfInterest {
   id         String   @id @default(cuid())
   osmType    String   @default("node")
   osmId      BigInt
@@ -284,13 +269,9 @@ model Poi {
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 
-  buildingId Int?
-  building   Building? @relation(fields: [buildingId], references: [id])
-
   @@unique([osmType, osmId], name: "poi_osm_composite")
   @@index([latitude, longitude])
   @@index([category])
-  @@index([buildingId])
 }
 
 // MapTiler Cloud API queries and caches

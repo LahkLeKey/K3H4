@@ -4,7 +4,8 @@ import {createHash} from 'node:crypto';
 
 import {enqueueOverpass} from '../lib/overpass-queue';
 import {enrichPoi} from '../modules/poi-enrich/enrich';
-import {ensureGeoActor} from '../services/geo-actor';
+import {formatBuildingFromPayload, readBuildingCacheByOsm} from '../services/building-cache';
+import {ensureGeoActor, ensureGeoGlobalActor} from '../services/geo-actor';
 import {readGeoQueryCache, readGeoQueryCacheStale, readGeoViewEntry, readGeoViewHistory, writeGeoQueryCache, writeGeoViewEntry,} from '../services/geo-cache';
 
 import {withTelemetryBase} from './telemetry';
@@ -192,10 +193,11 @@ async function upsertOverpassElements(
         el.tags?.leisure ?? null;
     const name = el.tags?.name ?? category ?? 'poi';
 
-    const where:
-        Prisma.PoiWhereUniqueInput = {poi_osm_composite: {osmType, osmId}};
+    const where: Prisma.PointOfInterestWhereUniqueInput = {
+      poi_osm_composite: {osmType, osmId}
+    };
 
-    await prisma.poi.upsert({
+    await prisma.pointOfInterest.upsert({
       where,
       update: {
         name,
@@ -274,9 +276,9 @@ export function registerPoiRoutes(
         cacheAgeMs !== null && cacheAgeMs <= POI_LIST_STALE_MAX_MS;
 
     const refreshCache = async (allowOverpass: boolean) => {
-      const total = await prisma.poi.count({where});
+      const total = await prisma.pointOfInterest.count({where});
       const take = total === 0 ? 0 : Math.min(takeLimit, total);
-      const pois = take ? await prisma.poi.findMany({
+      const pois = take ? await prisma.pointOfInterest.findMany({
         where,
         orderBy: {updatedAt: 'desc'},
         take,
@@ -536,12 +538,12 @@ export function registerPoiRoutes(
     };
 
     const [total, newest] = await Promise.all([
-      prisma.poi.count({where}),
-      prisma.poi.findFirst(
+      prisma.pointOfInterest.count({where}),
+      prisma.pointOfInterest.findFirst(
           {where, orderBy: {updatedAt: 'desc'}, select: {updatedAt: true}}),
     ]);
 
-    const categories = await prisma.poi.groupBy({
+    const categories = await prisma.pointOfInterest.groupBy({
       by: ['category'],
       where: {...where, category: {not: null}},
       _count: {category: true},
@@ -614,16 +616,17 @@ export function registerPoiRoutes(
             el.tags?.tourism ?? el.tags?.leisure ?? null;
         const name = el.tags?.name ?? category ?? 'poi';
 
-        const where:
-            Prisma.PoiWhereUniqueInput = {poi_osm_composite: {osmType, osmId}};
-        const existing = await prisma.poi.findUnique({where});
+        const where: Prisma.PointOfInterestWhereUniqueInput = {
+          poi_osm_composite: {osmType, osmId}
+        };
+        const existing = await prisma.pointOfInterest.findUnique({where});
 
         if (existing)
           updated += 1;
         else
           created += 1;
 
-        await prisma.poi.upsert({
+        await prisma.pointOfInterest.upsert({
           where,
           update: {
             name,
@@ -650,7 +653,7 @@ export function registerPoiRoutes(
 
       let pruned = 0;
       if (body?.pruneMissing) {
-        const pruneResult = await prisma.poi.deleteMany({
+        const pruneResult = await prisma.pointOfInterest.deleteMany({
           where: {
             latitude: {gte: bounds.minLat, lte: bounds.maxLat},
             longitude: {gte: bounds.minLng, lte: bounds.maxLng},
@@ -691,47 +694,15 @@ export function registerPoiRoutes(
         (request.query as Record<string, unknown>).includeGeometry);
     if (!id) return reply.status(400).send({error: 'id is required'});
 
-    const poi = await prisma.poi.findUnique({
-      where: {id},
-      include: {
-        building: {
-          select: {
-            id: true,
-            osmId: true,
-            type: true,
-            addressHouseNumber: true,
-            addressStreet: true,
-            addressCity: true,
-            addressPostcode: true,
-            addressState: true,
-            addressCountry: true,
-            geometry: true,
-          },
-        },
-      },
-    });
-
+    const poi = await prisma.pointOfInterest.findUnique({where: {id}});
     if (!poi) return reply.status(404).send({error: 'poi not found'});
 
-    const geometry = includeGeometry && poi.building?.geometry ?
-        serializeGeometry(poi.building.geometry) :
-        undefined;
-
-    const building = poi.building ? {
-      id: poi.building.id,
-      osmId: poi.building.osmId !== null && poi.building.osmId !== undefined ?
-          Number(poi.building.osmId) :
-          null,
-      type: poi.building.type,
-      addressHouseNumber: poi.building.addressHouseNumber,
-      addressStreet: poi.building.addressStreet,
-      addressCity: poi.building.addressCity,
-      addressPostcode: poi.building.addressPostcode,
-      addressState: poi.building.addressState,
-      addressCountry: poi.building.addressCountry,
-      geometry: includeGeometry ? geometry ?? null : undefined,
-    } :
-                                    null;
+    const globalActor = await ensureGeoGlobalActor(prisma);
+    const buildingPayload = await readBuildingCacheByOsm(
+        prisma, globalActor.id, poi.osmType, poi.osmId.toString());
+    const building = buildingPayload ?
+        formatBuildingFromPayload(buildingPayload, includeGeometry) :
+        null;
 
     return {
       id: poi.id,

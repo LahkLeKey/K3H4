@@ -366,7 +366,7 @@ export function registerGeoRoutes(
             (r) =>
                 (Array.isArray(r.lastPoiIds) ? (r.lastPoiIds as string[]) :
                                                []))));
-        const pois = allPoiIds.length ? await prisma.poi.findMany({
+        const pois = allPoiIds.length ? await prisma.pointOfInterest.findMany({
           where: {id: {in : allPoiIds}},
           select: {
             id: true,

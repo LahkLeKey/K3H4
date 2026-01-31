@@ -151,7 +151,7 @@ export function registerFrontendRoutes(
       const allPoiIds = Array.from(new Set(rows.flatMap(
           (r) => (
               Array.isArray(r.lastPoiIds) ? (r.lastPoiIds as string[]) : []))));
-      const pois = allPoiIds.length ? await prisma.poi.findMany({
+      const pois = allPoiIds.length ? await prisma.pointOfInterest.findMany({
         where: {id: {in : allPoiIds}},
         select: {
           id: true,
