@@ -8,6 +8,7 @@
     "coverage:report": "bun run ./scripts/update-coverage.mjs"
   },
   "dependencies": {
+    "@react-three/rapier": "^2.2.0",
     "typescript": "^5.9.3"
   }
 }
