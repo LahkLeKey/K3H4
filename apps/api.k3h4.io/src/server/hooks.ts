@@ -58,10 +58,15 @@ export function registerCoreHooks(server: FastifyInstance) {
         ...(routeOptions.schema ?? {}),
         tags: normalized,
       };
-      return;
     }
 
-    const segments = routeOptions.url?.split('/').filter(Boolean) ?? [];
+    const schema = routeOptions.schema ?? {};
+    const url = routeOptions.url ?? '';
+    const method = Array.isArray(routeOptions.method) ?
+        routeOptions.method[0] :
+        routeOptions.method ?? 'GET';
+
+    const segments = url.split('/').filter(Boolean);
     const firstSegment = segments[0];
     const secondSegment = segments[1];
     const tagKey =
@@ -71,6 +76,43 @@ export function registerCoreHooks(server: FastifyInstance) {
     const mapped = tagKey ? swaggerTagMap[tagKey] : undefined;
     const fallback = tagKey ?? 'general';
     const tagName = mapped?.name ?? fallback;
-    routeOptions.schema = {...(routeOptions.schema ?? {}), tags: [tagName]};
+
+    const hasTags = Array.isArray(schema.tags) && schema.tags.length > 0;
+    const tags = hasTags ? schema.tags : [tagName];
+
+    const summary = schema.summary ?? `${method} ${url}`;
+    const operationId =
+        schema.operationId ??
+        `${String(method).toLowerCase()}_${
+            segments
+                .map(
+                    (segment) => segment.replace(/^:/, 'by_')
+                                     .replace(/[^a-zA-Z0-9]/g, '_'))
+                .join('_')}`;
+
+    const paramsInPath = segments.filter((segment) => segment.startsWith(':'))
+                             .map((segment) => segment.replace(/^:/, ''));
+    const paramsSchema =
+        schema.params ??
+        (paramsInPath.length ? {
+          type: 'object',
+          properties: Object.fromEntries(paramsInPath.map(
+              (param) =>
+                  [param.replace(/\?$/, ''),
+                   {type: 'string', description: 'Path parameter'},
+    ])),
+          required: paramsInPath.filter((param) => !param.endsWith('?'))
+                        .map((param) => param.replace(/\?$/, '')),
+        } :
+                               undefined);
+
+    routeOptions.schema = {
+      ...schema,
+      tags,
+      summary,
+      description: schema.description ?? 'Auto-generated summary',
+      operationId,
+      ...(paramsSchema ? {params: paramsSchema} : {}),
+    };
   });
 }
