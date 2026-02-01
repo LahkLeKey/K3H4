@@ -8,11 +8,20 @@ export {ActorType, EntityDirection, EntityKind};
 
 type PrismaTx = PrismaClient|Prisma.TransactionClient;
 
-type BankEntityMetadata = {
-  amount: string; balanceAfter: string; direction: EntityDirection;
+type BankEntityMetadata = Prisma.JsonObject&{
+  amount: string;
+  balanceAfter: string;
+  direction: EntityDirection;
   kind: EntityKind;
-  note: string | null;
-}&Record<string, unknown>;
+  note: string|null;
+};
+
+const asJsonObject = (value: Prisma.JsonValue|null|undefined) => {
+  if (value && typeof value === 'object' && !Array.isArray(value)) {
+    return value as Prisma.JsonObject;
+  }
+  return {} as Prisma.JsonObject;
+};
 
 export type BankTransactionRecord = {
   userId: string; amount: Prisma.Decimal; direction: EntityDirection;
@@ -33,14 +42,17 @@ export type BankTransactionRecord = {
 
 const toDecimalString = (value: Prisma.Decimal) => value.toFixed(2);
 
-const buildMetadata = (record: BankTransactionRecord): BankEntityMetadata => ({
-  amount: toDecimalString(record.amount.abs()),
-  balanceAfter: toDecimalString(record.balanceAfter),
-  direction: record.direction,
-  kind: record.kind,
-  note: record.note ?? null,
-  ...((record.metadata ?? {}) as Record<string, unknown>),
-});
+const buildMetadata = (record: BankTransactionRecord): BankEntityMetadata => {
+  const baseMetadata = asJsonObject(record.metadata);
+  return {
+    ...baseMetadata,
+    amount: toDecimalString(record.amount.abs()),
+    balanceAfter: toDecimalString(record.balanceAfter),
+    direction: record.direction,
+    kind: record.kind,
+    note: record.note ?? null,
+  };
+};
 
 const ensureActor = async (
     tx: PrismaTx, userId: string, type: ActorType, label?: string|null,
@@ -52,14 +64,15 @@ const ensureActor = async (
   };
   const existing = await tx.actor.findFirst({where: criteria});
   if (existing) return existing;
+  const actorLabel = label ?? BANK_ACTOR_LABEL;
   return tx.actor.create({
     data: {
       userId,
       type,
-      label,
-      note,
+      label: actorLabel,
+      note: note ?? null,
       source: BANK_ACTOR_SOURCE,
-      metadata,
+      metadata: metadata ?? undefined,
     },
   });
 };
@@ -148,7 +161,9 @@ export function buildBankTransactionWhere(
   }
 
   if (filterConditions.length) {
-    where.AND = [...(where.AND ?? []), ...filterConditions];
+    const existingAnd =
+        Array.isArray(where.AND) ? where.AND : (where.AND ? [where.AND] : []);
+    where.AND = [...existingAnd, ...filterConditions];
   }
 
   return where;

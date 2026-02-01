@@ -8,6 +8,7 @@ import { ChatSessionFindManySchema as ChatSessionFindManySchema } from '../findM
 import { AiInsightFindManySchema as AiInsightFindManySchema } from '../findManyAiInsight.schema';
 import { OllamaOperationFindManySchema as OllamaOperationFindManySchema } from '../findManyOllamaOperation.schema';
 import { ActorFindManySchema as ActorFindManySchema } from '../findManyActor.schema';
+import { FreightLoadFindManySchema as FreightLoadFindManySchema } from '../findManyFreightLoad.schema';
 import { UserCountOutputTypeArgsObjectSchema as UserCountOutputTypeArgsObjectSchema } from './UserCountOutputTypeArgs.schema'
 
 const makeSchema = () => z.object({
@@ -19,6 +20,7 @@ const makeSchema = () => z.object({
   aiInsights: z.union([z.boolean(), z.lazy(() => AiInsightFindManySchema)]).optional(),
   ollamaOperations: z.union([z.boolean(), z.lazy(() => OllamaOperationFindManySchema)]).optional(),
   actors: z.union([z.boolean(), z.lazy(() => ActorFindManySchema)]).optional(),
+  freightLoads: z.union([z.boolean(), z.lazy(() => FreightLoadFindManySchema)]).optional(),
   _count: z.union([z.boolean(), z.lazy(() => UserCountOutputTypeArgsObjectSchema)]).optional()
 }).strict();
 export const UserIncludeObjectSchema: z.ZodType<Prisma.UserInclude> = makeSchema() as unknown as z.ZodType<Prisma.UserInclude>;

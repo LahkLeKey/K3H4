@@ -169,3 +169,14 @@ export async function markFreightLoadCompleted(tx: PrismaTx, loadId: string) {
   });
   return buildFreightLoad(entity);
 }
+
+export async function deleteFreightActorWithEntities(
+    tx: PrismaTx, userId: string) {
+  const entities = await tx.entity.deleteMany({
+    where: {actor: {userId, type: ActorType.FREIGHT}},
+  });
+  const actors = await tx.actor.deleteMany({
+    where: {userId, type: ActorType.FREIGHT},
+  });
+  return {entities, actors};
+}

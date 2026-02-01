@@ -1,0 +1,15 @@
+import type { Prisma } from '@prisma/client';
+import * as z from 'zod';
+import { FreightLoadWhereInputObjectSchema as FreightLoadWhereInputObjectSchema } from './objects/FreightLoadWhereInput.schema';
+import { FreightLoadOrderByWithAggregationInputObjectSchema as FreightLoadOrderByWithAggregationInputObjectSchema } from './objects/FreightLoadOrderByWithAggregationInput.schema';
+import { FreightLoadScalarWhereWithAggregatesInputObjectSchema as FreightLoadScalarWhereWithAggregatesInputObjectSchema } from './objects/FreightLoadScalarWhereWithAggregatesInput.schema';
+import { FreightLoadScalarFieldEnumSchema } from './enums/FreightLoadScalarFieldEnum.schema';
+import { FreightLoadCountAggregateInputObjectSchema as FreightLoadCountAggregateInputObjectSchema } from './objects/FreightLoadCountAggregateInput.schema';
+import { FreightLoadMinAggregateInputObjectSchema as FreightLoadMinAggregateInputObjectSchema } from './objects/FreightLoadMinAggregateInput.schema';
+import { FreightLoadMaxAggregateInputObjectSchema as FreightLoadMaxAggregateInputObjectSchema } from './objects/FreightLoadMaxAggregateInput.schema';
+import { FreightLoadAvgAggregateInputObjectSchema as FreightLoadAvgAggregateInputObjectSchema } from './objects/FreightLoadAvgAggregateInput.schema';
+import { FreightLoadSumAggregateInputObjectSchema as FreightLoadSumAggregateInputObjectSchema } from './objects/FreightLoadSumAggregateInput.schema';
+
+export const FreightLoadGroupBySchema: z.ZodType<Prisma.FreightLoadGroupByArgs> = z.object({ where: FreightLoadWhereInputObjectSchema.optional(), orderBy: z.union([FreightLoadOrderByWithAggregationInputObjectSchema, FreightLoadOrderByWithAggregationInputObjectSchema.array()]).optional(), having: FreightLoadScalarWhereWithAggregatesInputObjectSchema.optional(), take: z.number().optional(), skip: z.number().optional(), by: z.array(FreightLoadScalarFieldEnumSchema), _count: z.union([ z.literal(true), FreightLoadCountAggregateInputObjectSchema ]).optional(), _min: FreightLoadMinAggregateInputObjectSchema.optional(), _max: FreightLoadMaxAggregateInputObjectSchema.optional(), _avg: FreightLoadAvgAggregateInputObjectSchema.optional(), _sum: FreightLoadSumAggregateInputObjectSchema.optional() }).strict() as unknown as z.ZodType<Prisma.FreightLoadGroupByArgs>;
+
+export const FreightLoadGroupByZodSchema = z.object({ where: FreightLoadWhereInputObjectSchema.optional(), orderBy: z.union([FreightLoadOrderByWithAggregationInputObjectSchema, FreightLoadOrderByWithAggregationInputObjectSchema.array()]).optional(), having: FreightLoadScalarWhereWithAggregatesInputObjectSchema.optional(), take: z.number().optional(), skip: z.number().optional(), by: z.array(FreightLoadScalarFieldEnumSchema), _count: z.union([ z.literal(true), FreightLoadCountAggregateInputObjectSchema ]).optional(), _min: FreightLoadMinAggregateInputObjectSchema.optional(), _max: FreightLoadMaxAggregateInputObjectSchema.optional(), _avg: FreightLoadAvgAggregateInputObjectSchema.optional(), _sum: FreightLoadSumAggregateInputObjectSchema.optional() }).strict();

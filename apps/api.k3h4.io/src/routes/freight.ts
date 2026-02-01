@@ -156,24 +156,28 @@ const cacheStopData = (stops: ReturnType<typeof buildStops>) =>
               }));
 
 const cacheSegmentData = (segments: ReturnType<typeof buildSegments>) =>
-    segments.map((segment) => ({
-                   sequence: segment.sequence,
-                   instruction: segment.instruction,
-                   maneuverType: segment.maneuverType,
-                   maneuverModifier: segment.maneuverModifier,
-                   distanceMeters: Number.isFinite(segment.distanceMeters) ?
-                       segment.distanceMeters :
-                       null,
-                   durationSeconds: Number.isFinite(segment.durationSeconds) ?
-                       Math.round(segment.durationSeconds) :
-                       null,
-                   startLat: segment.startLat,
-                   startLng: segment.startLng,
-                   endLat: segment.endLat,
-                   endLng: segment.endLng,
-                   geometry: segment.geometry ?? null,
-                   metadata: segment.metadata ?? null,
-                 }));
+    segments.map((segment) => {
+      const durationCandidate = segment.durationSeconds;
+      const normalizedDuration = Number.isFinite(durationCandidate ?? NaN) ?
+          Math.round(durationCandidate as number) :
+          null;
+      return {
+        sequence: segment.sequence,
+        instruction: segment.instruction,
+        maneuverType: segment.maneuverType,
+        maneuverModifier: segment.maneuverModifier,
+        distanceMeters: Number.isFinite(segment.distanceMeters) ?
+            segment.distanceMeters :
+            null,
+        durationSeconds: normalizedDuration,
+        startLat: segment.startLat,
+        startLng: segment.startLng,
+        endLat: segment.endLat,
+        endLng: segment.endLng,
+        geometry: segment.geometry ?? null,
+        metadata: segment.metadata ?? null,
+      };
+    });
 
 const buildDirectionPayload =
     (params: EnsureGeoDirectionParams,

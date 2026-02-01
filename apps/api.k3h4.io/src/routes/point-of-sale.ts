@@ -33,10 +33,12 @@ const normalizeTicketItems =
               .filter((item): item is TicketItem => Boolean(item));
         };
 
-const parseJsonObject = (value: Prisma.JsonValue|null|undefined) => {
-  if (!value || typeof value !== 'object' || Array.isArray(value)) return {};
-  return value as Record<string, unknown>;
-};
+const parseJsonObject =
+    (value: Prisma.JsonValue|null|undefined): Prisma.JsonObject => {
+      if (!value || typeof value !== 'object' || Array.isArray(value))
+        return {};
+      return value as Prisma.JsonObject;
+    };
 
 const ensureStoreActor = async (
     tx: Prisma.TransactionClient|PrismaClient, userId: string,
@@ -115,7 +117,7 @@ export function registerPointOfSaleRoutes(
         const storeChannel = channel;
         const channelOverride = requestedChannel !== undefined;
 
-        let ticketStatus = LifecycleStatus.CLOSED;
+        let ticketStatus: LifecycleStatus = LifecycleStatus.CLOSED;
         if (body.status !== undefined) {
           const parsedStatus = parseLifecycleStatus(body.status);
           if (!parsedStatus)

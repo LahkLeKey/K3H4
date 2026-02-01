@@ -3,6 +3,7 @@ import {type FastifyInstance} from 'fastify';
 
 import {coverageStatusOrDefault, engagementPriorityOrDefault, lifecycleStatusOrDefault} from '../lib/status-utils';
 import * as personaLedger from '../services/persona-ledger';
+import type {PersonaRecord} from '../services/persona-ledger';
 import {ensureStaffingActor, loadStaffingEntities, loadStaffingEntityByKind, STAFFING_ACTOR_SOURCE} from '../services/staffing-actor';
 
 import {buildTelemetryBase} from './telemetry';
@@ -126,7 +127,7 @@ const metadataStringArray =
             })
             .filter(
                 (entry): entry is string =>
-                    typeof entry === 'string' && entry.length);
+                    typeof entry === 'string' && entry.length > 0);
       }
       if (typeof value === 'string') {
         const trimmed = value.trim();
@@ -134,6 +135,16 @@ const metadataStringArray =
       }
       return [];
     };
+
+const resolvePersonaResponse = (
+    personaId: string|null|undefined,
+    personaMap: Map<string, PersonaRecord>,
+    ) => {
+  if (!personaId) return null;
+  const personaRecord = personaMap.get(personaId);
+  return personaRecord ? personaLedger.personaRecordToResponse(personaRecord) :
+                         null;
+};
 
 type EngagementFields = {
   id: string; name: string; client: string | null; priority: EngagementPriority;
@@ -156,9 +167,11 @@ const buildEngagementFields = (entity: Entity): EngagementFields => {
     name: metadataString(metadata, 'name') ?? '',
     client: metadataString(metadata, 'client'),
     priority: engagementPriorityOrDefault(
-        metadataString(metadata, 'priority'), EngagementPriority.MEDIUM),
+        metadataString(metadata, 'priority') ?? undefined,
+        EngagementPriority.MEDIUM),
     status: lifecycleStatusOrDefault(
-        metadataString(metadata, 'status'), LifecycleStatus.ACTIVE),
+        metadataString(metadata, 'status') ?? undefined,
+        LifecycleStatus.ACTIVE),
     startDate: metadataDate(metadata, 'startDate'),
     endDate: metadataDate(metadata, 'endDate'),
     budget: metadataDecimal(metadata, 'budget'),
@@ -184,9 +197,11 @@ const buildRoleFields =
         openings,
         filled,
         priority: engagementPriorityOrDefault(
-            metadataString(metadata, 'priority'), EngagementPriority.NORMAL),
+            metadataString(metadata, 'priority') ?? undefined,
+            EngagementPriority.NORMAL),
         status: lifecycleStatusOrDefault(
-            metadataString(metadata, 'status'), LifecycleStatus.OPEN),
+            metadataString(metadata, 'status') ?? undefined,
+            LifecycleStatus.OPEN),
         rateMin: metadataDecimal(metadata, 'rateMin'),
         rateMax: metadataDecimal(metadata, 'rateMax'),
         billRate: metadataDecimal(metadata, 'billRate'),
@@ -198,15 +213,12 @@ const buildRoleFields =
     };
 
 const buildCandidateFields =
-    (entity: Entity,
-     personaMap: Map<string, ReturnType<typeof personaRecordToResponse>>,
+    (entity: Entity, personaMap: Map<string, PersonaRecord>,
      roleMap: Map<string, ReturnType<typeof serializeRole>>) => {
       const metadata = asRecord(entity.metadata);
       const roleId = metadataString(metadata, 'roleId');
       const personaId = metadataString(metadata, 'personaId');
-      const persona = personaId ? personaLedger.personaRecordToResponse(
-                                      personaMap.get(personaId) ?? null) :
-                                  null;
+      const persona = resolvePersonaResponse(personaId, personaMap);
       return {
         id: entity.id,
         engagementId: metadataString(metadata, 'engagementId'),
@@ -229,17 +241,14 @@ const buildCandidateFields =
     };
 
 const buildShiftFields =
-    (entity: Entity,
-     personaMap: Map<string, ReturnType<typeof personaRecordToResponse>>,
+    (entity: Entity, personaMap: Map<string, PersonaRecord>,
      candidateSummaries: Map<string, CandidateSummary>) => {
       const metadata = asRecord(entity.metadata);
       const assignedPersonaId = metadataString(metadata, 'assignedPersonaId');
       const assignedCandidateId =
           metadataString(metadata, 'assignedCandidateId');
-      const assignedPersona = assignedPersonaId ?
-          personaLedger.personaRecordToResponse(
-              personaMap.get(assignedPersonaId) ?? null) :
-          null;
+      const assignedPersona =
+          resolvePersonaResponse(assignedPersonaId, personaMap);
       const assignedCandidate = assignedCandidateId ?
           candidateSummaries.get(assignedCandidateId) ?? null :
           null;
@@ -251,9 +260,10 @@ const buildShiftFields =
         startsAt: metadataDate(metadata, 'startsAt'),
         endsAt: metadataDate(metadata, 'endsAt'),
         status: lifecycleStatusOrDefault(
-            metadataString(metadata, 'status'), LifecycleStatus.SCHEDULED),
+            metadataString(metadata, 'status') ?? undefined,
+            LifecycleStatus.SCHEDULED),
         coverageStatus: coverageStatusOrDefault(
-            metadataString(metadata, 'coverageStatus'),
+            metadataString(metadata, 'coverageStatus') ?? undefined,
             CoverageStatus.UNFILLED),
         assignedPersona,
         assignedCandidate,
@@ -262,8 +272,7 @@ const buildShiftFields =
     };
 
 const buildPlacementFields =
-    (entity: Entity,
-     personaMap: Map<string, ReturnType<typeof personaRecordToResponse>>,
+    (entity: Entity, personaMap: Map<string, PersonaRecord>,
      roleMap: Map<string, ReturnType<typeof serializeRole>>,
      engagementMap: Map<string, EngagementFields>,
      candidateSummaries: Map<string, CandidateSummary>) => {
@@ -284,14 +293,13 @@ const buildPlacementFields =
         startDate: metadataDate(metadata, 'startDate'),
         endDate: metadataDate(metadata, 'endDate'),
         status: lifecycleStatusOrDefault(
-            metadataString(metadata, 'status'), LifecycleStatus.ACTIVE),
+            metadataString(metadata, 'status') ?? undefined,
+            LifecycleStatus.ACTIVE),
         billRate,
         payRate,
         margin,
         note: metadataString(metadata, 'note'),
-        persona: personaId ? personaLedger.personaRecordToResponse(
-                                 personaMap.get(personaId) ?? null) :
-                             null,
+        persona: resolvePersonaResponse(personaId, personaMap),
         candidate: candidateId ? candidateSummaries.get(candidateId) ?? null :
                                  null,
         role: roleId ? roleMap.get(roleId) ?? null : null,

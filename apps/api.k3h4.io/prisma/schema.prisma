@@ -141,6 +141,7 @@ model User {
   aiInsights       AiInsight[]
   ollamaOperations OllamaOperation[]
   actors           Actor[]
+  freightLoads     FreightLoad[]
 
   @@unique([provider, providerId])
 }
@@ -203,6 +204,28 @@ model PointOfInterest {
   @@unique([osmType, osmId], name: "poi_osm_composite")
   @@index([latitude, longitude])
   @@index([category])
+}
+
+model FreightLoad {
+  id              String   @id @default(cuid())
+  userId          String
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title           String
+  originName      String
+  originLat       Float
+  originLng       Float
+  destinationName String
+  destinationLat  Float
+  destinationLng  Float
+  distanceKm      Decimal  @db.Decimal(10, 2)
+  durationMinutes Int
+  cost            Decimal  @db.Decimal(18, 2)
+  status          String   @default("planning")
+  routeGeoJson    Json?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([userId, status])
 }
 
 model UserPreference {
@@ -269,6 +292,24 @@ model ApiCacheEntry {
 
   @@unique([provider, scope, endpoint, paramsHash])
   @@index([provider, scope, endpoint])
+}
+
+model EnrichmentCache {
+  id         String    @id
+  provider   String    @default("wikidata")
+  namespace  String
+  kind       String
+  sourceKey  String
+  paramsHash String?
+  wikidataId String?
+  payload    Json?
+  status     String?
+  fetchedAt  DateTime  @default(now())
+  expiresAt  DateTime?
+  note       String?
+
+  @@unique([provider, namespace, kind, sourceKey], name: "provider_namespace_kind_sourceKey")
+  @@index([provider, fetchedAt], name: "provider_fetchedAt_idx")
 }
 
 model ChatSession {

@@ -136,7 +136,7 @@ export function registerDemRoutes(
 
         const data = Buffer.from(arrayBuf);
         const cacheControl = upstreamRes.headers.get('cache-control') ??
-            `public, max-age=${Math.floor(DEM_TTL_MS / 1000)}`;
+            `public, max-age=${Math.floor(GEO_DEM_TTL_MS / 1000)}`;
         const etag = upstreamRes.headers.get('etag') ?? undefined;
         const expiresAt = new Date(Date.now() + GEO_DEM_TTL_MS);
         await writeGeoDemTileCache(prisma, storageActorId, {

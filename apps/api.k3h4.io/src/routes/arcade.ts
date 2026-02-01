@@ -1,4 +1,4 @@
-import {Prisma, type PrismaClient} from '@prisma/client';
+import {type Actor, type Entity, Prisma, type PrismaClient} from '@prisma/client';
 import {type FastifyInstance} from 'fastify';
 
 import {ActorType, EntityDirection, EntityKind, recordBankTransactionEntity,} from '../services/bank-actor';
@@ -33,12 +33,11 @@ const computeBalance = (entries: Array<{
   direction: EntityDirection | null; metadata: Prisma.JsonValue | null;
 }>) => entries.reduce((balance, entry) => {
   const amount = parseAmountFromMetadata(entry.metadata);
-  if (entry.direction === EntityDirection.DEBIT)
-    return balance.sub(amount);
+  if (entry.direction === EntityDirection.DEBIT) return balance.sub(amount);
   return balance.add(amount);
 }, new Prisma.Decimal(0));
 
-const buildMachineSummary = (actor: Prisma.Actor) => {
+const buildMachineSummary = (actor: Actor) => {
   const metadata = parseJsonObject(actor.metadata);
   return {
     id: actor.id,
@@ -48,7 +47,7 @@ const buildMachineSummary = (actor: Prisma.Actor) => {
   };
 };
 
-const buildPrizeSummary = (actor: Prisma.Actor) => {
+const buildPrizeSummary = (actor: Actor) => {
   const metadata = parseJsonObject(actor.metadata);
   const stockRaw = metadata.stock;
   const stock = typeof stockRaw === 'number' ? stockRaw : Number(stockRaw ?? 0);
@@ -65,7 +64,7 @@ const buildPrizeSummary = (actor: Prisma.Actor) => {
   };
 };
 
-const buildCardTopUp = (entity: Prisma.Entity) => {
+const buildCardTopUp = (entity: Entity) => {
   const metadata = parseJsonObject(entity.metadata);
   return {
     id: entity.id,
@@ -75,11 +74,10 @@ const buildCardTopUp = (entity: Prisma.Entity) => {
   };
 };
 
-const buildCardSummary = (card: Prisma.Actor, entries: Prisma.Entity[]) => {
+const buildCardSummary = (card: Actor, entries: Entity[]) => {
   const balance = computeBalance(entries);
   const topUps =
-      entries
-          .filter((entity) => entity.kind === EntityKind.ARCADE_TOPUP)
+      entries.filter((entity) => entity.kind === EntityKind.ARCADE_TOPUP)
           .map(buildCardTopUp);
   return {
     id: card.id,
@@ -89,7 +87,7 @@ const buildCardSummary = (card: Prisma.Actor, entries: Prisma.Entity[]) => {
   };
 };
 
-const buildSessionSummary = (entity: Prisma.Entity) => {
+const buildSessionSummary = (entity: Entity) => {
   const metadata = parseJsonObject(entity.metadata);
   const scoreValue = metadata.score;
   return {
@@ -103,7 +101,7 @@ const buildSessionSummary = (entity: Prisma.Entity) => {
   };
 };
 
-const buildRedemptionSummary = (entity: Prisma.Entity) => {
+const buildRedemptionSummary = (entity: Entity) => {
   const metadata = parseJsonObject(entity.metadata);
   return {
     id: entity.id,
@@ -172,7 +170,7 @@ export function registerArcadeRoutes(
         const [sessions, redemptions] =
             await Promise.all([sessionsPromise, redemptionsPromise]);
 
-        const entriesByCard = new Map<string, Prisma.Entity[]>();
+        const entriesByCard = new Map<string, Entity[]>();
         cardEntities.forEach((entity) => {
           const bucket = entriesByCard.get(entity.actorId) ?? [];
           bucket.push(entity);
@@ -368,20 +366,14 @@ export function registerArcadeRoutes(
         try {
           const {entity, balance} = await prisma.$transaction(async (tx) => {
             const card = await tx.actor.findFirst({
-              where: {
-                id: body.cardId,
-                userId,
-                type: ActorType.ARCADE_PLAYER_CARD
-              },
+              where:
+                  {id: body.cardId, userId, type: ActorType.ARCADE_PLAYER_CARD},
             });
             if (!card) throw new Error('Card not found');
 
             const machine = await tx.actor.findFirst({
-              where: {
-                id: body.machineId,
-                userId,
-                type: ActorType.ARCADE_MACHINE
-              },
+              where:
+                  {id: body.machineId, userId, type: ActorType.ARCADE_MACHINE},
             });
             if (!machine) throw new Error('Machine not found');
 
@@ -445,69 +437,67 @@ export function registerArcadeRoutes(
         };
 
         try {
-          const {entity, balance, stock} =
-              await prisma.$transaction(async (tx) => {
-                const prize = await tx.actor.findFirst({
-                  where:
-                      {id: prizeId, userId, type: ActorType.ARCADE_PRIZE},
-                });
-                if (!prize) throw new Error('Prize not found');
-                const prizeMetadata = parseJsonObject(prize.metadata);
-                const stockRaw = prizeMetadata.stock;
-                const currentStock = typeof stockRaw === 'number' ?
-                    stockRaw :
-                    Number(stockRaw ?? 0);
-                if (currentStock <= 0) throw new Error('Prize out of stock');
-                const costRaw = prizeMetadata.costCoins;
-                const cost = typeof costRaw === 'string' ?
-                    new Prisma.Decimal(costRaw) :
-                    new Prisma.Decimal('0.00');
+          const {
+            entity,
+            balance,
+            stock
+          } = await prisma.$transaction(async (tx) => {
+            const prize = await tx.actor.findFirst({
+              where: {id: prizeId, userId, type: ActorType.ARCADE_PRIZE},
+            });
+            if (!prize) throw new Error('Prize not found');
+            const prizeMetadata = parseJsonObject(prize.metadata);
+            const stockRaw = prizeMetadata.stock;
+            const currentStock =
+                typeof stockRaw === 'number' ? stockRaw : Number(stockRaw ?? 0);
+            if (currentStock <= 0) throw new Error('Prize out of stock');
+            const costRaw = prizeMetadata.costCoins;
+            const cost = typeof costRaw === 'string' ?
+                new Prisma.Decimal(costRaw) :
+                new Prisma.Decimal('0.00');
 
-                const card = await tx.actor.findFirst({
-                  where: {
-                    id: body.cardId,
-                    userId,
-                    type: ActorType.ARCADE_PLAYER_CARD
-                  },
-                });
-                if (!card) throw new Error('Card not found');
+            const card = await tx.actor.findFirst({
+              where:
+                  {id: body.cardId, userId, type: ActorType.ARCADE_PLAYER_CARD},
+            });
+            if (!card) throw new Error('Card not found');
 
-                const cardBalance = await getActorBalance(tx, card.id);
-                if (cardBalance.lessThan(cost))
-                  throw new Error('Insufficient card balance');
+            const cardBalance = await getActorBalance(tx, card.id);
+            if (cardBalance.lessThan(cost))
+              throw new Error('Insufficient card balance');
 
-                const nextBalance = cardBalance.sub(cost);
-                const entity = await recordBankTransactionEntity(tx, {
-                  userId,
-                  actorId: card.id,
-                  amount: cost,
-                  direction: EntityDirection.DEBIT,
-                  kind: EntityKind.ARCADE_PRIZE_REDEMPTION,
-                  balanceAfter: nextBalance,
-                  targetType: 'arcade_prize',
-                  targetId: prize.id,
-                  metadata: {
-                    prizeId: prize.id,
-                    sessionId: body.sessionId ?? null,
-                  },
-                });
+            const nextBalance = cardBalance.sub(cost);
+            const entity = await recordBankTransactionEntity(tx, {
+              userId,
+              actorId: card.id,
+              amount: cost,
+              direction: EntityDirection.DEBIT,
+              kind: EntityKind.ARCADE_PRIZE_REDEMPTION,
+              balanceAfter: nextBalance,
+              targetType: 'arcade_prize',
+              targetId: prize.id,
+              metadata: {
+                prizeId: prize.id,
+                sessionId: body.sessionId ?? null,
+              },
+            });
 
-                await tx.actor.update({
-                  where: {id: prize.id},
-                  data: {
-                    metadata: {
-                      ...prizeMetadata,
-                      stock: Math.max(0, currentStock - 1),
-                    },
-                  },
-                });
-
-                return {
-                  entity,
-                  balance: nextBalance,
+            await tx.actor.update({
+              where: {id: prize.id},
+              data: {
+                metadata: {
+                  ...prizeMetadata,
                   stock: Math.max(0, currentStock - 1),
-                };
-              });
+                },
+              },
+            });
+
+            return {
+              entity,
+              balance: nextBalance,
+              stock: Math.max(0, currentStock - 1),
+            };
+          });
 
           await recordTelemetry(request, {
             ...buildTelemetryBase(request),

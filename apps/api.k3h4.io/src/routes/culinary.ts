@@ -80,7 +80,7 @@ export function registerCulinaryRoutes(
           dueAt?: string;
           status?: string
         };
-        let prepStatus = LifecycleStatus.PENDING;
+        let prepStatus: LifecycleStatus = LifecycleStatus.PENDING;
         if (body.status !== undefined) {
           const parsedStatus = parseLifecycleStatus(body.status);
           if (!parsedStatus)
@@ -116,7 +116,7 @@ export function registerCulinaryRoutes(
           status?: string;
           dueDate?: string
         };
-        let needStatus = LifecycleStatus.OPEN;
+        let needStatus: LifecycleStatus = LifecycleStatus.OPEN;
         if (body.status !== undefined) {
           const parsedStatus = parseLifecycleStatus(body.status);
           if (!parsedStatus)

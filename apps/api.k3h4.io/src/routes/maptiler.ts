@@ -1,5 +1,5 @@
 import {PrismaClient} from '@prisma/client';
-import {type FastifyInstance, type FastifyReply, type FastifyRequest} from 'fastify';
+import {type FastifyInstance, type FastifyReply, type FastifyRequest, type RouteShorthandOptions} from 'fastify';
 
 import {ensureGeoActor} from '../services/geo-actor';
 import {fetchMaptilerWithCache} from '../services/maptiler-cache';
@@ -66,6 +66,10 @@ export function registerMaptilerRoutes(
     recordTelemetry: RecordTelemetryFn) {
   // Map views should work even for anonymous users; we only verify JWT if
   // present.
+  type RateLimitedRouteShorthandOptions = RouteShorthandOptions&{
+    rateLimit?: {max: number; timeWindow: string};
+  };
+
   const optionalAuth = {
     preHandler: [async (request: FastifyRequest) => {
       try {
@@ -170,36 +174,36 @@ export function registerMaptilerRoutes(
     return response.body;
   };
 
-  server.get(
-      '/maptiler/json',
-      {
-        ...optionalAuth,
-        rateLimit: {
-          max: MAPTILER_RATE_LIMIT_MAX,
-          timeWindow: MAPTILER_RATE_LIMIT_WINDOW
-        },
-        schema: {
-          summary: 'Proxy MapTiler Cloud JSON endpoints with caching',
-          tags: ['maptiler'],
-        },
-      },
-      async (request, reply) => handler('json', request, reply),
-  );
+  const maptilerJsonRouteOptions: RateLimitedRouteShorthandOptions = {
+    ...optionalAuth,
+    rateLimit: {
+      max: MAPTILER_RATE_LIMIT_MAX,
+      timeWindow: MAPTILER_RATE_LIMIT_WINDOW,
+    },
+    schema: {
+      summary: 'Proxy MapTiler Cloud JSON endpoints with caching',
+      tags: ['maptiler'],
+    },
+  };
 
   server.get(
-      '/maptiler/tiles',
-      {
-        ...optionalAuth,
-        rateLimit: {
-          max: MAPTILER_RATE_LIMIT_MAX,
-          timeWindow: MAPTILER_RATE_LIMIT_WINDOW
-        },
-        schema: {
-          summary:
-              'Proxy MapTiler Cloud binary endpoints (tiles/static) with caching',
-          tags: ['maptiler'],
-        },
-      },
-      async (request, reply) => handler('arrayBuffer', request, reply),
-  );
+      '/maptiler/json', maptilerJsonRouteOptions,
+      async (request, reply) => handler('json', request, reply));
+
+  const maptilerTilesRouteOptions: RateLimitedRouteShorthandOptions = {
+    ...optionalAuth,
+    rateLimit: {
+      max: MAPTILER_RATE_LIMIT_MAX,
+      timeWindow: MAPTILER_RATE_LIMIT_WINDOW,
+    },
+    schema: {
+      summary:
+          'Proxy MapTiler Cloud binary endpoints (tiles/static) with caching',
+      tags: ['maptiler'],
+    },
+  };
+
+  server.get(
+      '/maptiler/tiles', maptilerTilesRouteOptions,
+      async (request, reply) => handler('arrayBuffer', request, reply));
 }

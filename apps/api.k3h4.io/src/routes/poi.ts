@@ -739,6 +739,7 @@ export function registerPoiRoutes(
       '/api/pois/batch',
       authOpts,
       async (request, reply) => {
+        const rt = withTelemetryBase(recordTelemetry, request);
         const body = request.body as {
           ids?: Array<{type?: string; id?: string | number}>;
           include?: Record<string, boolean>;

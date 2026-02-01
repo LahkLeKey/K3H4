@@ -6,6 +6,7 @@ import {URLSearchParams} from 'node:url';
 import {deleteAgricultureActorWithEntities} from '../services/agriculture-actor';
 import {deleteBankActorWithEntities} from '../services/bank-actor';
 import {deleteCulinaryActorWithEntities} from '../services/culinary-ledger';
+import {deleteFreightActorWithEntities} from '../services/freight-actor';
 import {deleteStaffingActorWithEntities} from '../services/staffing-actor';
 import {deleteWarehouseActorWithEntities} from '../services/warehouse-actor';
 
@@ -144,8 +145,8 @@ const runDeleteJob = async (
         action: () => deleteStaffingActorWithEntities(prisma, userId)
       },
       {
-        key: 'freightLoads',
-        action: () => prisma.freightLoad.deleteMany({where: {userId}})
+        key: 'freightLedger',
+        action: () => deleteFreightActorWithEntities(prisma, userId)
       },
       {
         key: 'warehouseItems',
@@ -568,8 +569,8 @@ export function registerAuthRoutes(
         preHandler: [server.authenticate],
       },
       async (request, reply) => {
+        const rt = withTelemetryBase(recordTelemetry, request);
         try {
-          const rt = withTelemetryBase(recordTelemetry, request);
           const userId = (request.user as {sub: string}).sub;
           const body = request.body as {confirmText?: string} | undefined;
 

@@ -188,21 +188,21 @@ const serializeCompatibility = (
   };
 };
 
-const normalizeAttributeInput = (input: PersonaAttributeInput) => {
-  const category = input.category?.trim();
-  if (!category) return [] as {
-      category: string;
-      value: string;
-      weight: number
-    }
-  [];
-  const weight =
-      Number.isFinite(input.weight ?? 1) ? Number(input.weight ?? 1) : 1;
-  return (input.values ?? [])
-      .map((value) => value?.trim())
-      .filter((value): value is string => Boolean(value))
-      .map((value) => ({category, value, weight}));
+type NormalizedAttributeInput = {
+  category: string; value: string; weight: number
 };
+
+const normalizeAttributeInput =
+    (input: PersonaAttributeInput): NormalizedAttributeInput[] => {
+      const category = input.category?.trim();
+      if (!category) return [];
+      const weight =
+          Number.isFinite(input.weight ?? 1) ? Number(input.weight ?? 1) : 1;
+      return (input.values ?? [])
+          .map((value) => value?.trim())
+          .filter((value): value is string => Boolean(value))
+          .map((value) => ({category, value, weight}));
+    };
 
 const clampCount = (value?: number) => {
   const parsed = Number(value ?? 1);
@@ -263,6 +263,23 @@ const emptyConfusion: ConfusionCounts = {
   fn: 0
 };
 
+type NormalizedConfusionPair = {
+  sourceId: string; targetId: string; label: boolean
+};
+
+const normalizeConfusionPairs = (pairs: ConfusionExampleInput[]) =>
+    pairs
+        .map((pair) => ({
+               sourceId: pair.sourceId?.trim(),
+               targetId: pair.targetId?.trim(),
+               label: pair.label,
+             }))
+        .filter(
+            (pair): pair is NormalizedConfusionPair => Boolean(
+                pair.sourceId && pair.targetId &&
+                typeof pair.label === 'boolean'),
+        );
+
 const computeConfusionFromPairs = async (
     pairs: ConfusionExampleInput[],
     userId: string,
@@ -270,20 +287,7 @@ const computeConfusionFromPairs = async (
     threshold: number,
     modelPath?: string,
     ) => {
-  const normalized = pairs
-                         .map((pair) => ({
-                                sourceId: pair.sourceId?.trim(),
-                                targetId: pair.targetId?.trim(),
-                                label: pair.label,
-                              }))
-                         .filter(
-                             (pair) => pair.sourceId && pair.targetId &&
-                                 typeof pair.label === 'boolean',
-                             ) as {
-    sourceId: string;
-    targetId: string;
-    label: boolean
-  }
+  const normalized = normalizeConfusionPairs(pairs);
   [];
   if (normalized.length === 0) {
     return {counts: emptyConfusion, details: [], missing: pairs.length};

@@ -126,7 +126,7 @@ export function registerFrontendRoutes(
         const expiresAt =
             geoQuery?.expiresAt ? new Date(geoQuery.expiresAt) : null;
         const stillValid = expiresAt ? expiresAt > now : false;
-        if (stillValid) {
+        if (geoQuery && stillValid) {
           poi = {
             signature: pref.lastPoiSignature,
             kinds: kindsFromPref,

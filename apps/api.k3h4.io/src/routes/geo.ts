@@ -1,7 +1,7 @@
 import {Prisma, type PrismaClient} from '@prisma/client';
-import {type FastifyInstance} from 'fastify';
+import {type FastifyInstance, type RouteShorthandOptions} from 'fastify';
 
-import {routeSignature} from '../lib/geo-signature';
+import {clampDecimals, routeSignature} from '../lib/geo-signature';
 import {enqueueOverpass} from '../lib/overpass-queue';
 import {ensureGeoActor} from '../services/geo-actor';
 import {logGeoStatus, readGeoPoiCache, readGeoPoiCacheStale, readGeoQueryCache, readGeoRouteCache, readGeoViewHistory, writeGeoPoiCache, writeGeoQueryCache, writeGeoRouteCache,} from '../services/geo-cache';
@@ -16,6 +16,10 @@ const POI_TTL_MS = 1000 * 60 * 60 * 12;   // 12 hours
 const GEO_POI_RATE_LIMIT_MAX = Number(process.env.GEO_POI_RATE_LIMIT_MAX ?? 30);
 const GEO_POI_RATE_LIMIT_WINDOW =
     process.env.GEO_POI_RATE_LIMIT_WINDOW || '1 minute';
+
+type RateLimitedRouteShorthandOptions = RouteShorthandOptions&{
+  rateLimit?: {max: number; timeWindow: string};
+};
 
 const poiSignature =
     (center: {lat: number; lng: number}, radiusM: number, kinds: string[]) => {
@@ -185,14 +189,19 @@ export function registerGeoRoutes(
       },
   );
 
+  const poiRouteOptions: RateLimitedRouteShorthandOptions = {
+    rateLimit: {
+      max: GEO_POI_RATE_LIMIT_MAX,
+      timeWindow: GEO_POI_RATE_LIMIT_WINDOW,
+    },
+    schema: {
+      summary: 'Fetch Geo POIs with cached rate limiting',
+      tags: ['geo'],
+    },
+  };
   server.get(
       '/geo/pois',
-      {
-        rateLimit: {
-          max: GEO_POI_RATE_LIMIT_MAX,
-          timeWindow: GEO_POI_RATE_LIMIT_WINDOW
-        },
-      },
+      poiRouteOptions,
       async (request, reply) => {
         const query = request.query as any;
         const lat = Number(query.lat);

@@ -194,13 +194,14 @@ export async function createCulinaryMenuItem(
     cost: toDecimalString(payload.cost),
     price: toDecimalString(payload.price),
   };
-  return tx.entity.create({
+  const entity = await tx.entity.create({
     data: {
       actorId: actor.id,
       kind: MENU_ITEM_KIND,
       metadata,
     },
   });
+  return buildMenuItemRecord(entity);
 }
 
 export async function createCulinaryPrepTask(
@@ -215,13 +216,14 @@ export async function createCulinaryPrepTask(
     status: payload.status,
     dueAt: normalizeString(payload.dueAt) ?? null,
   };
-  return tx.entity.create({
+  const entity = await tx.entity.create({
     data: {
       actorId: actor.id,
       kind: PREP_TASK_KIND,
       metadata,
     },
   });
+  return buildPrepTaskRecord(entity);
 }
 
 export async function createCulinarySupplierNeed(
@@ -236,13 +238,14 @@ export async function createCulinarySupplierNeed(
     status: payload.status,
     dueDate: normalizeString(payload.dueDate) ?? null,
   };
-  return tx.entity.create({
+  const entity = await tx.entity.create({
     data: {
       actorId: actor.id,
       kind: SUPPLIER_NEED_KIND,
       metadata,
     },
   });
+  return buildSupplierNeedRecord(entity);
 }
 
 export async function deleteCulinaryActorWithEntities(
