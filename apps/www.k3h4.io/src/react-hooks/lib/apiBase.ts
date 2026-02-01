@@ -26,6 +26,11 @@ export const resolveApiPath = (path: string) => {
   if (normalized.startsWith('/entities')) {
     return `/entity${normalized}`;
   }
+  if (normalized.startsWith('/geo') || normalized.startsWith('/frontend') ||
+      normalized.startsWith('/maptiler') || normalized.startsWith('/pois') ||
+      normalized.startsWith('/api/pois')) {
+    return normalized;
+  }
   return `/entity${normalized}`;
 };
 
