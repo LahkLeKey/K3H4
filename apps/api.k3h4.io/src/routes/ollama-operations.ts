@@ -1,8 +1,10 @@
 import {Actor, Entity, Prisma, PrismaClient} from '@prisma/client';
 import {type FastifyInstance, type FastifyRequest} from 'fastify';
+import * as z from 'zod';
 
 import {ensureOllamaOperationsActor, findOllamaOperationsActor,} from '../actors/OllamaOperations/OllamaOperations';
 import {ENTITY_KINDS} from '../lib/actor-entity-constants';
+import {AuthHeaderSchema, IntegerLikeSchema, StandardErrorResponses, toJsonSchema, withExamples} from '../lib/schemas/openapi';
 
 import {withTelemetryBase} from './telemetry';
 import type {RecordTelemetryFn} from './types';
@@ -26,13 +28,62 @@ const DEFAULT_OPERATIONS_LIMIT = 30;
 const MAX_OPERATIONS_LIMIT = 100;
 
 const operationsListSchema = {
-  querystring: {
-    type: 'object',
-    properties: {
-      limit: {type: 'number', minimum: 1, maximum: MAX_OPERATIONS_LIMIT},
-      source: {type: 'string', enum: ['chat', 'insights']},
-      sessionId: {type: 'string'},
-    },
+  summary: 'List Ollama operations',
+  description: 'Lists recorded Ollama model operations for the current user.',
+  operationId: 'ai_ollama_operation_list',
+  tags: ['ai'],
+  headers: toJsonSchema(AuthHeaderSchema, 'AuthHeader'),
+  security: [{bearerAuth: []}],
+  querystring: toJsonSchema(
+      z.object({
+         limit: IntegerLikeSchema
+                    .describe(`Max items to return (default ${
+                        DEFAULT_OPERATIONS_LIMIT})`)
+                    .optional(),
+         source: z.enum(['chat', 'insights']).optional(),
+         sessionId: z.string().min(1).optional(),
+       }).strict(),
+      'OllamaOperationsQuery'),
+  response: {
+    200: withExamples(
+        toJsonSchema(
+            z.object({
+               operations: z.array(
+                   z.object({
+                      id: z.string().min(1),
+                      source: z.enum(['chat', 'insights']),
+                      model: z.string().min(1),
+                      temperature: z.number().nullable().optional(),
+                      systemPrompt: z.string().nullable().optional(),
+                      requestBody: z.unknown().nullable().optional(),
+                      responseBody: z.unknown().nullable().optional(),
+                      metadata: z.unknown().nullable().optional(),
+                      statusCode: z.number().int().nullable().optional(),
+                      errorMessage: z.string().nullable().optional(),
+                      createdAt: z.string().min(1),
+                      sessionId: z.string().nullable().optional(),
+                      sessionTitle: z.string().nullable().optional(),
+                    }).passthrough()),
+             }).strict(),
+            'OllamaOperationsResponse'),
+        [{
+          operations: [{
+            id: 'op_01',
+            source: 'chat',
+            model: 'llama3.2:1b',
+            temperature: 0.7,
+            systemPrompt: 'Be concise.',
+            requestBody: {messages: []},
+            responseBody: {message: {content: 'Hello'}},
+            metadata: null,
+            statusCode: 200,
+            errorMessage: null,
+            createdAt: '2026-02-01T12:05:00.000Z',
+            sessionId: 'sess_01',
+            sessionTitle: 'Store planning',
+          }],
+        }]),
+    ...StandardErrorResponses,
   },
 };
 

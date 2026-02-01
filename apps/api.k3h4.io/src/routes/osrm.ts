@@ -1,7 +1,9 @@
 import {PrismaClient} from '@prisma/client';
 import {FastifyInstance, FastifyReply, FastifyRequest} from 'fastify';
+import * as z from 'zod';
 
 import {ensureGeoActor} from '../actors/Geo/Geo';
+import {AuthHeaderSchema, StandardErrorResponses, toJsonSchema, withExamples} from '../lib/schemas/openapi';
 import {fetchOsrmWithCache} from '../services/osrm-cache';
 
 import {withTelemetryBase} from './telemetry';
@@ -90,8 +92,47 @@ export function registerOsrmRoutes(
     return response.body;
   };
 
-  server.get('/osrm/:service', {...auth}, async (request, reply) => {
-    const {service} = request.params as {service?: string};
-    return handler(service ?? '', request, reply);
-  });
+  server.get(
+      '/osrm/:service', {
+        ...auth,
+        schema: {
+          summary: 'Proxy OSRM routing service',
+          description: 'Proxies OSRM service requests with caching.',
+          operationId: 'osrm_proxy',
+          tags: ['osrm'],
+          headers: toJsonSchema(AuthHeaderSchema, 'AuthHeader'),
+          security: [{bearerAuth: []}],
+          params: toJsonSchema(
+              z.object({
+                 service: z.enum(
+                     ['route', 'table', 'match', 'trip', 'nearest', 'tile']),
+               }).strict(),
+              'OsrmParams'),
+          querystring: toJsonSchema(
+              z.object({
+                 profile: z.string().min(1),
+                 coordinates: z.string().min(1),
+                 format: z.enum(['json', 'flatbuffers']).optional(),
+                 maxAgeMinutes: z.union([z.number(), z.string()]).optional(),
+               }).passthrough(),
+              'OsrmQuery'),
+          response:
+              {
+                200:
+                    withExamples(
+                        {
+                          type: [
+                            'object', 'array', 'string', 'number', 'boolean',
+                            'null'
+                          ],
+                        },
+                        [{code: 'Ok'}]),
+                ...StandardErrorResponses,
+              },
+        },
+      },
+      async (request, reply) => {
+        const {service} = request.params as {service?: string};
+        return handler(service ?? '', request, reply);
+      });
 }

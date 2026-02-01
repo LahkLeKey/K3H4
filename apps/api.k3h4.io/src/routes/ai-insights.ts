@@ -1,6 +1,8 @@
 import {type PrismaClient} from '@prisma/client';
 import {type FastifyInstance, type FastifyReply, type FastifyRequest} from 'fastify';
+import * as z from 'zod';
 
+import {AuthHeaderSchema, IntegerLikeSchema, StandardErrorResponses, toJsonSchema, withExamples} from '../lib/schemas/openapi';
 import {type AiInsightPayload, createAiInsight, loadAiInsights} from '../services/ai-insight-actor';
 
 import {recordOllamaOperation} from './ollama-operations';
@@ -29,34 +31,97 @@ const DEFAULT_MODEL = process.env.OLLAMA_INSIGHT_MODEL?.trim() || 'llama3.2:1b';
 const CRITICAL_SYSTEM_PROMPT =
     'You summarize AI enrichment data for the K3H4 AI tools; focus on the target entity, highlight meaning or state changes, speak plainly, and keep the response under 160 characters when possible.';
 
+const InsightSchema = z.object({
+                         id: z.string().min(1),
+                         description: z.string().min(1),
+                         targetType: z.string().nullable(),
+                         targetId: z.string().nullable(),
+                         targetLabel: z.string().nullable(),
+                         metadata: z.unknown().nullable(),
+                         payload: z.unknown().nullable(),
+                         createdAt: z.string().min(1),
+                         updatedAt: z.string().min(1),
+                       }).passthrough();
+
 const insightsListSchema = {
-  querystring: {
-    type: 'object',
-    properties: {
-      limit: {type: 'number', minimum: 1, maximum: MAX_LIST_LIMIT},
-      targetType: {type: 'string'},
-    },
+  summary: 'List AI insights',
+  description: 'Returns recent AI insights for the authenticated user.',
+  operationId: 'ai_insight_list',
+  tags: ['ai'],
+  headers: toJsonSchema(AuthHeaderSchema, 'AuthHeader'),
+  security: [{bearerAuth: []}],
+  querystring: toJsonSchema(
+      z.object({
+         limit: IntegerLikeSchema
+                    .describe(
+                        `Max items to return (default ${DEFAULT_LIST_LIMIT})`)
+                    .optional(),
+         targetType: z.string().min(1).optional(),
+       }).strict(),
+      'InsightsListQuery'),
+  response: {
+    200: withExamples(
+        toJsonSchema(
+            z.object({
+               insights: z.array(InsightSchema),
+             }).strict(),
+            'InsightsListResponse'),
+        [{
+          insights: [{
+            id: 'ai_insight_01',
+            description: 'Customer sentiment improved after shipment arrived.',
+            targetType: 'freight_load',
+            targetId: 'load_123',
+            targetLabel: 'Inbound PO #4492',
+            metadata: {source: 'ollama'},
+            payload: {score: 0.82},
+            createdAt: '2026-02-01T10:15:30.000Z',
+            updatedAt: '2026-02-01T10:15:30.000Z',
+          }],
+        }]),
+    ...StandardErrorResponses,
   },
 };
 
 const insightCreateSchema = {
-  body: {
-    type: 'object',
-    properties: {
-      description: {type: 'string', minLength: 1},
-      targetType: {type: 'string'},
-      targetId: {type: 'string'},
-      targetLabel: {type: 'string'},
-      metadata: {
-        type: ['object', 'array', 'string', 'number', 'boolean', 'null'],
-      },
-      payload: {
-        type: ['object', 'array', 'string', 'number', 'boolean', 'null'],
-      },
-      model: {type: 'string'},
-      systemPrompt: {type: 'string'},
-    },
-    required: ['description'],
+  summary: 'Create an AI insight',
+  description:
+      'Creates a new AI insight and optionally synthesizes a description.',
+  operationId: 'ai_insight_create',
+  tags: ['ai'],
+  headers: toJsonSchema(AuthHeaderSchema, 'AuthHeader'),
+  security: [{bearerAuth: []}],
+  body: toJsonSchema(
+      z.object({
+         description: z.string().min(1),
+         targetType: z.string().min(1).optional(),
+         targetId: z.string().min(1).optional(),
+         targetLabel: z.string().min(1).optional(),
+         metadata: z.unknown().optional(),
+         payload: z.unknown().optional(),
+         model: z.string().min(1).optional().default(DEFAULT_MODEL),
+         systemPrompt: z.string().min(1).optional(),
+       }).strict(),
+      'InsightCreateBody'),
+  response: {
+    200: withExamples(
+        toJsonSchema(
+            z.object({insight: InsightSchema}).strict(),
+            'InsightCreateResponse'),
+        [{
+          insight: {
+            id: 'ai_insight_02',
+            description: 'Order backlog reduced after staffing changes.',
+            targetType: 'staffing_engagement',
+            targetId: 'eng_456',
+            targetLabel: 'Spring engagement',
+            metadata: {model: DEFAULT_MODEL},
+            payload: {delta: -12},
+            createdAt: '2026-02-01T11:22:00.000Z',
+            updatedAt: '2026-02-01T11:22:00.000Z',
+          },
+        }]),
+    ...StandardErrorResponses,
   },
 };
 

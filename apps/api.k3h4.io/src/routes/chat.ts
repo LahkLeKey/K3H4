@@ -1,8 +1,10 @@
 import {Entity, Prisma, PrismaClient,} from '@prisma/client';
 import {type FastifyInstance} from 'fastify';
+import * as z from 'zod';
 
 import {ACTOR_TYPES, ENTITY_KINDS} from '../lib/actor-entity-constants';
 import {CHAT_ROLES, type ChatRole} from '../lib/domain-constants';
+import {AuthHeaderSchema, ChatRoleSchema, IntegerLikeSchema, StandardErrorResponses, toJsonSchema, withExamples} from '../lib/schemas/openapi';
 
 import {recordOllamaOperation} from './ollama-operations';
 import {withTelemetryBase} from './telemetry';
@@ -38,12 +40,237 @@ type ChatHistoryEntry = {
   role: ChatRole; content: string; createdAt: Date;
 };
 
-const operationsListSchema = {
-  querystring: {
-    type: 'object',
-    properties: {
-      limit: {type: 'number', minimum: 1, maximum: 100},
-    },
+const SessionSummarySchema =
+    z.object({
+       id: z.string().min(1),
+       title: z.string().nullable(),
+       systemPrompt: z.string().nullable(),
+       model: z.string().min(1),
+       temperature: z.number().nullable().optional(),
+       metadata: z.unknown().nullable().optional(),
+       createdAt: z.string().min(1),
+       updatedAt: z.string().min(1),
+       messageCount: z.number().int(),
+       lastMessage: z.object({
+                       id: z.string().min(1),
+                       role: ChatRoleSchema,
+                       content: z.string(),
+                       metadata: z.unknown().nullable().optional(),
+                       createdAt: z.string().min(1),
+                     }).nullable(),
+     }).passthrough();
+
+const ChatMessageSchema = z.object({
+                             id: z.string().min(1),
+                             role: ChatRoleSchema,
+                             content: z.string(),
+                             metadata: z.unknown().nullable().optional(),
+                             createdAt: z.string().min(1),
+                           }).passthrough();
+
+const chatResourceParamsSchema = toJsonSchema(
+    z.object({
+       resource: z.enum(['sessions', 'models', 'operations']),
+     }).strict(),
+    'ChatResourceParams');
+
+const chatListQuerySchema = toJsonSchema(
+    z.object({
+       limit: IntegerLikeSchema.optional(),
+     }).strict(),
+    'ChatListQuery');
+
+const chatAuthSchema = toJsonSchema(AuthHeaderSchema, 'AuthHeader');
+
+const chatListSchema = {
+  summary: 'Chat resources list',
+  description: 'Lists chat sessions, models, or operations.',
+  operationId: 'chat_resource_list',
+  tags: ['chat'],
+  headers: chatAuthSchema,
+  security: [{bearerAuth: []}],
+  params: chatResourceParamsSchema,
+  querystring: chatListQuerySchema,
+  response: {
+    200: withExamples(
+        toJsonSchema(
+            z.union([
+              z.object({sessions: z.array(SessionSummarySchema)}).strict(),
+              z.object({models: z.array(z.string().min(1))}).strict(),
+              z.object({operations: z.array(z.unknown())}).strict(),
+            ]),
+            'ChatResourceListResponse'),
+        [{
+          sessions: [{
+            id: 'sess_01',
+            title: 'Store planning',
+            systemPrompt: 'Be brief',
+            model: DEFAULT_MODEL,
+            temperature: DEFAULT_TEMPERATURE,
+            metadata: null,
+            createdAt: '2026-02-01T09:00:00.000Z',
+            updatedAt: '2026-02-01T09:10:00.000Z',
+            messageCount: 3,
+            lastMessage: {
+              id: 'msg_03',
+              role: 'assistant',
+              content: 'Ready to help.',
+              metadata: null,
+              createdAt: '2026-02-01T09:10:00.000Z',
+            },
+          }],
+        }]),
+    ...StandardErrorResponses,
+  },
+};
+
+const chatCreateSessionSchema = {
+  summary: 'Create a chat session',
+  description: 'Creates a new chat session and stores preferences.',
+  operationId: 'chat_session_create',
+  tags: ['chat'],
+  headers: chatAuthSchema,
+  security: [{bearerAuth: []}],
+  params: toJsonSchema(
+      z.object({resource: z.enum(['sessions'])}).strict(), 'ChatCreateParams'),
+  body: toJsonSchema(
+      z.object({
+         title: z.string().min(1).optional(),
+         systemPrompt: z.string().min(1).optional(),
+         model: z.string().min(1).optional(),
+         temperature: z.number().min(0).max(1).optional(),
+       }).strict(),
+      'ChatCreateSessionBody'),
+  response: {
+    200: withExamples(
+        toJsonSchema(
+            z.object({
+               session: SessionSummarySchema,
+             }).strict(),
+            'ChatCreateSessionResponse'),
+        [{
+          session: {
+            id: 'sess_02',
+            title: 'Logistics follow-up',
+            systemPrompt: null,
+            model: DEFAULT_MODEL,
+            temperature: DEFAULT_TEMPERATURE,
+            metadata: null,
+            createdAt: '2026-02-01T10:00:00.000Z',
+            updatedAt: '2026-02-01T10:00:00.000Z',
+            messageCount: 0,
+            lastMessage: null,
+          },
+        }]),
+    ...StandardErrorResponses,
+  },
+};
+
+const chatMessagesParamsSchema = toJsonSchema(
+    z.object({
+       sessionId: z.string().min(1),
+       subresource: z.enum(['messages']),
+     }).strict(),
+    'ChatMessagesParams');
+
+const chatListMessagesSchema = {
+  summary: 'List chat messages',
+  description: 'Fetches recent messages for a chat session.',
+  operationId: 'chat_message_list',
+  tags: ['chat'],
+  headers: chatAuthSchema,
+  security: [{bearerAuth: []}],
+  params: chatMessagesParamsSchema,
+  querystring: chatListQuerySchema,
+  response: {
+    200: withExamples(
+        toJsonSchema(
+            z.object({
+               session: SessionSummarySchema,
+               messages: z.array(ChatMessageSchema),
+             }).strict(),
+            'ChatMessageListResponse'),
+        [{
+          session: {
+            id: 'sess_01',
+            title: 'Store planning',
+            systemPrompt: 'Be brief',
+            model: DEFAULT_MODEL,
+            temperature: DEFAULT_TEMPERATURE,
+            metadata: null,
+            createdAt: '2026-02-01T09:00:00.000Z',
+            updatedAt: '2026-02-01T09:10:00.000Z',
+            messageCount: 2,
+            lastMessage: null,
+          },
+          messages: [{
+            id: 'msg_01',
+            role: 'user',
+            content: 'Summarize today\'s plan.',
+            metadata: null,
+            createdAt: '2026-02-01T09:01:00.000Z',
+          }],
+        }]),
+    ...StandardErrorResponses,
+  },
+};
+
+const chatSendMessageSchema = {
+  summary: 'Send a chat message',
+  description:
+      'Sends a message to a chat session and returns the assistant reply.',
+  operationId: 'chat_message_send',
+  tags: ['chat'],
+  headers: chatAuthSchema,
+  security: [{bearerAuth: []}],
+  params: chatMessagesParamsSchema,
+  body: toJsonSchema(
+      z.object({
+         message: z.string().min(1),
+         systemPrompt: z.string().min(1).optional(),
+         model: z.string().min(1).optional(),
+         temperature: z.number().min(0).max(1).optional(),
+         metadata: z.unknown().optional(),
+       }).strict(),
+      'ChatSendMessageBody'),
+  response: {
+    200: withExamples(
+        toJsonSchema(
+            z.object({
+               session: SessionSummarySchema,
+               message: ChatMessageSchema,
+               assistant: ChatMessageSchema,
+             }).strict(),
+            'ChatSendMessageResponse'),
+        [{
+          session: {
+            id: 'sess_01',
+            title: 'Store planning',
+            systemPrompt: 'Be brief',
+            model: DEFAULT_MODEL,
+            temperature: DEFAULT_TEMPERATURE,
+            metadata: null,
+            createdAt: '2026-02-01T09:00:00.000Z',
+            updatedAt: '2026-02-01T09:10:00.000Z',
+            messageCount: 2,
+            lastMessage: null,
+          },
+          message: {
+            id: 'msg_user',
+            role: 'user',
+            content: 'Summarize today\'s plan.',
+            metadata: null,
+            createdAt: '2026-02-01T09:11:00.000Z',
+          },
+          assistant: {
+            id: 'msg_assistant',
+            role: 'assistant',
+            content: 'Today: ship, restock, brief team.',
+            metadata: null,
+            createdAt: '2026-02-01T09:11:05.000Z',
+          },
+        }]),
+    ...StandardErrorResponses,
   },
 };
 
@@ -413,7 +640,7 @@ export function registerChatRoutes(
 
   server.get(
       '/chat/:resource',
-      {preHandler: [authenticate], schema: operationsListSchema},
+      {preHandler: [authenticate], schema: chatListSchema},
       async (request, reply) => {
         const {resource} = request.params as {resource?: string};
         if (resource === 'sessions') return handleListSessions(request);
@@ -425,7 +652,7 @@ export function registerChatRoutes(
 
   server.post(
       '/chat/:resource',
-      {preHandler: [authenticate]},
+      {preHandler: [authenticate], schema: chatCreateSessionSchema},
       async (request, reply) => {
         const {resource} = request.params as {resource?: string};
         if (resource === 'sessions') return handleCreateSession(request);
@@ -435,7 +662,7 @@ export function registerChatRoutes(
 
   server.get(
       '/chat/sessions/:sessionId/:subresource',
-      {preHandler: [authenticate]},
+      {preHandler: [authenticate], schema: chatListMessagesSchema},
       async (request, reply) => {
         const {subresource} = request.params as {subresource?: string};
         if (subresource === 'messages')
@@ -446,7 +673,7 @@ export function registerChatRoutes(
 
   server.post(
       '/chat/sessions/:sessionId/:subresource',
-      {preHandler: [authenticate]},
+      {preHandler: [authenticate], schema: chatSendMessageSchema},
       async (request, reply) => {
         const {subresource} = request.params as {subresource?: string};
         if (subresource === 'messages')

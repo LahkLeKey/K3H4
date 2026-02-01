@@ -21,6 +21,12 @@ const describe = {
   maptiler: 'MapTiler Cloud API proxy',
   osrm: 'OSRM routing proxy',
   telemetry: 'Telemetry intake',
+  ai: 'AI insights and operations',
+  chat: 'Chat sessions and models',
+  frontend: 'Frontend integration helpers',
+  building: 'Building lookup and geometry',
+  actor: 'Actors and entities',
+  entity: 'Actors and entities',
 };
 
 export const swaggerTags: Record < string, {
@@ -47,6 +53,12 @@ export const swaggerTags: Record < string, {
   maptiler: {name: 'MapTiler', description: describe.maptiler},
   osrm: {name: 'OSRM', description: describe.osrm},
   telemetry: {name: 'Telemetry', description: describe.telemetry},
+  ai: {name: 'AI', description: describe.ai},
+  chat: {name: 'Chat', description: describe.chat},
+  frontend: {name: 'Frontend', description: describe.frontend},
+  building: {name: 'Building', description: describe.building},
+  actor: {name: 'Actor', description: describe.actor},
+  entity: {name: 'Entity', description: describe.entity},
 };
 
 export const swaggerTagMap: Record < string, {
@@ -78,6 +90,12 @@ export const swaggerTagMap: Record < string, {
   geo: swaggerTags.geo,
   maptiler: swaggerTags.maptiler,
   osrm: swaggerTags.osrm,
+  ai: swaggerTags.ai,
+  chat: swaggerTags.chat,
+  frontend: swaggerTags.frontend,
+  building: swaggerTags.building,
+  actor: swaggerTags.actor,
+  entity: swaggerTags.entity,
 };
 
 export const docsStaticDir =

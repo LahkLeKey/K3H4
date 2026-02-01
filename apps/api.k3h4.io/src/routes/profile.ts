@@ -1,6 +1,8 @@
 import {Prisma, PrismaClient} from '@prisma/client';
 import {type FastifyInstance} from 'fastify';
+import * as z from 'zod';
 
+import {AuthHeaderSchema, StandardErrorResponses, toJsonSchema, withExamples} from '../lib/schemas/openapi';
 import {readUserPreferencesForUser, updateUserPreferencesForUser} from '../services/user-preferences';
 
 import {buildTelemetryBase} from './telemetry';
@@ -27,10 +29,45 @@ const serializeProfile = (
 export function registerProfileRoutes(
     server: FastifyInstance, prisma: PrismaClient,
     recordTelemetry: RecordTelemetryFn) {
+  const authHeader = toJsonSchema(AuthHeaderSchema, 'AuthHeader');
+  const profileSchema = z.object({
+                           id: z.string().min(1),
+                           email: z.string().email().or(z.string().min(1)),
+                           k3h4CoinBalance: z.string().min(1),
+                           displayName: z.string().nullable().optional(),
+                           avatarUrl: z.string().nullable().optional(),
+                           note: z.string().nullable().optional(),
+                         }).passthrough();
+
   server.get(
       '/profile',
       {
         preHandler: [server.authenticate],
+        schema: {
+          summary: 'Get profile',
+          description: 'Fetches the current user profile and preferences.',
+          operationId: 'profile_get',
+          tags: ['profile'],
+          headers: authHeader,
+          security: [{bearerAuth: []}],
+          response: {
+            200: withExamples(
+                toJsonSchema(
+                    z.object({profile: profileSchema}).strict(),
+                    'ProfileGetResponse'),
+                [{
+                  profile: {
+                    id: 'user_01',
+                    email: 'user@example.com',
+                    k3h4CoinBalance: '12.50',
+                    displayName: 'K3H4 User',
+                    avatarUrl: 'https://example.com/avatar.png',
+                    note: 'Prefers SMS updates',
+                  },
+                }]),
+            ...StandardErrorResponses,
+          },
+        },
       },
       async (request, reply) => {
         const userId = (request.user as {sub: string}).sub;
@@ -52,6 +89,39 @@ export function registerProfileRoutes(
       '/profile',
       {
         preHandler: [server.authenticate],
+        schema: {
+          summary: 'Update profile preferences',
+          description: 'Updates profile preferences like note.',
+          operationId: 'profile_update',
+          tags: ['profile'],
+          headers: authHeader,
+          security: [{bearerAuth: []}],
+          body: toJsonSchema(
+              z.object({
+                 note: z.string().nullable().optional(),
+                 preference: z.object({
+                                note: z.string().nullable().optional(),
+                              }).optional(),
+               }).strict(),
+              'ProfileUpdateBody'),
+          response: {
+            200: withExamples(
+                toJsonSchema(
+                    z.object({profile: profileSchema.nullable()}).strict(),
+                    'ProfileUpdateResponse'),
+                [{
+                  profile: {
+                    id: 'user_01',
+                    email: 'user@example.com',
+                    k3h4CoinBalance: '12.50',
+                    displayName: 'K3H4 User',
+                    avatarUrl: 'https://example.com/avatar.png',
+                    note: 'Updated note',
+                  },
+                }]),
+            ...StandardErrorResponses,
+          },
+        },
       },
       async (request, reply) => {
         const userId = (request.user as {sub: string}).sub;

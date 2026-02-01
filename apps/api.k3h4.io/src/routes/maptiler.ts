@@ -1,7 +1,9 @@
 import {PrismaClient} from '@prisma/client';
 import {type FastifyInstance, type FastifyReply, type FastifyRequest, type RouteShorthandOptions} from 'fastify';
+import * as z from 'zod';
 
 import {ensureGeoActor} from '../actors/Geo/Geo';
+import {OptionalAuthHeaderSchema, StandardErrorResponses, toJsonSchema, withExamples} from '../lib/schemas/openapi';
 import {fetchMaptilerWithCache} from '../services/maptiler-cache';
 import {readUserPreferencesByActor, updateUserPreferencesByActor, type UserPreferencePatch} from '../services/user-preferences';
 
@@ -171,7 +173,32 @@ export function registerMaptilerRoutes(
     },
     schema: {
       summary: 'Proxy MapTiler Cloud endpoints with caching',
+      description:
+          'Proxies MapTiler Cloud requests with caching and optional auth for preferences.',
+      operationId: 'maptiler_proxy',
       tags: ['maptiler'],
+      headers: toJsonSchema(OptionalAuthHeaderSchema, 'OptionalAuthHeader'),
+      params: toJsonSchema(
+          z.object({
+             kind:
+                 z.enum(['json', 'tiles']).describe('Response shape to proxy'),
+           }).strict(),
+          'MaptilerParams'),
+      querystring: toJsonSchema(
+          z.object({
+             path: z.string().min(1).describe('Relative MapTiler API path'),
+             maxAgeMinutes: z.union([z.number(), z.string()]).optional(),
+             responseType: z.enum(['json', 'arrayBuffer']).optional(),
+           }).passthrough(),
+          'MaptilerQuery'),
+      response: {
+        200: withExamples(
+            {
+              type: ['object', 'array', 'string', 'number', 'boolean', 'null'],
+            },
+            [{data: 'MapTiler response'}]),
+        ...StandardErrorResponses,
+      },
     },
   };
 
