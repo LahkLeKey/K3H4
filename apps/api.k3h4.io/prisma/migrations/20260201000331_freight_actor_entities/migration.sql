@@ -8,6 +8,12 @@
 ALTER TYPE "ActorType" ADD VALUE 'freight';
 
 -- AlterEnum
+ALTER TYPE "ActorType" ADD VALUE 'wikidata-cache';
+
+-- AlterEnum
+ALTER TYPE "ActorType" ADD VALUE 'enrichment-cache';
+
+-- AlterEnum
 ALTER TYPE "EntityKind" ADD VALUE 'freight_load';
 
 -- DropForeignKey

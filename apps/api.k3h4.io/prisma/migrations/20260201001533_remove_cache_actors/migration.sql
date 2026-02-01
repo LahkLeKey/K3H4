@@ -13,9 +13,6 @@
 -- the enum.
 
 
-ALTER TYPE "ActorType" ADD VALUE 'wikidata-cache';
-ALTER TYPE "ActorType" ADD VALUE 'enrichment-cache';
-
 -- Ensure a shared enrichment cache actor exists for migrating legacy rows.
 INSERT INTO "Actor" ("id", "label", "type", "source", "createdAt", "updatedAt")
 SELECT
