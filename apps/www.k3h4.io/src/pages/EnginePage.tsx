@@ -15,6 +15,7 @@ type BodyConfig = {
     position: [number, number, number];
     size: number;
     color: string;
+    maps: MaterialMaps;
 };
 
 type MaterialMaps = {
@@ -62,7 +63,7 @@ function MouseBall({ emissiveMap }: { emissiveMap: THREE.Texture }) {
     );
 }
 
-function FloatyBody({ shape, collider, position, size, color, maps }: BodyConfig & { maps: MaterialMaps }) {
+function FloatyBody({ shape, collider, position, size, color, maps }: BodyConfig) {
     const bodyRef = useRef<RapierRigidBody | null>(null);
 
     useFrame(() => {
@@ -118,23 +119,97 @@ export function EnginePage() {
 }
 
 function EngineScene() {
-    const maps = useTexture({
-        map: "/assets/kenny/development-essentials/Checkerboard/checkerboard.png",
-        normalMap: "/assets/kenny/development-essentials/NormalMap/default-normal.png",
-        roughnessMap: "/assets/kenny/development-essentials/Noise/perlin-noise.png",
-        emissiveMap: "/assets/kenny/development-essentials/Gradient/gradient-radial.png",
-    }) as MaterialMaps;
+    const textures = useTexture({
+        checkerboard: "/assets/kenny/development-essentials/Checkerboard/checkerboard.png",
+        checkerboardTransparent: "/assets/kenny/development-essentials/Checkerboard/checkerboard-transparent.png",
+        gradientAngular: "/assets/kenny/development-essentials/Gradient/gradient-angular.png",
+        gradientHorizontal: "/assets/kenny/development-essentials/Gradient/gradient-horizontal.png",
+        gradientHorizontalMirror: "/assets/kenny/development-essentials/Gradient/gradient-horizontal-mirror.png",
+        gradientRadial: "/assets/kenny/development-essentials/Gradient/gradient-radial.png",
+        gradientVertical: "/assets/kenny/development-essentials/Gradient/gradient-vertical.png",
+        gradientVerticalMirror: "/assets/kenny/development-essentials/Gradient/gradient-vertical-mirror.png",
+        noisePerlin: "/assets/kenny/development-essentials/Noise/perlin-noise.png",
+        noisePerlinSmall: "/assets/kenny/development-essentials/Noise/perlin-noise-small.png",
+        defaultNormal: "/assets/kenny/development-essentials/NormalMap/default-normal.png",
+        uvTexture: "/assets/kenny/development-essentials/UVTexture/uv-texture.png",
+        pixelBlack1: "/assets/kenny/development-essentials/1x1Pixels/pixel-black.png",
+        pixelWhite1: "/assets/kenny/development-essentials/1x1Pixels/pixel-white.png",
+        pixelTransparent1: "/assets/kenny/development-essentials/1x1Pixels/pixel-transparent.png",
+        pixelBlack4: "/assets/kenny/development-essentials/4x4Pixels/pixel-black.png",
+        pixelWhite4: "/assets/kenny/development-essentials/4x4Pixels/pixel-white.png",
+        pixelTransparent4: "/assets/kenny/development-essentials/4x4Pixels/pixel-transparent.png",
+    }) as Record<string, THREE.Texture>;
+
+    const textureEntries = useMemo(
+        () => [
+            { id: "checkerboard", texture: textures.checkerboard, transparent: false },
+            { id: "checkerboardTransparent", texture: textures.checkerboardTransparent, transparent: true },
+            { id: "gradientAngular", texture: textures.gradientAngular, transparent: false },
+            { id: "gradientHorizontal", texture: textures.gradientHorizontal, transparent: false },
+            { id: "gradientHorizontalMirror", texture: textures.gradientHorizontalMirror, transparent: false },
+            { id: "gradientRadial", texture: textures.gradientRadial, transparent: false },
+            { id: "gradientVertical", texture: textures.gradientVertical, transparent: false },
+            { id: "gradientVerticalMirror", texture: textures.gradientVerticalMirror, transparent: false },
+            { id: "noisePerlin", texture: textures.noisePerlin, transparent: false },
+            { id: "noisePerlinSmall", texture: textures.noisePerlinSmall, transparent: false },
+            { id: "defaultNormal", texture: textures.defaultNormal, transparent: false },
+            { id: "uvTexture", texture: textures.uvTexture, transparent: false },
+            { id: "pixelBlack1", texture: textures.pixelBlack1, transparent: false },
+            { id: "pixelWhite1", texture: textures.pixelWhite1, transparent: false },
+            { id: "pixelTransparent1", texture: textures.pixelTransparent1, transparent: true },
+            { id: "pixelBlack4", texture: textures.pixelBlack4, transparent: false },
+            { id: "pixelWhite4", texture: textures.pixelWhite4, transparent: false },
+            { id: "pixelTransparent4", texture: textures.pixelTransparent4, transparent: true },
+        ],
+        [textures],
+    );
 
     useEffect(() => {
-        maps.map.colorSpace = THREE.SRGBColorSpace;
-        maps.emissiveMap.colorSpace = THREE.SRGBColorSpace;
-
-        for (const texture of [maps.map, maps.normalMap, maps.roughnessMap, maps.emissiveMap]) {
+        for (const entry of textureEntries) {
+            const { texture } = entry;
+            texture.colorSpace = entry.id === "defaultNormal" ? THREE.NoColorSpace : THREE.SRGBColorSpace;
             texture.wrapS = THREE.RepeatWrapping;
             texture.wrapT = THREE.RepeatWrapping;
-            texture.repeat.set(2, 2);
+            const repeat = entry.id.startsWith("pixel") ? 8 : 2;
+            texture.repeat.set(repeat, repeat);
         }
-    }, [maps]);
+    }, [textureEntries]);
+
+    const bodyMaps = useMemo(() => {
+        const colorMaps = [
+            textures.checkerboard,
+            textures.checkerboardTransparent,
+            textures.gradientAngular,
+            textures.gradientHorizontal,
+            textures.gradientHorizontalMirror,
+            textures.gradientRadial,
+            textures.gradientVertical,
+            textures.gradientVerticalMirror,
+            textures.uvTexture,
+            textures.pixelBlack1,
+            textures.pixelWhite1,
+            textures.pixelTransparent1,
+            textures.pixelBlack4,
+            textures.pixelWhite4,
+            textures.pixelTransparent4,
+            textures.noisePerlin,
+            textures.noisePerlinSmall,
+        ];
+        const emissiveMaps = [
+            textures.gradientRadial,
+            textures.gradientAngular,
+            textures.gradientVertical,
+            textures.gradientHorizontal,
+        ];
+        const roughnessMaps = [textures.noisePerlin, textures.noisePerlinSmall, textures.checkerboard];
+
+        return {
+            colorMaps,
+            emissiveMaps,
+            roughnessMaps,
+            normalMap: textures.defaultNormal,
+        };
+    }, [textures]);
 
     const bodies = useMemo<BodyConfig[]>(() => {
         const shapes: BodyShape[] = ["sphere", "box", "icosa", "torus"];
@@ -152,6 +227,12 @@ function EngineScene() {
                 collider,
                 size,
                 color: palette[index % palette.length],
+                maps: {
+                    map: bodyMaps.colorMaps[index % bodyMaps.colorMaps.length],
+                    normalMap: bodyMaps.normalMap,
+                    roughnessMap: bodyMaps.roughnessMaps[index % bodyMaps.roughnessMaps.length],
+                    emissiveMap: bodyMaps.emissiveMaps[index % bodyMaps.emissiveMaps.length],
+                },
                 position: [
                     randomBetween(-6.5, 6.5),
                     randomBetween(-4.5, 4.5),
@@ -159,7 +240,7 @@ function EngineScene() {
                 ],
             } satisfies BodyConfig;
         });
-    }, []);
+    }, [bodyMaps]);
 
     return (
         <>
@@ -170,10 +251,27 @@ function EngineScene() {
             <Stars radius={80} depth={40} count={900} factor={4} saturation={0} fade speed={1} />
             <Environment preset="night" />
             <OrbitControls enablePan={false} maxDistance={18} minDistance={4} />
+            <group position={[0, 3.5, -10]}>
+                {textureEntries.map((entry, index) => {
+                    const columns = 6;
+                    const spacing = 1.5;
+                    const col = index % columns;
+                    const row = Math.floor(index / columns);
+                    const x = (col - (columns - 1) / 2) * spacing;
+                    const y = (1 - row) * spacing;
+
+                    return (
+                        <mesh key={entry.id} position={[x, y, 0]}>
+                            <planeGeometry args={[1.1, 1.1]} />
+                            <meshBasicMaterial map={entry.texture} transparent={entry.transparent} />
+                        </mesh>
+                    );
+                })}
+            </group>
             <Physics gravity={[0, 0, 0]}>
-                <MouseBall emissiveMap={maps.emissiveMap} />
+                <MouseBall emissiveMap={textures.gradientRadial} />
                 {bodies.map((body) => (
-                    <FloatyBody key={body.id} {...body} maps={maps} />
+                    <FloatyBody key={body.id} {...body} />
                 ))}
             </Physics>
         </>
