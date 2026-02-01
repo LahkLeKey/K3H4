@@ -4,8 +4,6 @@
  */
 
 export { UserInputSchema } from './User.input';
-export { RefreshTokenInputSchema } from './RefreshToken.input';
-export { ProviderGrantInputSchema } from './ProviderGrant.input';
 export { PointOfInterestInputSchema } from './PointOfInterest.input';
 export { TelemetryEventInputSchema } from './TelemetryEvent.input';
 export { ApiCacheEntryInputSchema } from './ApiCacheEntry.input';

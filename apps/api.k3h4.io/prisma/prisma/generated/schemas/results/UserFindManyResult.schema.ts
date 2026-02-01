@@ -10,9 +10,7 @@ export const UserFindManyResultSchema = z.object({
   avatarUrl: z.string().optional(),
   createdAt: z.date(),
   updatedAt: z.date(),
-  refreshTokens: z.array(z.unknown()),
   telemetry: z.array(z.unknown()),
-  providerGrants: z.array(z.unknown()),
   chatSessions: z.array(z.unknown()),
   ollamaOperations: z.array(z.unknown()),
   actors: z.array(z.unknown())

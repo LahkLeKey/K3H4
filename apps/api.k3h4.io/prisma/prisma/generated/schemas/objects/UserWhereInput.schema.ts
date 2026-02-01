@@ -4,9 +4,7 @@ import { StringFilterObjectSchema as StringFilterObjectSchema } from './StringFi
 import { DecimalFilterObjectSchema as DecimalFilterObjectSchema } from './DecimalFilter.schema';
 import { StringNullableFilterObjectSchema as StringNullableFilterObjectSchema } from './StringNullableFilter.schema';
 import { DateTimeFilterObjectSchema as DateTimeFilterObjectSchema } from './DateTimeFilter.schema';
-import { RefreshTokenListRelationFilterObjectSchema as RefreshTokenListRelationFilterObjectSchema } from './RefreshTokenListRelationFilter.schema';
 import { TelemetryEventListRelationFilterObjectSchema as TelemetryEventListRelationFilterObjectSchema } from './TelemetryEventListRelationFilter.schema';
-import { ProviderGrantListRelationFilterObjectSchema as ProviderGrantListRelationFilterObjectSchema } from './ProviderGrantListRelationFilter.schema';
 import { ChatSessionListRelationFilterObjectSchema as ChatSessionListRelationFilterObjectSchema } from './ChatSessionListRelationFilter.schema';
 import { OllamaOperationListRelationFilterObjectSchema as OllamaOperationListRelationFilterObjectSchema } from './OllamaOperationListRelationFilter.schema';
 import { ActorListRelationFilterObjectSchema as ActorListRelationFilterObjectSchema } from './ActorListRelationFilter.schema'
@@ -32,9 +30,7 @@ const userwhereinputSchema = z.object({
   avatarUrl: z.union([z.lazy(() => StringNullableFilterObjectSchema), z.string()]).optional().nullable(),
   createdAt: z.union([z.lazy(() => DateTimeFilterObjectSchema), z.coerce.date()]).optional(),
   updatedAt: z.union([z.lazy(() => DateTimeFilterObjectSchema), z.coerce.date()]).optional(),
-  refreshTokens: z.lazy(() => RefreshTokenListRelationFilterObjectSchema).optional(),
   telemetry: z.lazy(() => TelemetryEventListRelationFilterObjectSchema).optional(),
-  providerGrants: z.lazy(() => ProviderGrantListRelationFilterObjectSchema).optional(),
   chatSessions: z.lazy(() => ChatSessionListRelationFilterObjectSchema).optional(),
   ollamaOperations: z.lazy(() => OllamaOperationListRelationFilterObjectSchema).optional(),
   actors: z.lazy(() => ActorListRelationFilterObjectSchema).optional()

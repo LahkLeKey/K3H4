@@ -4,9 +4,7 @@ import { StringFieldUpdateOperationsInputObjectSchema as StringFieldUpdateOperat
 import { DecimalFieldUpdateOperationsInputObjectSchema as DecimalFieldUpdateOperationsInputObjectSchema } from './DecimalFieldUpdateOperationsInput.schema';
 import { NullableStringFieldUpdateOperationsInputObjectSchema as NullableStringFieldUpdateOperationsInputObjectSchema } from './NullableStringFieldUpdateOperationsInput.schema';
 import { DateTimeFieldUpdateOperationsInputObjectSchema as DateTimeFieldUpdateOperationsInputObjectSchema } from './DateTimeFieldUpdateOperationsInput.schema';
-import { RefreshTokenUncheckedUpdateManyWithoutUserNestedInputObjectSchema as RefreshTokenUncheckedUpdateManyWithoutUserNestedInputObjectSchema } from './RefreshTokenUncheckedUpdateManyWithoutUserNestedInput.schema';
 import { TelemetryEventUncheckedUpdateManyWithoutUserNestedInputObjectSchema as TelemetryEventUncheckedUpdateManyWithoutUserNestedInputObjectSchema } from './TelemetryEventUncheckedUpdateManyWithoutUserNestedInput.schema';
-import { ProviderGrantUncheckedUpdateManyWithoutUserNestedInputObjectSchema as ProviderGrantUncheckedUpdateManyWithoutUserNestedInputObjectSchema } from './ProviderGrantUncheckedUpdateManyWithoutUserNestedInput.schema';
 import { ChatSessionUncheckedUpdateManyWithoutUserNestedInputObjectSchema as ChatSessionUncheckedUpdateManyWithoutUserNestedInputObjectSchema } from './ChatSessionUncheckedUpdateManyWithoutUserNestedInput.schema';
 import { ActorUncheckedUpdateManyWithoutUserNestedInputObjectSchema as ActorUncheckedUpdateManyWithoutUserNestedInputObjectSchema } from './ActorUncheckedUpdateManyWithoutUserNestedInput.schema'
 
@@ -28,9 +26,7 @@ const makeSchema = () => z.object({
   avatarUrl: z.union([z.string(), z.lazy(() => NullableStringFieldUpdateOperationsInputObjectSchema)]).optional().nullable(),
   createdAt: z.union([z.coerce.date(), z.lazy(() => DateTimeFieldUpdateOperationsInputObjectSchema)]).optional(),
   updatedAt: z.union([z.coerce.date(), z.lazy(() => DateTimeFieldUpdateOperationsInputObjectSchema)]).optional(),
-  refreshTokens: z.lazy(() => RefreshTokenUncheckedUpdateManyWithoutUserNestedInputObjectSchema).optional(),
   telemetry: z.lazy(() => TelemetryEventUncheckedUpdateManyWithoutUserNestedInputObjectSchema).optional(),
-  providerGrants: z.lazy(() => ProviderGrantUncheckedUpdateManyWithoutUserNestedInputObjectSchema).optional(),
   chatSessions: z.lazy(() => ChatSessionUncheckedUpdateManyWithoutUserNestedInputObjectSchema).optional(),
   actors: z.lazy(() => ActorUncheckedUpdateManyWithoutUserNestedInputObjectSchema).optional()
 }).strict();

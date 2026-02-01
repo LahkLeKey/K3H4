@@ -4,8 +4,6 @@
  */
 
 export { UserResultSchema } from './User.result';
-export { RefreshTokenResultSchema } from './RefreshToken.result';
-export { ProviderGrantResultSchema } from './ProviderGrant.result';
 export { PointOfInterestResultSchema } from './PointOfInterest.result';
 export { TelemetryEventResultSchema } from './TelemetryEvent.result';
 export { ApiCacheEntryResultSchema } from './ApiCacheEntry.result';
