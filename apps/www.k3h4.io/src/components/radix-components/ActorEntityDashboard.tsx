@@ -116,6 +116,7 @@ export function ActorEntityDashboard() {
                 ownerAccessor={(row) => row.actorId}
                 ownerLabel="Actor"
                 noDataMessage={noData}
+                scrollClassName="max-h-[70vh] overflow-auto"
                 rowExpansionLabel="Details"
                 rowExpansion={(entity) => (
                     <Table
@@ -135,6 +136,7 @@ export function ActorEntityDashboard() {
                         rows={buildEntityDetailRows(entity)}
                         rowKey={(row) => row.field}
                         noDataMessage="No details available."
+                        scrollClassName="max-h-80 overflow-auto"
                     />
                 )}
             />
