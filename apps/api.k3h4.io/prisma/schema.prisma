@@ -4,713 +4,96 @@ generator client {
 
 generator zod {
   provider = "prisma-zod-generator"
+  output   = "./prisma/generated/schemas"
 }
 
 datasource db {
   provider = "postgresql"
 }
 
-enum BuildingType {
-  RESIDENTIAL
-  COMMERCIAL
-  INDUSTRIAL
-}
-
-enum ChatRole {
-  SYSTEM
-  USER
-  ASSISTANT
-}
-
-enum LifecycleStatus {
-  ACTIVE    @map("active")
-  INACTIVE  @map("inactive")
-  OPEN      @map("open")
-  CLOSED    @map("closed")
-  PENDING   @map("pending")
-  PLANNING  @map("planning")
-  COMPLETED @map("completed")
-  STORED    @map("stored")
-  IDLE      @map("idle")
-  SCHEDULED @map("scheduled")
-  UNFILLED  @map("unfilled")
-}
-
-enum ActorType {
-  BANK_ACCOUNT                 @map("bank-account")
-  ARCADE_MACHINE               @map("arcade-machine")
-  ARCADE_PLAYER_CARD           @map("arcade-player-card")
-  ARCADE_PRIZE                 @map("arcade-prize")
-  USDA_FEED                    @map("usda-feed")
-  AGRICULTURE_FARM             @map("agriculture-farm")
-  AGRICULTURE_RESOURCE_LIBRARY @map("agriculture-resource-library")
-  WAREHOUSE                    @map("warehouse")
-  PERSONA                      @map("persona")
-  STAFFING                     @map("staffing")
-  ASSIGNMENT                   @map("assignment")
-  CULINARY                     @map("culinary")
-  POINT_OF_SALE_STORE          @map("point-of-sale-store")
-}
-
-enum EntityDirection {
-  CREDIT @map("credit")
-  DEBIT  @map("debit")
-}
-
-enum EntityKind {
-  DEPOSIT                        @map("deposit")
-  WITHDRAWAL                     @map("withdrawal")
-  SET                            @map("set")
-  ASSIGNMENT_PAYOUT              @map("assignment_payout")
-  FREIGHT_PAYMENT                @map("freight_payment")
-  ARCADE_TOPUP                   @map("arcade_topup")
-  ARCADE_SESSION                 @map("arcade_session")
-  ARCADE_PRIZE_REDEMPTION        @map("arcade_prize_redemption")
-  USDA_REGION                    @map("usda-region")
-  USDA_COUNTRY                   @map("usda-country")
-  USDA_COMMODITY                 @map("usda-commodity")
-  USDA_UNIT                      @map("usda-unit")
-  USDA_ATTRIBUTE                 @map("usda-attribute")
-  AGRICULTURE_PLOT               @map("agriculture_plot")
-  AGRICULTURE_PLOT_CONDITION     @map("agriculture_plot_condition")
-  AGRICULTURE_SLOT               @map("agriculture_slot")
-  AGRICULTURE_CROP_PLAN          @map("agriculture_crop_plan")
-  AGRICULTURE_TASK               @map("agriculture_task")
-  AGRICULTURE_INVENTORY_ITEM     @map("agriculture_inventory_item")
-  AGRICULTURE_INVENTORY_MOVEMENT @map("agriculture_inventory_movement")
-  AGRICULTURE_SHIPMENT           @map("agriculture_shipment")
-  AGRICULTURE_RESOURCE_CATEGORY  @map("agriculture_resource_category")
-  AGRICULTURE_RESOURCE           @map("agriculture_resource")
-  WAREHOUSE_ITEM                 @map("warehouse_item")
-  PERSONA                        @map("persona")
-  PERSONA_ATTRIBUTE              @map("persona_attribute")
-  PERSONA_COMPATIBILITY          @map("persona_compatibility")
-  STAFFING_ENGAGEMENT            @map("staffing_engagement")
-  STAFFING_ROLE                  @map("staffing_role")
-  STAFFING_CANDIDATE             @map("staffing_candidate")
-  STAFFING_SHIFT                 @map("staffing_shift")
-  STAFFING_PLACEMENT             @map("staffing_placement")
-  ASSIGNMENT                     @map("assignment")
-  ASSIGNMENT_TIMECARD            @map("assignment_timecard")
-  CULINARY_MENU_ITEM             @map("culinary-menu-item")
-  CULINARY_PREP_TASK             @map("culinary-prep-task")
-  CULINARY_SUPPLIER_NEED         @map("culinary-supplier-need")
-  POINT_OF_SALE_TICKET           @map("point-of-sale_ticket")
-}
-
-enum EngagementPriority {
-  LOW    @map("low")
-  NORMAL @map("normal")
-  MEDIUM @map("medium")
-  HIGH   @map("high")
-  URGENT @map("urgent")
-}
-
-enum CoverageStatus {
-  UNFILLED @map("unfilled")
-  FILLED   @map("filled")
-  PARTIAL  @map("partial")
-}
-
-enum WarehouseCategory {
-  AGRICULTURE @map("agriculture")
-  OTHER       @map("other")
-}
-
-model Building {
-  id                 Int          @id @default(autoincrement())
-  osmId              BigInt?      @unique
-  type               BuildingType
-  addressHouseNumber String?
-  addressStreet      String?
-  addressCity        String?
-  addressPostcode    String?
-  addressState       String?
-  addressCountry     String?
-  geometry           Json?
-
-  POIs Poi[]
-}
-
 model User {
-  id                   String               @id @default(cuid())
-  email                String               @unique
-  provider             String
-  providerId           String
-  k3h4CoinBalance      Decimal              @default("25000") @db.Decimal(18, 2) // sandbox-only play balance
-  displayName          String?
-  avatarUrl            String?
-  createdAt            DateTime             @default(now())
-  updatedAt            DateTime             @updatedAt
-  refreshTokens        RefreshToken[]
-  preference           UserPreference?
-  telemetry            TelemetryEvent[]
-  freightLoads         FreightLoad[]
-  providerGrants       ProviderGrant[]
-  geoRouteCaches       GeoRouteCache[]
-  geoDirections        GeoDirection[]
-  geoPoiCaches         GeoPoiCache[]
-  geoQueryCaches       GeoQueryCache[]
-  maptilerQueries      MaptilerQuery[]
-  maptilerCacheEntries MaptilerCacheEntry[]
-  osrmCacheEntries     OsrmCacheEntry[]
-  geoStatusLogs        GeoStatusLog[]
-  geoDemTileCaches     GeoDemTileCache[]
-  geoViewHistories     GeoViewHistory[]
-  chatSessions         ChatSession[]
-  aiInsights           AiInsight[]
-  ollamaOperations     OllamaOperation[]
-  actors               Actor[]
-
-  @@unique([provider, providerId])
-}
-
-model AiInsight {
-  id          String   @id @default(cuid())
-  userId      String
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  targetType  String?
-  targetId    String?
-  targetLabel String?
-  description String
-  metadata    Json?
-  payload     Json?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  @@index([userId])
-  @@index([targetType])
-  @@index([userId, createdAt])
-}
-
-model RefreshToken {
-  id        String   @id @default(cuid())
-  token     String   @unique
-  userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  createdAt DateTime @default(now())
-  expiresAt DateTime
-}
-
-model ProviderGrant {
-  id          String    @id @default(cuid())
-  userId      String
-  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  provider    String
-  providerId  String
-  accessToken String
-  scope       String?
-  expiresAt   DateTime?
-  createdAt   DateTime  @default(now())
-
-  @@unique([provider, providerId])
-}
-
-model GeoRouteCache {
-  id              String         @id @default(cuid())
-  userId          String?
-  user            User?          @relation(fields: [userId], references: [id], onDelete: SetNull)
-  provider        String         @default("osrm")
-  signature       String         @unique
-  originLat       Decimal        @db.Decimal(11, 6)
-  originLng       Decimal        @db.Decimal(11, 6)
-  destinationLat  Decimal        @db.Decimal(11, 6)
-  destinationLng  Decimal        @db.Decimal(11, 6)
-  distanceKm      Decimal        @db.Decimal(14, 4)
-  durationMinutes Int?
-  geojson         Json?
-  expiresAt       DateTime
-  createdAt       DateTime       @default(now())
-  directions      GeoDirection[] @relation("GeoDirectionsToRouteCache")
-
-  @@index([expiresAt])
-}
-
-// Aggregated driving directives sourced from OSRM, Nominatim, Overpass, etc.
-model GeoDirection {
-  id              String         @id @default(cuid())
-  userId          String?
-  user            User?          @relation(fields: [userId], references: [id], onDelete: SetNull)
+  id              String   @id @default(cuid())
+  email           String   @unique
   provider        String
-  profile         String?
-  signature       String         @unique
-  inputPoints     Json? // ordered lat/lng stops that powered the request
-  originLat       Decimal?       @db.Decimal(11, 6)
-  originLng       Decimal?       @db.Decimal(11, 6)
-  destinationLat  Decimal?       @db.Decimal(11, 6)
-  destinationLng  Decimal?       @db.Decimal(11, 6)
-  distanceMeters  Decimal?       @db.Decimal(14, 3)
-  durationSeconds Int?
-  geometry        Json?
-  instructions    Json?
-  payload         Json?
-  statusCode      Int?
-  statusMessage   String?
-  expiresAt       DateTime?
-  routeCacheId    String?
-  routeCache      GeoRouteCache? @relation("GeoDirectionsToRouteCache", fields: [routeCacheId], references: [id], onDelete: SetNull)
-  createdAt       DateTime       @default(now())
-  updatedAt       DateTime       @updatedAt
+  providerId      String
+  k3h4CoinBalance Decimal  @default("25000") @db.Decimal(18, 2) // sandbox-only play balance
+  displayName     String?
+  avatarUrl       String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  actors          Actor[]
 
-  stops    GeoDirectionStop[]
-  segments GeoDirectionSegment[]
-
-  @@index([provider, expiresAt])
-}
-
-model GeoDirectionStop {
-  id          String       @id @default(cuid())
-  directionId String
-  direction   GeoDirection @relation(fields: [directionId], references: [id], onDelete: Cascade)
-  sequence    Int
-  latitude    Decimal      @db.Decimal(11, 6)
-  longitude   Decimal      @db.Decimal(11, 6)
-  label       String?
-  address     String?
-  source      String? // e.g., nominatim, overpass, osrm
-  osmId       BigInt?
-  metadata    Json?
-  createdAt   DateTime     @default(now())
-
-  @@index([directionId, sequence])
-}
-
-model GeoDirectionSegment {
-  id               String       @id @default(cuid())
-  directionId      String
-  direction        GeoDirection @relation(fields: [directionId], references: [id], onDelete: Cascade)
-  sequence         Int
-  instruction      String?
-  maneuverType     String?
-  maneuverModifier String?
-  distanceMeters   Decimal      @db.Decimal(14, 3)
-  durationSeconds  Int?
-  startLat         Decimal      @db.Decimal(11, 6)
-  startLng         Decimal      @db.Decimal(11, 6)
-  endLat           Decimal      @db.Decimal(11, 6)
-  endLng           Decimal      @db.Decimal(11, 6)
-  geometry         Json?
-  metadata         Json?
-  createdAt        DateTime     @default(now())
-
-  @@index([directionId, sequence])
-}
-
-model GeoPoiCache {
-  id        String   @id @default(cuid())
-  userId    String?
-  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
-  signature String   @unique
-  centerLat Decimal  @db.Decimal(11, 6)
-  centerLng Decimal  @db.Decimal(11, 6)
-  radiusM   Int
-  kinds     String
-  pois      Json
-  count     Int
-  expiresAt DateTime
-  createdAt DateTime @default(now())
-
-  @@index([expiresAt])
-}
-
-model GeoQueryCache {
-  id        String   @id @default(cuid())
-  userId    String?
-  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
-  type      String
-  signature String   @unique
-  params    Json
-  payload   Json
-  count     Int?
-  expiresAt DateTime
-  createdAt DateTime @default(now())
-
-  @@index([type])
-  @@index([expiresAt])
-}
-
-// Tracks user map view tiles and the POIs seen for reuse/offline
-model GeoViewHistory {
-  id            String    @id @default(cuid())
-  userId        String
-  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  signature     String
-  zoomBand      Int
-  bboxMinLat    Decimal   @db.Decimal(11, 6)
-  bboxMinLng    Decimal   @db.Decimal(11, 6)
-  bboxMaxLat    Decimal   @db.Decimal(11, 6)
-  bboxMaxLng    Decimal   @db.Decimal(11, 6)
-  lastPoiIds    Json?
-  lastPoiCount  Int?
-  firstViewedAt DateTime  @default(now())
-  lastViewedAt  DateTime  @default(now())
-  viewCount     Int       @default(1)
-  staleAfter    DateTime?
-
-  @@unique([userId, signature], name: "geo_view_user_signature")
-  @@index([userId, lastViewedAt])
-}
-
-model GeoStatusLog {
-  id        String   @id @default(cuid())
-  userId    String?
-  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
-  status    String
-  poiStatus String?
-  centerLat Decimal? @db.Decimal(11, 6)
-  centerLng Decimal? @db.Decimal(11, 6)
-  error     String?
-  userAgent String?
-  createdAt DateTime @default(now())
-
-  @@index([createdAt])
-}
-
-model Poi {
-  id         String   @id @default(cuid())
-  osmType    String   @default("node")
-  osmId      BigInt
-  name       String?
-  category   String?
-  latitude   Decimal  @db.Decimal(11, 6)
-  longitude  Decimal  @db.Decimal(11, 6)
-  tags       Json?
-  source     String   @default("osm")
-  lastSeenAt DateTime @default(now())
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
-
-  buildingId Int?
-  building   Building? @relation(fields: [buildingId], references: [id])
-
-  @@unique([osmType, osmId], name: "poi_osm_composite")
-  @@index([latitude, longitude])
-  @@index([category])
-  @@index([buildingId])
-}
-
-// DEM / terrain tile cache for reuse per user
-model GeoDemTileCache {
-  id           String    @id @default(cuid())
-  userId       String?
-  user         User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
-  provider     String    @default("maptiler")
-  source       String? // dataset or variant name
-  signature    String    @unique // provider:z/x/y:format
-  z            Int
-  x            Int
-  y            Int
-  format       String    @default("png")
-  url          String?
-  data         Bytes?
-  byteLength   Int?
-  etag         String?
-  cacheControl String?
-  expiresAt    DateTime?
-  fetchedAt    DateTime  @default(now())
-  lastAccessed DateTime  @default(now())
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
-
-  @@index([provider, z, x, y])
-  @@index([expiresAt])
-}
-
-// MapTiler Cloud API queries and caches
-model MaptilerQuery {
-  id         String   @id @default(cuid())
-  userId     String?
-  user       User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
-  signature  String   @unique
-  kind       String
-  path       String
-  params     Json?
-  lastUsedAt DateTime @default(now())
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
-
-  cacheEntries MaptilerCacheEntry[]
-
-  @@index([userId, kind])
-}
-
-model MaptilerCacheEntry {
-  id           String         @id @default(cuid())
-  userId       String?
-  user         User?          @relation(fields: [userId], references: [id], onDelete: SetNull)
-  queryId      String?
-  query        MaptilerQuery? @relation(fields: [queryId], references: [id], onDelete: SetNull)
-  kind         String
-  path         String
-  params       Json?
-  paramsHash   String
-  signature    String         @unique
-  method       String         @default("GET")
-  responseType String         @default("json")
-  url          String
-  statusCode   Int?
-  payload      Json?
-  data         Bytes?
-  contentType  String?
-  cacheControl String?
-  fetchedAt    DateTime       @default(now())
-  expiresAt    DateTime?
-  createdAt    DateTime       @default(now())
-  updatedAt    DateTime       @updatedAt
-
-  @@index([kind, path])
-  @@index([expiresAt])
-}
-
-// OSRM upstream cache entries (1:1 pass-through)
-model OsrmCacheEntry {
-  id          String    @id @default(cuid())
-  userId      String?
-  user        User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
-  service     String
-  profile     String
-  coordinates String?
-  params      Json?
-  paramsHash  String
-  signature   String    @unique
-  url         String
-  statusCode  Int?
-  payload     Json?
-  fetchedAt   DateTime  @default(now())
-  expiresAt   DateTime?
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-
-  @@index([service, profile])
-  @@index([expiresAt])
-}
-
-// Composite POI enrichment cache (assembled response by include hash)
-model PoiEnrichmentCache {
-  id          String // format: "node/123456"
-  includeHash String
-  payload     Json
-  fetchedAt   DateTime @default(now())
-  expiresAt   DateTime
-
-  @@id([id, includeHash])
-  @@index([expiresAt])
-}
-
-model UserPreference {
-  id                    String    @id @default(cuid())
-  userId                String    @unique
-  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  theme                 String    @default("system")
-  locale                String    @default("en-US")
-  timezone              String    @default("UTC")
-  marketingOptIn        Boolean   @default(false)
-  note                  String?
-  lastCenterLat         Decimal?  @db.Decimal(11, 6)
-  lastCenterLng         Decimal?  @db.Decimal(11, 6)
-  lastZoom              Float?
-  lastBearing           Float?
-  lastPitch             Float?
-  lastPoiSignature      String?
-  lastPoiKinds          String?
-  lastPoiRadiusM        Int?
-  lastPoiCount          Int?
-  lastPoiFetchedAt      DateTime?
-  maptilerStyle         String    @default("streets-v2")
-  maptilerLanguage      String    @default("en")
-  maptilerLastPath      String?
-  maptilerLastParams    Json?
-  maptilerLastKind      String?
-  maptilerLastSignature String?
-  maptilerLastFetchedAt DateTime?
-  createdAt             DateTime  @default(now())
-  updatedAt             DateTime  @updatedAt
-}
-
-model TelemetryEvent {
-  id         String   @id @default(cuid())
-  userId     String?
-  user       User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
-  sessionId  String
-  eventType  String
-  source     String
-  path       String?
-  payload    Json?
-  durationMs Int?
-  error      Boolean  @default(false)
-  createdAt  DateTime @default(now())
-
-  @@index([userId])
-  @@index([sessionId])
-  @@index([eventType])
-  @@index([createdAt, id])
-}
-
-model FreightLoad {
-  id              String          @id @default(cuid())
-  userId          String
-  user            User            @relation(fields: [userId], references: [id], onDelete: Cascade)
-  title           String
-  originName      String
-  originLat       Float
-  originLng       Float
-  destinationName String
-  destinationLat  Float
-  destinationLng  Float
-  distanceKm      Decimal         @db.Decimal(10, 2)
-  durationMinutes Int
-  cost            Decimal         @db.Decimal(18, 2)
-  status          LifecycleStatus @default(PLANNING)
-  routeGeoJson    Json?
-  createdAt       DateTime        @default(now())
-  updatedAt       DateTime        @updatedAt
-
-  @@index([userId, status])
-}
-
-model ApiCacheEntry {
-  id         String    @id @default(cuid())
-  provider   String
-  scope      String
-  endpoint   String
-  params     Json?
-  paramsHash String
-  payload    Json?
-  fetchedAt  DateTime  @default(now())
-  expiresAt  DateTime?
-  createdAt  DateTime  @default(now())
-  updatedAt  DateTime  @updatedAt
-
-  @@unique([provider, scope, endpoint, paramsHash])
-  @@index([provider, scope, endpoint])
-}
-
-model WikidataCacheEntry {
-  id                  String    @id @default(cuid())
-  resource            String
-  endpoint            String
-  params              Json?
-  paramsHash          String
-  url                 String
-  statusCode          Int
-  payload             Json?
-  fetchedAt           DateTime  @default(now())
-  expiresAt           DateTime?
-  cacheControlSeconds Int?
-  etag                String?
-  createdAt           DateTime  @default(now())
-  updatedAt           DateTime  @updatedAt
-
-  @@unique([resource, endpoint, paramsHash])
-  @@index([resource, fetchedAt])
-}
-
-model EnrichmentCache {
-  id         String    @id @default(cuid())
-  provider   String    @default("wikidata")
-  namespace  String // e.g., "usda" or domain-specific namespace
-  kind       String // e.g., "region", "unit", "commodity"
-  sourceKey  String // upstream identifier/code for the entity
-  paramsHash String?
-  wikidataId String?
-  payload    Json?
-  status     String? // success, error, skipped
-  fetchedAt  DateTime  @default(now())
-  expiresAt  DateTime?
-  note       String?
-
-  @@unique([provider, namespace, kind, sourceKey])
-  @@index([provider, fetchedAt])
-}
-
-model ChatSession {
-  id           String   @id @default(cuid())
-  userId       String
-  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  title        String?
-  systemPrompt String?
-  model        String?
-  temperature  Float?
-  metadata     Json?
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-
-  messages         ChatMessage[]
-  ollamaOperations OllamaOperation[]
-
-  @@index([userId, updatedAt])
-}
-
-model ChatMessage {
-  id        String      @id @default(cuid())
-  sessionId String
-  session   ChatSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
-  role      ChatRole
-  content   String
-  metadata  Json?
-  createdAt DateTime    @default(now())
-
-  @@index([sessionId, createdAt])
-}
-
-model OllamaOperation {
-  id           String       @id @default(cuid())
-  userId       String
-  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
-  source       String
-  sessionId    String?
-  session      ChatSession? @relation(fields: [sessionId], references: [id], onDelete: SetNull)
-  model        String
-  temperature  Float?
-  systemPrompt String?
-  requestBody  Json
-  responseBody Json?
-  statusCode   Int?
-  errorMessage String?
-  metadata     Json?
-  createdAt    DateTime     @default(now())
-  updatedAt    DateTime     @updatedAt
-
-  @@index([userId])
-  @@index([sessionId])
-  @@index([source])
-  @@index([createdAt])
+  @@unique([provider, providerId])
 }
 
 model Actor {
-  id        String    @id @default(cuid())
-  userId    String?
-  user      User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
-  label     String
-  type      ActorType
-  note      String?
-  source    String?
-  metadata  Json?
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
+  id         String    @id @default(cuid())
+  userId     String?
+  user       User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
+  label      String
+  type       String
+  note       String?
+  source     String?
+  metadata   Json?
+  category   String?
+  lastSeenAt DateTime?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
 
   entities Entity[]
+  caches   ActorCache[]
 
   @@index([userId])
   @@index([type])
+  @@index([category])
 }
 
 model Entity {
-  id         String           @id @default(cuid())
+  id         String   @id @default(cuid())
   actorId    String
-  actor      Actor            @relation(fields: [actorId], references: [id], onDelete: Cascade)
-  kind       EntityKind
-  direction  EntityDirection?
+  actor      Actor    @relation(fields: [actorId], references: [id], onDelete: Cascade)
+  kind       String
+  direction  String?
   name       String?
   targetType String?
   targetId   String?
   source     String?
   metadata   Json?
-  createdAt  DateTime         @default(now())
-  updatedAt  DateTime         @updatedAt
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  caches EntityCache[]
 
   @@index([actorId])
   @@index([kind])
   @@index([targetType, targetId])
   @@index([direction])
+}
+
+model ActorCache {
+  id        String    @id @default(cuid())
+  actorId   String
+  actor     Actor     @relation(fields: [actorId], references: [id], onDelete: Cascade)
+  key       String
+  payload   Json?
+  expiresAt DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  @@unique([actorId, key], name: "actor_cache_key")
+  @@index([expiresAt])
+}
+
+model EntityCache {
+  id        String    @id @default(cuid())
+  entityId  String
+  entity    Entity    @relation(fields: [entityId], references: [id], onDelete: Cascade)
+  key       String
+  payload   Json?
+  expiresAt DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  @@unique([entityId, key], name: "entity_cache_key")
+  @@index([expiresAt])
 }

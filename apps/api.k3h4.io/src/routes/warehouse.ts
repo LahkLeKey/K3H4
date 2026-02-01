@@ -1,12 +1,17 @@
-import {EntityKind, LifecycleStatus, Prisma, type PrismaClient, WarehouseCategory,} from '@prisma/client';
+import {Prisma, type PrismaClient} from '@prisma/client';
 import {type FastifyInstance} from 'fastify';
 
+import {AgricultureSlotSnapshot, resolveAgricultureSlotSnapshot,} from '../actors/Agriculture/Agriculture';
+import {findFreightLoad} from '../actors/Freight/Freight';
+import {buildWarehouseItemPayload, ensureWarehouseActor} from '../actors/Warehouse/Warehouse';
+import {ENTITY_KINDS} from '../lib/actor-entity-constants';
+import {LIFECYCLE_STATUSES, WAREHOUSE_CATEGORIES,} from '../lib/domain-constants';
 import {lifecycleStatusOrDefault, parseLifecycleStatus} from '../lib/status-utils';
-import {AgricultureSlotSnapshot, resolveAgricultureSlotSnapshot,} from '../services/agriculture-actor';
-import {buildWarehouseItemPayload, ensureWarehouseActor} from '../services/warehouse-actor';
 
 import {buildTelemetryBase} from './telemetry';
 import {type RecordTelemetryFn} from './types';
+
+const EntityKind = ENTITY_KINDS;
 
 const cloneMetadata = (value?: Record<string, unknown>|null) => {
   if (value && typeof value === 'object' && !Array.isArray(value))
@@ -33,8 +38,9 @@ const toJsonValue = (record: Record<string, unknown>) => {
 };
 
 const normalizeCategory = (value?: string) =>
-    value === WarehouseCategory.AGRICULTURE ? WarehouseCategory.AGRICULTURE :
-                                              WarehouseCategory.OTHER;
+    value === WAREHOUSE_CATEGORIES.AGRICULTURE ?
+    WAREHOUSE_CATEGORIES.AGRICULTURE :
+    WAREHOUSE_CATEGORIES.OTHER;
 
 export function registerWarehouseRoutes(
     server: FastifyInstance, prisma: PrismaClient,
@@ -92,8 +98,7 @@ export function registerWarehouseRoutes(
 
         const freightLoadId = body?.freightLoadId?.trim() || undefined;
         if (freightLoadId) {
-          const load = await prisma.freightLoad.findFirst(
-              {where: {id: freightLoadId, userId}});
+          const load = await findFreightLoad(prisma, userId, freightLoadId);
           if (!load) {
             return reply.status(404).send({error: 'Freight load not found'});
           }
@@ -101,7 +106,7 @@ export function registerWarehouseRoutes(
 
         const category = normalizeCategory(body?.category);
         let agricultureSlot: AgricultureSlotSnapshot|null = null;
-        if (category === WarehouseCategory.AGRICULTURE &&
+        if (category === WAREHOUSE_CATEGORIES.AGRICULTURE &&
             body?.agricultureSlotId) {
           agricultureSlot = await resolveAgricultureSlotSnapshot(
               prisma, userId, body.agricultureSlotId);
@@ -117,11 +122,11 @@ export function registerWarehouseRoutes(
         metadata.quantity = qty;
         metadata.location = body.location.trim();
         const status =
-            lifecycleStatusOrDefault(body?.status, LifecycleStatus.STORED);
+            lifecycleStatusOrDefault(body?.status, LIFECYCLE_STATUSES.STORED);
         metadata.status = status;
         metadata.freightLoadId = freightLoadId ?? null;
         metadata.category = category;
-        if (category === WarehouseCategory.AGRICULTURE) {
+        if (category === WAREHOUSE_CATEGORIES.AGRICULTURE) {
           metadata.source = 'agriculture';
           if (agricultureSlot) metadata.slot = agricultureSlot;
         } else {
@@ -217,8 +222,7 @@ export function registerWarehouseRoutes(
           freightLoadId = body.freightLoadId.trim() || undefined;
         }
         if (freightLoadId) {
-          const load = await prisma.freightLoad.findFirst(
-              {where: {id: freightLoadId, userId}});
+          const load = await findFreightLoad(prisma, userId, freightLoadId);
           if (!load) {
             return reply.status(404).send({error: 'Freight load not found'});
           }
@@ -239,14 +243,14 @@ export function registerWarehouseRoutes(
 
         const existingCategory = normalizeCategory(
             metadataString(existingMetadata, 'category') ??
-            WarehouseCategory.OTHER);
+            WAREHOUSE_CATEGORIES.OTHER);
         const category = body?.category ? normalizeCategory(body.category) :
                                           existingCategory;
         mergedMetadata.category = category;
 
         let nextStatus =
-            (metadataString(existingMetadata, 'status') as LifecycleStatus) ??
-            LifecycleStatus.STORED;
+            (metadataString(existingMetadata, 'status') as string) ??
+            LIFECYCLE_STATUSES.STORED;
         if (body?.status !== undefined) {
           const parsedStatus = parseLifecycleStatus(body.status);
           if (!parsedStatus)
@@ -265,7 +269,7 @@ export function registerWarehouseRoutes(
           }
         }
 
-        if (category === WarehouseCategory.AGRICULTURE) {
+        if (category === WAREHOUSE_CATEGORIES.AGRICULTURE) {
           mergedMetadata.source = 'agriculture';
           if (agricultureSlot) mergedMetadata.slot = agricultureSlot;
         } else {

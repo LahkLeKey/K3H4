@@ -2,12 +2,17 @@ import {faker} from '@faker-js/faker';
 import {type Entity, Prisma, type PrismaClient} from '@prisma/client';
 import {type FastifyInstance} from 'fastify';
 
-import * as assignmentActor from '../services/assignment-actor';
-import {EntityDirection, EntityKind, recordBankTransactionEntity,} from '../services/bank-actor';
-import * as personaLedger from '../services/persona-ledger';
+import * as assignmentActor from '../actors/Assignment/Assignment';
+import {recordBankTransactionEntity} from '../actors/Bank/Bank';
+import * as personaLedger from '../entities/Persona/Persona';
+import type {PersonaRecord} from '../entities/Persona/Persona';
+import {ENTITY_DIRECTIONS, ENTITY_KINDS} from '../lib/actor-entity-constants';
 
 import {buildTelemetryBase} from './telemetry';
 import {type RecordTelemetryFn} from './types';
+
+const EntityKind = ENTITY_KINDS;
+const EntityDirection = ENTITY_DIRECTIONS;
 
 const serializeMoney = (value: Prisma.Decimal) => value.toFixed(2);
 
@@ -102,19 +107,26 @@ const buildSerializedAssignment = (
     entity: Entity,
     timecards: Entity[],
     payouts: Entity[],
-    personaMap: Map<string, ReturnType<typeof personaRecordToResponse>>,
+    personaMap: Map<string, PersonaRecord>,
     ) => {
   const assignment = buildAssignmentRecordFromEntity(entity);
-  const persona = assignment.personaId ?
-      personaLedger.personaRecordToResponse(
-          personaMap.get(assignment.personaId) ?? null) :
-      null;
+  const persona = resolvePersonaResponse(assignment.personaId, personaMap);
   return serializeAssignment({
     ...assignment,
     persona,
     timecards: timecards.map(buildTimecardRecord),
     payouts: payouts.map(buildPayoutRecord),
   });
+};
+
+const resolvePersonaResponse = (
+    personaId: string|null|undefined,
+    personaMap: Map<string, PersonaRecord>,
+    ) => {
+  if (!personaId) return null;
+  const personaRecord = personaMap.get(personaId);
+  return personaRecord ? personaLedger.personaRecordToResponse(personaRecord) :
+                         null;
 };
 
 export function registerAssignmentRoutes(
@@ -258,6 +270,8 @@ export function registerAssignmentRoutes(
         const personaMap = await personaLedger.loadPersonaMap(prisma, userId);
         const updatedDetails = await assignmentActor.loadAssignmentDetails(
             prisma, userId, assignmentId);
+        if (!updatedDetails)
+          return reply.status(404).send({error: 'Assignment not found'});
 
         await recordTelemetry(request, {
           ...buildTelemetryBase(request),

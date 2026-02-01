@@ -1,12 +1,17 @@
-import {CoverageStatus, EngagementPriority, Entity, EntityKind, LifecycleStatus, Prisma, type PrismaClient} from '@prisma/client';
+import {Entity, Prisma, type PrismaClient} from '@prisma/client';
 import {type FastifyInstance} from 'fastify';
 
+import {ensureStaffingActor, loadStaffingEntities, loadStaffingEntityByKind, STAFFING_ACTOR_SOURCE} from '../actors/Staffing/Staffing';
+import * as personaLedger from '../entities/Persona/Persona';
+import type {PersonaRecord} from '../entities/Persona/Persona';
+import {ENTITY_KINDS} from '../lib/actor-entity-constants';
+import {COVERAGE_STATUSES, type CoverageStatus, ENGAGEMENT_PRIORITIES, type EngagementPriority, LIFECYCLE_STATUSES, type LifecycleStatus} from '../lib/domain-constants';
 import {coverageStatusOrDefault, engagementPriorityOrDefault, lifecycleStatusOrDefault} from '../lib/status-utils';
-import * as personaLedger from '../services/persona-ledger';
-import {ensureStaffingActor, loadStaffingEntities, loadStaffingEntityByKind, STAFFING_ACTOR_SOURCE} from '../services/staffing-actor';
 
 import {buildTelemetryBase} from './telemetry';
 import {type RecordTelemetryFn} from './types';
+
+const EntityKind = ENTITY_KINDS;
 
 const money = (value?: Prisma.Decimal|null) =>
     (value ? value.toFixed(2) : null);
@@ -126,7 +131,7 @@ const metadataStringArray =
             })
             .filter(
                 (entry): entry is string =>
-                    typeof entry === 'string' && entry.length);
+                    typeof entry === 'string' && entry.length > 0);
       }
       if (typeof value === 'string') {
         const trimmed = value.trim();
@@ -134,6 +139,16 @@ const metadataStringArray =
       }
       return [];
     };
+
+const resolvePersonaResponse = (
+    personaId: string|null|undefined,
+    personaMap: Map<string, PersonaRecord>,
+    ) => {
+  if (!personaId) return null;
+  const personaRecord = personaMap.get(personaId);
+  return personaRecord ? personaLedger.personaRecordToResponse(personaRecord) :
+                         null;
+};
 
 type EngagementFields = {
   id: string; name: string; client: string | null; priority: EngagementPriority;
@@ -156,9 +171,11 @@ const buildEngagementFields = (entity: Entity): EngagementFields => {
     name: metadataString(metadata, 'name') ?? '',
     client: metadataString(metadata, 'client'),
     priority: engagementPriorityOrDefault(
-        metadataString(metadata, 'priority'), EngagementPriority.MEDIUM),
+        metadataString(metadata, 'priority') ?? undefined,
+        ENGAGEMENT_PRIORITIES.MEDIUM),
     status: lifecycleStatusOrDefault(
-        metadataString(metadata, 'status'), LifecycleStatus.ACTIVE),
+        metadataString(metadata, 'status') ?? undefined,
+        LIFECYCLE_STATUSES.ACTIVE),
     startDate: metadataDate(metadata, 'startDate'),
     endDate: metadataDate(metadata, 'endDate'),
     budget: metadataDecimal(metadata, 'budget'),
@@ -184,9 +201,11 @@ const buildRoleFields =
         openings,
         filled,
         priority: engagementPriorityOrDefault(
-            metadataString(metadata, 'priority'), EngagementPriority.NORMAL),
+            metadataString(metadata, 'priority') ?? undefined,
+            ENGAGEMENT_PRIORITIES.NORMAL),
         status: lifecycleStatusOrDefault(
-            metadataString(metadata, 'status'), LifecycleStatus.OPEN),
+            metadataString(metadata, 'status') ?? undefined,
+            LIFECYCLE_STATUSES.OPEN),
         rateMin: metadataDecimal(metadata, 'rateMin'),
         rateMax: metadataDecimal(metadata, 'rateMax'),
         billRate: metadataDecimal(metadata, 'billRate'),
@@ -198,15 +217,12 @@ const buildRoleFields =
     };
 
 const buildCandidateFields =
-    (entity: Entity,
-     personaMap: Map<string, ReturnType<typeof personaRecordToResponse>>,
+    (entity: Entity, personaMap: Map<string, PersonaRecord>,
      roleMap: Map<string, ReturnType<typeof serializeRole>>) => {
       const metadata = asRecord(entity.metadata);
       const roleId = metadataString(metadata, 'roleId');
       const personaId = metadataString(metadata, 'personaId');
-      const persona = personaId ? personaLedger.personaRecordToResponse(
-                                      personaMap.get(personaId) ?? null) :
-                                  null;
+      const persona = resolvePersonaResponse(personaId, personaMap);
       return {
         id: entity.id,
         engagementId: metadataString(metadata, 'engagementId'),
@@ -229,17 +245,14 @@ const buildCandidateFields =
     };
 
 const buildShiftFields =
-    (entity: Entity,
-     personaMap: Map<string, ReturnType<typeof personaRecordToResponse>>,
+    (entity: Entity, personaMap: Map<string, PersonaRecord>,
      candidateSummaries: Map<string, CandidateSummary>) => {
       const metadata = asRecord(entity.metadata);
       const assignedPersonaId = metadataString(metadata, 'assignedPersonaId');
       const assignedCandidateId =
           metadataString(metadata, 'assignedCandidateId');
-      const assignedPersona = assignedPersonaId ?
-          personaLedger.personaRecordToResponse(
-              personaMap.get(assignedPersonaId) ?? null) :
-          null;
+      const assignedPersona =
+          resolvePersonaResponse(assignedPersonaId, personaMap);
       const assignedCandidate = assignedCandidateId ?
           candidateSummaries.get(assignedCandidateId) ?? null :
           null;
@@ -251,10 +264,11 @@ const buildShiftFields =
         startsAt: metadataDate(metadata, 'startsAt'),
         endsAt: metadataDate(metadata, 'endsAt'),
         status: lifecycleStatusOrDefault(
-            metadataString(metadata, 'status'), LifecycleStatus.SCHEDULED),
+            metadataString(metadata, 'status') ?? undefined,
+            LIFECYCLE_STATUSES.SCHEDULED),
         coverageStatus: coverageStatusOrDefault(
-            metadataString(metadata, 'coverageStatus'),
-            CoverageStatus.UNFILLED),
+            metadataString(metadata, 'coverageStatus') ?? undefined,
+            COVERAGE_STATUSES.UNFILLED),
         assignedPersona,
         assignedCandidate,
         notes: metadataString(metadata, 'notes'),
@@ -262,8 +276,7 @@ const buildShiftFields =
     };
 
 const buildPlacementFields =
-    (entity: Entity,
-     personaMap: Map<string, ReturnType<typeof personaRecordToResponse>>,
+    (entity: Entity, personaMap: Map<string, PersonaRecord>,
      roleMap: Map<string, ReturnType<typeof serializeRole>>,
      engagementMap: Map<string, EngagementFields>,
      candidateSummaries: Map<string, CandidateSummary>) => {
@@ -284,14 +297,13 @@ const buildPlacementFields =
         startDate: metadataDate(metadata, 'startDate'),
         endDate: metadataDate(metadata, 'endDate'),
         status: lifecycleStatusOrDefault(
-            metadataString(metadata, 'status'), LifecycleStatus.ACTIVE),
+            metadataString(metadata, 'status') ?? undefined,
+            LIFECYCLE_STATUSES.ACTIVE),
         billRate,
         payRate,
         margin,
         note: metadataString(metadata, 'note'),
-        persona: personaId ? personaLedger.personaRecordToResponse(
-                                 personaMap.get(personaId) ?? null) :
-                             null,
+        persona: resolvePersonaResponse(personaId, personaMap),
         candidate: candidateId ? candidateSummaries.get(candidateId) ?? null :
                                  null,
         role: roleId ? roleMap.get(roleId) ?? null : null,
@@ -438,7 +450,7 @@ export function registerStaffingRoutes(
           openRoles: roleDetails
                          .filter(
                              (detail) => detail.fields.status !==
-                                 LifecycleStatus.CLOSED)
+                                 LIFECYCLE_STATUSES.CLOSED)
                          .length,
           activeCandidates:
               candidateDetails
@@ -448,7 +460,7 @@ export function registerStaffingRoutes(
           activePlacements: placementDetails
                                 .filter(
                                     (detail) => detail.fields.status ===
-                                        LifecycleStatus.ACTIVE)
+                                        LIFECYCLE_STATUSES.ACTIVE)
                                 .length,
           fillRate,
         };
@@ -511,9 +523,9 @@ export function registerStaffingRoutes(
               name,
               client: body?.client?.trim() || null,
               priority: engagementPriorityOrDefault(
-                  body?.priority, EngagementPriority.MEDIUM),
+                  body?.priority, ENGAGEMENT_PRIORITIES.MEDIUM),
               status: lifecycleStatusOrDefault(
-                  body?.status, LifecycleStatus.ACTIVE),
+                  body?.status, LIFECYCLE_STATUSES.ACTIVE),
               startDate: startDate?.toISOString() ?? null,
               endDate: endDate?.toISOString() ?? null,
               budget: budget?.toFixed(2) ?? null,
@@ -598,9 +610,9 @@ export function registerStaffingRoutes(
               modality: body?.modality?.trim() || null,
               openings,
               priority: engagementPriorityOrDefault(
-                  body?.priority, EngagementPriority.NORMAL),
-              status:
-                  lifecycleStatusOrDefault(body?.status, LifecycleStatus.OPEN),
+                  body?.priority, ENGAGEMENT_PRIORITIES.NORMAL),
+              status: lifecycleStatusOrDefault(
+                  body?.status, LIFECYCLE_STATUSES.OPEN),
               rateMin: rateMin?.toFixed(2) ?? null,
               rateMax: rateMax?.toFixed(2) ?? null,
               billRate: billRate?.toFixed(2) ?? null,
@@ -827,9 +839,9 @@ export function registerStaffingRoutes(
               startsAt: startsAt.toISOString(),
               endsAt: endsAt.toISOString(),
               status: lifecycleStatusOrDefault(
-                  body?.status, LifecycleStatus.SCHEDULED),
+                  body?.status, LIFECYCLE_STATUSES.SCHEDULED),
               coverageStatus: coverageStatusOrDefault(
-                  body?.coverageStatus, CoverageStatus.UNFILLED),
+                  body?.coverageStatus, COVERAGE_STATUSES.UNFILLED),
               assignedPersonaId: body?.assignedPersonaId || null,
               assignedCandidateId: body?.assignedCandidateId || null,
               notes: body?.notes?.trim() || null,
@@ -942,7 +954,7 @@ export function registerStaffingRoutes(
               startDate: startDate.toISOString(),
               endDate: parseDate(body?.endDate)?.toISOString() || null,
               status: lifecycleStatusOrDefault(
-                  body?.status, LifecycleStatus.ACTIVE),
+                  body?.status, LIFECYCLE_STATUSES.ACTIVE),
               billRate: billRate?.toFixed(2) ?? null,
               payRate: payRate?.toFixed(2) ?? null,
               margin: margin?.toFixed(2) ?? null,

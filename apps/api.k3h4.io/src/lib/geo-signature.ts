@@ -1,4 +1,4 @@
-const clampDecimals = (value: number, places = 5) =>
+export const clampDecimals = (value: number, places = 5) =>
     Number(value.toFixed(places));
 
 export function routeSignature(

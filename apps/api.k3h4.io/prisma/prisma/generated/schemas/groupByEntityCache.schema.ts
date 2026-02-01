@@ -1,0 +1,13 @@
+import type { Prisma } from '@prisma/client';
+import * as z from 'zod';
+import { EntityCacheWhereInputObjectSchema as EntityCacheWhereInputObjectSchema } from './objects/EntityCacheWhereInput.schema';
+import { EntityCacheOrderByWithAggregationInputObjectSchema as EntityCacheOrderByWithAggregationInputObjectSchema } from './objects/EntityCacheOrderByWithAggregationInput.schema';
+import { EntityCacheScalarWhereWithAggregatesInputObjectSchema as EntityCacheScalarWhereWithAggregatesInputObjectSchema } from './objects/EntityCacheScalarWhereWithAggregatesInput.schema';
+import { EntityCacheScalarFieldEnumSchema } from './enums/EntityCacheScalarFieldEnum.schema';
+import { EntityCacheCountAggregateInputObjectSchema as EntityCacheCountAggregateInputObjectSchema } from './objects/EntityCacheCountAggregateInput.schema';
+import { EntityCacheMinAggregateInputObjectSchema as EntityCacheMinAggregateInputObjectSchema } from './objects/EntityCacheMinAggregateInput.schema';
+import { EntityCacheMaxAggregateInputObjectSchema as EntityCacheMaxAggregateInputObjectSchema } from './objects/EntityCacheMaxAggregateInput.schema';
+
+export const EntityCacheGroupBySchema: z.ZodType<Prisma.EntityCacheGroupByArgs> = z.object({ where: EntityCacheWhereInputObjectSchema.optional(), orderBy: z.union([EntityCacheOrderByWithAggregationInputObjectSchema, EntityCacheOrderByWithAggregationInputObjectSchema.array()]).optional(), having: EntityCacheScalarWhereWithAggregatesInputObjectSchema.optional(), take: z.number().optional(), skip: z.number().optional(), by: z.array(EntityCacheScalarFieldEnumSchema), _count: z.union([ z.literal(true), EntityCacheCountAggregateInputObjectSchema ]).optional(), _min: EntityCacheMinAggregateInputObjectSchema.optional(), _max: EntityCacheMaxAggregateInputObjectSchema.optional() }).strict() as unknown as z.ZodType<Prisma.EntityCacheGroupByArgs>;
+
+export const EntityCacheGroupByZodSchema = z.object({ where: EntityCacheWhereInputObjectSchema.optional(), orderBy: z.union([EntityCacheOrderByWithAggregationInputObjectSchema, EntityCacheOrderByWithAggregationInputObjectSchema.array()]).optional(), having: EntityCacheScalarWhereWithAggregatesInputObjectSchema.optional(), take: z.number().optional(), skip: z.number().optional(), by: z.array(EntityCacheScalarFieldEnumSchema), _count: z.union([ z.literal(true), EntityCacheCountAggregateInputObjectSchema ]).optional(), _min: EntityCacheMinAggregateInputObjectSchema.optional(), _max: EntityCacheMaxAggregateInputObjectSchema.optional() }).strict();

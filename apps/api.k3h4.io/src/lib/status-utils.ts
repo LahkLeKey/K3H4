@@ -1,4 +1,4 @@
-import {CoverageStatus, EngagementPriority, LifecycleStatus} from '@prisma/client';
+import {COVERAGE_STATUSES, type CoverageStatus, ENGAGEMENT_PRIORITIES, type EngagementPriority, LIFECYCLE_STATUSES, type LifecycleStatus,} from './domain-constants';
 
 const normalizeValue = (value?: string) => value?.trim().toLowerCase();
 
@@ -9,10 +9,10 @@ const matchValue =
       return options.find((option) => option.toLowerCase() === normalized);
     };
 
-const lifecycleValues = Object.values(LifecycleStatus) as LifecycleStatus[];
+const lifecycleValues = Object.values(LIFECYCLE_STATUSES) as LifecycleStatus[];
 const priorityValues =
-    Object.values(EngagementPriority) as EngagementPriority[];
-const coverageValues = Object.values(CoverageStatus) as CoverageStatus[];
+    Object.values(ENGAGEMENT_PRIORITIES) as EngagementPriority[];
+const coverageValues = Object.values(COVERAGE_STATUSES) as CoverageStatus[];
 
 export const parseLifecycleStatus = (value?: string) =>
     matchValue(value, lifecycleValues);

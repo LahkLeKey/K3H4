@@ -1,7 +1,9 @@
 import {Prisma, PrismaClient} from '@prisma/client';
 import {type FastifyInstance} from 'fastify';
 
-import {ActorType, EntityDirection, EntityKind, buildBankTransactionWhere, recordBankTransactionEntity,} from '../services/bank-actor';
+import {buildBankTransactionWhere, recordBankTransactionEntity} from '../actors/Bank/Bank';
+import type {EntityDirection, EntityKind} from '../lib/actor-entity-constants';
+import {ACTOR_TYPES, ENTITY_DIRECTIONS, ENTITY_KINDS} from '../lib/actor-entity-constants';
 
 import {withTelemetryBase} from './telemetry';
 import {type RecordTelemetryFn} from './types';
@@ -126,11 +128,11 @@ export function registerBankRoutes(
             const txn = await recordBankTransactionEntity(tx, {
               userId,
               amount: change.abs(),
-              direction: isCredit ? EntityDirection.CREDIT :
-                                    EntityDirection.DEBIT,
-              kind: hasSet ? EntityKind.SET :
-                  isCredit ? EntityKind.DEPOSIT :
-                             EntityKind.WITHDRAWAL,
+              direction: isCredit ? ENTITY_DIRECTIONS.CREDIT :
+                                    ENTITY_DIRECTIONS.DEBIT,
+              kind: hasSet ? ENTITY_KINDS.SET :
+                  isCredit ? ENTITY_KINDS.DEPOSIT :
+                             ENTITY_KINDS.WITHDRAWAL,
               note: body?.reason ?? null,
               balanceAfter: saved.k3h4CoinBalance,
             });
@@ -186,8 +188,8 @@ export function registerBankRoutes(
         })();
 
         const direction = query?.direction === 'credit' ?
-            EntityDirection.CREDIT :
-            query?.direction === 'debit' ? EntityDirection.DEBIT :
+            ENTITY_DIRECTIONS.CREDIT :
+            query?.direction === 'debit' ? ENTITY_DIRECTIONS.DEBIT :
                                            undefined;
         const directionLabel = direction?.toLowerCase() ?? '';
 
@@ -198,7 +200,7 @@ export function registerBankRoutes(
         const validTo = to && !Number.isNaN(to.valueOf()) ? to : undefined;
 
         const actor = await prisma.actor.findFirst({
-          where: {userId, type: ActorType.BANK_ACCOUNT},
+          where: {userId, type: ACTOR_TYPES.BANK_ACCOUNT},
           select: {id: true}
         });
         if (!actor) {

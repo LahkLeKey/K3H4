@@ -1,0 +1,12 @@
+import type { Prisma } from '@prisma/client';
+import * as z from 'zod';
+import { EntityCacheOrderByWithRelationInputObjectSchema as EntityCacheOrderByWithRelationInputObjectSchema } from './objects/EntityCacheOrderByWithRelationInput.schema';
+import { EntityCacheWhereInputObjectSchema as EntityCacheWhereInputObjectSchema } from './objects/EntityCacheWhereInput.schema';
+import { EntityCacheWhereUniqueInputObjectSchema as EntityCacheWhereUniqueInputObjectSchema } from './objects/EntityCacheWhereUniqueInput.schema';
+import { EntityCacheCountAggregateInputObjectSchema as EntityCacheCountAggregateInputObjectSchema } from './objects/EntityCacheCountAggregateInput.schema';
+import { EntityCacheMinAggregateInputObjectSchema as EntityCacheMinAggregateInputObjectSchema } from './objects/EntityCacheMinAggregateInput.schema';
+import { EntityCacheMaxAggregateInputObjectSchema as EntityCacheMaxAggregateInputObjectSchema } from './objects/EntityCacheMaxAggregateInput.schema';
+
+export const EntityCacheAggregateSchema: z.ZodType<Prisma.EntityCacheAggregateArgs> = z.object({ orderBy: z.union([EntityCacheOrderByWithRelationInputObjectSchema, EntityCacheOrderByWithRelationInputObjectSchema.array()]).optional(), where: EntityCacheWhereInputObjectSchema.optional(), cursor: EntityCacheWhereUniqueInputObjectSchema.optional(), take: z.number().optional(), skip: z.number().optional(), _count: z.union([ z.literal(true), EntityCacheCountAggregateInputObjectSchema ]).optional(), _min: EntityCacheMinAggregateInputObjectSchema.optional(), _max: EntityCacheMaxAggregateInputObjectSchema.optional() }).strict() as unknown as z.ZodType<Prisma.EntityCacheAggregateArgs>;
+
+export const EntityCacheAggregateZodSchema = z.object({ orderBy: z.union([EntityCacheOrderByWithRelationInputObjectSchema, EntityCacheOrderByWithRelationInputObjectSchema.array()]).optional(), where: EntityCacheWhereInputObjectSchema.optional(), cursor: EntityCacheWhereUniqueInputObjectSchema.optional(), take: z.number().optional(), skip: z.number().optional(), _count: z.union([ z.literal(true), EntityCacheCountAggregateInputObjectSchema ]).optional(), _min: EntityCacheMinAggregateInputObjectSchema.optional(), _max: EntityCacheMaxAggregateInputObjectSchema.optional() }).strict();

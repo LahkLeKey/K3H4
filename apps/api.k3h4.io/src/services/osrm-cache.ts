@@ -1,52 +1,51 @@
-import { PrismaClient } from "@prisma/client";
-import { createHash } from "crypto";
-import { buildOsrmUrl, fetchOsrm, type OsrmRequest, type OsrmResponse } from "../lib/osrm-client";
+import type {PrismaClient} from '@prisma/client';
+import {createHash} from 'crypto';
+
+import {fetchOsrm, type OsrmRequest, type OsrmResponse} from '../lib/osrm-client';
+
+import {HTTP_CACHE_NAMESPACE_OSRM, HttpCacheEntry, readHttpCacheEntry, writeHttpCacheEntry,} from './http-cache';
 
 type CacheOptions = {
   maxAgeMinutes?: number;
   expiresAt?: Date;
-};
-
-type PrismaWithOsrm = PrismaClient & {
-  osrmCacheEntry: {
-    findUnique: (...args: any[]) => Promise<any>;
-    upsert: (...args: any[]) => Promise<any>;
-  };
+  actorId?: string | null;
 };
 
 const sortValue = (value: any): any => {
   if (Array.isArray(value)) return value.map(sortValue);
-  if (value && typeof value === "object") {
-    return Object.keys(value)
-      .sort()
-      .reduce((acc, key) => {
-        acc[key] = sortValue(value[key]);
-        return acc;
-      }, {} as Record<string, any>);
+  if (value && typeof value === 'object') {
+    return Object.keys(value).sort().reduce((acc, key) => {
+      acc[key] = sortValue(value[key]);
+      return acc;
+    }, {} as Record<string, any>);
   }
   return value;
 };
 
 const stableStringify = (value: any) => JSON.stringify(sortValue(value));
 
-const fingerprint = (parts: { service: string; profile: string; coordinates?: string | null; params?: any }) => {
-  const hash = createHash("sha256");
+const fingerprint = (parts: {
+  service: string; profile: string;
+  coordinates?: string | null;
+  params?: any;
+}) => {
+  const hash = createHash('sha256');
   hash.update(parts.service);
-  hash.update(":");
+  hash.update(':');
   hash.update(parts.profile);
-  hash.update(":");
-  hash.update(parts.coordinates ?? "");
-  hash.update(":");
+  hash.update(':');
+  hash.update(parts.coordinates ?? '');
+  hash.update(':');
   hash.update(stableStringify(parts.params ?? {}));
-  return hash.digest("hex");
+  return hash.digest('hex');
 };
 
 export async function fetchOsrmWithCache(
-  prisma: PrismaWithOsrm,
-  request: OsrmRequest,
-  options?: CacheOptions,
-): Promise<{ cached: boolean; response: OsrmResponse }> {
-  const paramsForFingerprint = { ...request.params };
+    prisma: PrismaClient,
+    request: OsrmRequest,
+    options?: CacheOptions,
+    ): Promise<{cached: boolean; response: OsrmResponse}> {
+  const paramsForFingerprint = {...request.params};
   delete (paramsForFingerprint as any)?.maxAgeMinutes;
 
   const signature = fingerprint({
@@ -56,56 +55,69 @@ export async function fetchOsrmWithCache(
     params: paramsForFingerprint,
   });
 
-  const cacheKey = { signature };
-  const maxAgeMs = options?.maxAgeMinutes ? options.maxAgeMinutes * 60 * 1000 : undefined;
+  const maxAgeMs =
+      options?.maxAgeMinutes ? options.maxAgeMinutes * 60 * 1000 : undefined;
   const now = Date.now();
 
-  const existing = await prisma.osrmCacheEntry.findUnique({ where: cacheKey });
-  if (existing) {
-    const freshByAge = maxAgeMs ? now - existing.fetchedAt.getTime() <= maxAgeMs : false;
-    const notExpired = existing.expiresAt ? existing.expiresAt.getTime() > now : false;
-    if (freshByAge || notExpired) {
-      return {
-        cached: true,
-        response: {
-          status: existing.statusCode ?? 200,
-          ok: (existing.statusCode ?? 200) < 400,
-          body: existing.payload,
-          url: existing.url,
-        },
-      };
+  if (options?.actorId) {
+    const existing = await readHttpCacheEntry(
+        prisma, options.actorId, HTTP_CACHE_NAMESPACE_OSRM, signature);
+    if (existing) {
+      if (maxAgeMs !== undefined) {
+        const fetchedAt = Date.parse(existing.fetchedAt);
+        if (Number.isFinite(fetchedAt) && now - fetchedAt > maxAgeMs) {
+          // fall through to fetch
+        } else {
+          return {
+            cached: true,
+            response: {
+              status: existing.statusCode ?? 200,
+              ok: (existing.statusCode ?? 200) < 400,
+              body: existing.payload,
+              url: existing.url,
+            },
+          };
+        }
+      } else {
+        return {
+          cached: true,
+          response: {
+            status: existing.statusCode ?? 200,
+            ok: (existing.statusCode ?? 200) < 400,
+            body: existing.payload,
+            url: existing.url,
+          },
+        };
+      }
     }
   }
 
   const response = await fetchOsrm(request);
-  const expiresAt = options?.expiresAt ?? (options?.maxAgeMinutes ? new Date(now + options.maxAgeMinutes * 60 * 1000) : null);
-  const paramsHash = fingerprint({ service: request.service, profile: request.profile, coordinates: null, params: paramsForFingerprint });
-  await prisma.osrmCacheEntry.upsert({
-    where: cacheKey,
-    create: {
-      userId: null,
+
+  if (options?.actorId) {
+    const paramsHash = fingerprint({
       service: request.service,
       profile: request.profile,
-      coordinates: request.coordinates,
-      params: request.params ?? {},
-      paramsHash,
+      coordinates: null,
+      params: paramsForFingerprint,
+    });
+    const entry: HttpCacheEntry = {
       signature,
-      url: buildOsrmUrl(request),
-      statusCode: response.status,
-      payload: response.body,
-      fetchedAt: new Date(),
-      expiresAt,
-    },
-    update: {
+      kind: request.service,
+      path: request.service,
       params: request.params ?? {},
       paramsHash,
-      url: buildOsrmUrl(request),
+      responseType: 'json',
+      url: response.url,
       statusCode: response.status,
-      payload: response.body,
-      fetchedAt: new Date(),
-      expiresAt,
-    },
-  });
+      payload: response.body ?? null,
+      fetchedAt: new Date().toISOString(),
+    };
+    await writeHttpCacheEntry(
+        prisma, options.actorId, HTTP_CACHE_NAMESPACE_OSRM, signature, entry, {
+          maxAgeMinutes: options?.maxAgeMinutes,
+        });
+  }
 
-  return { cached: false, response };
+  return {cached: false, response};
 }

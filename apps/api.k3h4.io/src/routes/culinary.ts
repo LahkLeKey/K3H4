@@ -1,6 +1,7 @@
-import {LifecycleStatus, PrismaClient} from '@prisma/client';
+import {PrismaClient} from '@prisma/client';
 import {type FastifyInstance} from 'fastify';
 
+import {LIFECYCLE_STATUSES, type LifecycleStatus} from '../lib/domain-constants';
 import {parseLifecycleStatus} from '../lib/status-utils';
 import {createCulinaryMenuItem, createCulinaryPrepTask, createCulinarySupplierNeed, loadCulinaryMenuItems, loadCulinaryPrepTasks, loadCulinarySupplierNeeds,} from '../services/culinary-ledger';
 import {getPointOfSaleOverview} from '../services/point-of-sale-ledger';
@@ -80,7 +81,7 @@ export function registerCulinaryRoutes(
           dueAt?: string;
           status?: string
         };
-        let prepStatus = LifecycleStatus.PENDING;
+        let prepStatus: LifecycleStatus = LIFECYCLE_STATUSES.PENDING;
         if (body.status !== undefined) {
           const parsedStatus = parseLifecycleStatus(body.status);
           if (!parsedStatus)
@@ -116,7 +117,7 @@ export function registerCulinaryRoutes(
           status?: string;
           dueDate?: string
         };
-        let needStatus = LifecycleStatus.OPEN;
+        let needStatus: LifecycleStatus = LIFECYCLE_STATUSES.OPEN;
         if (body.status !== undefined) {
           const parsedStatus = parseLifecycleStatus(body.status);
           if (!parsedStatus)

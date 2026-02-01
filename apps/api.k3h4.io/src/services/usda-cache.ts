@@ -1,7 +1,9 @@
-import {PrismaClient} from '@prisma/client';
+import {Prisma, PrismaClient} from '@prisma/client';
 import {createHash} from 'crypto';
 
 import {fetchUsdaJson, type UsdaDataset} from '../lib/usda-client';
+
+import {readApiCache, writeApiCache} from './api-cache';
 
 type CacheOptions = {
   maxAgeMinutes?: number;
@@ -13,13 +15,6 @@ type CacheOptions = {
 type Params = Record<string, string|number|boolean|null|undefined>|undefined;
 
 const PROVIDER = 'usda';
-
-type PrismaWithApiCache = PrismaClient&{
-  apiCacheEntry: {
-    findUnique: (...args: any[]) => Promise<any>;
-    upsert: (...args: any[]) => Promise<any>;
-  };
-};
 
 const sortValue = (value: any): any => {
   if (Array.isArray(value)) return value.map(sortValue);
@@ -43,7 +38,7 @@ const fingerprint = (endpoint: string, params: Params) => {
 };
 
 export async function fetchAndCache<T = unknown>(
-    prisma: PrismaWithApiCache,
+    prisma: PrismaClient,
     dataset: UsdaDataset,
     endpoint: string,
     params?: Params,
@@ -59,36 +54,21 @@ export async function fetchAndCache<T = unknown>(
   const refreshAndStore = async () => {
     const payload = await fetchUsdaJson<T>(endpoint, params ?? undefined);
     const expiresAt = options?.expiresAt;
-    await prisma.apiCacheEntry.upsert({
-      where: {provider_scope_endpoint_paramsHash: cacheKey},
-      create: {
-        provider: PROVIDER,
-        scope: dataset,
-        endpoint,
-        params: params ?? {},
-        paramsHash,
-        payload,
-        fetchedAt: new Date(),
-        expiresAt: expiresAt ?? null,
-      },
-      update: {
-        params: params ?? {},
-        payload,
-        fetchedAt: new Date(),
-        expiresAt: expiresAt ?? null,
-      },
+    await writeApiCache(prisma, cacheKey, payload as Prisma.JsonValue, {
+      fetchedAt: new Date().toISOString(),
+      expiresAt: expiresAt ? expiresAt.toISOString() : null,
     });
 
     return payload;
   };
 
-  const existing = await prisma.apiCacheEntry.findUnique(
-      {where: {provider_scope_endpoint_paramsHash: cacheKey}});
-  if (existing) {
-    const freshByAge =
-        maxAgeMs ? now - existing.fetchedAt.getTime() <= maxAgeMs : false;
-    const notExpired =
-        existing.expiresAt ? existing.expiresAt.getTime() > now : false;
+  const existing = await readApiCache(prisma, cacheKey);
+  if (existing.metadata) {
+    const fetchedAt = new Date(existing.metadata.fetchedAt);
+    const freshByAge = maxAgeMs ? now - fetchedAt.getTime() <= maxAgeMs : false;
+    const notExpired = existing.metadata.expiresAt ?
+        new Date(existing.metadata.expiresAt).getTime() > now :
+        false;
     if (freshByAge || notExpired) {
       return existing.payload as T;
     }
@@ -105,14 +85,14 @@ export async function fetchAndCache<T = unknown>(
 }
 
 export async function readCache<T = unknown>(
-    prisma: PrismaWithApiCache,
+    prisma: PrismaClient,
     dataset: UsdaDataset,
     endpoint: string,
     params?: Params,
     ): Promise<T|null> {
   const paramsHash = fingerprint(endpoint, params);
   const cacheKey = {provider: PROVIDER, scope: dataset, endpoint, paramsHash};
-  const existing = await prisma.apiCacheEntry.findUnique(
-      {where: {provider_scope_endpoint_paramsHash: cacheKey}});
-  return existing ? (existing.payload as T) : null;
+  const existing = await readApiCache(prisma, cacheKey);
+  if (!existing.metadata) return null;
+  return existing.payload as T;
 }

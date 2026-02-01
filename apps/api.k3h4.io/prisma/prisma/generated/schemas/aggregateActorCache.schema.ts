@@ -1,0 +1,12 @@
+import type { Prisma } from '@prisma/client';
+import * as z from 'zod';
+import { ActorCacheOrderByWithRelationInputObjectSchema as ActorCacheOrderByWithRelationInputObjectSchema } from './objects/ActorCacheOrderByWithRelationInput.schema';
+import { ActorCacheWhereInputObjectSchema as ActorCacheWhereInputObjectSchema } from './objects/ActorCacheWhereInput.schema';
+import { ActorCacheWhereUniqueInputObjectSchema as ActorCacheWhereUniqueInputObjectSchema } from './objects/ActorCacheWhereUniqueInput.schema';
+import { ActorCacheCountAggregateInputObjectSchema as ActorCacheCountAggregateInputObjectSchema } from './objects/ActorCacheCountAggregateInput.schema';
+import { ActorCacheMinAggregateInputObjectSchema as ActorCacheMinAggregateInputObjectSchema } from './objects/ActorCacheMinAggregateInput.schema';
+import { ActorCacheMaxAggregateInputObjectSchema as ActorCacheMaxAggregateInputObjectSchema } from './objects/ActorCacheMaxAggregateInput.schema';
+
+export const ActorCacheAggregateSchema: z.ZodType<Prisma.ActorCacheAggregateArgs> = z.object({ orderBy: z.union([ActorCacheOrderByWithRelationInputObjectSchema, ActorCacheOrderByWithRelationInputObjectSchema.array()]).optional(), where: ActorCacheWhereInputObjectSchema.optional(), cursor: ActorCacheWhereUniqueInputObjectSchema.optional(), take: z.number().optional(), skip: z.number().optional(), _count: z.union([ z.literal(true), ActorCacheCountAggregateInputObjectSchema ]).optional(), _min: ActorCacheMinAggregateInputObjectSchema.optional(), _max: ActorCacheMaxAggregateInputObjectSchema.optional() }).strict() as unknown as z.ZodType<Prisma.ActorCacheAggregateArgs>;
+
+export const ActorCacheAggregateZodSchema = z.object({ orderBy: z.union([ActorCacheOrderByWithRelationInputObjectSchema, ActorCacheOrderByWithRelationInputObjectSchema.array()]).optional(), where: ActorCacheWhereInputObjectSchema.optional(), cursor: ActorCacheWhereUniqueInputObjectSchema.optional(), take: z.number().optional(), skip: z.number().optional(), _count: z.union([ z.literal(true), ActorCacheCountAggregateInputObjectSchema ]).optional(), _min: ActorCacheMinAggregateInputObjectSchema.optional(), _max: ActorCacheMaxAggregateInputObjectSchema.optional() }).strict();

@@ -1,10 +1,12 @@
 import {faker} from '@faker-js/faker';
-import {Entity, EntityKind, LifecycleStatus, type Prisma, type PrismaClient} from '@prisma/client';
+import {Entity, type Prisma, type PrismaClient} from '@prisma/client';
 import {type FastifyInstance} from 'fastify';
 
+import * as personaLedger from '../entities/Persona/Persona';
+import type {PersonaRecord} from '../entities/Persona/Persona';
+import {ENTITY_KINDS} from '../lib/actor-entity-constants';
 import {type CompatFeatureVector, runOnnxCompatibility} from '../lib/compat-onnx';
-import * as personaLedger from '../services/persona-ledger';
-import type {PersonaRecord} from '../services/persona-ledger';
+import {LIFECYCLE_STATUSES, type LifecycleStatus} from '../lib/domain-constants';
 
 import {withTelemetryBase} from './telemetry';
 import {type RecordTelemetryFn} from './types';
@@ -88,7 +90,7 @@ const buildCompatibilityPayload = (personas: PersonaRecord[]) => {
           intersectionCount,
           unionCount,
           overlappingTokens: overlap,
-          status: LifecycleStatus.ACTIVE,
+          status: LIFECYCLE_STATUSES.ACTIVE,
         },
       });
     }
@@ -147,7 +149,7 @@ const compatibilityRecordFromEntity = (entity: Entity): CompatibilityRecord => {
     unionCount: metadataNumber(metadata, 'unionCount') ?? 1,
     overlappingTokens: metadataStringArray(metadata, 'overlappingTokens'),
     status: (metadataString(metadata, 'status') as LifecycleStatus) ??
-        LifecycleStatus.ACTIVE,
+        LIFECYCLE_STATUSES.ACTIVE,
     rationale: metadataString(metadata, 'rationale'),
     createdAt: entity.createdAt,
   };
@@ -158,7 +160,7 @@ const loadCompatibilityRecords = async (
     actorId: string,
     ) => {
   const entities = await prisma.entity.findMany({
-    where: {actorId, kind: EntityKind.PERSONA_COMPATIBILITY},
+    where: {actorId, kind: ENTITY_KINDS.PERSONA_COMPATIBILITY},
   });
   return entities.map(compatibilityRecordFromEntity);
 };
@@ -188,21 +190,21 @@ const serializeCompatibility = (
   };
 };
 
-const normalizeAttributeInput = (input: PersonaAttributeInput) => {
-  const category = input.category?.trim();
-  if (!category) return [] as {
-      category: string;
-      value: string;
-      weight: number
-    }
-  [];
-  const weight =
-      Number.isFinite(input.weight ?? 1) ? Number(input.weight ?? 1) : 1;
-  return (input.values ?? [])
-      .map((value) => value?.trim())
-      .filter((value): value is string => Boolean(value))
-      .map((value) => ({category, value, weight}));
+type NormalizedAttributeInput = {
+  category: string; value: string; weight: number
 };
+
+const normalizeAttributeInput =
+    (input: PersonaAttributeInput): NormalizedAttributeInput[] => {
+      const category = input.category?.trim();
+      if (!category) return [];
+      const weight =
+          Number.isFinite(input.weight ?? 1) ? Number(input.weight ?? 1) : 1;
+      return (input.values ?? [])
+          .map((value) => value?.trim())
+          .filter((value): value is string => Boolean(value))
+          .map((value) => ({category, value, weight}));
+    };
 
 const clampCount = (value?: number) => {
   const parsed = Number(value ?? 1);
@@ -263,6 +265,23 @@ const emptyConfusion: ConfusionCounts = {
   fn: 0
 };
 
+type NormalizedConfusionPair = {
+  sourceId: string; targetId: string; label: boolean
+};
+
+const normalizeConfusionPairs = (pairs: ConfusionExampleInput[]) =>
+    pairs
+        .map((pair) => ({
+               sourceId: pair.sourceId?.trim(),
+               targetId: pair.targetId?.trim(),
+               label: pair.label,
+             }))
+        .filter(
+            (pair): pair is NormalizedConfusionPair => Boolean(
+                pair.sourceId && pair.targetId &&
+                typeof pair.label === 'boolean'),
+        );
+
 const computeConfusionFromPairs = async (
     pairs: ConfusionExampleInput[],
     userId: string,
@@ -270,20 +289,7 @@ const computeConfusionFromPairs = async (
     threshold: number,
     modelPath?: string,
     ) => {
-  const normalized = pairs
-                         .map((pair) => ({
-                                sourceId: pair.sourceId?.trim(),
-                                targetId: pair.targetId?.trim(),
-                                label: pair.label,
-                              }))
-                         .filter(
-                             (pair) => pair.sourceId && pair.targetId &&
-                                 typeof pair.label === 'boolean',
-                             ) as {
-    sourceId: string;
-    targetId: string;
-    label: boolean
-  }
+  const normalized = normalizeConfusionPairs(pairs);
   [];
   if (normalized.length === 0) {
     return {counts: emptyConfusion, details: [], missing: pairs.length};
@@ -364,7 +370,7 @@ export function registerPersonaRoutes(
           await prisma.entity.createMany({
             data: seedData.map((row) => ({
                                  actorId: actor.id,
-                                 kind: EntityKind.PERSONA,
+                                 kind: ENTITY_KINDS.PERSONA,
                                  metadata: row,
                                })),
           });
@@ -377,7 +383,7 @@ export function registerPersonaRoutes(
               data: attributeSeeds.map(
                   (entry) => ({
                     actorId: actor.id,
-                    kind: EntityKind.PERSONA_ATTRIBUTE,
+                    kind: ENTITY_KINDS.PERSONA_ATTRIBUTE,
                     targetType: personaLedger.PERSONA_TARGET_TYPE,
                     targetId: entry.personaId,
                     metadata: {
@@ -430,7 +436,7 @@ export function registerPersonaRoutes(
         const personaEntity = await prisma.entity.create({
           data: {
             actorId: actor.id,
-            kind: EntityKind.PERSONA,
+            kind: ENTITY_KINDS.PERSONA,
             metadata: personaLedger.buildPersonaMetadata({
               alias,
               account,
@@ -479,7 +485,7 @@ export function registerPersonaRoutes(
         await prisma.entity.createMany({
           data: metadataPayload.map((row) => ({
                                       actorId: actor.id,
-                                      kind: EntityKind.PERSONA,
+                                      kind: ENTITY_KINDS.PERSONA,
                                       metadata: row,
                                     })),
         });
@@ -493,7 +499,7 @@ export function registerPersonaRoutes(
             data: attributeSeeds.map(
                 (entry) => ({
                   actorId: actor.id,
-                  kind: EntityKind.PERSONA_ATTRIBUTE,
+                  kind: ENTITY_KINDS.PERSONA_ATTRIBUTE,
                   targetType: personaLedger.PERSONA_TARGET_TYPE,
                   targetId: entry.personaId,
                   metadata: {
@@ -540,7 +546,7 @@ export function registerPersonaRoutes(
           prisma.entity.deleteMany({
             where: {
               actorId: actor.id,
-              kind: EntityKind.PERSONA_ATTRIBUTE,
+              kind: ENTITY_KINDS.PERSONA_ATTRIBUTE,
               targetType: personaLedger.PERSONA_TARGET_TYPE,
               targetId: personaId,
             },
@@ -578,19 +584,21 @@ export function registerPersonaRoutes(
             await personaLedger.loadPersonaRecordsByActor(prisma, actor.id);
         if (personas.length < 2) {
           await prisma.entity.deleteMany({
-            where: {actorId: actor.id, kind: EntityKind.PERSONA_COMPATIBILITY},
+            where:
+                {actorId: actor.id, kind: ENTITY_KINDS.PERSONA_COMPATIBILITY},
           });
           return {compatibilities: []};
         }
         const payload = buildCompatibilityPayload(personas);
         await prisma.$transaction([
           prisma.entity.deleteMany({
-            where: {actorId: actor.id, kind: EntityKind.PERSONA_COMPATIBILITY},
+            where:
+                {actorId: actor.id, kind: ENTITY_KINDS.PERSONA_COMPATIBILITY},
           }),
           prisma.entity.createMany({
             data: payload.map((entry) => ({
                                 actorId: actor.id,
-                                kind: EntityKind.PERSONA_COMPATIBILITY,
+                                kind: ENTITY_KINDS.PERSONA_COMPATIBILITY,
                                 metadata: entry.metadata,
                               })),
           }),

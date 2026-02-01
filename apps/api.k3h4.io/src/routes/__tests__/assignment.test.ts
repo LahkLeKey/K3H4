@@ -1,17 +1,19 @@
-import '../../test/vitest-setup.ts';
+import '../../test/vitest-setup';
 
-import {EntityKind, Prisma} from '@prisma/client';
+import {Prisma} from '@prisma/client';
 import Fastify from 'fastify';
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 
-import * as assignmentActor from '../../services/assignment-actor';
-import * as personaLedger from '../../services/persona-ledger';
-import type {PersonaRecord} from '../../services/persona-ledger';
+import * as assignmentActor from '../../actors/Assignment/Assignment';
+import * as personaLedger from '../../entities/Persona/Persona';
+import type {PersonaRecord} from '../../entities/Persona/Persona';
+import {ENTITY_KINDS} from '../../lib/actor-entity-constants';
 import {registerAssignmentRoutes} from '../assignment';
 import {type RecordTelemetryFn} from '../types';
 
-const recordTelemetry = vi.fn() as unknown as RecordTelemetryFn;
+const recordTelemetry = vi.fn<RecordTelemetryFn>();
 const userId = 'user-1';
+const EntityKind = ENTITY_KINDS;
 const personaActor = {
   id: 'actor-1',
   userId,
@@ -45,6 +47,10 @@ const buildAssignmentEntity = (overrides: Partial<any> = {}) => {
     actorId: assignmentActorStub.id,
     kind: EntityKind.ASSIGNMENT,
     targetType: assignmentActor.ASSIGNMENT_TARGET_TYPE,
+    targetId: null,
+    name: null,
+    source: null,
+    direction: null,
     createdAt: new Date(),
     updatedAt: new Date(),
     ...overrides,
@@ -66,6 +72,9 @@ const buildTimecardEntity =
         kind: EntityKind.ASSIGNMENT_TIMECARD,
         targetType: assignmentActor.ASSIGNMENT_TARGET_TYPE,
         targetId: assignmentId,
+        name: null,
+        source: null,
+        direction: null,
         createdAt: new Date(),
         updatedAt: new Date(),
         ...overrides,
@@ -87,6 +96,9 @@ const buildPayoutEntity =
         kind: EntityKind.ASSIGNMENT_PAYOUT,
         targetType: assignmentActor.ASSIGNMENT_TARGET_TYPE,
         targetId: assignmentId,
+        name: null,
+        source: null,
+        direction: null,
         createdAt: new Date(),
         updatedAt: new Date(),
         ...overrides,
@@ -111,7 +123,22 @@ describe('assignment routes', () => {
         .mockResolvedValue(personaActor as any);
     vi.spyOn(personaLedger, 'personaRecordToResponse')
         .mockImplementation(
-            (persona) => ({id: persona.id, alias: persona.alias}));
+            (persona) => ({
+              id: persona.id,
+              alias: persona.alias,
+              account: persona.account,
+              handle: persona.handle ?? undefined,
+              note: persona.note ?? undefined,
+              tags: persona.tags,
+              attributes: persona.attributes.map((attr) => ({
+                                                   id: attr.id,
+                                                   category: attr.category,
+                                                   value: attr.value,
+                                                   weight: attr.weight,
+                                                 })),
+              createdAt: persona.createdAt,
+              updatedAt: persona.updatedAt,
+            }));
     vi.spyOn(assignmentActor, 'ensureAssignmentActor')
         .mockResolvedValue(assignmentActorStub as any);
   });
@@ -138,10 +165,10 @@ describe('assignment routes', () => {
     expect(res.statusCode).toBe(200);
     expect(loadMapSpy).toHaveBeenCalled();
     expect(loadEntitiesSpy).toHaveBeenCalled();
-    expect(res.json().assignments[0].persona).toEqual({
+    expect(res.json().assignments[0].persona).toEqual(expect.objectContaining({
       id: personaRecord.id,
       alias: personaRecord.alias,
-    });
+    }));
     expect(recordTelemetry)
         .toHaveBeenCalledWith(
             expect.anything(),
@@ -298,6 +325,9 @@ describe('assignment routes', () => {
       entity: {
         findFirst: findFirstSpy,
         findMany: findManySpy,
+        name: null,
+        source: null,
+        direction: null,
       },
       user: {},
       actor: {
@@ -310,6 +340,8 @@ describe('assignment routes', () => {
         throw new Error('payout fail');
       }),
     };
+    const loadMapSpy =
+        vi.spyOn(personaLedger, 'loadPersonaMap').mockResolvedValue(new Map());
     const server = buildServer(prisma);
     const res = await server.inject({
       method: 'POST',

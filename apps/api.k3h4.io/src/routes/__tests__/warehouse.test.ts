@@ -1,13 +1,20 @@
-import '../../test/vitest-setup.ts';
+import '../../test/vitest-setup';
 
 import Fastify from 'fastify';
 import {beforeEach, describe, expect, it, vi} from 'vitest';
 
+import {findFreightLoad} from '../../actors/Freight/Freight';
 import {type RecordTelemetryFn} from '../types';
 import {registerWarehouseRoutes} from '../warehouse';
 
-const recordTelemetry = vi.fn() as unknown as RecordTelemetryFn;
+vi.mock('../../actors/Freight/Freight', () => ({
+                                          findFreightLoad: vi.fn(),
+                                        }));
+
+const recordTelemetry = vi.fn<RecordTelemetryFn>();
 const userId = 'user-1';
+const findFreightLoadMock =
+    findFreightLoad as unknown as ReturnType<typeof vi.fn>;
 
 function buildServer(prisma: any) {
   const server = Fastify();
@@ -36,6 +43,8 @@ const buildBasePrisma = () => ({
 describe('warehouse routes', () => {
   beforeEach(() => {
     recordTelemetry.mockClear();
+    findFreightLoadMock.mockReset();
+    findFreightLoadMock.mockResolvedValue({id: 'f1'});
   });
 
   it('lists items', async () => {
@@ -124,7 +133,7 @@ describe('warehouse routes', () => {
 
   it('rejects unknown freight link', async () => {
     const prisma = buildBasePrisma();
-    prisma.freightLoad.findFirst.mockResolvedValue(null);
+    findFreightLoadMock.mockResolvedValueOnce(null);
     const server = buildServer(prisma);
     const res = await server.inject({
       method: 'POST',
@@ -167,7 +176,7 @@ describe('warehouse routes', () => {
         category: 'other',
       },
     });
-    prisma.freightLoad.findFirst.mockResolvedValue(null);
+    findFreightLoadMock.mockResolvedValueOnce(null);
     const server = buildServer(prisma);
     const res = await server.inject({
       method: 'PATCH',

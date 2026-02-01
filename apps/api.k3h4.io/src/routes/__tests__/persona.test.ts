@@ -1,14 +1,14 @@
-import '../../test/vitest-setup.ts';
+import '../../test/vitest-setup';
 
 import Fastify from 'fastify';
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 
-import * as personaLedger from '../../services/persona-ledger';
-import type {PersonaRecord} from '../../services/persona-ledger';
+import * as personaLedger from '../../entities/Persona/Persona';
+import type {PersonaRecord} from '../../entities/Persona/Persona';
 import {registerPersonaRoutes} from '../persona';
 import {type RecordTelemetryFn} from '../types';
 
-const recordTelemetry = vi.fn() as unknown as RecordTelemetryFn;
+const recordTelemetry = vi.fn<RecordTelemetryFn>();
 const userId = 'user-1';
 const actorStub = {
   id: 'actor-1',
@@ -49,11 +49,6 @@ describe('persona routes', () => {
     vi.restoreAllMocks();
     vi.spyOn(personaLedger, 'ensurePersonaActor')
         .mockResolvedValue(actorStub as any);
-    vi.spyOn(personaLedger, 'personaRecordToResponse')
-        .mockImplementation((persona) => ({
-                              id: persona.id,
-                              alias: persona.alias,
-                            }));
   });
 
   afterEach(() => {
@@ -80,7 +75,9 @@ describe('persona routes', () => {
         .toHaveBeenCalledWith(
             expect.anything(),
             expect.objectContaining({eventType: 'persona.list'}));
-    expect(res.json().personas).toEqual([{id: 'p1', alias: 'Persona Alias'}]);
+    expect(res.json().personas).toEqual([
+      expect.objectContaining({id: 'p1', alias: 'Persona Alias'}),
+    ]);
   });
 
   it('creates a persona with attributes', async () => {
@@ -122,7 +119,8 @@ describe('persona routes', () => {
             expect.anything(),
             expect.objectContaining({eventType: 'persona.create'}));
     expect(res.json().persona)
-        .toEqual({id: persona.id, alias: 'Persona Alias'});
+        .toEqual(
+            expect.objectContaining({id: persona.id, alias: 'Persona Alias'}));
   });
 
   it('updates persona attributes', async () => {

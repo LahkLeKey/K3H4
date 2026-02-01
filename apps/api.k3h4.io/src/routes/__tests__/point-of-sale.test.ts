@@ -4,7 +4,7 @@ import {Prisma} from '@prisma/client';
 import Fastify from 'fastify';
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 
-import * as bankActor from '../../services/bank-actor';
+import * as bankActor from '../../actors/Bank/Bank';
 import {registerPointOfSaleRoutes} from '../point-of-sale';
 import {type RecordTelemetryFn} from '../types';
 

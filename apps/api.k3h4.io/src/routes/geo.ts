@@ -1,8 +1,12 @@
 import {Prisma, type PrismaClient} from '@prisma/client';
-import {type FastifyInstance} from 'fastify';
+import {type FastifyInstance, type RouteShorthandOptions} from 'fastify';
 
-import {routeSignature} from '../lib/geo-signature';
+import {ensureGeoActor} from '../actors/Geo/Geo';
+import {ACTOR_TYPES} from '../lib/actor-entity-constants';
+import {clampDecimals, routeSignature} from '../lib/geo-signature';
 import {enqueueOverpass} from '../lib/overpass-queue';
+import {logGeoStatus, readGeoPoiCache, readGeoPoiCacheStale, readGeoQueryCache, readGeoRouteCache, readGeoViewHistory, writeGeoPoiCache, writeGeoQueryCache, writeGeoRouteCache,} from '../services/geo-cache';
+import {readUserPreferencesByActor, updateUserPreferencesForUser, type UserPreferencePatch} from '../services/user-preferences';
 
 import {buildTelemetryBase} from './telemetry';
 import {type RecordTelemetryFn} from './types';
@@ -14,6 +18,10 @@ const POI_TTL_MS = 1000 * 60 * 60 * 12;   // 12 hours
 const GEO_POI_RATE_LIMIT_MAX = Number(process.env.GEO_POI_RATE_LIMIT_MAX ?? 30);
 const GEO_POI_RATE_LIMIT_WINDOW =
     process.env.GEO_POI_RATE_LIMIT_WINDOW || '1 minute';
+
+type RateLimitedRouteShorthandOptions = RouteShorthandOptions&{
+  rateLimit?: {max: number; timeWindow: string};
+};
 
 const poiSignature =
     (center: {lat: number; lng: number}, radiusM: number, kinds: string[]) => {
@@ -60,8 +68,6 @@ async function fetchOverpass(
 export function registerGeoRoutes(
     server: FastifyInstance, prisma: PrismaClient,
     recordTelemetry: RecordTelemetryFn) {
-  const db = prisma as any;
-
   const persistUserGeoPrefs = async (userId: string|null, prefs: {
     center?: {lat: number; lng: number}|null;
     view?:
@@ -72,59 +78,48 @@ export function registerGeoRoutes(
     };
   }) => {
     if (!userId) return;
+    const geoPatch: NonNullable<UserPreferencePatch['geo']> = {};
+    let hasGeoPatch = false;
 
-    const existing = await prisma.userPreference.findUnique({where: {userId}});
-    const nextCenterLat = prefs.center?.lat ?? existing?.lastCenterLat ?? null;
-    const nextCenterLng = prefs.center?.lng ?? existing?.lastCenterLng ?? null;
-    const nextZoom = prefs.view?.zoom ?? existing?.lastZoom ?? null;
-    const nextBearing = prefs.view?.bearing ?? existing?.lastBearing ?? null;
-    const nextPitch = prefs.view?.pitch ?? existing?.lastPitch ?? null;
+    if (prefs.center !== undefined) {
+      geoPatch.center = prefs.center;
+      hasGeoPatch = true;
+    }
 
-    await prisma.userPreference.upsert({
-      where: {userId},
-      update: {
-        lastCenterLat: nextCenterLat !== null ?
-            new Prisma.Decimal(nextCenterLat.toFixed(6)) :
-            null,
-        lastCenterLng: nextCenterLng !== null ?
-            new Prisma.Decimal(nextCenterLng.toFixed(6)) :
-            null,
-        lastZoom: nextZoom,
-        lastBearing: nextBearing,
-        lastPitch: nextPitch,
-        lastPoiSignature:
-            prefs.poi?.signature ?? existing?.lastPoiSignature ?? null,
-        lastPoiKinds: prefs.poi ? prefs.poi.kinds.join(',') :
-                                  existing?.lastPoiKinds ?? null,
-        lastPoiRadiusM: prefs.poi?.radiusM ?? existing?.lastPoiRadiusM ?? null,
-        lastPoiCount: prefs.poi?.count ?? existing?.lastPoiCount ?? null,
-        lastPoiFetchedAt:
-            prefs.poi?.fetchedAt ?? existing?.lastPoiFetchedAt ?? null,
-      },
-      create: {
-        userId,
-        lastCenterLat: nextCenterLat !== null ?
-            new Prisma.Decimal(nextCenterLat.toFixed(6)) :
-            null,
-        lastCenterLng: nextCenterLng !== null ?
-            new Prisma.Decimal(nextCenterLng.toFixed(6)) :
-            null,
-        lastZoom: nextZoom,
-        lastBearing: nextBearing,
-        lastPitch: nextPitch,
-        lastPoiSignature: prefs.poi?.signature ?? null,
-        lastPoiKinds: prefs.poi ? prefs.poi.kinds.join(',') : null,
-        lastPoiRadiusM: prefs.poi?.radiusM ?? null,
-        lastPoiCount: prefs.poi?.count ?? null,
-        lastPoiFetchedAt: prefs.poi?.fetchedAt ?? null,
-      },
-    });
+    if (prefs.view !== undefined) {
+      const viewPatch: Record<string, number|null> = {};
+      if (prefs.view.zoom !== undefined) viewPatch.zoom = prefs.view.zoom;
+      if (prefs.view.bearing !== undefined)
+        viewPatch.bearing = prefs.view.bearing;
+      if (prefs.view.pitch !== undefined) viewPatch.pitch = prefs.view.pitch;
+      if (Object.keys(viewPatch).length) {
+        geoPatch.view =
+            viewPatch as NonNullable<UserPreferencePatch['geo']>['view'];
+        hasGeoPatch = true;
+      }
+    }
+
+    if (prefs.poi !== undefined) {
+      geoPatch.poi = {
+        signature: prefs.poi.signature,
+        kinds: prefs.poi.kinds,
+        radiusM: prefs.poi.radiusM,
+        count: prefs.poi.count,
+        fetchedAt: prefs.poi.fetchedAt.toISOString(),
+      };
+      hasGeoPatch = true;
+    }
+
+    if (!hasGeoPatch) return;
+    await updateUserPreferencesForUser(prisma, userId, {geo: geoPatch});
   };
   server.get(
       '/geo/route',
       {preHandler: [server.authenticate]},
       async (request, reply) => {
         const userId = (request.user as {sub: string}).sub;
+        const actor = await ensureGeoActor(prisma, userId);
+        const actorId = actor.id;
         const query = request.query as any;
         const originLat = Number(query.originLat);
         const originLng = Number(query.originLng);
@@ -141,10 +136,7 @@ export function registerGeoRoutes(
         const signature = routeSignature(
             {lat: originLat, lng: originLng},
             {lat: destinationLat, lng: destinationLng});
-        const now = new Date();
-
-        const cached = await db.geoRouteCache.findFirst(
-            {where: {signature, expiresAt: {gt: now}}});
+        const cached = await readGeoRouteCache(prisma, actorId, signature);
         if (cached) {
           await recordTelemetry(request, {
             ...buildTelemetryBase(request),
@@ -164,28 +156,12 @@ export function registerGeoRoutes(
           const osrm = await fetchOsrmRoute(
               {lat: originLat, lng: originLng},
               {lat: destinationLat, lng: destinationLng});
-          await db.geoRouteCache.upsert({
-            where: {signature},
-            update: {
-              distanceKm: new Prisma.Decimal(osrm.distanceKm.toFixed(4)),
-              durationMinutes: osrm.durationMinutes,
-              geojson: osrm.geojson,
-              expiresAt: new Date(Date.now() + ROUTE_TTL_MS),
-              userId,
-            },
-            create: {
-              signature,
-              provider: 'osrm',
-              originLat: new Prisma.Decimal(originLat.toFixed(6)),
-              originLng: new Prisma.Decimal(originLng.toFixed(6)),
-              destinationLat: new Prisma.Decimal(destinationLat.toFixed(6)),
-              destinationLng: new Prisma.Decimal(destinationLng.toFixed(6)),
-              distanceKm: new Prisma.Decimal(osrm.distanceKm.toFixed(4)),
-              durationMinutes: osrm.durationMinutes,
-              geojson: osrm.geojson,
-              expiresAt: new Date(Date.now() + ROUTE_TTL_MS),
-              userId,
-            },
+          await writeGeoRouteCache(prisma, actorId, signature, {
+            signature,
+            distanceKm: osrm.distanceKm,
+            durationMinutes: osrm.durationMinutes,
+            geojson: osrm.geojson,
+            fetchedAt: new Date().toISOString(),
           });
 
           await recordTelemetry(request, {
@@ -202,14 +178,19 @@ export function registerGeoRoutes(
       },
   );
 
+  const poiRouteOptions: RateLimitedRouteShorthandOptions = {
+    rateLimit: {
+      max: GEO_POI_RATE_LIMIT_MAX,
+      timeWindow: GEO_POI_RATE_LIMIT_WINDOW,
+    },
+    schema: {
+      summary: 'Fetch Geo POIs with cached rate limiting',
+      tags: ['geo'],
+    },
+  };
   server.get(
       '/geo/pois',
-      {
-        rateLimit: {
-          max: GEO_POI_RATE_LIMIT_MAX,
-          timeWindow: GEO_POI_RATE_LIMIT_WINDOW
-        },
-      },
+      poiRouteOptions,
       async (request, reply) => {
         const query = request.query as any;
         const lat = Number(query.lat);
@@ -224,12 +205,17 @@ export function registerGeoRoutes(
             ];
 
         let userId: string|null = null;
+        let actorId: string|null = null;
         const hasAuth = typeof request.headers.authorization === 'string' &&
             request.headers.authorization.trim().length > 0;
         if (hasAuth) {
           try {
             await request.jwtVerify();
             userId = (request.user as {sub?: string})?.sub ?? null;
+            if (userId) {
+              const actor = await ensureGeoActor(prisma, userId);
+              actorId = actor.id;
+            }
           } catch (err) {
             request.log.debug({err}, 'geo pois optional auth failed');
           }
@@ -241,34 +227,23 @@ export function registerGeoRoutes(
         }
 
         const signature = poiSignature({lat, lng}, radiusM, kinds);
-        const now = new Date();
-
-        const cached = await db.geoPoiCache.findFirst(
-            {where: {signature, expiresAt: {gt: now}}});
+        const cached =
+            actorId ? await readGeoPoiCache(prisma, actorId, signature) : null;
         if (cached) {
-          const expiresAt = cached.expiresAt instanceof Date ?
-              cached.expiresAt :
-              new Date(cached.expiresAt);
-          await prisma.geoQueryCache.upsert({
-            where: {signature},
-            update: {
-              type: 'poi',
-              params: {lat, lng, radiusM, kinds},
-              payload: {pois: cached.pois},
-              count: cached.count,
-              expiresAt,
-              userId
-            },
-            create: {
-              type: 'poi',
+          const expiresAt = cached.expiresAt ?
+              new Date(cached.expiresAt) :
+              new Date(Date.now() + POI_TTL_MS);
+          if (actorId) {
+            await writeGeoQueryCache(prisma, actorId, {
               signature,
+              type: 'poi',
               params: {lat, lng, radiusM, kinds},
               payload: {pois: cached.pois},
               count: cached.count,
-              expiresAt,
-              userId
-            },
-          });
+              fetchedAt: cached.fetchedAt ?? new Date().toISOString(),
+              expiresAt: expiresAt.toISOString(),
+            });
+          }
           await persistUserGeoPrefs(userId, {
             center: {lat, lng},
             poi: {
@@ -300,48 +275,29 @@ export function registerGeoRoutes(
                 lng: feat.lon,
               }));
 
-          await db.geoPoiCache.upsert({
-            where: {signature},
-            update: {
-              pois,
-              count: pois.length,
-              expiresAt: new Date(Date.now() + POI_TTL_MS),
-              userId,
-            },
-            create: {
-              signature,
-              centerLat: new Prisma.Decimal(lat.toFixed(6)),
-              centerLng: new Prisma.Decimal(lng.toFixed(6)),
-              radiusM,
-              kinds: kinds.join(','),
-              pois,
-              count: pois.length,
-              expiresAt: new Date(Date.now() + POI_TTL_MS),
-              userId,
-            },
-          });
-
           const expiresAt = new Date(Date.now() + POI_TTL_MS);
-          await prisma.geoQueryCache.upsert({
-            where: {signature},
-            update: {
-              type: 'poi',
-              params: {lat, lng, radiusM, kinds},
-              payload: {pois},
-              count: pois.length,
-              expiresAt,
-              userId
-            },
-            create: {
-              type: 'poi',
+          if (actorId) {
+            await writeGeoPoiCache(prisma, actorId, {
               signature,
+              center: {lat, lng},
+              radiusM,
+              kinds,
+              pois,
+              count: pois.length,
+              fetchedAt: new Date().toISOString(),
+              expiresAt: expiresAt.toISOString(),
+            });
+
+            await writeGeoQueryCache(prisma, actorId, {
+              signature,
+              type: 'poi',
               params: {lat, lng, radiusM, kinds},
               payload: {pois},
               count: pois.length,
-              expiresAt,
-              userId
-            },
-          });
+              fetchedAt: new Date().toISOString(),
+              expiresAt: expiresAt.toISOString(),
+            });
+          }
 
           await persistUserGeoPrefs(userId, {
             center: {lat, lng},
@@ -364,8 +320,9 @@ export function registerGeoRoutes(
         } catch (err) {
           // Fall back to the most recent cache (even if expired) so the UI
           // degrades gracefully.
-          const stale = await db.geoPoiCache.findFirst(
-              {where: {signature}, orderBy: {expiresAt: 'desc'}});
+          const stale = actorId ?
+              await readGeoPoiCacheStale(prisma, actorId, signature) :
+              null;
           if (stale) {
             await recordTelemetry(request, {
               ...buildTelemetryBase(request),
@@ -394,63 +351,74 @@ export function registerGeoRoutes(
       {preHandler: [server.authenticate]},
       async (request, reply) => {
         const userId = (request.user as {sub: string}).sub;
+        const actor = await ensureGeoActor(prisma, userId);
+        const actorId = actor.id;
         const limitParam = Number((request.query as any)?.limit ?? 40);
         const take = Number.isFinite(limitParam) ?
             Math.min(Math.max(1, Math.trunc(limitParam)), 200) :
             40;
 
-        const rows = await prisma.geoViewHistory.findMany({
-          where: {userId},
-          orderBy: {lastViewedAt: 'desc'},
-          take,
-        });
+        const rows = await readGeoViewHistory(prisma, actorId, take);
 
         const allPoiIds = Array.from(new Set(rows.flatMap(
             (r) =>
                 (Array.isArray(r.lastPoiIds) ? (r.lastPoiIds as string[]) :
                                                []))));
-        const pois = allPoiIds.length ? await prisma.poi.findMany({
-          where: {id: {in : allPoiIds}},
+        const pois = allPoiIds.length ? await prisma.actor.findMany({
+          where: {
+            id: {in : allPoiIds},
+            type: ACTOR_TYPES.POINT_OF_INTEREST,
+          },
           select: {
             id: true,
-            name: true,
+            label: true,
             category: true,
-            latitude: true,
-            longitude: true
+            metadata: true,
           },
         }) :
                                         [];
         const poiMap = new Map(pois.map((p) => [p.id, p]));
 
-        return rows.map((row) => ({
-                          id: row.id,
-                          signature: row.signature,
-                          zoomBand: row.zoomBand,
-                          bbox: {
-                            minLat: Number(row.bboxMinLat),
-                            minLng: Number(row.bboxMinLng),
-                            maxLat: Number(row.bboxMaxLat),
-                            maxLng: Number(row.bboxMaxLng),
-                          },
-                          lastPoiIds: row.lastPoiIds ?? [],
-                          lastPoiCount: row.lastPoiCount ?? 0,
-                          pois: (Array.isArray(row.lastPoiIds) ?
-                                     (row.lastPoiIds as string[]) :
-                                     [])
-                                    .map((id) => poiMap.get(id))
-                                    .filter(Boolean)
-                                    .map((p) => ({
-                                           id: p!.id,
-                                           name: p!.name,
-                                           category: p!.category,
-                                           lat: Number(p!.latitude),
-                                           lng: Number(p!.longitude),
-                                         })),
-                          firstViewedAt: row.firstViewedAt,
-                          lastViewedAt: row.lastViewedAt,
-                          viewCount: row.viewCount,
-                          staleAfter: row.staleAfter,
-                        }));
+        return rows.map((row) => {
+          const bbox = row.bbox ?? {minLat: 0, minLng: 0, maxLat: 0, maxLng: 0};
+          return {
+            id: row.id,
+            signature: row.signature,
+            zoomBand: row.zoomBand,
+            bbox: {
+              minLat: Number(bbox.minLat),
+              minLng: Number(bbox.minLng),
+              maxLat: Number(bbox.maxLat),
+              maxLng: Number(bbox.maxLng),
+            },
+            lastPoiIds: row.lastPoiIds ?? [],
+            lastPoiCount: row.lastPoiCount ?? 0,
+            pois:
+                (Array.isArray(row.lastPoiIds) ? (row.lastPoiIds as string[]) :
+                                                 [])
+                    .map((id) => poiMap.get(id))
+                    .filter(Boolean)
+                    .map((p) => {
+                      const metadata = (p && typeof p.metadata === 'object' &&
+                                        !Array.isArray(p.metadata)) ?
+                          (p.metadata as Record<string, unknown>) :
+                          {} as Record<string, unknown>;
+                      const lat = Number(metadata.lat);
+                      const lng = Number(metadata.lng);
+                      return {
+                        id: p!.id,
+                        name: p!.label,
+                        category: p!.category ?? null,
+                        lat: Number.isFinite(lat) ? lat : 0,
+                        lng: Number.isFinite(lng) ? lng : 0,
+                      };
+                    }),
+            firstViewedAt: row.firstViewedAt,
+            lastViewedAt: row.lastViewedAt,
+            viewCount: row.viewCount,
+            staleAfter: row.staleAfter,
+          };
+        });
       },
   );
 
@@ -459,24 +427,22 @@ export function registerGeoRoutes(
       {preHandler: [server.authenticate]},
       async (request, reply) => {
         const userId = (request.user as {sub: string}).sub;
+        const actor = await ensureGeoActor(prisma, userId);
+        const actorId = actor.id;
         const now = new Date();
 
-        const pref = await prisma.userPreference.upsert({
-          where: {userId},
-          update: {},
-          create: {userId},
-        });
+        const pref = await readUserPreferencesByActor(prisma, actorId);
 
-        const view = pref.lastCenterLat && pref.lastCenterLng ? {
+        const view = pref.geo.center ? {
           center: {
-            lat: Number(pref.lastCenterLat),
-            lng: Number(pref.lastCenterLng)
+            lat: pref.geo.center.lat,
+            lng: pref.geo.center.lng,
           },
-          zoom: pref.lastZoom ?? null,
-          bearing: pref.lastBearing ?? null,
-          pitch: pref.lastPitch ?? null,
+          zoom: pref.geo.view?.zoom ?? null,
+          bearing: pref.geo.view?.bearing ?? null,
+          pitch: pref.geo.view?.pitch ?? null,
         } :
-                                                                null;
+                                       null;
 
         let poi: null|{
           signature: string;
@@ -489,34 +455,40 @@ export function registerGeoRoutes(
         }
         = null;
 
-        if (pref.lastPoiSignature) {
-          const kindsFromPref = pref.lastPoiKinds ?
-              pref.lastPoiKinds.split(',').filter(Boolean) :
-              [];
-          const geoQuery = await prisma.geoQueryCache.findUnique(
-              {where: {signature: pref.lastPoiSignature}});
-          const stillValid = geoQuery && geoQuery.expiresAt > now;
-          if (stillValid) {
+        const lastPoi = pref.geo.poi;
+        if (lastPoi?.signature) {
+          const kindsFromPref =
+              Array.isArray(lastPoi.kinds) ? lastPoi.kinds : [];
+          const geoQuery =
+              await readGeoQueryCache(prisma, actorId, lastPoi.signature);
+          const expiresAt =
+              geoQuery?.expiresAt ? new Date(geoQuery.expiresAt) : null;
+          const stillValid = expiresAt ? expiresAt > now : false;
+          if (geoQuery && stillValid) {
+            const fetchedAt = lastPoi.fetchedAt ? new Date(lastPoi.fetchedAt) :
+                                                  (expiresAt ?? now);
             poi = {
-              signature: pref.lastPoiSignature,
+              signature: lastPoi.signature,
               kinds: kindsFromPref,
-              radiusM: pref.lastPoiRadiusM ?? null,
-              count: pref.lastPoiCount ?? geoQuery.count ?? null,
+              radiusM: lastPoi.radiusM ?? null,
+              count: lastPoi.count ?? geoQuery.count ?? null,
               cached: true,
-              fetchedAt: pref.lastPoiFetchedAt ?? geoQuery.expiresAt,
+              fetchedAt,
               pois: (geoQuery.payload as any)?.pois ?? geoQuery.payload ?? null,
             };
           } else {
-            const poiCache = await prisma.geoPoiCache.findUnique(
-                {where: {signature: pref.lastPoiSignature}});
-            if (poiCache && poiCache.expiresAt > now) {
+            const poiCache =
+                await readGeoPoiCache(prisma, actorId, lastPoi.signature);
+            if (poiCache && poiCache.expiresAt &&
+                new Date(poiCache.expiresAt) > now) {
               poi = {
-                signature: pref.lastPoiSignature,
+                signature: lastPoi.signature,
                 kinds: kindsFromPref,
-                radiusM: pref.lastPoiRadiusM ?? null,
-                count: pref.lastPoiCount ?? poiCache.count ?? null,
+                radiusM: lastPoi.radiusM ?? null,
+                count: lastPoi.count ?? poiCache.count ?? null,
                 cached: true,
-                fetchedAt: pref.lastPoiFetchedAt ?? poiCache.expiresAt,
+                fetchedAt: lastPoi.fetchedAt ? new Date(lastPoi.fetchedAt) :
+                                               new Date(poiCache.expiresAt),
                 pois: poiCache.pois,
               };
             }
@@ -532,6 +504,8 @@ export function registerGeoRoutes(
       {preHandler: [server.authenticate]},
       async (request, reply) => {
         const userId = (request.user as {sub: string}).sub;
+        const actor = await ensureGeoActor(prisma, userId);
+        const actorId = actor.id;
         const body = request.body as {
           center?: {lat?: number; lng?: number};
           view?: {zoom?: number; bearing?: number; pitch?: number};
@@ -590,35 +564,19 @@ export function registerGeoRoutes(
         });
 
         if (poiSig && Array.isArray(body.poi?.pois) && poiExpiresAt) {
-          await prisma.geoQueryCache.upsert({
-            where: {signature: poiSig},
-            update: {
-              type: 'poi',
-              params: {
-                lat: centerLat ?? null,
-                lng: centerLng ?? null,
-                radiusM: poiRadiusM ?? null,
-                kinds: poiKinds
-              },
-              payload: {pois: body.poi?.pois},
-              count: poiCount ?? (body.poi?.pois?.length ?? null),
-              expiresAt: poiExpiresAt,
-              userId,
+          await writeGeoQueryCache(prisma, actorId, {
+            signature: poiSig,
+            type: 'poi',
+            params: {
+              lat: centerLat ?? null,
+              lng: centerLng ?? null,
+              radiusM: poiRadiusM ?? null,
+              kinds: poiKinds
             },
-            create: {
-              type: 'poi',
-              signature: poiSig,
-              params: {
-                lat: centerLat ?? null,
-                lng: centerLng ?? null,
-                radiusM: poiRadiusM ?? null,
-                kinds: poiKinds
-              },
-              payload: {pois: body.poi?.pois},
-              count: poiCount ?? (body.poi?.pois?.length ?? null),
-              expiresAt: poiExpiresAt,
-              userId,
-            },
+            payload: {pois: body.poi?.pois},
+            count: poiCount ?? (body.poi?.pois?.length ?? null),
+            fetchedAt: poiExpiresAt.toISOString(),
+            expiresAt: poiExpiresAt.toISOString(),
           });
         }
 
@@ -663,34 +621,36 @@ export function registerGeoRoutes(
             null;
 
         let userId: string|null = null;
+        let actorId: string|null = null;
         const hasAuth = typeof request.headers.authorization === 'string' &&
             request.headers.authorization.length > 0;
         if (hasAuth) {
           try {
             await request.jwtVerify();
             userId = (request.user as {sub?: string})?.sub ?? null;
+            if (userId) {
+              const actor = await ensureGeoActor(prisma, userId);
+              actorId = actor.id;
+            }
           } catch (err) {
             // ignore auth failures; status logging is allowed unauthenticated
           }
         }
 
         try {
-          await prisma.geoStatusLog.create({
-            data: {
-              userId,
-              status,
-              poiStatus: body?.poiStatus?.trim() || null,
-              centerLat: centerLat !== null ?
-                  new Prisma.Decimal(centerLat.toFixed(6)) :
-                  null,
-              centerLng: centerLng !== null ?
-                  new Prisma.Decimal(centerLng.toFixed(6)) :
-                  null,
-              error: body?.error?.slice(0, 512) || null,
-              userAgent:
-                  request.headers['user-agent']?.toString().slice(0, 512) ??
-                  null,
-            },
+          await logGeoStatus(prisma, actorId, {
+            userId,
+            status,
+            poiStatus: body?.poiStatus?.trim() || null,
+            centerLat: centerLat !== null ?
+                new Prisma.Decimal(centerLat.toFixed(6)) :
+                null,
+            centerLng: centerLng !== null ?
+                new Prisma.Decimal(centerLng.toFixed(6)) :
+                null,
+            error: body?.error?.slice(0, 512) || null,
+            userAgent:
+                request.headers['user-agent']?.toString().slice(0, 512) ?? null,
           });
 
           await recordTelemetry(request, {

@@ -1,19 +1,26 @@
-import {ActorType, Prisma, PrismaClient} from '@prisma/client';
+import {Prisma, PrismaClient} from '@prisma/client';
 import {type FastifyInstance} from 'fastify';
 import {randomBytes} from 'node:crypto';
 import {URLSearchParams} from 'node:url';
 
-import {deleteAgricultureActorWithEntities} from '../services/agriculture-actor';
-import {deleteBankActorWithEntities} from '../services/bank-actor';
-import {deleteCulinaryActorWithEntities} from '../services/culinary-ledger';
-import {deleteStaffingActorWithEntities} from '../services/staffing-actor';
-import {deleteWarehouseActorWithEntities} from '../services/warehouse-actor';
+import {deleteAgricultureActorWithEntities} from '../actors/Agriculture/Agriculture';
+import {deleteBankActorWithEntities} from '../actors/Bank/Bank';
+import {deleteFreightActorWithEntities} from '../actors/Freight/Freight';
+import {deleteStaffingActorWithEntities} from '../actors/Staffing/Staffing';
+import {getTelemetryActorSource} from '../actors/Telemetry/Telemetry';
+import {deleteWarehouseActorWithEntities} from '../actors/Warehouse/Warehouse';
+import {deleteProviderGrantsForUser, deleteRefreshTokensForUser, findRefreshTokenEntity, readProviderGrantsForUser, storeRefreshToken, upsertProviderGrant} from '../entities/Auth/Auth';
+import {deleteCulinaryActorWithEntities} from '../entities/Culinary/Culinary';
+import {ACTOR_TYPES, ENTITY_KINDS} from '../lib/actor-entity-constants';
+import {deleteUserPreferencesForUser} from '../services/user-preferences';
 
 import {withTelemetryBase} from './telemetry';
 import {type RecordTelemetryFn} from './types';
 
 const ACCOUNT_DELETE_PHRASE = 'Delete-My-K3H4-Data';
 const OAUTH_STATE_TTL_MS = 10 * 60 * 1000;
+const ActorType = ACTOR_TYPES;
+const EntityKind = ENTITY_KINDS;
 
 type DeleteJobStatus = {
   userId: string; status: 'queued' | 'running' | 'done' | 'error';
@@ -106,8 +113,7 @@ const createSessionTokens = async (
     email?: string) => {
   const refreshToken = randomBytes(48).toString('hex');
   const expiresAt = new Date(Date.now() + 1000 * 60 * 60 * 24 * 30);
-  await prisma.refreshToken.create(
-      {data: {token: refreshToken, userId, expiresAt}});
+  await storeRefreshToken(prisma, userId, refreshToken, expiresAt);
   const accessToken =
       server.jwt.sign({sub: userId, email: email ?? ''}, {expiresIn: '15m'});
   return {accessToken, refreshToken, expiresAt};
@@ -133,7 +139,21 @@ const runDeleteJob = async (
     const steps: Array<{key: string; action: () => Promise<unknown>}> = [
       {
         key: 'telemetry',
-        action: () => prisma.telemetryEvent.deleteMany({where: {userId}})
+        action: () => prisma.entity.deleteMany({
+          where: {
+            kind: EntityKind.TELEMETRY_EVENT,
+            actor: {source: getTelemetryActorSource(userId)},
+          },
+        })
+      },
+      {
+        key: 'telemetryActor',
+        action: () => prisma.actor.deleteMany({
+          where: {
+            type: ActorType.TELEMETRY,
+            source: getTelemetryActorSource(userId),
+          },
+        })
       },
       {
         key: 'bankLedger',
@@ -144,8 +164,8 @@ const runDeleteJob = async (
         action: () => deleteStaffingActorWithEntities(prisma, userId)
       },
       {
-        key: 'freightLoads',
-        action: () => prisma.freightLoad.deleteMany({where: {userId}})
+        key: 'freightLedger',
+        action: () => deleteFreightActorWithEntities(prisma, userId)
       },
       {
         key: 'warehouseItems',
@@ -167,11 +187,15 @@ const runDeleteJob = async (
       },
       {
         key: 'userPreferences',
-        action: () => prisma.userPreference.deleteMany({where: {userId}})
+        action: () => deleteUserPreferencesForUser(prisma, userId)
+      },
+      {
+        key: 'providerGrants',
+        action: () => deleteProviderGrantsForUser(prisma, userId)
       },
       {
         key: 'refreshTokens',
-        action: () => prisma.refreshToken.deleteMany({where: {userId}})
+        action: () => deleteRefreshTokensForUser(prisma, userId)
       },
       {key: 'user', action: () => prisma.user.delete({where: {id: userId}})},
     ];
@@ -341,20 +365,12 @@ export function registerAuthRoutes(
 
       // Persist provider grant so we can revoke on signout
       try {
-        await (prisma as any).providerGrant.upsert({
-          where: {provider_providerId: {provider: 'github', providerId}},
-          create: {
-            userId: user.id,
-            provider: 'github',
-            providerId,
-            accessToken: tokenData.access_token ?? '',
-            scope: (tokenData as any).scope ?? null,
-          },
-          update: {
-            accessToken: tokenData.access_token ?? '',
-            scope: (tokenData as any).scope ?? null,
-          },
-        });
+        const scope = typeof (tokenData as any).scope === 'string' ?
+            (tokenData as any).scope :
+            null;
+        await upsertProviderGrant(
+            prisma, user.id, 'github', providerId, tokenData.access_token ?? '',
+            scope, null);
       } catch (err) {
         request.log.warn({err}, 'persisting github grant failed');
       }
@@ -526,21 +542,9 @@ export function registerAuthRoutes(
       const maybeExpires = (tokenData as any).expires_in ?
           new Date(Date.now() + Number((tokenData as any).expires_in) * 1000) :
           undefined;
-      await (prisma as any).providerGrant.upsert({
-        where: {provider_providerId: {provider: 'linkedin', providerId}},
-        create: {
-          userId: user.id,
-          provider: 'linkedin',
-          providerId,
-          accessToken: tokenData.access_token ?? '',
-          scope: null,
-          expiresAt: maybeExpires ?? null,
-        },
-        update: {
-          accessToken: tokenData.access_token ?? '',
-          expiresAt: maybeExpires ?? null,
-        },
-      });
+      await upsertProviderGrant(
+          prisma, user.id, 'linkedin', providerId, tokenData.access_token ?? '',
+          null, maybeExpires ?? null);
     } catch (err) {
       request.log.warn({err}, 'persisting linkedin grant failed');
     }
@@ -568,8 +572,8 @@ export function registerAuthRoutes(
         preHandler: [server.authenticate],
       },
       async (request, reply) => {
+        const rt = withTelemetryBase(recordTelemetry, request);
         try {
-          const rt = withTelemetryBase(recordTelemetry, request);
           const userId = (request.user as {sub: string}).sub;
           const body = request.body as {confirmText?: string} | undefined;
 
@@ -660,9 +664,8 @@ export function registerAuthRoutes(
         const provided = body?.refreshToken ||
             (request.headers['x-refresh-token'] as string | undefined) || null;
         if (provided) {
-          const found =
-              await prisma.refreshToken.findUnique({where: {token: provided}});
-          if (found) userId = found.userId;
+          const found = await findRefreshTokenEntity(prisma, provided);
+          if (found?.actor?.userId) userId = found.actor.userId;
         }
       }
 
@@ -672,14 +675,21 @@ export function registerAuthRoutes(
       }
 
       // Find stored provider grants and attempt to revoke them at provider
-      const grants =
-          await (prisma as any).providerGrant.findMany({where: {userId}});
+      const grants = await readProviderGrantsForUser(prisma, userId);
       for (const g of grants) {
         try {
-          if (g.provider === 'github') {
+          const metadata = (g.metadata as Prisma.JsonObject | null) ??
+              ({} as Prisma.JsonObject);
+          const provider =
+              typeof metadata.provider === 'string' ? metadata.provider : null;
+          const accessToken = typeof metadata.accessToken === 'string' ?
+              metadata.accessToken :
+              null;
+          if (!provider || !accessToken) continue;
+          if (provider === 'github') {
             const clientId = process.env.GITHUB_CLIENT_ID;
             const clientSecret = process.env.GITHUB_CLIENT_SECRET;
-            if (clientId && clientSecret && g.accessToken) {
+            if (clientId && clientSecret) {
               const basic =
                   Buffer.from(`${clientId}:${clientSecret}`).toString('base64');
               // Best-effort revoke using GitHub Applications API
@@ -693,17 +703,17 @@ export function registerAuthRoutes(
                       Accept: 'application/vnd.github.v3+json',
                       'Content-Type': 'application/json',
                     },
-                    body: JSON.stringify({access_token: g.accessToken}),
+                    body: JSON.stringify({access_token: accessToken}),
                   })
                   .catch(() => null);
             }
           }
-          if (g.provider === 'linkedin') {
+          if (provider === 'linkedin') {
             const clientId = process.env.LINKEDIN_CLIENT_ID;
             const clientSecret = process.env.LINKEDIN_CLIENT_SECRET;
-            if (clientId && clientSecret && g.accessToken) {
+            if (clientId && clientSecret) {
               const params = new URLSearchParams();
-              params.set('token', g.accessToken);
+              params.set('token', accessToken);
               // LinkedIn revoke - best-effort
               await fetch('https://www.linkedin.com/oauth/v2/revoke', {
                 method: 'POST',
@@ -713,16 +723,15 @@ export function registerAuthRoutes(
             }
           }
         } catch (err) {
-          request.log.warn({err, grant: g}, 'revoke provider token failed');
+          request.log.warn(
+              {err, grant: g.metadata}, 'revoke provider token failed');
         }
       }
 
       // Remove provider grants and refresh tokens from DB to ensure server-side
       // session state cleared
-      await (prisma as any)
-          .providerGrant.deleteMany({where: {userId}})
-          .catch(() => null);
-      await prisma.refreshToken.deleteMany({where: {userId}});
+      await deleteProviderGrantsForUser(prisma, userId);
+      await deleteRefreshTokensForUser(prisma, userId);
 
       await rt({eventType: 'auth.signout', source: 'api', payload: {userId}});
       return {ok: true};

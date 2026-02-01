@@ -1,0 +1,27 @@
+/*
+  Warnings:
+
+  - You are about to drop the `ChatMessage` table. If the table is not empty, all the data it contains will be lost.
+  - You are about to drop the `ChatSession` table. If the table is not empty, all the data it contains will be lost.
+
+*/
+-- AlterEnum
+ALTER TYPE "ActorType" ADD VALUE 'chat-session';
+
+-- AlterEnum
+ALTER TYPE "EntityKind" ADD VALUE 'chat-message';
+
+-- DropForeignKey
+ALTER TABLE "ChatMessage" DROP CONSTRAINT "ChatMessage_sessionId_fkey";
+
+-- DropForeignKey
+ALTER TABLE "ChatSession" DROP CONSTRAINT "ChatSession_userId_fkey";
+
+-- DropForeignKey
+ALTER TABLE "OllamaOperation" DROP CONSTRAINT "OllamaOperation_sessionId_fkey";
+
+-- DropTable
+DROP TABLE "ChatMessage";
+
+-- DropTable
+DROP TABLE "ChatSession";

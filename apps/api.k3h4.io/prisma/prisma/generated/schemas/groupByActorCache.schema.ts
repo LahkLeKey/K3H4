@@ -1,0 +1,13 @@
+import type { Prisma } from '@prisma/client';
+import * as z from 'zod';
+import { ActorCacheWhereInputObjectSchema as ActorCacheWhereInputObjectSchema } from './objects/ActorCacheWhereInput.schema';
+import { ActorCacheOrderByWithAggregationInputObjectSchema as ActorCacheOrderByWithAggregationInputObjectSchema } from './objects/ActorCacheOrderByWithAggregationInput.schema';
+import { ActorCacheScalarWhereWithAggregatesInputObjectSchema as ActorCacheScalarWhereWithAggregatesInputObjectSchema } from './objects/ActorCacheScalarWhereWithAggregatesInput.schema';
+import { ActorCacheScalarFieldEnumSchema } from './enums/ActorCacheScalarFieldEnum.schema';
+import { ActorCacheCountAggregateInputObjectSchema as ActorCacheCountAggregateInputObjectSchema } from './objects/ActorCacheCountAggregateInput.schema';
+import { ActorCacheMinAggregateInputObjectSchema as ActorCacheMinAggregateInputObjectSchema } from './objects/ActorCacheMinAggregateInput.schema';
+import { ActorCacheMaxAggregateInputObjectSchema as ActorCacheMaxAggregateInputObjectSchema } from './objects/ActorCacheMaxAggregateInput.schema';
+
+export const ActorCacheGroupBySchema: z.ZodType<Prisma.ActorCacheGroupByArgs> = z.object({ where: ActorCacheWhereInputObjectSchema.optional(), orderBy: z.union([ActorCacheOrderByWithAggregationInputObjectSchema, ActorCacheOrderByWithAggregationInputObjectSchema.array()]).optional(), having: ActorCacheScalarWhereWithAggregatesInputObjectSchema.optional(), take: z.number().optional(), skip: z.number().optional(), by: z.array(ActorCacheScalarFieldEnumSchema), _count: z.union([ z.literal(true), ActorCacheCountAggregateInputObjectSchema ]).optional(), _min: ActorCacheMinAggregateInputObjectSchema.optional(), _max: ActorCacheMaxAggregateInputObjectSchema.optional() }).strict() as unknown as z.ZodType<Prisma.ActorCacheGroupByArgs>;
+
+export const ActorCacheGroupByZodSchema = z.object({ where: ActorCacheWhereInputObjectSchema.optional(), orderBy: z.union([ActorCacheOrderByWithAggregationInputObjectSchema, ActorCacheOrderByWithAggregationInputObjectSchema.array()]).optional(), having: ActorCacheScalarWhereWithAggregatesInputObjectSchema.optional(), take: z.number().optional(), skip: z.number().optional(), by: z.array(ActorCacheScalarFieldEnumSchema), _count: z.union([ z.literal(true), ActorCacheCountAggregateInputObjectSchema ]).optional(), _min: ActorCacheMinAggregateInputObjectSchema.optional(), _max: ActorCacheMaxAggregateInputObjectSchema.optional() }).strict();
