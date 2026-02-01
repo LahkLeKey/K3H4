@@ -4,6 +4,7 @@ import {type FastifyInstance} from 'fastify';
 import {ensureGeoActor, ensureGeoGlobalActor} from '../services/geo-actor';
 import {readGeoQueryCache, readGeoViewHistory} from '../services/geo-cache';
 import {enrichPoi} from '../services/poi-enrich/enrich';
+import {readUserPreferencesByActor} from '../services/user-preferences';
 
 import {withTelemetryBase} from './telemetry';
 import {type RecordTelemetryFn} from './types';
@@ -90,21 +91,16 @@ export function registerFrontendRoutes(
       };
     }
 
-    if (includePrefs && userId) {
-      const pref = await prisma.userPreference.upsert({
-        where: {userId},
-        update: {},
-        create: {userId},
-      });
-
-      const view = pref.lastCenterLat && pref.lastCenterLng ? {
-        center:
-            {lat: Number(pref.lastCenterLat), lng: Number(pref.lastCenterLng)},
-        zoom: pref.lastZoom ?? null,
-        bearing: pref.lastBearing ?? null,
-        pitch: pref.lastPitch ?? null,
+    if (includePrefs && actorId) {
+      const pref = await readUserPreferencesByActor(prisma, actorId);
+      const center = pref.geo.center;
+      const view = center ? {
+        center: {lat: center.lat, lng: center.lng},
+        zoom: pref.geo.view?.zoom ?? null,
+        bearing: pref.geo.view?.bearing ?? null,
+        pitch: pref.geo.view?.pitch ?? null,
       } :
-                                                              null;
+                            null;
 
       let poi: null|{
         signature: string;
@@ -117,23 +113,24 @@ export function registerFrontendRoutes(
       }
       = null;
 
-      if (pref.lastPoiSignature && actorId) {
-        const kindsFromPref = pref.lastPoiKinds ?
-            pref.lastPoiKinds.split(',').filter(Boolean) :
-            [];
+      const lastPoi = pref.geo.poi;
+      if (lastPoi?.signature) {
+        const kindsFromPref = Array.isArray(lastPoi.kinds) ? lastPoi.kinds : [];
         const geoQuery =
-            await readGeoQueryCache(prisma, actorId, pref.lastPoiSignature);
+            await readGeoQueryCache(prisma, actorId, lastPoi.signature);
         const expiresAt =
             geoQuery?.expiresAt ? new Date(geoQuery.expiresAt) : null;
         const stillValid = expiresAt ? expiresAt > now : false;
         if (geoQuery && stillValid) {
+          const fetchedAt =
+              lastPoi.fetchedAt ? new Date(lastPoi.fetchedAt) : expiresAt;
           poi = {
-            signature: pref.lastPoiSignature,
+            signature: lastPoi.signature,
             kinds: kindsFromPref,
-            radiusM: pref.lastPoiRadiusM ?? null,
-            count: geoQuery.count ?? null,
+            radiusM: lastPoi.radiusM ?? null,
+            count: geoQuery.count ?? lastPoi.count ?? null,
             cached: true,
-            fetchedAt: pref.lastPoiFetchedAt ?? expiresAt ?? null,
+            fetchedAt: fetchedAt ?? null,
             pois: (geoQuery.payload as any)?.pois ?? null,
           };
         }

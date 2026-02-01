@@ -3,6 +3,7 @@ import {type FastifyInstance, type FastifyReply, type FastifyRequest, type Route
 
 import {ensureGeoActor} from '../services/geo-actor';
 import {fetchMaptilerWithCache} from '../services/maptiler-cache';
+import {readUserPreferencesByActor, updateUserPreferencesByActor, type UserPreferencePatch} from '../services/user-preferences';
 
 import {buildTelemetryBase} from './telemetry';
 import {type RecordTelemetryFn} from './types';
@@ -95,21 +96,20 @@ export function registerMaptilerRoutes(
 
     const userId = (request.user as {sub?: string} | undefined)?.sub ?? null;
     let actorId: string|null = null;
+    let maptilerPrefs = null;
     if (userId) {
       const actor = await ensureGeoActor(prisma, userId);
       actorId = actor.id;
+      maptilerPrefs = await readUserPreferencesByActor(prisma, actorId);
     }
     const maxAgeMinutes = parseMaxAge(query);
 
     let params = pickParams(query);
-    if (userId) {
-      const pref = await prisma.userPreference.findUnique({where: {userId}});
-      if (pref) {
-        if (params.language === undefined && pref.maptilerLanguage)
-          params = {...params, language: pref.maptilerLanguage};
-        if (params.style === undefined && pref.maptilerStyle)
-          params = {...params, style: pref.maptilerStyle};
-      }
+    if (maptilerPrefs) {
+      if (params.language === undefined && maptilerPrefs.maptiler.language)
+        params = {...params, language: maptilerPrefs.maptiler.language};
+      if (params.style === undefined && maptilerPrefs.maptiler.style)
+        params = {...params, style: maptilerPrefs.maptiler.style};
     }
 
     const {cached, response, signature, kind} = await fetchMaptilerWithCache(
@@ -125,35 +125,24 @@ export function registerMaptilerRoutes(
       payload: {path, cached},
     });
 
-    if (userId) {
+    if (actorId) {
       const now = new Date();
-      const styleUpdate =
-          typeof params.style === 'string' ? {maptilerStyle: params.style} : {};
-      const languageUpdate = typeof params.language === 'string' ?
-          {maptilerLanguage: params.language} :
-          {};
-      await prisma.userPreference.upsert({
-        where: {userId},
-        create: {
-          userId,
-          maptilerLastPath: path,
-          maptilerLastParams: params ?? {},
-          maptilerLastKind: kind,
-          maptilerLastSignature: signature,
-          maptilerLastFetchedAt: now,
-          ...styleUpdate,
-          ...languageUpdate,
+      const patch: UserPreferencePatch = {
+        maptiler: {
+          last: {
+            path,
+            params,
+            kind,
+            signature,
+            fetchedAt: now.toISOString(),
+          },
         },
-        update: {
-          maptilerLastPath: path,
-          maptilerLastParams: params ?? {},
-          maptilerLastKind: kind,
-          maptilerLastSignature: signature,
-          maptilerLastFetchedAt: now,
-          ...styleUpdate,
-          ...languageUpdate,
-        },
-      });
+      };
+      if (typeof params.style === 'string')
+        patch.maptiler!.style = params.style;
+      if (typeof params.language === 'string')
+        patch.maptiler!.language = params.language;
+      await updateUserPreferencesByActor(prisma, actorId, patch);
     }
 
     if (!response.ok)

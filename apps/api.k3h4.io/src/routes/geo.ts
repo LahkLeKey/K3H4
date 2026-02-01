@@ -5,6 +5,7 @@ import {clampDecimals, routeSignature} from '../lib/geo-signature';
 import {enqueueOverpass} from '../lib/overpass-queue';
 import {ensureGeoActor} from '../services/geo-actor';
 import {logGeoStatus, readGeoPoiCache, readGeoPoiCacheStale, readGeoQueryCache, readGeoRouteCache, readGeoViewHistory, writeGeoPoiCache, writeGeoQueryCache, writeGeoRouteCache,} from '../services/geo-cache';
+import {readUserPreferencesByActor, updateUserPreferencesForUser, type UserPreferencePatch} from '../services/user-preferences';
 
 import {buildTelemetryBase} from './telemetry';
 import {type RecordTelemetryFn} from './types';
@@ -76,53 +77,40 @@ export function registerGeoRoutes(
     };
   }) => {
     if (!userId) return;
+    const geoPatch: NonNullable<UserPreferencePatch['geo']> = {};
+    let hasGeoPatch = false;
 
-    const existing = await prisma.userPreference.findUnique({where: {userId}});
-    const nextCenterLat = prefs.center?.lat ?? existing?.lastCenterLat ?? null;
-    const nextCenterLng = prefs.center?.lng ?? existing?.lastCenterLng ?? null;
-    const nextZoom = prefs.view?.zoom ?? existing?.lastZoom ?? null;
-    const nextBearing = prefs.view?.bearing ?? existing?.lastBearing ?? null;
-    const nextPitch = prefs.view?.pitch ?? existing?.lastPitch ?? null;
+    if (prefs.center !== undefined) {
+      geoPatch.center = prefs.center;
+      hasGeoPatch = true;
+    }
 
-    await prisma.userPreference.upsert({
-      where: {userId},
-      update: {
-        lastCenterLat: nextCenterLat !== null ?
-            new Prisma.Decimal(nextCenterLat.toFixed(6)) :
-            null,
-        lastCenterLng: nextCenterLng !== null ?
-            new Prisma.Decimal(nextCenterLng.toFixed(6)) :
-            null,
-        lastZoom: nextZoom,
-        lastBearing: nextBearing,
-        lastPitch: nextPitch,
-        lastPoiSignature:
-            prefs.poi?.signature ?? existing?.lastPoiSignature ?? null,
-        lastPoiKinds: prefs.poi ? prefs.poi.kinds.join(',') :
-                                  existing?.lastPoiKinds ?? null,
-        lastPoiRadiusM: prefs.poi?.radiusM ?? existing?.lastPoiRadiusM ?? null,
-        lastPoiCount: prefs.poi?.count ?? existing?.lastPoiCount ?? null,
-        lastPoiFetchedAt:
-            prefs.poi?.fetchedAt ?? existing?.lastPoiFetchedAt ?? null,
-      },
-      create: {
-        userId,
-        lastCenterLat: nextCenterLat !== null ?
-            new Prisma.Decimal(nextCenterLat.toFixed(6)) :
-            null,
-        lastCenterLng: nextCenterLng !== null ?
-            new Prisma.Decimal(nextCenterLng.toFixed(6)) :
-            null,
-        lastZoom: nextZoom,
-        lastBearing: nextBearing,
-        lastPitch: nextPitch,
-        lastPoiSignature: prefs.poi?.signature ?? null,
-        lastPoiKinds: prefs.poi ? prefs.poi.kinds.join(',') : null,
-        lastPoiRadiusM: prefs.poi?.radiusM ?? null,
-        lastPoiCount: prefs.poi?.count ?? null,
-        lastPoiFetchedAt: prefs.poi?.fetchedAt ?? null,
-      },
-    });
+    if (prefs.view !== undefined) {
+      const viewPatch: Record<string, number|null> = {};
+      if (prefs.view.zoom !== undefined) viewPatch.zoom = prefs.view.zoom;
+      if (prefs.view.bearing !== undefined)
+        viewPatch.bearing = prefs.view.bearing;
+      if (prefs.view.pitch !== undefined) viewPatch.pitch = prefs.view.pitch;
+      if (Object.keys(viewPatch).length) {
+        geoPatch.view =
+            viewPatch as NonNullable<UserPreferencePatch['geo']>['view'];
+        hasGeoPatch = true;
+      }
+    }
+
+    if (prefs.poi !== undefined) {
+      geoPatch.poi = {
+        signature: prefs.poi.signature,
+        kinds: prefs.poi.kinds,
+        radiusM: prefs.poi.radiusM,
+        count: prefs.poi.count,
+        fetchedAt: prefs.poi.fetchedAt.toISOString(),
+      };
+      hasGeoPatch = true;
+    }
+
+    if (!hasGeoPatch) return;
+    await updateUserPreferencesForUser(prisma, userId, {geo: geoPatch});
   };
   server.get(
       '/geo/route',
@@ -432,22 +420,18 @@ export function registerGeoRoutes(
         const actorId = actor.id;
         const now = new Date();
 
-        const pref = await prisma.userPreference.upsert({
-          where: {userId},
-          update: {},
-          create: {userId},
-        });
+        const pref = await readUserPreferencesByActor(prisma, actorId);
 
-        const view = pref.lastCenterLat && pref.lastCenterLng ? {
+        const view = pref.geo.center ? {
           center: {
-            lat: Number(pref.lastCenterLat),
-            lng: Number(pref.lastCenterLng)
+            lat: pref.geo.center.lat,
+            lng: pref.geo.center.lng,
           },
-          zoom: pref.lastZoom ?? null,
-          bearing: pref.lastBearing ?? null,
-          pitch: pref.lastPitch ?? null,
+          zoom: pref.geo.view?.zoom ?? null,
+          bearing: pref.geo.view?.bearing ?? null,
+          pitch: pref.geo.view?.pitch ?? null,
         } :
-                                                                null;
+                                       null;
 
         let poi: null|{
           signature: string;
@@ -460,38 +444,40 @@ export function registerGeoRoutes(
         }
         = null;
 
-        if (pref.lastPoiSignature) {
-          const kindsFromPref = pref.lastPoiKinds ?
-              pref.lastPoiKinds.split(',').filter(Boolean) :
-              [];
+        const lastPoi = pref.geo.poi;
+        if (lastPoi?.signature) {
+          const kindsFromPref =
+              Array.isArray(lastPoi.kinds) ? lastPoi.kinds : [];
           const geoQuery =
-              await readGeoQueryCache(prisma, actorId, pref.lastPoiSignature);
-          const stillValid = geoQuery && geoQuery.expiresAt &&
-              new Date(geoQuery.expiresAt) > now;
-          if (stillValid) {
+              await readGeoQueryCache(prisma, actorId, lastPoi.signature);
+          const expiresAt =
+              geoQuery?.expiresAt ? new Date(geoQuery.expiresAt) : null;
+          const stillValid = expiresAt ? expiresAt > now : false;
+          if (geoQuery && stillValid) {
+            const fetchedAt = lastPoi.fetchedAt ? new Date(lastPoi.fetchedAt) :
+                                                  (expiresAt ?? now);
             poi = {
-              signature: pref.lastPoiSignature,
+              signature: lastPoi.signature,
               kinds: kindsFromPref,
-              radiusM: pref.lastPoiRadiusM ?? null,
-              count: pref.lastPoiCount ?? geoQuery.count ?? null,
+              radiusM: lastPoi.radiusM ?? null,
+              count: lastPoi.count ?? geoQuery.count ?? null,
               cached: true,
-              fetchedAt: pref.lastPoiFetchedAt ??
-                  (geoQuery.expiresAt ? new Date(geoQuery.expiresAt) : now),
+              fetchedAt,
               pois: (geoQuery.payload as any)?.pois ?? geoQuery.payload ?? null,
             };
           } else {
             const poiCache =
-                await readGeoPoiCache(prisma, actorId, pref.lastPoiSignature);
+                await readGeoPoiCache(prisma, actorId, lastPoi.signature);
             if (poiCache && poiCache.expiresAt &&
                 new Date(poiCache.expiresAt) > now) {
               poi = {
-                signature: pref.lastPoiSignature,
+                signature: lastPoi.signature,
                 kinds: kindsFromPref,
-                radiusM: pref.lastPoiRadiusM ?? null,
-                count: pref.lastPoiCount ?? poiCache.count ?? null,
+                radiusM: lastPoi.radiusM ?? null,
+                count: lastPoi.count ?? poiCache.count ?? null,
                 cached: true,
-                fetchedAt:
-                    pref.lastPoiFetchedAt ?? new Date(poiCache.expiresAt),
+                fetchedAt: lastPoi.fetchedAt ? new Date(lastPoi.fetchedAt) :
+                                               new Date(poiCache.expiresAt),
                 pois: poiCache.pois,
               };
             }

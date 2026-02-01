@@ -4,6 +4,7 @@ import {Buffer} from 'node:buffer';
 
 import {ensureGeoActor} from '../services/geo-actor';
 import {fetchMaptilerCacheOnly, fetchMaptilerWithCache} from '../services/maptiler-cache';
+import {readUserPreferencesByActor} from '../services/user-preferences';
 
 import {withTelemetryBase} from './telemetry';
 import {type RecordTelemetryFn} from './types';
@@ -119,14 +120,12 @@ export function registerBatchRoutes(
 
         const userId =
             (request.user as {sub?: string} | undefined)?.sub ?? null;
-        const prefsPromise = userId ?
-            prisma.userPreference.findUnique({where: {userId}})
-                .catch(() => null) :
-            Promise.resolve(null);
         let actorId: string|null = null;
+        let maptilerPrefs = null;
         if (userId) {
           const actor = await ensureGeoActor(prisma, userId);
           actorId = actor.id;
+          maptilerPrefs = await readUserPreferencesByActor(prisma, actorId);
         }
 
         const results: Record<string, MaptilerResult> = {};
@@ -246,14 +245,12 @@ export function registerBatchRoutes(
                 coerceNumber(raw.maxAgeMinutes) ?? DEFAULT_MAX_AGE_MINUTES;
             let params = pickParams(raw.params);
 
-            if (userId) {
-              const pref = await prefsPromise;
-              if (pref) {
-                if (params.language === undefined && pref.maptilerLanguage)
-                  params = {...params, language: pref.maptilerLanguage};
-                if (params.style === undefined && pref.maptilerStyle)
-                  params = {...params, style: pref.maptilerStyle};
-              }
+            if (maptilerPrefs) {
+              if (params.language === undefined &&
+                  maptilerPrefs.maptiler.language)
+                params = {...params, language: maptilerPrefs.maptiler.language};
+              if (params.style === undefined && maptilerPrefs.maptiler.style)
+                params = {...params, style: maptilerPrefs.maptiler.style};
             }
 
             const cacheOnly = raw.cacheOnly === true;
