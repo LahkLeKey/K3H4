@@ -1,7 +1,7 @@
 import {type Prisma, type PrismaClient} from '@prisma/client';
 
-import {readActorCache, writeActorCache} from '../../services/actor-cache';
-import {CacheScope, ensureCacheActorId} from '../../services/cache-actor';
+import {readActorCache, writeActorCache} from '../actor-cache';
+import {CacheScope, ensureCacheActorId} from '../cache-actor';
 
 import type {EnrichedPoi} from './types';
 

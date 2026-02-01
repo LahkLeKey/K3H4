@@ -3,10 +3,10 @@ import {type FastifyInstance, type FastifyReply, type FastifyRequest} from 'fast
 import {createHash} from 'node:crypto';
 
 import {enqueueOverpass} from '../lib/overpass-queue';
-import {enrichPoi} from '../modules/poi-enrich/enrich';
 import {formatBuildingFromPayload, readBuildingCacheByOsm} from '../services/building-cache';
 import {ensureGeoActor, ensureGeoGlobalActor} from '../services/geo-actor';
 import {readGeoQueryCache, readGeoQueryCacheStale, readGeoViewEntry, readGeoViewHistory, writeGeoQueryCache, writeGeoViewEntry,} from '../services/geo-cache';
+import {enrichPoi} from '../services/poi-enrich/enrich';
 
 import {withTelemetryBase} from './telemetry';
 import {type RecordTelemetryFn} from './types';

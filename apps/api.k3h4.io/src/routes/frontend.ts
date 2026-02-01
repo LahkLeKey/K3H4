@@ -1,9 +1,9 @@
 import {type PrismaClient} from '@prisma/client';
 import {type FastifyInstance} from 'fastify';
 
-import {enrichPoi} from '../modules/poi-enrich/enrich';
 import {ensureGeoActor, ensureGeoGlobalActor} from '../services/geo-actor';
 import {readGeoQueryCache, readGeoViewHistory} from '../services/geo-cache';
+import {enrichPoi} from '../services/poi-enrich/enrich';
 
 import {withTelemetryBase} from './telemetry';
 import {type RecordTelemetryFn} from './types';
