@@ -1,4 +1,4 @@
-import '../../test/vitest-setup.ts';
+import '../../test/vitest-setup';
 
 import Fastify from 'fastify';
 import {beforeEach, describe, expect, it, vi} from 'vitest';
@@ -13,7 +13,9 @@ vi.mock('../../services/usda-cache', () => {
   };
 });
 
-const recordTelemetry = vi.fn() as unknown as RecordTelemetryFn;
+const recordTelemetry = vi.fn() as unknown as RecordTelemetryFn & {
+  mockClear: () => void;
+};
 const userId = 'user-1';
 
 const buildServer = () => {
