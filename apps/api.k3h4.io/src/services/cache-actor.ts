@@ -1,0 +1,51 @@
+import {ActorType, PrismaClient} from '@prisma/client';
+
+export type CacheScope = 'wikidata'|'enrichment';
+
+const SCOPES: Record < CacheScope, {
+  type: ActorType;
+  label: string;
+  source: string;
+  note: string|null;
+}
+> = {
+  wikidata: {
+    type: ActorType.WIKIDATA_CACHE,
+    label: 'Wikidata Cache',
+    source: 'wikidata-cache',
+    note: 'Actor that owns shared Wikidata responses',
+  },
+  enrichment: {
+    type: ActorType.ENRICHMENT_CACHE,
+    label: 'Enrichment Cache',
+    source: 'enrichment-cache',
+    note: 'Actor that owns enrichment cache hits',
+  },
+};
+
+const cachedActors: Partial<Record<CacheScope, string>> = {};
+
+export async function ensureCacheActor(
+    prisma: PrismaClient, scope: CacheScope) {
+  const definition = SCOPES[scope];
+  const existing = await prisma.actor.findFirst({
+    where: {userId: null, type: definition.type, source: definition.source},
+  });
+  if (existing) return existing;
+  return prisma.actor.create({
+    data: {
+      type: definition.type,
+      label: definition.label,
+      source: definition.source,
+      note: definition.note,
+    },
+  });
+}
+
+export async function ensureCacheActorId(
+    prisma: PrismaClient, scope: CacheScope) {
+  if (cachedActors[scope]) return cachedActors[scope] as string;
+  const actor = await ensureCacheActor(prisma, scope);
+  cachedActors[scope] = actor.id;
+  return actor.id;
+}

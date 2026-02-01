@@ -53,6 +53,8 @@ enum ActorType {
   POINT_OF_SALE_STORE          @map("point-of-sale-store")
   GEO                          @map("geo")
   FREIGHT                      @map("freight")
+  WIKIDATA_CACHE               @map("wikidata-cache")
+  ENRICHMENT_CACHE             @map("enrichment-cache")
 }
 
 enum EntityDirection {
@@ -184,7 +186,6 @@ model ProviderGrant {
   @@unique([provider, providerId])
 }
 
-// Aggregated driving directives sourced from OSRM, Nominatim, Overpass, etc.
 model PointOfInterest {
   id         String   @id @default(cuid())
   osmType    String   @default("node")
@@ -204,8 +205,6 @@ model PointOfInterest {
   @@index([category])
 }
 
-// MapTiler Cloud API queries and caches
-// Composite POI enrichment cache (assembled response by include hash)
 model PoiEnrichmentCache {
   id          String // format: "node/123456"
   includeHash String
@@ -281,44 +280,6 @@ model ApiCacheEntry {
 
   @@unique([provider, scope, endpoint, paramsHash])
   @@index([provider, scope, endpoint])
-}
-
-model WikidataCacheEntry {
-  id                  String    @id @default(cuid())
-  resource            String
-  endpoint            String
-  params              Json?
-  paramsHash          String
-  url                 String
-  statusCode          Int
-  payload             Json?
-  fetchedAt           DateTime  @default(now())
-  expiresAt           DateTime?
-  cacheControlSeconds Int?
-  etag                String?
-  createdAt           DateTime  @default(now())
-  updatedAt           DateTime  @updatedAt
-
-  @@unique([resource, endpoint, paramsHash])
-  @@index([resource, fetchedAt])
-}
-
-model EnrichmentCache {
-  id         String    @id @default(cuid())
-  provider   String    @default("wikidata")
-  namespace  String // e.g., "usda" or domain-specific namespace
-  kind       String // e.g., "region", "unit", "commodity"
-  sourceKey  String // upstream identifier/code for the entity
-  paramsHash String?
-  wikidataId String?
-  payload    Json?
-  status     String? // success, error, skipped
-  fetchedAt  DateTime  @default(now())
-  expiresAt  DateTime?
-  note       String?
-
-  @@unique([provider, namespace, kind, sourceKey])
-  @@index([provider, fetchedAt])
 }
 
 model ChatSession {
