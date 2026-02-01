@@ -19,6 +19,10 @@ const ROUTE_PREFIX: Record<string, string> = {
   auth: '/user',
   profile: '/user',
   actorentity: '',
+  frontend: '',
+  maptiler: '',
+  geo: '',
+  poi: '',
 };
 
 const isRouteFile = (name: string) => {
