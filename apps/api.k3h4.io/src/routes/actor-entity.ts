@@ -310,19 +310,19 @@ export function registerActorEntityRoutes(
                    source: z.string().nullable().optional(),
                    metadata: z.unknown().optional(),
                    category: z.string().nullable().optional(),
-                   lastSeenAt: z.union([z.string().min(1), z.date()])
+                   lastSeenAt: z.string()
+                                   .min(1)
+                                   .describe('ISO date-time')
                                    .nullable()
                                    .optional(),
                  }).strict(),
                 'ActorUpdateBody'),
-            response:
-                {
-                  200:
-                      toJsonSchema(
-                          z.object({actor: actorSchema}).strict(),
-                          'ActorUpdateResponse'),
-                  ...StandardErrorResponses,
-                },
+            response: {
+              200: toJsonSchema(
+                  z.object({actor: actorSchema}).strict(),
+                  'ActorUpdateResponse'),
+              ...StandardErrorResponses,
+            },
           },
         },
         async (request, reply) => {

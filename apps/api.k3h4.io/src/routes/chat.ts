@@ -94,11 +94,11 @@ const chatListSchema = {
   response: {
     200: withExamples(
         toJsonSchema(
-            z.union([
-              z.object({sessions: z.array(SessionSummarySchema)}).strict(),
-              z.object({models: z.array(z.string().min(1))}).strict(),
-              z.object({operations: z.array(z.unknown())}).strict(),
-            ]),
+            z.object({
+               sessions: z.array(SessionSummarySchema).optional(),
+               models: z.array(z.string().min(1)).optional(),
+               operations: z.array(z.unknown()).optional(),
+             }).strict(),
             'ChatResourceListResponse'),
         [{
           sessions: [{
