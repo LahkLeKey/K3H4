@@ -8,7 +8,7 @@ export type EnrichmentCacheKey = {
 };
 
 export type EnrichmentCacheEntry = {
-  payload: Prisma.JsonValue|Prisma.JsonNull|null; wikidataId: string | null;
+  payload: Prisma.JsonValue|typeof Prisma.JsonNull|null; wikidataId: string | null;
   status: string | null;
   fetchedAt: string | null;
   note?: string | null;
@@ -41,5 +41,5 @@ export async function writeEnrichmentCache(
     ttlMs?: number|null,
 ) {
   const actorId = await ensureCacheActorId(prisma, CACHE_SCOPE);
-  await writeActorCache(prisma, actorId, buildCacheKey(key), payload, ttlMs);
+  await writeActorCache(prisma, actorId, buildCacheKey(key), payload as Prisma.JsonValue, ttlMs);
 }
