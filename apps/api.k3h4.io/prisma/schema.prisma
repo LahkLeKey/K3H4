@@ -58,6 +58,7 @@ enum ActorType {
   ENRICHMENT_CACHE             @map("enrichment-cache")
   AI_INSIGHT                   @map("ai-insight")
   AI_OPERATION                 @map("ai-operation")
+  CHAT_SESSION                 @map("chat-session")
   AUTH_REFRESH_TOKEN           @map("auth_refresh_token")
   AUTH_PROVIDER_GRANT          @map("auth_provider_grant")
 }
@@ -75,7 +76,8 @@ enum EntityKind {
   FREIGHT_PAYMENT                @map("freight_payment")
   FREIGHT_LOAD                   @map("freight_load")
   AI_INSIGHT                     @map("ai_insight")
-  OLLAMA_OPERATION               @map("ollama-operation")
+  CHAT_MESSAGE                   @map("chat-message")
+  OLLAMA_OPERATION               @map("ollama_operation")
   ARCADE_TOPUP                   @map("arcade_topup")
   ARCADE_SESSION                 @map("arcade_session")
   ARCADE_PRIZE_REDEMPTION        @map("arcade_prize_redemption")
@@ -143,7 +145,6 @@ model User {
   createdAt       DateTime         @default(now())
   updatedAt       DateTime         @updatedAt
   telemetry       TelemetryEvent[]
-  chatSessions    ChatSession[]
   actors          Actor[]
 
   @@unique([provider, providerId])
@@ -202,35 +203,6 @@ model ApiCacheEntry {
 
   @@unique([provider, scope, endpoint, paramsHash])
   @@index([provider, scope, endpoint])
-}
-
-model ChatSession {
-  id           String   @id @default(cuid())
-  userId       String
-  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  title        String?
-  systemPrompt String?
-  model        String?
-  temperature  Float?
-  metadata     Json?
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-
-  messages ChatMessage[]
-
-  @@index([userId, updatedAt])
-}
-
-model ChatMessage {
-  id        String      @id @default(cuid())
-  sessionId String
-  session   ChatSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
-  role      ChatRole
-  content   String
-  metadata  Json?
-  createdAt DateTime    @default(now())
-
-  @@index([sessionId, createdAt])
 }
 
 model Actor {

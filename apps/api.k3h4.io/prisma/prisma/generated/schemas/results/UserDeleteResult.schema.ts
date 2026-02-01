@@ -10,6 +10,5 @@ export const UserDeleteResultSchema = z.nullable(z.object({
   createdAt: z.date(),
   updatedAt: z.date(),
   telemetry: z.array(z.unknown()),
-  chatSessions: z.array(z.unknown()),
   actors: z.array(z.unknown())
 }));

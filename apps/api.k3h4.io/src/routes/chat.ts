@@ -1,46 +1,14 @@
-import {ChatRole, PrismaClient} from '@prisma/client';
-import {type FastifyInstance, type FastifyReply, type FastifyRequest} from 'fastify';
+import {ActorType, ChatRole, Entity, EntityKind, Prisma, PrismaClient,} from '@prisma/client';
+import {type FastifyInstance} from 'fastify';
 
 import {recordOllamaOperation} from './ollama-operations';
 import {withTelemetryBase} from './telemetry';
-import {type RecordTelemetryFn} from './types';
+import type {RecordTelemetryFn} from './types';
 
-type ChatSessionRow = {
-  id: string; title: string | null; systemPrompt: string | null;
-  model: string | null;
-  temperature: number | null;
-  metadata: unknown | null;
-  createdAt: Date;
-  updatedAt: Date;
-  _count: {messages: number};
-  messages: Array<{role: ChatRole; content: string; createdAt: Date}>;
-};
-
-type ChatSessionSummary = {
-  id: string; title: string | null; systemPrompt: string | null; model: string;
-  temperature: number | null;
-  metadata: unknown | null;
-  createdAt: string;
-  updatedAt: string;
-  messageCount: number;
-  lastMessage: {role: ChatRole; content: string; createdAt: string} | null;
-};
-
-type ChatMessageBody = {
-  message?: string;
-  systemPrompt?: string | null;
-  model?: string | null;
-  temperature?: number | null;
-  metadata?: unknown | null;
-};
-
-type SessionCreateBody = {
-  title?: string|null;
-  systemPrompt?: string | null;
-  model?: string | null;
-  temperature?: number | null;
-};
-
+const CHAT_ACTOR_LABEL = 'Chat Session';
+const CHAT_ACTOR_SOURCE = 'k3h4-chat';
+const CHAT_MESSAGE_SOURCE = 'k3h4-chat';
+const CHAT_SESSION_ACTOR_TYPE = ActorType.CHAT_SESSION;
 const CHAT_HISTORY_LIMIT =
     clampNumber(Number(process.env.OLLAMA_CHAT_HISTORY_LIMIT ?? 32), 32, 8, 64);
 const DEFAULT_MODEL = 'llama3.2:1b';
@@ -48,7 +16,31 @@ const DEFAULT_TEMPERATURE =
     clampFloat(Number(process.env.OLLAMA_CHAT_TEMPERATURE ?? NaN), 0.2, 0, 1);
 const OLLAMA_BASE_URL = resolveOllamaBaseUrl();
 const OLLAMA_CHAT_URL = `${OLLAMA_BASE_URL}/api/chat`;
-const OLLAMA_MODELS_URL = `${OLLAMA_BASE_URL}/api/models`;
+type SessionMetadataRecord = {
+  title: string|null; systemPrompt: string | null; model: string | null;
+  temperature: number | null;
+  metadata: unknown | null;
+};
+
+type SessionMetadataPatch = Partial<SessionMetadataRecord>;
+
+type ChatMessageResponse = {
+  id: string; role: ChatRole; content: string; metadata: unknown | null;
+  createdAt: string;
+};
+
+type ChatHistoryEntry = {
+  role: ChatRole; content: string; createdAt: Date;
+};
+
+const operationsListSchema = {
+  querystring: {
+    type: 'object',
+    properties: {
+      limit: {type: 'number', minimum: 1, maximum: 100},
+    },
+  },
+};
 
 export function registerChatRoutes(
     server: FastifyInstance, prisma: PrismaClient,
@@ -66,33 +58,44 @@ export function registerChatRoutes(
                                               Number(query.limit ?? NaN),
             16, 5, 50);
         const userId = (request.user as {sub: string}).sub;
-        const sessions = await prisma.chatSession.findMany({
-          where: {userId},
+        const actors = await prisma.actor.findMany({
+          where: {userId, type: CHAT_SESSION_ACTOR_TYPE},
           orderBy: {updatedAt: 'desc'},
           take: limit,
-          select: {
-            id: true,
-            title: true,
-            systemPrompt: true,
-            model: true,
-            temperature: true,
-            metadata: true,
-            createdAt: true,
-            updatedAt: true,
-            _count: {select: {messages: true}},
-            messages: {
-              take: 1,
-              orderBy: {createdAt: 'desc'},
-              select: {role: true, content: true, createdAt: true}
-            },
-          },
+          select: {id: true, metadata: true, createdAt: true, updatedAt: true},
         });
+        const actorIds = actors.map((actor) => actor.id);
+        const countRecords = actorIds.length ? await prisma.entity.groupBy({
+          by: ['actorId'],
+          where: {
+            actorId: {in : actorIds},
+            kind: EntityKind.CHAT_MESSAGE,
+          },
+          _count: {_all: true},
+        }) :
+                                               [];
+        const countMap = new Map(
+            countRecords.map((row) => [row.actorId, row._count._all ?? 0]));
+        const lastMessageMap = new Map<string, ChatHistoryEntry|null>();
+        await Promise.all(actorIds.map(async (actorId) => {
+          const entity = await prisma.entity.findFirst({
+            where: {actorId, kind: EntityKind.CHAT_MESSAGE},
+            orderBy: {createdAt: 'desc'},
+            select: {id: true, metadata: true, createdAt: true},
+          });
+          lastMessageMap.set(
+              actorId, entity ? entityToHistoryEntry(entity) : null);
+        }));
         await telemetry({
           eventType: 'chat.sessions.list',
           source: 'chat',
-          payload: {count: sessions.length, limit},
+          payload: {count: actors.length, limit},
         });
-        return {sessions: sessions.map(mapSessionSummary)};
+        return {
+          sessions: actors.map(
+              (actor) =>
+                  mapActorToSessionSummary(actor, countMap, lastMessageMap)),
+        };
       },
   );
 
@@ -116,50 +119,43 @@ export function registerChatRoutes(
       {preHandler: [authenticate]},
       async (request) => {
         const telemetry = withTelemetryBase(recordTelemetry, request);
-        const body = request.body as SessionCreateBody | undefined;
+        const body = request.body as {
+          title?: string|null;
+          systemPrompt?: string|null;
+          model?: string|null;
+          temperature?: number|null;
+        }
+        |undefined;
         const userId = (request.user as {sub: string}).sub;
-        const rawTitle = body?.title;
-        const sanitizedTitle =
-            typeof rawTitle === 'string' && rawTitle.trim().length ?
-            rawTitle.trim() :
-            null;
-        const rawPrompt = body?.systemPrompt;
-        const sanitizedPrompt =
-            typeof rawPrompt === 'string' && rawPrompt.trim().length ?
-            rawPrompt.trim() :
-            null;
+        const sanitizedTitle = safeTrim(body?.title);
+        const sanitizedPrompt = safeTrim(body?.systemPrompt);
         const modelOverride = normalizeModel(body?.model);
-        const rawTemperature = body?.temperature;
-        const temperatureOverride = typeof rawTemperature === 'number' ?
-            clampFloat(rawTemperature, DEFAULT_TEMPERATURE) :
+        const temperatureOverride = typeof body?.temperature === 'number' ?
+            clampFloat(body.temperature, DEFAULT_TEMPERATURE) :
             null;
-        const session = await prisma.chatSession.create({
+        const actor = await prisma.actor.create({
           data: {
             userId,
-            title: sanitizedTitle,
-            systemPrompt: sanitizedPrompt,
-            model: modelOverride,
-            temperature: temperatureOverride ?? undefined,
+            type: CHAT_SESSION_ACTOR_TYPE,
+            label: sanitizedTitle ?? CHAT_ACTOR_LABEL,
+            source: CHAT_ACTOR_SOURCE,
+            metadata: buildSessionMetadata({
+              title: sanitizedTitle,
+              systemPrompt: sanitizedPrompt,
+              model: modelOverride,
+              temperature: temperatureOverride,
+              metadata: null,
+            }),
           },
         });
         await telemetry({
           eventType: 'chat.session.create',
           source: 'chat',
-          payload: {sessionId: session.id, hasPrompt: Boolean(sanitizedPrompt)},
+          payload: {sessionId: actor.id, hasPrompt: Boolean(sanitizedPrompt)},
         });
-        const summary = mapSessionSummary({
-          id: session.id,
-          title: session.title,
-          systemPrompt: session.systemPrompt,
-          model: session.model,
-          temperature: session.temperature,
-          metadata: null,
-          createdAt: session.createdAt,
-          updatedAt: session.updatedAt,
-          _count: {messages: 0},
-          messages: [],
-        });
-        return {session: summary};
+        return {
+          session: mapActorToSessionSummary(actor, new Map(), new Map()),
+        };
       },
   );
 
@@ -170,21 +166,11 @@ export function registerChatRoutes(
         const telemetry = withTelemetryBase(recordTelemetry, request);
         const params = request.params as {sessionId: string};
         const userId = (request.user as {sub: string}).sub;
-        const session = await prisma.chatSession.findUnique({
-          where: {id: params.sessionId},
-          select: {
-            id: true,
-            userId: true,
-            title: true,
-            systemPrompt: true,
-            model: true,
-            temperature: true,
-            metadata: true,
-            createdAt: true,
-            updatedAt: true,
-          },
+        const actor = await prisma.actor.findFirst({
+          where: {id: params.sessionId, userId, type: CHAT_SESSION_ACTOR_TYPE},
+          select: {id: true, metadata: true, createdAt: true, updatedAt: true},
         });
-        if (!session || session.userId !== userId) {
+        if (!actor) {
           return reply.status(404).send({error: 'Session not found'});
         }
         const query = request.query as {limit?: string | number | null};
@@ -192,43 +178,32 @@ export function registerChatRoutes(
             typeof query.limit === 'number' ? query.limit :
                                               Number(query.limit ?? NaN),
             200, 1, 500);
-        const rawMessages = await prisma.chatMessage.findMany({
-          where: {sessionId: session.id},
+        const rawMessages = await prisma.entity.findMany({
+          where: {actorId: actor.id, kind: EntityKind.CHAT_MESSAGE},
           orderBy: {createdAt: 'desc'},
           take: limit,
-          select: {
-            id: true,
-            role: true,
-            content: true,
-            metadata: true,
-            createdAt: true
-          },
+          select: {id: true, metadata: true, createdAt: true},
         });
+        const ordered = rawMessages.reverse().map(
+            (entity) => mapEntityToChatMessage(entity));
         await telemetry({
           eventType: 'chat.messages.list',
           source: 'chat',
-          payload: {sessionId: session.id, limit, fetched: rawMessages.length},
+          payload: {sessionId: actor.id, limit, fetched: ordered.length},
         });
-        const ordered =
-            rawMessages.reverse().map((msg) => ({
-                                        id: msg.id,
-                                        role: msg.role,
-                                        content: msg.content,
-                                        metadata: msg.metadata ?? null,
-                                        createdAt: msg.createdAt.toISOString(),
-                                      }));
+        const metadata = getSessionMetadata(actor.metadata);
         return {
           session: {
-            id: session.id,
-            title: session.title,
-            systemPrompt: session.systemPrompt,
-            model: session.model ?? DEFAULT_MODEL,
-            temperature: session.temperature,
-            metadata: session.metadata ?? null,
-            createdAt: session.createdAt.toISOString(),
-            updatedAt: session.updatedAt.toISOString(),
+            id: actor.id,
+            title: metadata.title,
+            systemPrompt: metadata.systemPrompt,
+            model: metadata.model ?? DEFAULT_MODEL,
+            temperature: metadata.temperature,
+            metadata: metadata.metadata,
+            createdAt: actor.createdAt.toISOString(),
+            updatedAt: actor.updatedAt.toISOString(),
             messageCount: ordered.length,
-            lastMessage: ordered[ordered.length - 1] ?? null,
+            lastMessage: ordered.length ? ordered[ordered.length - 1] : null,
           },
           messages: ordered,
         };
@@ -241,67 +216,76 @@ export function registerChatRoutes(
       async (request, reply) => {
         const telemetry = withTelemetryBase(recordTelemetry, request);
         const params = request.params as {sessionId: string};
-        const body = request.body as ChatMessageBody | undefined;
+        const body = request.body as {
+          message?: string;
+          systemPrompt?: string|null;
+          model?: string|null;
+          temperature?: number|null;
+          metadata?: unknown|null;
+        }
+        |undefined;
         const userId = (request.user as {sub: string}).sub;
         const text =
             typeof body?.message === 'string' ? body.message.trim() : '';
         if (!text) {
           return reply.status(400).send({error: 'Message is required'});
         }
-        const session = await prisma.chatSession.findUnique({
-          where: {id: params.sessionId},
+        const actor = await prisma.actor.findFirst({
+          where: {id: params.sessionId, userId, type: CHAT_SESSION_ACTOR_TYPE},
           select: {
             id: true,
-            userId: true,
-            title: true,
-            systemPrompt: true,
-            model: true,
-            temperature: true,
             metadata: true,
             createdAt: true,
             updatedAt: true,
           },
         });
-        if (!session || session.userId !== userId) {
+        if (!actor) {
           return reply.status(404).send({error: 'Session not found'});
         }
-        const model = normalizeModel(body?.model ?? session.model);
+        const metadataRecord = getSessionMetadata(actor.metadata);
+        const model = normalizeModel(body?.model ?? metadataRecord.model);
         const temperature = clampFloat(
-            body?.temperature ?? session.temperature ?? DEFAULT_TEMPERATURE,
+            body?.temperature ?? metadataRecord.temperature ??
+                DEFAULT_TEMPERATURE,
             DEFAULT_TEMPERATURE, 0, 1);
         const sanitizedSystemPrompt = typeof body?.systemPrompt === 'string' &&
                 body.systemPrompt.trim().length ?
             body.systemPrompt.trim() :
             null;
-        const history = await prisma.chatMessage.findMany({
-          where: {sessionId: session.id},
+        const historyEntities = await prisma.entity.findMany({
+          where: {actorId: actor.id, kind: EntityKind.CHAT_MESSAGE},
           orderBy: {createdAt: 'desc'},
           take: CHAT_HISTORY_LIMIT,
-          select: {role: true, content: true, createdAt: true},
+          select: {id: true, metadata: true, createdAt: true},
         });
-        const userMessage = await prisma.chatMessage.create({
+        const userMessageEntity = await prisma.entity.create({
           data: {
-            sessionId: session.id,
-            role: ChatRole.USER,
-            content: text,
-            metadata: body?.metadata ?? undefined,
+            actorId: actor.id,
+            kind: EntityKind.CHAT_MESSAGE,
+            source: CHAT_MESSAGE_SOURCE,
+            metadata: buildMessageMetadata({
+              role: ChatRole.USER,
+              content: text,
+              metadata: body?.metadata ?? null,
+            }),
           },
         });
-        const combined = [
+        const combinedHistory = [
           {
             role: ChatRole.USER,
             content: text,
-            createdAt: userMessage.createdAt
+            createdAt: userMessageEntity.createdAt
           },
-          ...history
+          ...historyEntities.map((entity) => entityToHistoryEntry(entity)),
         ];
-        const conversation = combined.slice(0, CHAT_HISTORY_LIMIT)
+        const conversation = combinedHistory.slice(0, CHAT_HISTORY_LIMIT)
                                  .reverse()
                                  .map((entry) => ({
                                         role: toOllamaRole(entry.role),
-                                        content: entry.content
+                                        content: entry.content,
                                       }));
-        const systemPromptEntry = sanitizedSystemPrompt ?? session.systemPrompt;
+        const systemPromptEntry =
+            sanitizedSystemPrompt ?? metadataRecord.systemPrompt;
         const messagesForOllama = [
           ...(systemPromptEntry ?
                   [{role: 'system', content: systemPromptEntry}] :
@@ -318,6 +302,7 @@ export function registerChatRoutes(
         let statusCode: number|null = null;
         let errorMessage: string|null = null;
         let success = false;
+        let assistantMessageEntity: Entity|null = null;
         try {
           const response = await fetch(OLLAMA_CHAT_URL, {
             method: 'POST',
@@ -332,58 +317,70 @@ export function registerChatRoutes(
             throw new Error(errorMessage);
           }
           const assistantContent = extractAssistantContent(responseBody);
-          const assistantMessage = await prisma.chatMessage.create({
+          assistantMessageEntity = await prisma.entity.create({
             data: {
-              sessionId: session.id,
-              role: ChatRole.ASSISTANT,
-              content: assistantContent,
+              actorId: actor.id,
+              kind: EntityKind.CHAT_MESSAGE,
+              source: CHAT_MESSAGE_SOURCE,
+              metadata: buildMessageMetadata({
+                role: ChatRole.ASSISTANT,
+                content: assistantContent,
+              }),
             },
           });
-          const nextTitle = session.title ?? deriveSessionTitle(text);
-          const updatedSession = await prisma.chatSession.update({
-            where: {id: session.id},
+          const nextTitle = metadataRecord.title ?? deriveSessionTitle(text);
+          const metadataPatch: SessionMetadataPatch = {
+            model,
+            temperature,
+          };
+          if (!metadataRecord.title) {
+            metadataPatch.title = nextTitle;
+          }
+          if (sanitizedSystemPrompt !== null) {
+            metadataPatch.systemPrompt = sanitizedSystemPrompt;
+          }
+          const updatedActor = await prisma.actor.update({
+            where: {id: actor.id},
             data: {
-              title: session.title ? undefined : nextTitle,
-              model,
-              temperature,
+              label: metadataRecord.title ? undefined :
+                                            nextTitle ?? CHAT_ACTOR_LABEL,
+              metadata: mergeSessionMetadata(actor.metadata, metadataPatch),
             },
-            select: {title: true, updatedAt: true},
+            select: {createdAt: true, updatedAt: true, metadata: true},
           });
-          const messageCount =
-              await prisma.chatMessage.count({where: {sessionId: session.id}});
+          const messageCount = await prisma.entity.count({
+            where: {actorId: actor.id, kind: EntityKind.CHAT_MESSAGE},
+          });
+          const finalMetadata = getSessionMetadata(updatedActor.metadata);
+          const lastMessage = assistantMessageEntity ?
+              mapEntityToChatMessage(assistantMessageEntity) :
+              null;
           await telemetry({
             eventType: 'chat.message.send',
             source: 'chat',
             payload: {
-              sessionId: session.id,
+              sessionId: actor.id,
               model,
               temperature,
-              systemPrompt: Boolean(systemPromptEntry)
+              systemPrompt: Boolean(systemPromptEntry),
             },
           });
           success = true;
           return {
-            message: {
-              id: assistantMessage.id,
-              role: assistantMessage.role,
-              content: assistantMessage.content,
-              createdAt: assistantMessage.createdAt.toISOString(),
-            },
+            message: assistantMessageEntity ?
+                mapEntityToChatMessage(assistantMessageEntity) :
+                null,
             session: {
-              id: session.id,
-              title: updatedSession.title,
-              systemPrompt: session.systemPrompt,
+              id: actor.id,
+              title: finalMetadata.title,
+              systemPrompt: finalMetadata.systemPrompt,
               model,
               temperature,
-              metadata: session.metadata ?? null,
-              createdAt: session.createdAt.toISOString(),
-              updatedAt: updatedSession.updatedAt.toISOString(),
+              metadata: finalMetadata.metadata,
+              createdAt: actor.createdAt.toISOString(),
+              updatedAt: updatedActor.updatedAt.toISOString(),
               messageCount,
-              lastMessage: {
-                role: assistantMessage.role,
-                content: assistantMessage.content,
-                createdAt: assistantMessage.createdAt.toISOString(),
-              },
+              lastMessage,
             },
           };
         } catch (err) {
@@ -393,15 +390,15 @@ export function registerChatRoutes(
             eventType: 'chat.message.send',
             source: 'chat',
             payload: {
-              sessionId: session.id,
+              sessionId: actor.id,
               model,
               temperature,
-              systemPrompt: Boolean(systemPromptEntry)
+              systemPrompt: Boolean(systemPromptEntry),
             },
             error: true,
           });
           request.log.error(
-              {err, sessionId: session.id}, 'chat message delivery failed');
+              {err, sessionId: actor.id}, 'chat message delivery failed');
           return reply.status(502).send({
             error: err instanceof Error ? err.message : 'Chat request failed'
           });
@@ -411,7 +408,7 @@ export function registerChatRoutes(
               prisma,
               userId,
               source: 'chat',
-              sessionId: session.id,
+              sessionId: actor.id,
               model,
               temperature,
               systemPrompt: systemPromptEntry,
@@ -423,7 +420,7 @@ export function registerChatRoutes(
                 userMessage: text,
                 historyLength: messagesForOllama.length,
                 hasSystemPrompt: Boolean(systemPromptEntry),
-                sessionTitle: session.title ?? null,
+                sessionTitle: metadataRecord.title,
               },
             });
           } catch (recordErr) {
@@ -433,26 +430,152 @@ export function registerChatRoutes(
         }
       },
   );
+
+  server.get(
+      '/chat/operations',
+      {preHandler: [authenticate], schema: operationsListSchema},
+      () => {
+        return {operations: []};
+      },
+  );
 }
 
-function mapSessionSummary(row: ChatSessionRow): ChatSessionSummary {
+function mapActorToSessionSummary(
+    actor: {
+      id: string; metadata: Prisma.JsonValue | null; createdAt: Date;
+      updatedAt: Date;
+    },
+    countMap: Map<string, number>,
+    lastMessageMap: Map<string, ChatHistoryEntry|null>) {
+  const metadata = getSessionMetadata(actor.metadata);
+  const lastMessage = lastMessageMap.get(actor.id);
+  return {
+    id: actor.id,
+    title: metadata.title,
+    systemPrompt: metadata.systemPrompt,
+    model: metadata.model ?? DEFAULT_MODEL,
+    temperature: metadata.temperature,
+    metadata: metadata.metadata,
+    createdAt: actor.createdAt.toISOString(),
+    updatedAt: actor.updatedAt.toISOString(),
+    messageCount: countMap.get(actor.id) ?? 0,
+    lastMessage: lastMessage ? {
+      id: '',
+      role: lastMessage.role,
+      content: lastMessage.content,
+      metadata: null,
+      createdAt: lastMessage.createdAt.toISOString(),
+    } :
+                               null,
+  };
+}
+
+function entityToHistoryEntry(row: {
+  id: string; metadata: Prisma.JsonValue | null; createdAt: Date
+}): ChatHistoryEntry {
+  const record = asRecord(row.metadata);
+  return {
+    role: stringToChatRole(record.role) ?? ChatRole.USER,
+    content: stringOrNull(record.content) ?? '',
+    createdAt: row.createdAt,
+  };
+}
+
+function mapEntityToChatMessage(row: {
+  id: string; metadata: Prisma.JsonValue | null; createdAt: Date;
+}): ChatMessageResponse {
+  const record = asRecord(row.metadata);
+  const role = stringToChatRole(record.role) ?? ChatRole.USER;
   return {
     id: row.id,
-    title: row.title,
-    systemPrompt: row.systemPrompt,
-    model: row.model ?? DEFAULT_MODEL,
-    temperature: row.temperature,
-    metadata: row.metadata ?? null,
+    role,
+    content: stringOrNull(record.content) ?? '',
+    metadata: record.metadata ?? null,
     createdAt: row.createdAt.toISOString(),
-    updatedAt: row.updatedAt.toISOString(),
-    messageCount: row._count.messages,
-    lastMessage: row.messages[0] ? {
-      role: row.messages[0].role,
-      content: row.messages[0].content,
-      createdAt: row.messages[0].createdAt.toISOString(),
-    } :
-                                   null,
   };
+}
+
+function buildMessageMetadata(
+    params: {role: ChatRole; content: string; metadata?: unknown | null;}):
+    Prisma.JsonValue {
+  return pruneJsonObject({
+           role: params.role.toLowerCase(),
+           content: params.content,
+           metadata: params.metadata ?? null,
+         }) ??
+      {};
+}
+
+function getSessionMetadata(metadata: Prisma.JsonValue|null):
+    SessionMetadataRecord {
+  const record = asRecord(metadata);
+  return {
+    title: stringOrNull(record.title),
+    systemPrompt: stringOrNull(record.systemPrompt),
+    model: stringOrNull(record.model),
+    temperature: numberFromJson(record.temperature),
+    metadata: record.metadata ?? null,
+  };
+}
+
+function buildSessionMetadata(params: SessionMetadataRecord):
+    Prisma.JsonObject {
+  return pruneJsonObject({
+           title: params.title,
+           systemPrompt: params.systemPrompt,
+           model: params.model,
+           temperature: params.temperature,
+           metadata: params.metadata,
+         }) ??
+      {};
+}
+
+function mergeSessionMetadata(
+    base: Prisma.JsonValue|null|undefined,
+    patch: SessionMetadataPatch): Prisma.JsonObject {
+  const existing = asRecord(base);
+  const next: Record<string, unknown> = {...existing};
+  if (patch.title !== undefined) next.title = patch.title;
+  if (patch.systemPrompt !== undefined) next.systemPrompt = patch.systemPrompt;
+  if (patch.model !== undefined) next.model = patch.model;
+  if (patch.temperature !== undefined) next.temperature = patch.temperature;
+  if (patch.metadata !== undefined) next.metadata = patch.metadata;
+  return pruneJsonObject(next) ?? {};
+}
+
+function stringToChatRole(value: unknown): ChatRole|null {
+  if (typeof value !== 'string') return null;
+  const normalized = value.toUpperCase();
+  if (normalized === ChatRole.USER || normalized === ChatRole.ASSISTANT ||
+      normalized === ChatRole.SYSTEM) {
+    return normalized as ChatRole;
+  }
+  return null;
+}
+
+function asRecord(value: Prisma.JsonValue|null|undefined):
+    Record<string, unknown> {
+  if (value && typeof value === 'object' && !Array.isArray(value))
+    return value as Record<string, unknown>;
+  return {};
+}
+
+function stringOrNull(value: unknown): string|null {
+  if (typeof value === 'string') return value;
+  return null;
+}
+
+function numberFromJson(value: unknown) {
+  const numeric = typeof value === 'number' ? value : Number(value);
+  if (!Number.isFinite(numeric)) return null;
+  return numeric;
+}
+
+function pruneJsonObject(value: Record<string, unknown>): Prisma.JsonObject|
+    null {
+  const entries = Object.entries(value).filter(([, val]) => val !== undefined);
+  if (!entries.length) return null;
+  return Object.fromEntries(entries) as Prisma.JsonObject;
 }
 
 function clampNumber(
@@ -486,6 +609,30 @@ function toOllamaRole(role: ChatRole): OllamaRole {
   return role.toLowerCase() as OllamaRole;
 }
 
+function safeTrim(value?: string|null) {
+  const trimmed = value?.trim();
+  return trimmed && trimmed.length ? trimmed : null;
+}
+
+function safeParseJson(value: string): unknown {
+  try {
+    return JSON.parse(value);
+  } catch {
+    return value;
+  }
+}
+
+function extractAssistantContent(payload: unknown): string {
+  const record = payload as Record<string, unknown>;
+  const choice = Array.isArray(record.choices) && record.choices.length ?
+      record.choices[0] :
+      payload;
+  const assistant = (choice as Record<string, unknown>)?.message ?? choice;
+  const flattened = flattenMessageContent(assistant);
+  if (flattened) return flattened;
+  throw new Error('Ollama returned an unexpected payload');
+}
+
 function flattenMessageContent(value: unknown): string|null {
   if (typeof value === 'string') return value.trim();
   if (Array.isArray(value))
@@ -503,26 +650,7 @@ function flattenMessageContent(value: unknown): string|null {
   return null;
 }
 
-function extractAssistantContent(payload: unknown): string {
-  const record = payload as Record<string, unknown>;
-  const choice = Array.isArray(record.choices) && record.choices.length ?
-      record.choices[0] :
-      payload;
-  const assistant = (choice as Record<string, unknown>)?.message ?? choice;
-  const flattened = flattenMessageContent(assistant);
-  if (flattened) return flattened;
-  throw new Error('Ollama returned an unexpected payload');
-}
-
 function normalizeModel(value?: string|null): string {
   const trimmed = value?.trim();
-  return trimmed && trimmed.length > 0 ? trimmed : DEFAULT_MODEL;
-}
-
-function safeParseJson(value: string): unknown {
-  try {
-    return JSON.parse(value);
-  } catch {
-    return value;
-  }
+  return trimmed && trimmed.length ? trimmed : DEFAULT_MODEL;
 }

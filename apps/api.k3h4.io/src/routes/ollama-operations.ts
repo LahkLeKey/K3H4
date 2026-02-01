@@ -1,4 +1,4 @@
-import {Entity, EntityKind, Prisma, PrismaClient} from '@prisma/client';
+import {Actor, Entity, EntityKind, Prisma, PrismaClient} from '@prisma/client';
 import {type FastifyInstance, type FastifyRequest} from 'fastify';
 
 import {ensureOllamaOperationsActor, findOllamaOperationsActor,} from '../services/ollama-operations-actor';
@@ -123,12 +123,12 @@ export function registerOllamaProxyRoutes(
                           null)
                   .filter((id): id is string => Boolean(id))));
           if (sessionIds.length) {
-            const sessions = await prisma.chatSession.findMany({
+            const sessionActors = await prisma.actor.findMany({
               where: {id: {in : sessionIds}},
-              select: {id: true, title: true},
+              select: {id: true, metadata: true},
             });
-            sessionTitles = new Map(
-                sessions.map((session) => [session.id, session.title ?? null]));
+            sessionTitles = new Map(sessionActors.map(
+                (actor) => [actor.id, getActorSessionTitle(actor)]));
           }
         }
         await telemetry({
@@ -228,6 +228,11 @@ function asRecord(value: Prisma.JsonValue|null|undefined) {
   if (value && typeof value === 'object' && !Array.isArray(value))
     return value as Record<string, unknown>;
   return {} as Record<string, unknown>;
+}
+
+function getActorSessionTitle(actor: {metadata: Prisma.JsonValue|null}) {
+  const metadata = asRecord(actor.metadata);
+  return stringOrNull(metadata.title);
 }
 
 function stringOrNull(value: unknown) {

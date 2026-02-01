@@ -1,6 +1,5 @@
 import * as z from 'zod';
 import { Prisma } from '@prisma/client';
-import { ChatSessionCreateNestedManyWithoutUserInputObjectSchema as ChatSessionCreateNestedManyWithoutUserInputObjectSchema } from './ChatSessionCreateNestedManyWithoutUserInput.schema';
 import { ActorCreateNestedManyWithoutUserInputObjectSchema as ActorCreateNestedManyWithoutUserInputObjectSchema } from './ActorCreateNestedManyWithoutUserInput.schema'
 
 import { DecimalJSLikeSchema, isValidDecimalInput } from '../helpers/decimal-helpers';
@@ -21,7 +20,6 @@ const makeSchema = () => z.object({
   avatarUrl: z.string().optional().nullable(),
   createdAt: z.coerce.date().optional(),
   updatedAt: z.coerce.date().optional(),
-  chatSessions: z.lazy(() => ChatSessionCreateNestedManyWithoutUserInputObjectSchema).optional(),
   actors: z.lazy(() => ActorCreateNestedManyWithoutUserInputObjectSchema).optional()
 }).strict();
 export const UserCreateWithoutTelemetryInputObjectSchema: z.ZodType<Prisma.UserCreateWithoutTelemetryInput> = makeSchema() as unknown as z.ZodType<Prisma.UserCreateWithoutTelemetryInput>;

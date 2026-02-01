@@ -7,8 +7,6 @@ export { UserModelSchema } from './User.pure';
 export { PointOfInterestModelSchema } from './PointOfInterest.pure';
 export { TelemetryEventModelSchema } from './TelemetryEvent.pure';
 export { ApiCacheEntryModelSchema } from './ApiCacheEntry.pure';
-export { ChatSessionModelSchema } from './ChatSession.pure';
-export { ChatMessageModelSchema } from './ChatMessage.pure';
 export { ActorModelSchema } from './Actor.pure';
 export { EntityModelSchema } from './Entity.pure';
 export { ActorCacheModelSchema } from './ActorCache.pure';

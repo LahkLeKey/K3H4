@@ -7,8 +7,6 @@ export { UserInputSchema } from './User.input';
 export { PointOfInterestInputSchema } from './PointOfInterest.input';
 export { TelemetryEventInputSchema } from './TelemetryEvent.input';
 export { ApiCacheEntryInputSchema } from './ApiCacheEntry.input';
-export { ChatSessionInputSchema } from './ChatSession.input';
-export { ChatMessageInputSchema } from './ChatMessage.input';
 export { ActorInputSchema } from './Actor.input';
 export { EntityInputSchema } from './Entity.input';
 export { ActorCacheInputSchema } from './ActorCache.input';
