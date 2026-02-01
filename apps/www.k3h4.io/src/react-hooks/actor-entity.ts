@@ -1,6 +1,6 @@
 import {useMutation, useQuery, useQueryClient} from '@tanstack/react-query';
 
-import {type ActorCreateInput, ActorCreateSchema, type ActorRecord, type ActorResponse, ActorResponseSchema, type ActorsResponse, ActorsResponseSchema, type ActorUpdateInput, ActorUpdateSchema, type EntitiesResponse, EntitiesResponseSchema, type EntityCreateInput, EntityCreateSchema, type EntityRecord, type EntityResponse, EntityResponseSchema, type EntityUpdateInput, EntityUpdateSchema,} from '../schemas/actor-entity';
+import {type ActorCreateInput, ActorCreateSchema, type ActorResponse, ActorResponseSchema, type ActorsResponse, ActorsResponseSchema, type ActorUpdateInput, ActorUpdateSchema, type EntitiesResponse, EntitiesResponseSchema, type EntityCreateInput, EntityCreateSchema, type EntityResponse, EntityResponseSchema, type EntityUpdateInput, EntityUpdateSchema,} from '../schemas/actor-entity';
 
 import {useAuthStore} from './auth';
 import {apiFetch} from './lib/api-client';
@@ -42,7 +42,6 @@ export function useActorsQuery(filters: ActorFilters, enabled = true) {
     staleTime: 5_000,
     refetchInterval: 10_000,
     queryFn: async () => {
-      const url = qs ? `${apiBase}/actors?${qs}` : `${apiBase}/actors`;
       try {
         return await apiFetch<ActorsResponse>(`/actors${qs ? `?${qs}` : ''}`, {
           token: session?.accessToken ?? null,
