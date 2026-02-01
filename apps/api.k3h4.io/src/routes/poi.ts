@@ -664,9 +664,10 @@ export function registerPoiRoutes(
             el.tags?.tourism ?? el.tags?.leisure ?? null;
         const name = el.tags?.name ?? category ?? 'poi';
         const actorId = buildPoiActorId(osmType, osmId.toString());
-        const metadata = buildPoiMetadata(el.tags ?? {});
-        const latitude = new Prisma.Decimal(Number(center.lat).toFixed(6));
-        const longitude = new Prisma.Decimal(Number(center.lon).toFixed(6));
+        const lat = Number(center.lat);
+        const lng = Number(center.lon);
+        const metadata = buildPoiMetadata(
+            el.tags ?? {}, osmType, osmId.toString(), lat, lng);
         const existing = await prisma.actor.findUnique({where: {id: actorId}});
         if (existing)
           updated += 1;
@@ -678,11 +679,7 @@ export function registerPoiRoutes(
             data: {
               label: name,
               source: el.source ?? 'osm',
-              osmType,
-              osmId,
               category,
-              latitude,
-              longitude,
               metadata,
               lastSeenAt: runStarted,
             },
@@ -694,11 +691,7 @@ export function registerPoiRoutes(
               label: name,
               type: POI_ACTOR_TYPE,
               source: el.source ?? 'osm',
-              osmType,
-              osmId,
               category,
-              latitude,
-              longitude,
               metadata,
               lastSeenAt: runStarted,
             },
