@@ -1,7 +1,4 @@
--- Add AI insight actor/entity enums, migrate existing AiInsight rows, and drop the legacy table.
-
-ALTER TYPE "ActorType" ADD VALUE 'ai-insight';
-ALTER TYPE "EntityKind" ADD VALUE 'ai_insight';
+-- Migrate existing AiInsight rows into the entity ledger and drop the legacy table.
 
 INSERT INTO "Actor" ("id", "userId", "label", "type", "source", "createdAt", "updatedAt")
 SELECT
