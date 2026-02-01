@@ -1,5 +1,4 @@
-<img width="3829" height="1806" alt="image" src="https://github.com/user-attachments/assets/28182ae9-0bf7-4b93-8eb9-b73e24a85686" />
-
+<img width="3800" height="1800" alt="image" src="https://github.com/user-attachments/assets/28182ae9-0bf7-4b93-8eb9-b73e24a85686" />
 
 # K3H4 Monorepo
 
@@ -7,6 +6,8 @@ Bun/TypeScript workspace with a React/Three.js frontend and a Fastify + Prisma A
 
 ## Structure
 - apps/www.k3h4.io – Bun + React + R3F frontend
+  - <img width="1800" height="1800" alt="image" src="https://github.com/user-attachments/assets/24434017-62b8-4803-87a6-f4137b8b14e0" />
+
 - apps/api.k3h4.io – Fastify API with Prisma/Postgres
 - scripts/ – shared scripts and tooling
 - sidecars/ollama – Ollama-based LLM sidecar for `api.k3h4.io` (Docker Compose + Fly)
