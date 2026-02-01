@@ -1,7 +1,8 @@
-import {Entity, LifecycleStatus, Prisma, PrismaClient} from '@prisma/client';
+import {Entity, Prisma, PrismaClient} from '@prisma/client';
 
 import {ACTOR_TYPES, ENTITY_KINDS} from '../../lib/actor-entity-constants';
 import {actorWhereUserType, buildUserActorCreateInput, ensureActor, PrismaTx} from '../../lib/actor-utils';
+import {LIFECYCLE_STATUSES, type LifecycleStatus} from '../../lib/domain-constants';
 import {asRecord, toNumber} from '../../lib/json-record';
 
 const FREIGHT_ACTOR_LABEL = 'Freight Ledger';
@@ -22,7 +23,7 @@ const buildMetadata = (payload: FreightLoadCreateOptions) => ({
   durationMinutes: payload.durationMinutes,
   cost: payload.cost.toFixed(2),
   routeGeoJson: payload.routeGeoJson ?? null,
-  status: payload.status ?? LifecycleStatus.PLANNING,
+  status: payload.status ?? LIFECYCLE_STATUSES.PLANNING,
 });
 
 export type FreightLoadPayload = {
@@ -90,7 +91,7 @@ const buildFreightLoad = (entity: Entity): FreightLoadPayload => {
     distanceKm: toNumber(metadata.distanceKm) ?? 0,
     durationMinutes: toNumber(metadata.durationMinutes),
     cost: Number(metadata.cost ?? '0'),
-    status: (metadata.status as LifecycleStatus) ?? LifecycleStatus.PLANNING,
+    status: (metadata.status as LifecycleStatus) ?? LIFECYCLE_STATUSES.PLANNING,
     routeGeoJson: metadata.routeGeoJson ?? null,
     createdAt: entity.createdAt,
     updatedAt: entity.updatedAt,
@@ -146,7 +147,7 @@ export async function markFreightLoadCompleted(tx: PrismaTx, loadId: string) {
   const metadata = asRecord(existing.metadata);
   const updated = {
     ...metadata,
-    status: LifecycleStatus.COMPLETED,
+    status: LIFECYCLE_STATUSES.COMPLETED,
   };
   const entity = await tx.entity.update({
     where: {id: loadId},

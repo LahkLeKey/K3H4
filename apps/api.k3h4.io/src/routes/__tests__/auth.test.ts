@@ -409,7 +409,10 @@ describe('auth routes', () => {
   it('deletes account when confirmation matches', async () => {
     const prisma = {
       entity: {deleteMany: vi.fn().mockResolvedValue({count: 0})},
-      actor: {deleteMany: vi.fn().mockResolvedValue({count: 0})},
+      actor: {
+        findFirst: vi.fn().mockResolvedValue(null),
+        deleteMany: vi.fn().mockResolvedValue({count: 0}),
+      },
       freightLoad: {deleteMany: vi.fn().mockResolvedValue({count: 0})},
       warehouseItem: {deleteMany: vi.fn().mockResolvedValue({count: 0})},
       userPreference: {deleteMany: vi.fn().mockResolvedValue({count: 0})},

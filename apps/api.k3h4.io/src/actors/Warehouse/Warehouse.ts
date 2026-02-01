@@ -1,7 +1,8 @@
-import {Entity, LifecycleStatus, Prisma, PrismaClient, WarehouseCategory,} from '@prisma/client';
+import {Entity, Prisma, PrismaClient} from '@prisma/client';
 
 import {ACTOR_TYPES, ENTITY_KINDS} from '../../lib/actor-entity-constants';
 import {actorWhereUserType, buildUserActorCreateInput, ensureActor, PrismaTx} from '../../lib/actor-utils';
+import {LIFECYCLE_STATUSES, type LifecycleStatus, WAREHOUSE_CATEGORIES, type WarehouseCategory,} from '../../lib/domain-constants';
 import {asRecord, readNumber, readString} from '../../lib/json-record';
 
 const WAREHOUSE_ACTOR_LABEL = 'Warehouse Inventory';
@@ -67,11 +68,11 @@ export const buildWarehouseItemPayload =
         location: readString(metadata, 'location', {coerce: true}) ?? '',
         status: (readString(metadata, 'status', {coerce: true}) as
                  LifecycleStatus) ??
-            LifecycleStatus.STORED,
+            LIFECYCLE_STATUSES.STORED,
         freightLoadId: readString(metadata, 'freightLoadId', {coerce: true}),
         category: (readString(metadata, 'category', {coerce: true}) as
                    WarehouseCategory) ??
-            WarehouseCategory.OTHER,
+            WAREHOUSE_CATEGORIES.OTHER,
         metadata: Object.keys(metadata).length ? metadata : null,
         createdAt: entity.createdAt.toISOString(),
         updatedAt: entity.updatedAt.toISOString(),

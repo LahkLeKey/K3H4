@@ -1,7 +1,8 @@
-import {Entity, LifecycleStatus, Prisma, type PrismaClient} from '@prisma/client';
+import {Entity, Prisma, type PrismaClient} from '@prisma/client';
 
 import {ensureCulinaryActor, findCulinaryActor} from '../../actors/Culinary/Culinary';
 import {ACTOR_TYPES, ENTITY_KINDS} from '../../lib/actor-entity-constants';
+import {LIFECYCLE_STATUSES, type LifecycleStatus} from '../../lib/domain-constants';
 import {asRecord, readNumber, readString} from '../../lib/json-record';
 
 const MENU_ITEM_KIND = ENTITY_KINDS.CULINARY_MENU_ITEM;
@@ -77,7 +78,7 @@ const buildPrepTaskRecord = (entity: Entity): CulinaryPrepTaskRecord => {
     id: entity.id,
     task: readString(metadata, 'task', {trim: true, coerce: true}) ?? '',
     station: readString(metadata, 'station', {trim: true, coerce: true}) ?? '',
-    status: statusValue ?? LifecycleStatus.PENDING,
+    status: statusValue ?? LIFECYCLE_STATUSES.PENDING,
     dueAt: parseNullableDate(
         readString(metadata, 'dueAt', {trim: true, coerce: true})),
     createdAt: entity.createdAt,
@@ -97,7 +98,7 @@ const buildSupplierNeedRecord =
         item: readString(metadata, 'item', {trim: true, coerce: true}) ?? '',
         quantity:
             readString(metadata, 'quantity', {trim: true, coerce: true}) ?? '',
-        status: statusValue ?? LifecycleStatus.OPEN,
+        status: statusValue ?? LIFECYCLE_STATUSES.OPEN,
         dueDate: parseNullableDate(
             readString(metadata, 'dueDate', {trim: true, coerce: true})),
         createdAt: entity.createdAt,

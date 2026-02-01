@@ -1,11 +1,12 @@
 import {faker} from '@faker-js/faker';
-import {Entity, LifecycleStatus, type Prisma, type PrismaClient} from '@prisma/client';
+import {Entity, type Prisma, type PrismaClient} from '@prisma/client';
 import {type FastifyInstance} from 'fastify';
 
 import * as personaLedger from '../entities/Persona/Persona';
 import type {PersonaRecord} from '../entities/Persona/Persona';
 import {ENTITY_KINDS} from '../lib/actor-entity-constants';
 import {type CompatFeatureVector, runOnnxCompatibility} from '../lib/compat-onnx';
+import {LIFECYCLE_STATUSES, type LifecycleStatus} from '../lib/domain-constants';
 
 import {withTelemetryBase} from './telemetry';
 import {type RecordTelemetryFn} from './types';
@@ -89,7 +90,7 @@ const buildCompatibilityPayload = (personas: PersonaRecord[]) => {
           intersectionCount,
           unionCount,
           overlappingTokens: overlap,
-          status: LifecycleStatus.ACTIVE,
+          status: LIFECYCLE_STATUSES.ACTIVE,
         },
       });
     }
@@ -148,7 +149,7 @@ const compatibilityRecordFromEntity = (entity: Entity): CompatibilityRecord => {
     unionCount: metadataNumber(metadata, 'unionCount') ?? 1,
     overlappingTokens: metadataStringArray(metadata, 'overlappingTokens'),
     status: (metadataString(metadata, 'status') as LifecycleStatus) ??
-        LifecycleStatus.ACTIVE,
+        LIFECYCLE_STATUSES.ACTIVE,
     rationale: metadataString(metadata, 'rationale'),
     createdAt: entity.createdAt,
   };

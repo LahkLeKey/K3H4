@@ -1,10 +1,11 @@
-import {LifecycleStatus, Prisma, type PrismaClient} from '@prisma/client';
+import {Prisma, type PrismaClient} from '@prisma/client';
 import {type FastifyInstance} from 'fastify';
 
 import {recordBankTransactionEntity} from '../actors/Bank/Bank';
 import {createFreightLoad, findFreightLoad, loadFreightLoads, markFreightLoadCompleted,} from '../actors/Freight/Freight';
 import {ensureGeoActor} from '../actors/Geo/Geo';
 import {ENTITY_DIRECTIONS, ENTITY_KINDS} from '../lib/actor-entity-constants';
+import {LIFECYCLE_STATUSES} from '../lib/domain-constants';
 import {routeSignature} from '../lib/geo-signature';
 import {fetchOsrm} from '../lib/osrm-client';
 import {type GeoDirectionCachePayload, readGeoDirectionCache, writeGeoDirectionCache,} from '../services/geo-direction-cache';
@@ -351,7 +352,7 @@ export function registerFreightRoutes(
           durationMinutes: osrm.durationMinutes,
           cost,
           routeGeoJson: osrm.geometry,
-          status: LifecycleStatus.PLANNING,
+          status: LIFECYCLE_STATUSES.PLANNING,
         });
 
         const signature = routeSignature(
@@ -444,7 +445,7 @@ export function registerFreightRoutes(
         const load = await findFreightLoad(prisma, userId, id);
         if (!load)
           return reply.status(404).send({error: 'Freight load not found'});
-        if (load.status === LifecycleStatus.COMPLETED)
+        if (load.status === LIFECYCLE_STATUSES.COMPLETED)
           return reply.status(400).send({error: 'Load already completed'});
 
         const costDecimal = new Prisma.Decimal(load.cost);

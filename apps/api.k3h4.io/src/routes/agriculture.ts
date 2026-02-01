@@ -1,9 +1,10 @@
-import {type Entity, LifecycleStatus, Prisma, type PrismaClient,} from '@prisma/client';
+import {type Entity, Prisma, type PrismaClient,} from '@prisma/client';
 import {type FastifyInstance} from 'fastify';
 
 import {AgricultureSlotSnapshot, buildAgricultureSlotSnapshotFromEntities, ensureAgricultureActor, resolveAgricultureSlotSnapshot,} from '../actors/Agriculture/Agriculture';
 import {findFreightLoad} from '../actors/Freight/Freight';
 import {ACTOR_TYPES, ENTITY_KINDS} from '../lib/actor-entity-constants';
+import {LIFECYCLE_STATUSES, type LifecycleStatus} from '../lib/domain-constants';
 import {lifecycleStatusOrDefault, parseLifecycleStatus} from '../lib/status-utils';
 
 import {withTelemetryBase} from './telemetry';
@@ -166,7 +167,7 @@ const buildPlanPayload = (plan: Entity, tasks: Entity[]) => {
     id: plan.id,
     crop: metadataString(metadata, 'crop'),
     phase: metadataString(metadata, 'phase'),
-    status: metadataLifecycle(metadata, 'status') ?? LifecycleStatus.ACTIVE,
+    status: metadataLifecycle(metadata, 'status') ?? LIFECYCLE_STATUSES.ACTIVE,
     startDate: startDate ? startDate.toISOString() : null,
     targetHarvestDate: targetHarvestDate ? targetHarvestDate.toISOString() :
                                            null,
@@ -207,7 +208,7 @@ const buildPlotPayload =
               phase: metadataString(metadataRecord(plan.metadata), 'phase'),
               status:
                   metadataLifecycle(metadataRecord(plan.metadata), 'status') ??
-                  LifecycleStatus.ACTIVE,
+                  LIFECYCLE_STATUSES.ACTIVE,
               startDate: formatDateValue(parseDateValue(
                   metadataString(metadataRecord(plan.metadata), 'startDate'))),
               targetHarvestDate: formatDateValue(parseDateValue(metadataString(
@@ -226,7 +227,7 @@ const buildTaskPayload = (task: Entity) => {
     title: metadataString(metadata, 'title'),
     assignee: metadataString(metadata, 'assignee'),
     priority: metadataNumber(metadata, 'priority') ?? 2,
-    status: metadataString(metadata, 'status') ?? LifecycleStatus.ACTIVE,
+    status: metadataString(metadata, 'status') ?? LIFECYCLE_STATUSES.ACTIVE,
     tags: metadata.tags ?? null,
     notes: metadataString(metadata, 'notes') ?? null,
     dueDate:
@@ -258,7 +259,7 @@ const buildInventoryPayload = (inventory: Entity, movements: Entity[]) => {
     totalQuantity: total,
     unit: metadataString(metadata, 'unit'),
     location: metadataString(metadata, 'location') ?? null,
-    status: metadataString(metadata, 'status') ?? LifecycleStatus.STORED,
+    status: metadataString(metadata, 'status') ?? LIFECYCLE_STATUSES.STORED,
     movements: movements.map((movement) => buildMovementPayload(movement)),
   };
 };
@@ -871,7 +872,8 @@ export function registerAgricultureRoutes(
         const metadata: Record<string, unknown> = {
           crop: body.crop.trim(),
           phase: body.phase?.trim() || 'planned',
-          status: lifecycleStatusOrDefault(body.status, LifecycleStatus.ACTIVE),
+          status:
+              lifecycleStatusOrDefault(body.status, LIFECYCLE_STATUSES.ACTIVE),
           startDate: start.toISOString(),
           targetHarvestDate: body.targetHarvestDate ?
               new Date(body.targetHarvestDate).toISOString() :
@@ -974,7 +976,7 @@ export function registerAgricultureRoutes(
           plotId: body.plotId ?? null,
           cropPlanId: body.cropPlanId ?? null,
           priority: normalizedPrior,
-          status: LifecycleStatus.ACTIVE,
+          status: LIFECYCLE_STATUSES.ACTIVE,
           dueDate: body.dueDate ? new Date(body.dueDate).toISOString() : null,
           notes: body.notes?.trim() || null,
           tags: body.tags ?? null,
@@ -1133,7 +1135,7 @@ export function registerAgricultureRoutes(
               description: body.description?.trim() || null,
               totalQuantity: quantity.toFixed(2),
               location: body.location?.trim() || null,
-              status: LifecycleStatus.STORED,
+              status: LIFECYCLE_STATUSES.STORED,
             }),
           },
         });

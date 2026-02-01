@@ -1,6 +1,7 @@
-import {Actor, Entity, LifecycleStatus, Prisma, PrismaClient} from '@prisma/client';
+import {Actor, Entity, Prisma, PrismaClient} from '@prisma/client';
 
 import {ACTOR_TYPES, ENTITY_KINDS} from '../../lib/actor-entity-constants';
+import {type LifecycleStatus} from '../../lib/domain-constants';
 
 export const POS_DEFAULT_CHANNEL = 'In-store';
 

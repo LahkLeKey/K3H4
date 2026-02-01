@@ -1,7 +1,8 @@
-import {ChatRole, Entity, Prisma, PrismaClient,} from '@prisma/client';
+import {Entity, Prisma, PrismaClient,} from '@prisma/client';
 import {type FastifyInstance} from 'fastify';
 
 import {ACTOR_TYPES, ENTITY_KINDS} from '../lib/actor-entity-constants';
+import {CHAT_ROLES, type ChatRole} from '../lib/domain-constants';
 
 import {recordOllamaOperation} from './ollama-operations';
 import {withTelemetryBase} from './telemetry';
@@ -268,7 +269,7 @@ export function registerChatRoutes(
             kind: EntityKind.CHAT_MESSAGE,
             source: CHAT_MESSAGE_SOURCE,
             metadata: buildMessageMetadata({
-              role: ChatRole.USER,
+              role: CHAT_ROLES.USER,
               content: text,
               metadata: body?.metadata ?? null,
             }),
@@ -276,7 +277,7 @@ export function registerChatRoutes(
         });
         const combinedHistory = [
           {
-            role: ChatRole.USER,
+            role: CHAT_ROLES.USER,
             content: text,
             createdAt: userMessageEntity.createdAt
           },
@@ -327,7 +328,7 @@ export function registerChatRoutes(
               kind: EntityKind.CHAT_MESSAGE,
               source: CHAT_MESSAGE_SOURCE,
               metadata: buildMessageMetadata({
-                role: ChatRole.ASSISTANT,
+                role: CHAT_ROLES.ASSISTANT,
                 content: assistantContent,
               }),
             },
@@ -479,7 +480,7 @@ function entityToHistoryEntry(row: {
 }): ChatHistoryEntry {
   const record = asRecord(row.metadata);
   return {
-    role: stringToChatRole(record.role) ?? ChatRole.USER,
+    role: stringToChatRole(record.role) ?? CHAT_ROLES.USER,
     content: stringOrNull(record.content) ?? '',
     createdAt: row.createdAt,
   };
@@ -489,7 +490,7 @@ function mapEntityToChatMessage(row: {
   id: string; metadata: Prisma.JsonValue | null; createdAt: Date;
 }): ChatMessageResponse {
   const record = asRecord(row.metadata);
-  const role = stringToChatRole(record.role) ?? ChatRole.USER;
+  const role = stringToChatRole(record.role) ?? CHAT_ROLES.USER;
   return {
     id: row.id,
     role,
@@ -553,8 +554,8 @@ function mergeSessionMetadata(
 function stringToChatRole(value: unknown): ChatRole|null {
   if (typeof value !== 'string') return null;
   const normalized = value.toUpperCase();
-  if (normalized === ChatRole.USER || normalized === ChatRole.ASSISTANT ||
-      normalized === ChatRole.SYSTEM) {
+  if (normalized === CHAT_ROLES.USER || normalized === CHAT_ROLES.ASSISTANT ||
+      normalized === CHAT_ROLES.SYSTEM) {
     return normalized as ChatRole;
   }
   return null;

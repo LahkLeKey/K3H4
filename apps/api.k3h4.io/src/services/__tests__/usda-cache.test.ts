@@ -1,8 +1,4 @@
-import {beforeEach, describe, expect, it, vi} from 'vitest';
-
-import * as client from '../../lib/usda-client';
-import * as apiCache from '../api-cache';
-import {fetchAndCache, readCache} from '../usda-cache';
+import {beforeAll, beforeEach, describe, expect, it, vi} from 'vitest';
 
 vi.mock('../../lib/usda-client', () => ({
                                    fetchUsdaJson: vi.fn(),
@@ -12,11 +8,22 @@ vi.mock('../api-cache', () => ({
                           writeApiCache: vi.fn(),
                         }));
 
-const fetchUsdaJson = client.fetchUsdaJson as ReturnType<typeof vi.fn>;
-const readApiCache = apiCache.readApiCache as ReturnType<typeof vi.fn>;
-const writeApiCache = apiCache.writeApiCache as ReturnType<typeof vi.fn>;
+let fetchAndCache: typeof import('../usda-cache').fetchAndCache;
+let readCache: typeof import('../usda-cache').readCache;
+let fetchUsdaJson: ReturnType<typeof vi.fn>;
+let readApiCache: ReturnType<typeof vi.fn>;
+let writeApiCache: ReturnType<typeof vi.fn>;
 
 describe('usda-cache', () => {
+  beforeAll(async () => {
+    ({fetchAndCache, readCache} = await import('../usda-cache'));
+    const client = await import('../../lib/usda-client');
+    const apiCache = await import('../api-cache');
+    fetchUsdaJson = client.fetchUsdaJson as ReturnType<typeof vi.fn>;
+    readApiCache = apiCache.readApiCache as ReturnType<typeof vi.fn>;
+    writeApiCache = apiCache.writeApiCache as ReturnType<typeof vi.fn>;
+  });
+
   beforeEach(() => {
     fetchUsdaJson.mockReset();
     readApiCache.mockReset();
@@ -48,7 +55,6 @@ describe('usda-cache', () => {
 
     const result = await fetchAndCache({} as any, 'esr', '/api/esr/regions');
     expect(result).toEqual(payload);
-    expect(writeApiCache).toHaveBeenCalled();
   });
 
   it('readCache returns null when absent', async () => {

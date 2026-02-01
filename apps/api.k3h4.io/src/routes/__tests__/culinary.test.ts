@@ -1,15 +1,15 @@
-import '../../test/vitest-setup.ts';
+import '../../test/vitest-setup';
 
-import {LifecycleStatus} from '@prisma/client';
 import Fastify from 'fastify';
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 
+import {LIFECYCLE_STATUSES} from '../../lib/domain-constants';
 import * as culinaryLedger from '../../services/culinary-ledger';
 import * as pointOfSaleLedger from '../../services/point-of-sale-ledger';
 import {registerCulinaryRoutes} from '../culinary';
 import {type RecordTelemetryFn} from '../types';
 
-const recordTelemetry = vi.fn() as unknown as RecordTelemetryFn;
+const recordTelemetry = vi.fn<RecordTelemetryFn>();
 const userId = 'user-1';
 let loadMenuItemsSpy: ReturnType<typeof vi.spyOn>;
 let loadPrepTasksSpy: ReturnType<typeof vi.spyOn>;
@@ -113,7 +113,7 @@ describe('Culinary routes', () => {
       task: 'Chop',
       station: 'Garde',
       dueAt: '2025-01-01',
-      status: LifecycleStatus.PENDING,
+      status: LIFECYCLE_STATUSES.PENDING,
     });
 
     const supplierRes = await server.inject({
@@ -132,7 +132,7 @@ describe('Culinary routes', () => {
           item: 'Greens',
           quantity: '3',
           dueDate: '2025-01-02',
-          status: LifecycleStatus.CLOSED,
+          status: LIFECYCLE_STATUSES.CLOSED,
         });
   });
 });

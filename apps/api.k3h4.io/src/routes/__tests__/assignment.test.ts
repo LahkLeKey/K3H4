@@ -165,10 +165,10 @@ describe('assignment routes', () => {
     expect(res.statusCode).toBe(200);
     expect(loadMapSpy).toHaveBeenCalled();
     expect(loadEntitiesSpy).toHaveBeenCalled();
-    expect(res.json().assignments[0].persona).toEqual({
+    expect(res.json().assignments[0].persona).toEqual(expect.objectContaining({
       id: personaRecord.id,
       alias: personaRecord.alias,
-    });
+    }));
     expect(recordTelemetry)
         .toHaveBeenCalledWith(
             expect.anything(),

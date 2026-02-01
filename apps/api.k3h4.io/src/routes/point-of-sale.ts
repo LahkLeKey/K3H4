@@ -1,9 +1,10 @@
-import {LifecycleStatus, Prisma, PrismaClient} from '@prisma/client';
+import {Prisma, PrismaClient} from '@prisma/client';
 import {type FastifyInstance} from 'fastify';
 
 import {recordBankTransactionEntity} from '../actors/Bank/Bank';
 import {getPointOfSaleOverview, POS_DEFAULT_CHANNEL, summarizePointOfSaleStore, ticketFromEntity,} from '../entities/PointOfSale/PointOfSale';
 import {ACTOR_TYPES, ENTITY_DIRECTIONS, ENTITY_KINDS} from '../lib/actor-entity-constants';
+import {LIFECYCLE_STATUSES, type LifecycleStatus} from '../lib/domain-constants';
 import {parseLifecycleStatus} from '../lib/status-utils';
 
 import {buildTelemetryBase} from './telemetry';
@@ -118,7 +119,7 @@ export function registerPointOfSaleRoutes(
         const storeChannel = channel;
         const channelOverride = requestedChannel !== undefined;
 
-        let ticketStatus: LifecycleStatus = LifecycleStatus.CLOSED;
+        let ticketStatus: LifecycleStatus = LIFECYCLE_STATUSES.CLOSED;
         if (body.status !== undefined) {
           const parsedStatus = parseLifecycleStatus(body.status);
           if (!parsedStatus)

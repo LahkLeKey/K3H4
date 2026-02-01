@@ -18,9 +18,10 @@ vi.mock('../cache-actor', () => ({
 
 const fetchWikidataJson =
     client.fetchWikidataJson as unknown as ReturnType<typeof vi.fn>;
-const readActorCache = vi.mocked(actorCache.readActorCache);
-const writeActorCache = vi.mocked(actorCache.writeActorCache);
-const ensureCacheActorIdMock = vi.mocked(ensureCacheActorId);
+const readActorCache = actorCache.readActorCache as ReturnType<typeof vi.fn>;
+const writeActorCache = actorCache.writeActorCache as ReturnType<typeof vi.fn>;
+const ensureCacheActorIdMock =
+    ensureCacheActorId as unknown as ReturnType<typeof vi.fn>;
 
 const prisma = {} as any;
 

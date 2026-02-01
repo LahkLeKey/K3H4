@@ -1,12 +1,13 @@
 import '../../test/vitest-setup';
 
-import {LifecycleStatus, Prisma} from '@prisma/client';
+import {Prisma} from '@prisma/client';
 import Fastify from 'fastify';
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 
 import {createFreightLoad, findFreightLoad, loadFreightLoads, markFreightLoadCompleted,} from '../../actors/Freight/Freight';
 import type {FreightLoadPayload} from '../../actors/Freight/Freight';
 import {ensureGeoActor} from '../../actors/Geo/Geo';
+import {LIFECYCLE_STATUSES} from '../../lib/domain-constants';
 import {readGeoDirectionCache, writeGeoDirectionCache,} from '../../services/geo-direction-cache';
 import {registerFreightRoutes} from '../freight';
 import {type RecordTelemetryFn} from '../types';
@@ -26,7 +27,7 @@ const createLoadPayload = (overrides: Partial<FreightLoadPayload> = {}) => ({
   distanceKm: 10,
   durationMinutes: 10,
   cost: 20,
-  status: LifecycleStatus.PLANNING,
+  status: LIFECYCLE_STATUSES.PLANNING,
   routeGeoJson: null,
   createdAt: new Date(),
   updatedAt: new Date(),
@@ -85,7 +86,7 @@ describe('freight routes', () => {
     createFreightLoadMock.mockResolvedValue(createLoadPayload());
     findFreightLoadMock.mockResolvedValue(createLoadPayload());
     markFreightLoadCompletedMock.mockResolvedValue(
-        {...createLoadPayload(), status: LifecycleStatus.COMPLETED});
+        {...createLoadPayload(), status: LIFECYCLE_STATUSES.COMPLETED});
   });
 
   afterEach(() => {
@@ -227,7 +228,7 @@ describe('freight routes', () => {
   });
 
   it('completes a load and debits balance', async () => {
-    const load = createLoadPayload({status: LifecycleStatus.PLANNING});
+    const load = createLoadPayload({status: LIFECYCLE_STATUSES.PLANNING});
     findFreightLoadMock.mockResolvedValueOnce(load);
     const txUser = {
       findUnique: vi.fn().mockResolvedValue(
@@ -293,7 +294,7 @@ describe('freight routes', () => {
 
   it('rejects already completed load', async () => {
     findFreightLoadMock.mockResolvedValueOnce(
-        createLoadPayload({status: LifecycleStatus.COMPLETED}));
+        createLoadPayload({status: LIFECYCLE_STATUSES.COMPLETED}));
     const prisma = {
       user: {},
       actor: {findFirst: vi.fn(), create: vi.fn()},
