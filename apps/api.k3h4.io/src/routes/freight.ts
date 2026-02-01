@@ -434,63 +434,60 @@ export function registerFreightRoutes(
       },
   );
 
+  const handleFreightComplete = async (request: any, reply: any) => {
+    const rt = withTelemetryBase(recordTelemetry, request);
+    const userId = (request.user as {sub: string}).sub;
+    const id = (request.params as {id: string}).id;
+
+    const load = await findFreightLoad(prisma, userId, id);
+    if (!load) return reply.status(404).send({error: 'Freight load not found'});
+    if (load.status === LIFECYCLE_STATUSES.COMPLETED)
+      return reply.status(400).send({error: 'Load already completed'});
+
+    const costDecimal = new Prisma.Decimal(load.cost);
+    try {
+      const {nextBalance, updated} = await prisma.$transaction(async (tx) => {
+        const user = await tx.user.findUnique(
+            {where: {id: userId}, select: {k3h4CoinBalance: true}});
+        if (!user) throw new Error('User not found');
+
+        const nextBalance = user.k3h4CoinBalance.sub(costDecimal);
+        const savedUser = await tx.user.update(
+            {where: {id: userId}, data: {k3h4CoinBalance: nextBalance}});
+        await recordBankTransactionEntity(tx, {
+          userId,
+          amount: costDecimal,
+          direction: ENTITY_DIRECTIONS.DEBIT,
+          kind: ENTITY_KINDS.FREIGHT_PAYMENT,
+          note: `Freight load ${load.title}`,
+          balanceAfter: savedUser.k3h4CoinBalance,
+          targetType: 'freight_load',
+          targetId: load.id,
+          name: load.title,
+        });
+
+        const updated = await markFreightLoadCompleted(tx, id);
+        return {nextBalance, updated};
+      });
+
+      await rt({
+        eventType: 'freight.complete',
+        source: 'api',
+        payload: {id, cost: costDecimal.toFixed(2)}
+      });
+
+      return {load: serializeLoad(updated)};
+    } catch (err) {
+      request.log.error({err}, 'freight completion failed');
+      return reply.status(400).send({
+        error: err instanceof Error ? err.message : 'Unable to complete load'
+      });
+    }
+  };
+
   server.post(
-      '/freight/:id/complete',
+      '/freight/:id/actions/complete',
       {preHandler: [server.authenticate]},
-      async (request, reply) => {
-        const rt = withTelemetryBase(recordTelemetry, request);
-        const userId = (request.user as {sub: string}).sub;
-        const id = (request.params as {id: string}).id;
-
-        const load = await findFreightLoad(prisma, userId, id);
-        if (!load)
-          return reply.status(404).send({error: 'Freight load not found'});
-        if (load.status === LIFECYCLE_STATUSES.COMPLETED)
-          return reply.status(400).send({error: 'Load already completed'});
-
-        const costDecimal = new Prisma.Decimal(load.cost);
-        try {
-          const {
-            nextBalance,
-            updated
-          } = await prisma.$transaction(async (tx) => {
-            const user = await tx.user.findUnique(
-                {where: {id: userId}, select: {k3h4CoinBalance: true}});
-            if (!user) throw new Error('User not found');
-
-            const nextBalance = user.k3h4CoinBalance.sub(costDecimal);
-            const savedUser = await tx.user.update(
-                {where: {id: userId}, data: {k3h4CoinBalance: nextBalance}});
-            await recordBankTransactionEntity(tx, {
-              userId,
-              amount: costDecimal,
-              direction: ENTITY_DIRECTIONS.DEBIT,
-              kind: ENTITY_KINDS.FREIGHT_PAYMENT,
-              note: `Freight load ${load.title}`,
-              balanceAfter: savedUser.k3h4CoinBalance,
-              targetType: 'freight_load',
-              targetId: load.id,
-              name: load.title,
-            });
-
-            const updated = await markFreightLoadCompleted(tx, id);
-            return {nextBalance, updated};
-          });
-
-          await rt({
-            eventType: 'freight.complete',
-            source: 'api',
-            payload: {id, cost: costDecimal.toFixed(2)}
-          });
-
-          return {load: serializeLoad(updated)};
-        } catch (err) {
-          request.log.error({err}, 'freight completion failed');
-          return reply.status(400).send({
-            error: err instanceof Error ? err.message :
-                                          'Unable to complete load'
-          });
-        }
-      },
+      handleFreightComplete,
   );
 }

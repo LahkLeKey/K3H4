@@ -1,203 +1,184 @@
-import { type PrismaClient } from "@prisma/client";
-import { type FastifyInstance, type FastifyReply } from "fastify";
-import { fetchWikidataWithCache } from "../services/wikidata-cache";
-import { buildTelemetryBase } from "./telemetry";
-import { type RecordTelemetryFn } from "./types";
+import {type PrismaClient} from '@prisma/client';
+import {type FastifyInstance, type FastifyReply} from 'fastify';
 
-const DEFAULT_ENTITY_MAX_AGE_MINUTES = 360; // Wikidata entities change, but we can reuse results for a few hours
+import {fetchWikidataWithCache} from '../services/wikidata-cache';
+
+import {buildTelemetryBase} from './telemetry';
+import {type RecordTelemetryFn} from './types';
+
+const DEFAULT_ENTITY_MAX_AGE_MINUTES =
+    360;  // Wikidata entities change, but we can reuse results for a few hours
 const DEFAULT_SEARCH_MAX_AGE_MINUTES = 120;
 
-const badRequest = (reply: FastifyReply, message: string) => reply.status(400).send({ error: message });
+const badRequest = (reply: FastifyReply, message: string) =>
+    reply.status(400).send({error: message});
 
 const toInt = (value: unknown) => {
-  if (typeof value === "number" && Number.isFinite(value)) return value;
-  if (typeof value === "string" && value.trim().length > 0 && Number.isFinite(Number(value))) return Number(value);
+  if (typeof value === 'number' && Number.isFinite(value)) return value;
+  if (typeof value === 'string' && value.trim().length > 0 &&
+      Number.isFinite(Number(value)))
+    return Number(value);
   return null;
 };
 
 const toStringParam = (value: unknown) => {
-  if (typeof value === "string" && value.trim().length > 0) return value.trim();
-  if (typeof value === "number") return String(value);
+  if (typeof value === 'string' && value.trim().length > 0) return value.trim();
+  if (typeof value === 'number') return String(value);
   return null;
 };
 
 const cleanParams = (query: Record<string, unknown>) => {
-  const params: Record<string, string | number | boolean> = {};
+  const params: Record<string, string|number|boolean> = {};
   for (const [key, value] of Object.entries(query)) {
     if (value === undefined || value === null) continue;
     if (Array.isArray(value)) continue;
-    if (typeof value === "boolean") {
+    if (typeof value === 'boolean') {
       params[key] = value;
       continue;
     }
-    if (typeof value === "number" && Number.isFinite(value)) {
+    if (typeof value === 'number' && Number.isFinite(value)) {
       params[key] = value;
       continue;
     }
-    if (typeof value === "string" && value.trim().length > 0) {
+    if (typeof value === 'string' && value.trim().length > 0) {
       params[key] = value.trim();
     }
   }
   return params;
 };
 
-export function registerWikidataRoutes(server: FastifyInstance, prisma: PrismaClient, recordTelemetry: RecordTelemetryFn) {
-  const auth = { preHandler: [server.authenticate] };
+export function registerWikidataRoutes(
+    server: FastifyInstance, prisma: PrismaClient,
+    recordTelemetry: RecordTelemetryFn) {
+  const auth = {preHandler: [server.authenticate]};
 
-  server.get("/wikidata/items/:itemId", auth, async (request, reply) => {
-    const { itemId } = request.params as { itemId?: string };
-    if (!itemId) return badRequest(reply, "itemId is required");
+  const resolveEntityType = (value: string) => {
+    if (value === 'items' || value === 'item') return 'items';
+    if (value === 'properties' || value === 'property') return 'properties';
+    return null;
+  };
 
-    const { maxAgeMinutes, ...rawQuery } = request.query as Record<string, unknown>;
+  const resolveSubresource = (value: string) => {
+    if (value === 'statements') return 'statements';
+    if (value === 'labels') return 'labels';
+    if (value === 'sitelinks') return 'sitelinks';
+    return null;
+  };
+
+  const fetchEntity = async (
+      request: any,
+      reply: FastifyReply,
+      entityType: 'items'|'properties',
+      id: string,
+      subresource?: 'statements'|'labels'|'sitelinks',
+      subId?: string,
+      ) => {
+    const {maxAgeMinutes, ...rawQuery} =
+        request.query as Record<string, unknown>;
     const maxAge = toInt(maxAgeMinutes) ?? DEFAULT_ENTITY_MAX_AGE_MINUTES;
     const params = cleanParams(rawQuery);
-    const endpoint = `/wikibase/v1/entities/items/${encodeURIComponent(itemId)}`;
 
-    const result = await fetchWikidataWithCache(prisma, endpoint, params, { resource: "item", maxAgeMinutes: maxAge });
-    await recordTelemetry(request, {
-      ...buildTelemetryBase(request),
-      eventType: "wikidata.item.fetch",
-      source: "api",
-      payload: { itemId, cached: result.cached, status: result.status },
-    });
+    if (subresource && entityType !== 'items')
+      return badRequest(reply, 'subresource only supported for items');
 
-    return reply.status(result.status).send(result.payload);
-  });
+    if (subresource === 'statements' && subId)
+      return badRequest(reply, 'statements does not support sub ids');
 
-  server.get("/wikidata/properties/:propertyId", auth, async (request, reply) => {
-    const { propertyId } = request.params as { propertyId?: string };
-    if (!propertyId) return badRequest(reply, "propertyId is required");
+    if ((subresource === 'labels' || subresource === 'sitelinks') && subId &&
+        subId.trim().length === 0)
+      return badRequest(reply, 'subresource id is required');
 
-    const { maxAgeMinutes, ...rawQuery } = request.query as Record<string, unknown>;
-    const maxAge = toInt(maxAgeMinutes) ?? DEFAULT_ENTITY_MAX_AGE_MINUTES;
-    const params = cleanParams(rawQuery);
-    const endpoint = `/wikibase/v1/entities/properties/${encodeURIComponent(propertyId)}`;
+    const encodedId = encodeURIComponent(id);
+    const endpoint = subresource ?
+        `/wikibase/v1/entities/items/${encodedId}/${subresource}${
+            subId ? `/${encodeURIComponent(subId)}` : ''}` :
+                    `/wikibase/v1/entities/${entityType}/${encodedId}`;
 
-    const result = await fetchWikidataWithCache(prisma, endpoint, params, { resource: "property", maxAgeMinutes: maxAge });
-    await recordTelemetry(request, {
-      ...buildTelemetryBase(request),
-      eventType: "wikidata.property.fetch",
-      source: "api",
-      payload: { propertyId, cached: result.cached, status: result.status },
-    });
-
-    return reply.status(result.status).send(result.payload);
-  });
-
-  server.get("/wikidata/items/:itemId/statements", auth, async (request, reply) => {
-    const { itemId } = request.params as { itemId?: string };
-    if (!itemId) return badRequest(reply, "itemId is required");
-
-    const { maxAgeMinutes, ...rawQuery } = request.query as Record<string, unknown>;
-    const maxAge = toInt(maxAgeMinutes) ?? DEFAULT_ENTITY_MAX_AGE_MINUTES;
-    const params = cleanParams(rawQuery);
-    const endpoint = `/wikibase/v1/entities/items/${encodeURIComponent(itemId)}/statements`;
-
-    const result = await fetchWikidataWithCache(prisma, endpoint, params, { resource: "item-statements", maxAgeMinutes: maxAge });
-    await recordTelemetry(request, {
-      ...buildTelemetryBase(request),
-      eventType: "wikidata.item.statements.fetch",
-      source: "api",
-      payload: { itemId, cached: result.cached, status: result.status },
-    });
-
-    return reply.status(result.status).send(result.payload);
-  });
-
-  server.get("/wikidata/items/:itemId/labels", auth, async (request, reply) => {
-    const { itemId } = request.params as { itemId?: string };
-    if (!itemId) return badRequest(reply, "itemId is required");
-
-    const { maxAgeMinutes, ...rawQuery } = request.query as Record<string, unknown>;
-    const maxAge = toInt(maxAgeMinutes) ?? DEFAULT_ENTITY_MAX_AGE_MINUTES;
-    const params = cleanParams(rawQuery);
-    const endpoint = `/wikibase/v1/entities/items/${encodeURIComponent(itemId)}/labels`;
-
-    const result = await fetchWikidataWithCache(prisma, endpoint, params, { resource: "item-labels", maxAgeMinutes: maxAge });
-    await recordTelemetry(request, {
-      ...buildTelemetryBase(request),
-      eventType: "wikidata.item.labels.fetch",
-      source: "api",
-      payload: { itemId, cached: result.cached, status: result.status },
-    });
-
-    return reply.status(result.status).send(result.payload);
-  });
-
-  server.get("/wikidata/items/:itemId/labels/:languageCode", auth, async (request, reply) => {
-    const { itemId, languageCode } = request.params as { itemId?: string; languageCode?: string };
-    if (!itemId || !languageCode) return badRequest(reply, "itemId and languageCode are required");
-
-    const { maxAgeMinutes, ...rawQuery } = request.query as Record<string, unknown>;
-    const maxAge = toInt(maxAgeMinutes) ?? DEFAULT_ENTITY_MAX_AGE_MINUTES;
-    const params = cleanParams(rawQuery);
-    const endpoint = `/wikibase/v1/entities/items/${encodeURIComponent(itemId)}/labels/${encodeURIComponent(languageCode)}`;
+    const resourceKey = subresource ?
+        `item-${subresource}${subId ? '-entry' : ''}` :
+        entityType === 'items' ? 'item' :
+                                 'property';
 
     const result = await fetchWikidataWithCache(prisma, endpoint, params, {
-      resource: "item-label",
+      resource: resourceKey,
       maxAgeMinutes: maxAge,
     });
 
-    await recordTelemetry(request, {
-      ...buildTelemetryBase(request),
-      eventType: "wikidata.item.label.fetch",
-      source: "api",
-      payload: { itemId, languageCode, cached: result.cached, status: result.status },
-    });
-
-    return reply.status(result.status).send(result.payload);
-  });
-
-  server.get("/wikidata/items/:itemId/sitelinks", auth, async (request, reply) => {
-    const { itemId } = request.params as { itemId?: string };
-    if (!itemId) return badRequest(reply, "itemId is required");
-
-    const { maxAgeMinutes, ...rawQuery } = request.query as Record<string, unknown>;
-    const maxAge = toInt(maxAgeMinutes) ?? DEFAULT_ENTITY_MAX_AGE_MINUTES;
-    const params = cleanParams(rawQuery);
-    const endpoint = `/wikibase/v1/entities/items/${encodeURIComponent(itemId)}/sitelinks`;
-
-    const result = await fetchWikidataWithCache(prisma, endpoint, params, {
-      resource: "item-sitelinks",
-      maxAgeMinutes: maxAge,
-    });
+    const eventType = subresource ?
+        `wikidata.item.${subresource}${subId ? '.entry' : ''}.fetch` :
+        entityType === 'items' ? 'wikidata.item.fetch' :
+                                 'wikidata.property.fetch';
 
     await recordTelemetry(request, {
       ...buildTelemetryBase(request),
-      eventType: "wikidata.item.sitelinks.fetch",
-      source: "api",
-      payload: { itemId, cached: result.cached, status: result.status },
+      eventType,
+      source: 'api',
+      payload: {
+        id,
+        subresource: subresource ?? null,
+        subId: subId ?? null,
+        cached: result.cached,
+        status: result.status,
+      },
     });
 
     return reply.status(result.status).send(result.payload);
+  };
+
+  server.get('/wikidata/:entityType/:id', auth, async (request, reply) => {
+    const {entityType, id} = request.params as {
+      entityType?: string;
+      id?: string
+    };
+    const resolved = entityType ? resolveEntityType(entityType) : null;
+    if (!resolved)
+      return badRequest(reply, 'entityType must be items or properties');
+    if (!id) return badRequest(reply, 'id is required');
+    return fetchEntity(request, reply, resolved, id);
   });
 
-  server.get("/wikidata/items/:itemId/sitelinks/:siteId", auth, async (request, reply) => {
-    const { itemId, siteId } = request.params as { itemId?: string; siteId?: string };
-    if (!itemId || !siteId) return badRequest(reply, "itemId and siteId are required");
+  server.get(
+      '/wikidata/:entityType/:id/:subresource', auth,
+      async (request, reply) => {
+        const {entityType, id, subresource} = request.params as {
+          entityType?: string;
+          id?: string;
+          subresource?: string;
+        };
+        const resolved = entityType ? resolveEntityType(entityType) : null;
+        if (!resolved)
+          return badRequest(reply, 'entityType must be items or properties');
+        if (!id) return badRequest(reply, 'id is required');
+        const resolvedSub =
+            subresource ? resolveSubresource(subresource) : null;
+        if (!resolvedSub) return badRequest(reply, 'subresource is invalid');
+        return fetchEntity(request, reply, resolved, id, resolvedSub);
+      });
 
-    const { maxAgeMinutes, ...rawQuery } = request.query as Record<string, unknown>;
-    const maxAge = toInt(maxAgeMinutes) ?? DEFAULT_ENTITY_MAX_AGE_MINUTES;
-    const params = cleanParams(rawQuery);
-    const endpoint = `/wikibase/v1/entities/items/${encodeURIComponent(itemId)}/sitelinks/${encodeURIComponent(siteId)}`;
+  server.get(
+      '/wikidata/:entityType/:id/:subresource/:subId', auth,
+      async (request, reply) => {
+        const {entityType, id, subresource, subId} = request.params as {
+          entityType?: string;
+          id?: string;
+          subresource?: string;
+          subId?: string;
+        };
+        const resolved = entityType ? resolveEntityType(entityType) : null;
+        if (!resolved)
+          return badRequest(reply, 'entityType must be items or properties');
+        if (!id) return badRequest(reply, 'id is required');
+        const resolvedSub =
+            subresource ? resolveSubresource(subresource) : null;
+        if (!resolvedSub) return badRequest(reply, 'subresource is invalid');
+        if (!subId) return badRequest(reply, 'subresource id is required');
+        return fetchEntity(request, reply, resolved, id, resolvedSub, subId);
+      });
 
-    const result = await fetchWikidataWithCache(prisma, endpoint, params, {
-      resource: "item-sitelink",
-      maxAgeMinutes: maxAge,
-    });
-
-    await recordTelemetry(request, {
-      ...buildTelemetryBase(request),
-      eventType: "wikidata.item.sitelink.fetch",
-      source: "api",
-      payload: { itemId, siteId, cached: result.cached, status: result.status },
-    });
-
-    return reply.status(result.status).send(result.payload);
-  });
-
-  server.get("/wikidata/search/items", auth, async (request, reply) => {
-    const { q, language, limit, continue: continuation, maxAgeMinutes } = request.query as {
+  server.get('/wikidata/search/:kind', auth, async (request, reply) => {
+    const {kind} = request.params as {kind?: string};
+    const {q, language, limit, continue: continuation, maxAgeMinutes} =
+        request.query as {
       q?: string;
       language?: string;
       limit?: string;
@@ -206,51 +187,31 @@ export function registerWikidataRoutes(server: FastifyInstance, prisma: PrismaCl
     };
 
     const query = toStringParam(q);
-    if (!query) return badRequest(reply, "q is required");
+    if (!query) return badRequest(reply, 'q is required');
+    if (kind !== 'items' && kind !== 'properties')
+      return badRequest(reply, 'kind must be items or properties');
 
-    const params = cleanParams({ q: query, language, limit: toInt(limit) ?? undefined, continue: continuation });
+    const params = cleanParams({
+      q: query,
+      language,
+      limit: toInt(limit) ?? undefined,
+      continue: continuation
+    });
     const maxAge = toInt(maxAgeMinutes) ?? DEFAULT_SEARCH_MAX_AGE_MINUTES;
+    const endpoint = kind === 'items' ? '/wikibase/v0/search/items' :
+                                        '/wikibase/v0/search/properties';
+    const resource = kind === 'items' ? 'search-items' : 'search-properties';
 
-    const result = await fetchWikidataWithCache(prisma, "/wikibase/v0/search/items", params, {
-      resource: "search-items",
+    const result = await fetchWikidataWithCache(prisma, endpoint, params, {
+      resource,
       maxAgeMinutes: maxAge,
     });
 
     await recordTelemetry(request, {
       ...buildTelemetryBase(request),
-      eventType: "wikidata.search.items",
-      source: "api",
-      payload: { q: query, cached: result.cached, status: result.status },
-    });
-
-    return reply.status(result.status).send(result.payload);
-  });
-
-  server.get("/wikidata/search/properties", auth, async (request, reply) => {
-    const { q, language, limit, continue: continuation, maxAgeMinutes } = request.query as {
-      q?: string;
-      language?: string;
-      limit?: string;
-      continue?: string;
-      maxAgeMinutes?: string;
-    };
-
-    const query = toStringParam(q);
-    if (!query) return badRequest(reply, "q is required");
-
-    const params = cleanParams({ q: query, language, limit: toInt(limit) ?? undefined, continue: continuation });
-    const maxAge = toInt(maxAgeMinutes) ?? DEFAULT_SEARCH_MAX_AGE_MINUTES;
-
-    const result = await fetchWikidataWithCache(prisma, "/wikibase/v0/search/properties", params, {
-      resource: "search-properties",
-      maxAgeMinutes: maxAge,
-    });
-
-    await recordTelemetry(request, {
-      ...buildTelemetryBase(request),
-      eventType: "wikidata.search.properties",
-      source: "api",
-      payload: { q: query, cached: result.cached, status: result.status },
+      eventType: `wikidata.search.${kind}`,
+      source: 'api',
+      payload: {q: query, cached: result.cached, status: result.status},
     });
 
     return reply.status(result.status).send(result.payload);

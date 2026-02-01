@@ -299,128 +299,127 @@ export function registerAssignmentRoutes(
       },
   );
 
-  server.post(
-      '/assignments/:id/pay',
-      {preHandler: [server.authenticate]},
-      async (request, reply) => {
-        const userId = (request.user as {sub: string}).sub;
-        const assignmentId = (request.params as {id: string}).id;
-        const body = request.body as {
-          timecardId?: string;
-          note?: string
-        }
-        |undefined;
+  const handleAssignmentPay = async (request: any, reply: any) => {
+    const userId = (request.user as {sub: string}).sub;
+    const assignmentId = (request.params as {id: string}).id;
+    const body = request.body as {
+      timecardId?: string;
+      note?: string
+    }
+    |undefined;
 
-        const details = await assignmentActor.loadAssignmentDetails(
-            prisma, userId, assignmentId);
-        if (!details)
-          return reply.status(404).send({error: 'Assignment not found'});
+    const details = await assignmentActor.loadAssignmentDetails(
+        prisma, userId, assignmentId);
+    if (!details)
+      return reply.status(404).send({error: 'Assignment not found'});
 
-        const timecardId = body?.timecardId?.trim();
-        if (!timecardId)
-          return reply.status(400).send({error: 'timecardId is required'});
-        const timecardEntity =
-            details.timecards.find((tc) => tc.id === timecardId);
-        if (!timecardEntity)
-          return reply.status(404).send({error: 'Timecard not found'});
-        const timecard = buildTimecardRecord(timecardEntity);
-        if (timecard.status === 'paid')
-          return reply.status(400).send({error: 'Timecard already paid'});
+    const timecardId = body?.timecardId?.trim();
+    if (!timecardId)
+      return reply.status(400).send({error: 'timecardId is required'});
+    const timecardEntity = details.timecards.find((tc) => tc.id === timecardId);
+    if (!timecardEntity)
+      return reply.status(404).send({error: 'Timecard not found'});
+    const timecard = buildTimecardRecord(timecardEntity);
+    if (timecard.status === 'paid')
+      return reply.status(400).send({error: 'Timecard already paid'});
 
-        const personaMap = await personaLedger.loadPersonaMap(prisma, userId);
-        const assignmentMetadata = asRecord(details.assignment.metadata);
-        const assignmentTitle =
-            metadataString(assignmentMetadata, 'title') ?? 'assignment';
-        try {
-          const result = await prisma.$transaction(async (tx) => {
-            const user = await tx.user.findUnique({
-              where: {id: userId},
-              select: {k3h4CoinBalance: true},
-            });
-            if (!user) throw new Error('User not found');
+    const personaMap = await personaLedger.loadPersonaMap(prisma, userId);
+    const assignmentMetadata = asRecord(details.assignment.metadata);
+    const assignmentTitle =
+        metadataString(assignmentMetadata, 'title') ?? 'assignment';
+    try {
+      const result = await prisma.$transaction(async (tx) => {
+        const user = await tx.user.findUnique({
+          where: {id: userId},
+          select: {k3h4CoinBalance: true},
+        });
+        if (!user) throw new Error('User not found');
 
-            const nextBalance = user.k3h4CoinBalance.sub(timecard.amount);
-            const savedUser = await tx.user.update({
-              where: {id: userId},
-              data: {k3h4CoinBalance: nextBalance},
-            });
+        const nextBalance = user.k3h4CoinBalance.sub(timecard.amount);
+        const savedUser = await tx.user.update({
+          where: {id: userId},
+          data: {k3h4CoinBalance: nextBalance},
+        });
 
-            const bankTxn = await recordBankTransactionEntity(tx, {
-              userId,
-              amount: timecard.amount,
-              direction: EntityDirection.DEBIT,
-              kind: EntityKind.ASSIGNMENT_PAYOUT,
-              note: body?.note ?? `Payout for ${assignmentTitle}`,
-              balanceAfter: savedUser.k3h4CoinBalance,
-              targetType: assignmentActor.ASSIGNMENT_TARGET_TYPE,
-              targetId: assignmentId,
-              name: assignmentTitle,
-            });
+        const bankTxn = await recordBankTransactionEntity(tx, {
+          userId,
+          amount: timecard.amount,
+          direction: EntityDirection.DEBIT,
+          kind: EntityKind.ASSIGNMENT_PAYOUT,
+          note: body?.note ?? `Payout for ${assignmentTitle}`,
+          balanceAfter: savedUser.k3h4CoinBalance,
+          targetType: assignmentActor.ASSIGNMENT_TARGET_TYPE,
+          targetId: assignmentId,
+          name: assignmentTitle,
+        });
 
-            const payoutEntity = await tx.entity.create({
-              data: {
-                actorId: details.assignment.actorId,
-                kind: EntityKind.ASSIGNMENT_PAYOUT,
-                targetType: assignmentActor.ASSIGNMENT_TARGET_TYPE,
-                targetId: assignmentId,
-                source: assignmentActor.ASSIGNMENT_ACTOR_SOURCE,
-                metadata: {
-                  amount: timecard.amount.toFixed(2),
-                  note: body?.note?.trim() ?? `Timecard payout ${timecard.id}`,
-                  invoiceUrl: `https://invoices.k3h4.local/${
-                      faker.string.alphanumeric(8).toLowerCase()}`,
-                  status: 'paid',
-                },
-              },
-            });
-
-            const existingMetadata = asRecord(timecardEntity.metadata);
-            await tx.entity.update({
-              where: {id: timecardEntity.id},
-              data: {metadata: {...existingMetadata, status: 'paid'}},
-            });
-
-            return {bankTxn, payoutEntity};
-          });
-
-          await recordTelemetry(request, {
-            ...buildTelemetryBase(request),
-            eventType: 'assignment.payout',
-            source: 'api',
-            payload: {
-              assignmentId,
-              timecardId,
+        const payoutEntity = await tx.entity.create({
+          data: {
+            actorId: details.assignment.actorId,
+            kind: EntityKind.ASSIGNMENT_PAYOUT,
+            targetType: assignmentActor.ASSIGNMENT_TARGET_TYPE,
+            targetId: assignmentId,
+            source: assignmentActor.ASSIGNMENT_ACTOR_SOURCE,
+            metadata: {
               amount: timecard.amount.toFixed(2),
+              note: body?.note?.trim() ?? `Timecard payout ${timecard.id}`,
+              invoiceUrl: `https://invoices.k3h4.local/${
+                  faker.string.alphanumeric(8).toLowerCase()}`,
+              status: 'paid',
             },
-          });
+          },
+        });
 
-          const updatedDetails = await assignmentActor.loadAssignmentDetails(
-              prisma, userId, assignmentId);
+        const existingMetadata = asRecord(timecardEntity.metadata);
+        await tx.entity.update({
+          where: {id: timecardEntity.id},
+          data: {metadata: {...existingMetadata, status: 'paid'}},
+        });
 
-          const assignmentResponse = updatedDetails ?
-              buildSerializedAssignment(
-                  updatedDetails.assignment, updatedDetails.timecards,
-                  updatedDetails.payouts, personaMap) :
-              null;
-          const payoutResponse =
-              serializeAssignment({
-                hourlyRate:
-                    buildAssignmentRecordFromEntity(
-                        updatedDetails?.assignment ?? details.assignment)
-                        .hourlyRate,
-                persona: null,
-                timecards: [],
-                payouts: [buildPayoutRecord(result.payoutEntity)],
-              }).payouts[0];
+        return {bankTxn, payoutEntity};
+      });
 
-          return {assignment: assignmentResponse, payout: payoutResponse};
-        } catch (err) {
-          request.log.error({err}, 'assignment payout failed');
-          return reply.status(400).send({
-            error: err instanceof Error ? err.message :
-                                          'Unable to process payout'
-          });
-        }
-      },
+      await recordTelemetry(request, {
+        ...buildTelemetryBase(request),
+        eventType: 'assignment.payout',
+        source: 'api',
+        payload: {
+          assignmentId,
+          timecardId,
+          amount: timecard.amount.toFixed(2),
+        },
+      });
+
+      const updatedDetails = await assignmentActor.loadAssignmentDetails(
+          prisma, userId, assignmentId);
+
+      const assignmentResponse = updatedDetails ?
+          buildSerializedAssignment(
+              updatedDetails.assignment, updatedDetails.timecards,
+              updatedDetails.payouts, personaMap) :
+          null;
+      const payoutResponse =
+          serializeAssignment({
+            hourlyRate: buildAssignmentRecordFromEntity(
+                            updatedDetails?.assignment ?? details.assignment)
+                            .hourlyRate,
+            persona: null,
+            timecards: [],
+            payouts: [buildPayoutRecord(result.payoutEntity)],
+          }).payouts[0];
+
+      return {assignment: assignmentResponse, payout: payoutResponse};
+    } catch (err) {
+      request.log.error({err}, 'assignment payout failed');
+      return reply.status(400).send({
+        error: err instanceof Error ? err.message : 'Unable to process payout'
+      });
+    }
+  };
+
+  server.post(
+      '/assignments/:id/actions/pay',
+      {preHandler: [server.authenticate]},
+      handleAssignmentPay,
   );
 }

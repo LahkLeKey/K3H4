@@ -264,8 +264,8 @@ describe('freight routes', () => {
       $transaction: vi.fn(async (cb) => cb(txContext as any)),
     };
     const server = buildServer(prisma);
-    const res =
-        await server.inject({method: 'POST', url: '/freight/l1/complete'});
+    const res = await server.inject(
+        {method: 'POST', url: '/freight/l1/actions/complete'});
     expect(res.statusCode).toBe(200);
     expect(txEntity.create).toHaveBeenCalled();
     expect(createFreightLoadMock).not.toHaveBeenCalled();
@@ -286,8 +286,8 @@ describe('freight routes', () => {
       $transaction: vi.fn(),
     };
     const server = buildServer(prisma);
-    const res =
-        await server.inject({method: 'POST', url: '/freight/missing/complete'});
+    const res = await server.inject(
+        {method: 'POST', url: '/freight/missing/actions/complete'});
     expect(res.statusCode).toBe(404);
     expect(markFreightLoadCompletedMock).not.toHaveBeenCalled();
   });
@@ -302,8 +302,8 @@ describe('freight routes', () => {
       $transaction: vi.fn(),
     };
     const server = buildServer(prisma);
-    const res =
-        await server.inject({method: 'POST', url: '/freight/l1/complete'});
+    const res = await server.inject(
+        {method: 'POST', url: '/freight/l1/actions/complete'});
     expect(res.statusCode).toBe(400);
     expect(markFreightLoadCompletedMock).not.toHaveBeenCalled();
   });
@@ -319,8 +319,8 @@ describe('freight routes', () => {
       entity: {create: vi.fn()},
     };
     const server = buildServer(prisma);
-    const res =
-        await server.inject({method: 'POST', url: '/freight/l1/complete'});
+    const res = await server.inject(
+        {method: 'POST', url: '/freight/l1/actions/complete'});
     expect(res.statusCode).toBe(400);
     expect(markFreightLoadCompletedMock).not.toHaveBeenCalled();
   });

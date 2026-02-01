@@ -14,7 +14,7 @@ export function registerPoiEnrichRoutes(
     server: FastifyInstance, prisma: PrismaClient,
     recordTelemetry: RecordTelemetryFn) {
   server.get(
-      '/api/poi/:id/enrich',
+      '/api/poi/:id/actions/enrich',
       {
         schema: {
           params: {

@@ -90,22 +90,8 @@ export function registerOsrmRoutes(
     return response.body;
   };
 
-  server.get(
-      '/osrm/route', {...auth},
-      async (request, reply) => handler('route', request, reply));
-  server.get(
-      '/osrm/table', {...auth},
-      async (request, reply) => handler('table', request, reply));
-  server.get(
-      '/osrm/match', {...auth},
-      async (request, reply) => handler('match', request, reply));
-  server.get(
-      '/osrm/trip', {...auth},
-      async (request, reply) => handler('trip', request, reply));
-  server.get(
-      '/osrm/nearest', {...auth},
-      async (request, reply) => handler('nearest', request, reply));
-  server.get(
-      '/osrm/tile', {...auth},
-      async (request, reply) => handler('tile', request, reply));
+  server.get('/osrm/:service', {...auth}, async (request, reply) => {
+    const {service} = request.params as {service?: string};
+    return handler(service ?? '', request, reply);
+  });
 }

@@ -163,36 +163,25 @@ export function registerMaptilerRoutes(
     return response.body;
   };
 
-  const maptilerJsonRouteOptions: RateLimitedRouteShorthandOptions = {
+  const maptilerRouteOptions: RateLimitedRouteShorthandOptions = {
     ...optionalAuth,
     rateLimit: {
       max: MAPTILER_RATE_LIMIT_MAX,
       timeWindow: MAPTILER_RATE_LIMIT_WINDOW,
     },
     schema: {
-      summary: 'Proxy MapTiler Cloud JSON endpoints with caching',
+      summary: 'Proxy MapTiler Cloud endpoints with caching',
       tags: ['maptiler'],
     },
   };
 
   server.get(
-      '/maptiler/json', maptilerJsonRouteOptions,
-      async (request, reply) => handler('json', request, reply));
-
-  const maptilerTilesRouteOptions: RateLimitedRouteShorthandOptions = {
-    ...optionalAuth,
-    rateLimit: {
-      max: MAPTILER_RATE_LIMIT_MAX,
-      timeWindow: MAPTILER_RATE_LIMIT_WINDOW,
-    },
-    schema: {
-      summary:
-          'Proxy MapTiler Cloud binary endpoints (tiles/static) with caching',
-      tags: ['maptiler'],
-    },
-  };
-
-  server.get(
-      '/maptiler/tiles', maptilerTilesRouteOptions,
-      async (request, reply) => handler('arrayBuffer', request, reply));
+      '/maptiler/:kind', maptilerRouteOptions, async (request, reply) => {
+        const {kind} = request.params as {kind?: string};
+        if (kind !== 'json' && kind !== 'tiles') {
+          return badRequest(reply, 'kind must be json or tiles');
+        }
+        const responseType = kind === 'tiles' ? 'arrayBuffer' : 'json';
+        return handler(responseType, request, reply);
+      });
 }

@@ -735,44 +735,42 @@ export function registerStaffingRoutes(
       },
   );
 
+  const handleCandidateStage = async (request: any, reply: any) => {
+    const userId = (request.user as {sub: string}).sub;
+    const candidateId = (request.params as {id: string}).id;
+    const body = request.body as {stage?: string} | undefined;
+    const stage = body?.stage?.trim();
+    if (!stage) return reply.status(400).send({error: 'stage is required'});
+
+    const entity = await loadStaffingEntityByKind(
+        prisma, userId, EntityKind.STAFFING_CANDIDATE, candidateId);
+    const owned = await assertOwnedEntity(entity, reply, 'Candidate not found');
+    if (!owned) return;
+
+    const metadata = {...asRecord(owned.metadata), stage};
+    await prisma.entity.update({where: {id: candidateId}, data: {metadata}});
+
+    const updated = await prisma.entity.findUnique({where: {id: candidateId}});
+    if (!updated) return reply.status(404).send({error: 'Candidate not found'});
+
+    const personaMap = await personaLedger.loadPersonaMap(prisma, userId);
+    const candidateResponse = serializeCandidate(
+        buildCandidateFields(updated, personaMap, new Map()));
+
+    await recordTelemetry(request, {
+      ...buildTelemetryBase(request),
+      eventType: 'staffing.candidate.stage',
+      source: 'api',
+      payload: {candidateId, stage},
+    });
+
+    return {candidate: candidateResponse};
+  };
+
   server.post(
-      '/staffing/candidates/:id/stage',
+      '/staffing/candidates/:id/actions/stage',
       {preHandler: [server.authenticate]},
-      async (request, reply) => {
-        const userId = (request.user as {sub: string}).sub;
-        const candidateId = (request.params as {id: string}).id;
-        const body = request.body as {stage?: string} | undefined;
-        const stage = body?.stage?.trim();
-        if (!stage) return reply.status(400).send({error: 'stage is required'});
-
-        const entity = await loadStaffingEntityByKind(
-            prisma, userId, EntityKind.STAFFING_CANDIDATE, candidateId);
-        const owned =
-            await assertOwnedEntity(entity, reply, 'Candidate not found');
-        if (!owned) return;
-
-        const metadata = {...asRecord(owned.metadata), stage};
-        await prisma.entity.update(
-            {where: {id: candidateId}, data: {metadata}});
-
-        const updated =
-            await prisma.entity.findUnique({where: {id: candidateId}});
-        if (!updated)
-          return reply.status(404).send({error: 'Candidate not found'});
-
-        const personaMap = await personaLedger.loadPersonaMap(prisma, userId);
-        const candidateResponse = serializeCandidate(
-            buildCandidateFields(updated, personaMap, new Map()));
-
-        await recordTelemetry(request, {
-          ...buildTelemetryBase(request),
-          eventType: 'staffing.candidate.stage',
-          source: 'api',
-          payload: {candidateId, stage},
-        });
-
-        return {candidate: candidateResponse};
-      },
+      handleCandidateStage,
   );
 
   server.post(

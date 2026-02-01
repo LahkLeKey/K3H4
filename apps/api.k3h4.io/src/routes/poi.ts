@@ -792,13 +792,13 @@ export function registerPoiRoutes(
   // probes)
   server.get('/pois', listHandler);
   server.get('/pois/metadata', metadataHandler);
-  server.post('/pois/sync', authOpts, syncHandler);
+  server.post('/pois/actions/sync', authOpts, syncHandler);
   server.get('/pois/:id', detailHandler);
 
   // Authenticated variants for the signed-in map experience
   server.get('/api/pois', authOpts, listHandler);
   server.get('/api/pois/metadata', authOpts, metadataHandler);
-  server.post('/api/pois/sync', authOpts, syncHandler);
+  server.post('/api/pois/actions/sync', authOpts, syncHandler);
   server.get('/api/pois/:id', authOpts, detailHandler);
 
   // Batch enrich POIs by ids

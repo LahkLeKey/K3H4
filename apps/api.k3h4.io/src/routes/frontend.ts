@@ -270,6 +270,6 @@ export function registerFrontendRoutes(
     return payload;
   };
 
-  server.get('/frontend/map/bootstrap', handler);
-  server.post('/frontend/map/bootstrap', handler);
+  server.get('/frontend/map/actions/bootstrap', handler);
+  server.post('/frontend/map/actions/bootstrap', handler);
 }

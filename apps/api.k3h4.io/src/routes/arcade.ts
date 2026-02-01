@@ -233,85 +233,86 @@ export function registerArcadeRoutes(
       },
   );
 
+  const handleCardTopUp = async (request: any, reply: any) => {
+    const userId = (request.user as {sub: string}).sub;
+    const id = (request.params as {id: string}).id;
+    const body = request.body as {
+      amount?: number|string;
+      source?: string;
+    }
+    |undefined;
+    const amountNum = body?.amount !== undefined ? Number(body.amount) : NaN;
+    if (!Number.isFinite(amountNum) || amountNum <= 0)
+      return reply.status(400).send({error: 'amount must be > 0'});
+    const amount = new Prisma.Decimal(amountNum.toFixed(2));
+
+    try {
+      const {balance} = await prisma.$transaction(async (tx) => {
+        const user = await tx.user.findUnique({
+          where: {id: userId},
+          select: {k3h4CoinBalance: true},
+        });
+        if (!user) throw new Error('User not found');
+        if (user.k3h4CoinBalance.lessThan(amount))
+          throw new Error('Insufficient k3h4-coin balance');
+
+        const card = await tx.actor.findFirst({
+          where: {id, userId, type: ActorType.ARCADE_PLAYER_CARD},
+        });
+        if (!card) throw new Error('Card not found');
+
+        const cardBalance = await getActorBalance(tx, card.id);
+        const nextUserBalance = user.k3h4CoinBalance.sub(amount);
+        const nextCardBalance = cardBalance.add(amount);
+
+        await tx.user.update({
+          where: {id: userId},
+          data: {k3h4CoinBalance: nextUserBalance},
+        });
+        await recordBankTransactionEntity(tx, {
+          userId,
+          amount,
+          direction: EntityDirection.DEBIT,
+          kind: EntityKind.ARCADE_TOPUP,
+          balanceAfter: nextUserBalance,
+          targetType: 'arcade_card',
+          targetId: card.id,
+          name: card.label ?? card.id,
+        });
+
+        await recordBankTransactionEntity(tx, {
+          userId,
+          actorId: card.id,
+          amount,
+          direction: EntityDirection.CREDIT,
+          kind: EntityKind.ARCADE_TOPUP,
+          balanceAfter: nextCardBalance,
+          metadata: {source: body?.source ?? 'k3h4-coin'},
+          name: 'Arcade card top-up',
+        });
+
+        return {balance: nextCardBalance};
+      });
+
+      await recordTelemetry(request, {
+        ...buildTelemetryBase(request),
+        eventType: 'arcade.card.topup',
+        source: 'api',
+        payload: {cardId: id, amount: amount.toFixed(2)},
+      });
+
+      return {balance: serializeDecimal(balance)};
+    } catch (err) {
+      request.log.error({err}, 'arcade top-up failed');
+      return reply.status(400).send(
+          {error: err instanceof Error ? err.message : 'Unable to top up'});
+    }
+  };
+
   server.post(
-      '/arcade/cards/:id/topup',
+      '/arcade/cards/:id/actions/topup',
       {preHandler: [server.authenticate]},
-      async (request, reply) => {
-        const userId = (request.user as {sub: string}).sub;
-        const id = (request.params as {id: string}).id;
-        const body = request.body as {
-          amount?: number|string;
-          source?: string;
-        }
-        |undefined;
-        const amountNum =
-            body?.amount !== undefined ? Number(body.amount) : NaN;
-        if (!Number.isFinite(amountNum) || amountNum <= 0)
-          return reply.status(400).send({error: 'amount must be > 0'});
-        const amount = new Prisma.Decimal(amountNum.toFixed(2));
-
-        try {
-          const {balance} = await prisma.$transaction(async (tx) => {
-            const user = await tx.user.findUnique({
-              where: {id: userId},
-              select: {k3h4CoinBalance: true},
-            });
-            if (!user) throw new Error('User not found');
-            if (user.k3h4CoinBalance.lessThan(amount))
-              throw new Error('Insufficient k3h4-coin balance');
-
-            const card = await tx.actor.findFirst({
-              where: {id, userId, type: ActorType.ARCADE_PLAYER_CARD},
-            });
-            if (!card) throw new Error('Card not found');
-
-            const cardBalance = await getActorBalance(tx, card.id);
-            const nextUserBalance = user.k3h4CoinBalance.sub(amount);
-            const nextCardBalance = cardBalance.add(amount);
-
-            await tx.user.update({
-              where: {id: userId},
-              data: {k3h4CoinBalance: nextUserBalance},
-            });
-            await recordBankTransactionEntity(tx, {
-              userId,
-              amount,
-              direction: EntityDirection.DEBIT,
-              kind: EntityKind.ARCADE_TOPUP,
-              balanceAfter: nextUserBalance,
-              targetType: 'arcade_card',
-              targetId: card.id,
-              name: card.label ?? card.id,
-            });
-
-            await recordBankTransactionEntity(tx, {
-              userId,
-              actorId: card.id,
-              amount,
-              direction: EntityDirection.CREDIT,
-              kind: EntityKind.ARCADE_TOPUP,
-              balanceAfter: nextCardBalance,
-              metadata: {source: body?.source ?? 'k3h4-coin'},
-              name: 'Arcade card top-up',
-            });
-
-            return {balance: nextCardBalance};
-          });
-
-          await recordTelemetry(request, {
-            ...buildTelemetryBase(request),
-            eventType: 'arcade.card.topup',
-            source: 'api',
-            payload: {cardId: id, amount: amount.toFixed(2)},
-          });
-
-          return {balance: serializeDecimal(balance)};
-        } catch (err) {
-          request.log.error({err}, 'arcade top-up failed');
-          return reply.status(400).send(
-              {error: err instanceof Error ? err.message : 'Unable to top up'});
-        }
-      },
+      handleCardTopUp,
   );
 
   server.post(
@@ -430,99 +431,94 @@ export function registerArcadeRoutes(
       },
   );
 
-  server.post(
-      '/arcade/prizes/:id/redeem',
-      {preHandler: [server.authenticate]},
-      async (request, reply) => {
-        const userId = (request.user as {sub: string}).sub;
-        const prizeId = (request.params as {id: string}).id;
-        const body = request.body as {
-          cardId: string;
-          sessionId?: string
-        };
+  const handlePrizeRedeem = async (request: any, reply: any) => {
+    const userId = (request.user as {sub: string}).sub;
+    const prizeId = (request.params as {id: string}).id;
+    const body = request.body as {
+      cardId: string;
+      sessionId?: string
+    };
 
-        try {
-          const {
-            entity,
-            balance,
-            stock
-          } = await prisma.$transaction(async (tx) => {
-            const prize = await tx.actor.findFirst({
-              where: {id: prizeId, userId, type: ActorType.ARCADE_PRIZE},
-            });
-            if (!prize) throw new Error('Prize not found');
-            const prizeMetadata = parseJsonObject(prize.metadata);
-            const stockRaw = prizeMetadata.stock;
-            const currentStock =
-                typeof stockRaw === 'number' ? stockRaw : Number(stockRaw ?? 0);
-            if (currentStock <= 0) throw new Error('Prize out of stock');
-            const costRaw = prizeMetadata.costCoins;
-            const cost = typeof costRaw === 'string' ?
-                new Prisma.Decimal(costRaw) :
-                new Prisma.Decimal('0.00');
+    try {
+      const {entity, balance, stock} = await prisma.$transaction(async (tx) => {
+        const prize = await tx.actor.findFirst({
+          where: {id: prizeId, userId, type: ActorType.ARCADE_PRIZE},
+        });
+        if (!prize) throw new Error('Prize not found');
+        const prizeMetadata = parseJsonObject(prize.metadata);
+        const stockRaw = prizeMetadata.stock;
+        const currentStock =
+            typeof stockRaw === 'number' ? stockRaw : Number(stockRaw ?? 0);
+        if (currentStock <= 0) throw new Error('Prize out of stock');
+        const costRaw = prizeMetadata.costCoins;
+        const cost = typeof costRaw === 'string' ? new Prisma.Decimal(costRaw) :
+                                                   new Prisma.Decimal('0.00');
 
-            const card = await tx.actor.findFirst({
-              where:
-                  {id: body.cardId, userId, type: ActorType.ARCADE_PLAYER_CARD},
-            });
-            if (!card) throw new Error('Card not found');
+        const card = await tx.actor.findFirst({
+          where: {id: body.cardId, userId, type: ActorType.ARCADE_PLAYER_CARD},
+        });
+        if (!card) throw new Error('Card not found');
 
-            const cardBalance = await getActorBalance(tx, card.id);
-            if (cardBalance.lessThan(cost))
-              throw new Error('Insufficient card balance');
+        const cardBalance = await getActorBalance(tx, card.id);
+        if (cardBalance.lessThan(cost))
+          throw new Error('Insufficient card balance');
 
-            const nextBalance = cardBalance.sub(cost);
-            const entity = await recordBankTransactionEntity(tx, {
-              userId,
-              actorId: card.id,
-              amount: cost,
-              direction: EntityDirection.DEBIT,
-              kind: EntityKind.ARCADE_PRIZE_REDEMPTION,
-              balanceAfter: nextBalance,
-              targetType: 'arcade_prize',
-              targetId: prize.id,
-              metadata: {
-                prizeId: prize.id,
-                sessionId: body.sessionId ?? null,
-              },
-            });
+        const nextBalance = cardBalance.sub(cost);
+        const entity = await recordBankTransactionEntity(tx, {
+          userId,
+          actorId: card.id,
+          amount: cost,
+          direction: EntityDirection.DEBIT,
+          kind: EntityKind.ARCADE_PRIZE_REDEMPTION,
+          balanceAfter: nextBalance,
+          targetType: 'arcade_prize',
+          targetId: prize.id,
+          metadata: {
+            prizeId: prize.id,
+            sessionId: body.sessionId ?? null,
+          },
+        });
 
-            await tx.actor.update({
-              where: {id: prize.id},
-              data: {
-                metadata: {
-                  ...prizeMetadata,
-                  stock: Math.max(0, currentStock - 1),
-                },
-              },
-            });
-
-            return {
-              entity,
-              balance: nextBalance,
+        await tx.actor.update({
+          where: {id: prize.id},
+          data: {
+            metadata: {
+              ...prizeMetadata,
               stock: Math.max(0, currentStock - 1),
-            };
-          });
+            },
+          },
+        });
 
-          await recordTelemetry(request, {
-            ...buildTelemetryBase(request),
-            eventType: 'arcade.prize.redeem',
-            source: 'api',
-            payload: {prizeId, cardId: body.cardId},
-          });
+        return {
+          entity,
+          balance: nextBalance,
+          stock: Math.max(0, currentStock - 1),
+        };
+      });
 
-          return {
-            redemption: buildRedemptionSummary(entity),
-            balance: serializeDecimal(balance),
-            prizeStock: stock,
-          };
-        } catch (err) {
-          request.log.error({err}, 'arcade redemption failed');
-          return reply.status(400).send({
-            error: err instanceof Error ? err.message :
-                                          'Unable to redeem prize',
-          });
-        }
-      },
+      await recordTelemetry(request, {
+        ...buildTelemetryBase(request),
+        eventType: 'arcade.prize.redeem',
+        source: 'api',
+        payload: {prizeId, cardId: body.cardId},
+      });
+
+      return {
+        redemption: buildRedemptionSummary(entity),
+        balance: serializeDecimal(balance),
+        prizeStock: stock,
+      };
+    } catch (err) {
+      request.log.error({err}, 'arcade redemption failed');
+      return reply.status(400).send({
+        error: err instanceof Error ? err.message : 'Unable to redeem prize',
+      });
+    }
+  };
+
+  server.post(
+      '/arcade/prizes/:id/actions/redeem',
+      {preHandler: [server.authenticate]},
+      handlePrizeRedeem,
   );
 }
