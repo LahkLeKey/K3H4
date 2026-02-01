@@ -146,7 +146,6 @@ model User {
   @@unique([provider, providerId])
 }
 
-
 model PointOfInterest {
   id         String   @id @default(cuid())
   osmType    String   @default("node")

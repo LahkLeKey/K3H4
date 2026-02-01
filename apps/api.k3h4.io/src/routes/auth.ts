@@ -4,13 +4,13 @@ import {randomBytes} from 'node:crypto';
 import {URLSearchParams} from 'node:url';
 
 import {deleteAgricultureActorWithEntities} from '../services/agriculture-actor';
+import {deleteProviderGrantsForUser, deleteRefreshTokensForUser, findRefreshTokenEntity, readProviderGrantsForUser, storeRefreshToken, upsertProviderGrant} from '../services/auth-entities';
 import {deleteBankActorWithEntities} from '../services/bank-actor';
 import {deleteCulinaryActorWithEntities} from '../services/culinary-ledger';
 import {deleteFreightActorWithEntities} from '../services/freight-actor';
 import {deleteStaffingActorWithEntities} from '../services/staffing-actor';
-import {deleteWarehouseActorWithEntities} from '../services/warehouse-actor';
 import {deleteUserPreferencesForUser} from '../services/user-preferences';
-import {deleteProviderGrantsForUser, deleteRefreshTokensForUser, findRefreshTokenEntity, readProviderGrantsForUser, storeRefreshToken, upsertProviderGrant} from '../services/auth-entities';
+import {deleteWarehouseActorWithEntities} from '../services/warehouse-actor';
 
 import {withTelemetryBase} from './telemetry';
 import {type RecordTelemetryFn} from './types';
@@ -109,7 +109,7 @@ const createSessionTokens = async (
     email?: string) => {
   const refreshToken = randomBytes(48).toString('hex');
   const expiresAt = new Date(Date.now() + 1000 * 60 * 60 * 24 * 30);
-    await storeRefreshToken(prisma, userId, refreshToken, expiresAt);
+  await storeRefreshToken(prisma, userId, refreshToken, expiresAt);
   const accessToken =
       server.jwt.sign({sub: userId, email: email ?? ''}, {expiresIn: '15m'});
   return {accessToken, refreshToken, expiresAt};
@@ -347,18 +347,12 @@ export function registerAuthRoutes(
 
       // Persist provider grant so we can revoke on signout
       try {
-        const scope =
-            typeof (tokenData as any).scope === 'string' ?
+        const scope = typeof (tokenData as any).scope === 'string' ?
             (tokenData as any).scope :
             null;
         await upsertProviderGrant(
-            prisma,
-            user.id,
-            'github',
-            providerId,
-            tokenData.access_token ?? '',
-            scope,
-            null);
+            prisma, user.id, 'github', providerId, tokenData.access_token ?? '',
+            scope, null);
       } catch (err) {
         request.log.warn({err}, 'persisting github grant failed');
       }
@@ -531,13 +525,8 @@ export function registerAuthRoutes(
           new Date(Date.now() + Number((tokenData as any).expires_in) * 1000) :
           undefined;
       await upsertProviderGrant(
-          prisma,
-          user.id,
-          'linkedin',
-          providerId,
-          tokenData.access_token ?? '',
-          null,
-          maybeExpires ?? null);
+          prisma, user.id, 'linkedin', providerId, tokenData.access_token ?? '',
+          null, maybeExpires ?? null);
     } catch (err) {
       request.log.warn({err}, 'persisting linkedin grant failed');
     }
@@ -671,12 +660,13 @@ export function registerAuthRoutes(
       const grants = await readProviderGrantsForUser(prisma, userId);
       for (const g of grants) {
         try {
-          const metadata =
-              (g.metadata as Prisma.JsonObject | null) ?? ({} as Prisma.JsonObject);
+          const metadata = (g.metadata as Prisma.JsonObject | null) ??
+              ({} as Prisma.JsonObject);
           const provider =
               typeof metadata.provider === 'string' ? metadata.provider : null;
-          const accessToken =
-              typeof metadata.accessToken === 'string' ? metadata.accessToken : null;
+          const accessToken = typeof metadata.accessToken === 'string' ?
+              metadata.accessToken :
+              null;
           if (!provider || !accessToken) continue;
           if (provider === 'github') {
             const clientId = process.env.GITHUB_CLIENT_ID;
@@ -715,15 +705,15 @@ export function registerAuthRoutes(
             }
           }
         } catch (err) {
-          request.log.warn({err, grant: g.metadata},
-              'revoke provider token failed');
+          request.log.warn(
+              {err, grant: g.metadata}, 'revoke provider token failed');
         }
       }
 
       // Remove provider grants and refresh tokens from DB to ensure server-side
       // session state cleared
-        await deleteProviderGrantsForUser(prisma, userId);
-        await deleteRefreshTokensForUser(prisma, userId);
+      await deleteProviderGrantsForUser(prisma, userId);
+      await deleteRefreshTokensForUser(prisma, userId);
 
       await rt({eventType: 'auth.signout', source: 'api', payload: {userId}});
       return {ok: true};

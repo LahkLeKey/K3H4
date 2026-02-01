@@ -6,8 +6,8 @@ const AUTH_ACTOR_SOURCE = 'k3h4-api-auth';
 
 type PrismaTx = PrismaClient|Prisma.TransactionClient;
 
-const ensureActor = async (
-    tx: PrismaTx, userId: string, metadata?: Prisma.JsonValue) => {
+const ensureActor =
+    async (tx: PrismaTx, userId: string, metadata?: Prisma.JsonValue) => {
   const criteria: Prisma.ActorWhereInput = {userId, type: ActorType.AUTH};
   const existing = await tx.actor.findFirst({where: criteria});
   if (existing) return existing;

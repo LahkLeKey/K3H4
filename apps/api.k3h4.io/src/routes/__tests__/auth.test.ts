@@ -3,9 +3,9 @@ import '../../test/vitest-setup.ts';
 import Fastify from 'fastify';
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 
+import * as authEntities from '../../services/auth-entities';
 import * as culinaryLedger from '../../services/culinary-ledger';
 import * as staffingActor from '../../services/staffing-actor';
-import * as authEntities from '../../services/auth-entities';
 import {registerAuthRoutes} from '../auth';
 import {type RecordTelemetryFn} from '../types';
 
@@ -44,8 +44,10 @@ describe('auth routes', () => {
     vi.spyOn(authEntities, 'storeRefreshToken').mockResolvedValue(undefined);
     vi.spyOn(authEntities, 'upsertProviderGrant').mockResolvedValue(undefined);
     vi.spyOn(authEntities, 'readProviderGrantsForUser').mockResolvedValue([]);
-    vi.spyOn(authEntities, 'deleteProviderGrantsForUser').mockResolvedValue(undefined);
-    vi.spyOn(authEntities, 'deleteRefreshTokensForUser').mockResolvedValue(undefined);
+    vi.spyOn(authEntities, 'deleteProviderGrantsForUser')
+        .mockResolvedValue(undefined);
+    vi.spyOn(authEntities, 'deleteRefreshTokensForUser')
+        .mockResolvedValue(undefined);
     vi.spyOn(authEntities, 'findRefreshTokenEntity').mockResolvedValue(null);
   });
 
@@ -443,9 +445,9 @@ describe('auth routes', () => {
     expect(deleteStaffingSpy).toHaveBeenCalledWith(prisma, userId);
     expect(deleteCulinarySpy).toHaveBeenCalledWith(prisma, userId);
     expect(authEntities.deleteProviderGrantsForUser)
-      .toHaveBeenCalledWith(prisma, userId);
+        .toHaveBeenCalledWith(prisma, userId);
     expect(authEntities.deleteRefreshTokensForUser)
-      .toHaveBeenCalledWith(prisma, userId);
+        .toHaveBeenCalledWith(prisma, userId);
   });
 
   it('rejects delete when confirmation text is wrong', async () => {

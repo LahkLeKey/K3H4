@@ -32,8 +32,8 @@ export const storeRefreshToken = async (
   });
 };
 
-export const findRefreshTokenEntity = async (
-    prisma: PrismaTx, token: string) => {
+export const findRefreshTokenEntity =
+    async (prisma: PrismaTx, token: string) => {
   return prisma.entity.findFirst({
     where: {
       kind: EntityKind.AUTH_REFRESH_TOKEN,
@@ -44,8 +44,8 @@ export const findRefreshTokenEntity = async (
   });
 };
 
-export const deleteRefreshTokensForUser = async (
-    prisma: PrismaTx, userId: string) => {
+export const deleteRefreshTokensForUser =
+    async (prisma: PrismaTx, userId: string) => {
   const actor = await findAuthActor(prisma, userId);
   if (!actor) return {count: 0};
   return prisma.entity.deleteMany({
@@ -56,7 +56,9 @@ export const deleteRefreshTokensForUser = async (
   });
 };
 
-export type ProviderGrantEntry = {metadata: Prisma.JsonValue|null};
+export type ProviderGrantEntry = {
+  metadata: Prisma.JsonValue|null
+};
 
 export const upsertProviderGrant = async (
     prisma: PrismaTx, userId: string, provider: string, providerId: string,
@@ -79,8 +81,7 @@ export const upsertProviderGrant = async (
     select: {id: true},
   });
   if (existing) {
-    return prisma.entity.update(
-        {where: {id: existing.id}, data: {metadata}});
+    return prisma.entity.update({where: {id: existing.id}, data: {metadata}});
   }
   return prisma.entity.create({
     data: {
@@ -95,8 +96,8 @@ export const upsertProviderGrant = async (
   });
 };
 
-export const readProviderGrantsForUser = async (
-    prisma: PrismaTx, userId: string) => {
+export const readProviderGrantsForUser =
+    async (prisma: PrismaTx, userId: string) => {
   const actor = await findAuthActor(prisma, userId);
   if (!actor) return [] as ProviderGrantEntry[];
   return prisma.entity.findMany({
@@ -108,8 +109,8 @@ export const readProviderGrantsForUser = async (
   });
 };
 
-export const deleteProviderGrantsForUser = async (
-    prisma: PrismaTx, userId: string) => {
+export const deleteProviderGrantsForUser =
+    async (prisma: PrismaTx, userId: string) => {
   const actor = await findAuthActor(prisma, userId);
   if (!actor) return {count: 0};
   return prisma.entity.deleteMany({
