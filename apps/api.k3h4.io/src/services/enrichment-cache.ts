@@ -8,7 +8,7 @@ export type EnrichmentCacheKey = {
 };
 
 export type EnrichmentCacheEntry = {
-  payload: Prisma.JsonValue|null; wikidataId: string | null;
+  payload: Prisma.JsonValue|Prisma.JsonNull|null; wikidataId: string | null;
   status: string | null;
   fetchedAt: string | null;
   note?: string | null;
