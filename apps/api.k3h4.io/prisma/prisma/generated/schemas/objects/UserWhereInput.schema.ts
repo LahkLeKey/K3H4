@@ -5,8 +5,6 @@ import { DecimalFilterObjectSchema as DecimalFilterObjectSchema } from './Decima
 import { StringNullableFilterObjectSchema as StringNullableFilterObjectSchema } from './StringNullableFilter.schema';
 import { DateTimeFilterObjectSchema as DateTimeFilterObjectSchema } from './DateTimeFilter.schema';
 import { RefreshTokenListRelationFilterObjectSchema as RefreshTokenListRelationFilterObjectSchema } from './RefreshTokenListRelationFilter.schema';
-import { UserPreferenceNullableScalarRelationFilterObjectSchema as UserPreferenceNullableScalarRelationFilterObjectSchema } from './UserPreferenceNullableScalarRelationFilter.schema';
-import { UserPreferenceWhereInputObjectSchema as UserPreferenceWhereInputObjectSchema } from './UserPreferenceWhereInput.schema';
 import { TelemetryEventListRelationFilterObjectSchema as TelemetryEventListRelationFilterObjectSchema } from './TelemetryEventListRelationFilter.schema';
 import { ProviderGrantListRelationFilterObjectSchema as ProviderGrantListRelationFilterObjectSchema } from './ProviderGrantListRelationFilter.schema';
 import { ChatSessionListRelationFilterObjectSchema as ChatSessionListRelationFilterObjectSchema } from './ChatSessionListRelationFilter.schema';
@@ -35,7 +33,6 @@ const userwhereinputSchema = z.object({
   createdAt: z.union([z.lazy(() => DateTimeFilterObjectSchema), z.coerce.date()]).optional(),
   updatedAt: z.union([z.lazy(() => DateTimeFilterObjectSchema), z.coerce.date()]).optional(),
   refreshTokens: z.lazy(() => RefreshTokenListRelationFilterObjectSchema).optional(),
-  preference: z.union([z.lazy(() => UserPreferenceNullableScalarRelationFilterObjectSchema), z.lazy(() => UserPreferenceWhereInputObjectSchema)]).optional(),
   telemetry: z.lazy(() => TelemetryEventListRelationFilterObjectSchema).optional(),
   providerGrants: z.lazy(() => ProviderGrantListRelationFilterObjectSchema).optional(),
   chatSessions: z.lazy(() => ChatSessionListRelationFilterObjectSchema).optional(),

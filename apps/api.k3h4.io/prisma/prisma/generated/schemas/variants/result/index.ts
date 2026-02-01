@@ -7,7 +7,6 @@ export { UserResultSchema } from './User.result';
 export { RefreshTokenResultSchema } from './RefreshToken.result';
 export { ProviderGrantResultSchema } from './ProviderGrant.result';
 export { PointOfInterestResultSchema } from './PointOfInterest.result';
-export { UserPreferenceResultSchema } from './UserPreference.result';
 export { TelemetryEventResultSchema } from './TelemetryEvent.result';
 export { ApiCacheEntryResultSchema } from './ApiCacheEntry.result';
 export { ChatSessionResultSchema } from './ChatSession.result';

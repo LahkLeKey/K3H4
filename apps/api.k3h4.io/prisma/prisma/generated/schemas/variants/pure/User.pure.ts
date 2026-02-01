@@ -11,7 +11,6 @@ export const UserModelSchema = z.object({
     createdAt: z.date(),
     updatedAt: z.date(),
     refreshTokens: z.array(z.unknown()),
-    preference: z.unknown().nullable(),
     telemetry: z.array(z.unknown()),
     providerGrants: z.array(z.unknown()),
     chatSessions: z.array(z.unknown()),

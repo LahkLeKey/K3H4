@@ -20,7 +20,6 @@ export const UserGroupByResultSchema = z.array(z.object({
     createdAt: z.number(),
     updatedAt: z.number(),
     refreshTokens: z.number(),
-    preference: z.number(),
     telemetry: z.number(),
     providerGrants: z.number(),
     chatSessions: z.number(),

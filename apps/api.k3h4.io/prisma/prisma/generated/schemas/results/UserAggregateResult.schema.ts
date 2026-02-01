@@ -10,7 +10,6 @@ export const UserAggregateResultSchema = z.object({  _count: z.object({
     createdAt: z.number(),
     updatedAt: z.number(),
     refreshTokens: z.number(),
-    preference: z.number(),
     telemetry: z.number(),
     providerGrants: z.number(),
     chatSessions: z.number(),
