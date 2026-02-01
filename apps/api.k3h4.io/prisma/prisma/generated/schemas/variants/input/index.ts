@@ -10,7 +10,6 @@ export { PointOfInterestInputSchema } from './PointOfInterest.input';
 export { UserPreferenceInputSchema } from './UserPreference.input';
 export { TelemetryEventInputSchema } from './TelemetryEvent.input';
 export { ApiCacheEntryInputSchema } from './ApiCacheEntry.input';
-export { EnrichmentCacheInputSchema } from './EnrichmentCache.input';
 export { ChatSessionInputSchema } from './ChatSession.input';
 export { ChatMessageInputSchema } from './ChatMessage.input';
 export { OllamaOperationInputSchema } from './OllamaOperation.input';

@@ -254,24 +254,6 @@ model ApiCacheEntry {
   @@index([provider, scope, endpoint])
 }
 
-model EnrichmentCache {
-  id         String    @id @default(cuid())
-  provider   String    @default("wikidata")
-  namespace  String
-  kind       String
-  sourceKey  String
-  paramsHash String?
-  wikidataId String?
-  payload    Json?
-  status     String?
-  fetchedAt  DateTime  @default(now())
-  expiresAt  DateTime?
-  note       String?
-
-  @@unique([provider, namespace, kind, sourceKey], name: "provider_namespace_kind_sourceKey")
-  @@index([provider, fetchedAt], name: "provider_fetchedAt_idx")
-}
-
 model ChatSession {
   id           String   @id @default(cuid())
   userId       String

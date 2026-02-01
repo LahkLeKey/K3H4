@@ -10,7 +10,6 @@ export { PointOfInterestModelSchema } from './PointOfInterest.pure';
 export { UserPreferenceModelSchema } from './UserPreference.pure';
 export { TelemetryEventModelSchema } from './TelemetryEvent.pure';
 export { ApiCacheEntryModelSchema } from './ApiCacheEntry.pure';
-export { EnrichmentCacheModelSchema } from './EnrichmentCache.pure';
 export { ChatSessionModelSchema } from './ChatSession.pure';
 export { ChatMessageModelSchema } from './ChatMessage.pure';
 export { OllamaOperationModelSchema } from './OllamaOperation.pure';

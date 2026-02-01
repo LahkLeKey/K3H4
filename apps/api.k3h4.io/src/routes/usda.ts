@@ -2,6 +2,7 @@ import {ActorType, EntityKind, Prisma, type PrismaClient} from '@prisma/client';
 import {type FastifyInstance, type FastifyReply} from 'fastify';
 
 import {createTelemetryTimer} from '../lib/telemetry-timer';
+import {readEnrichmentCache, writeEnrichmentCache} from '../services/enrichment-cache';
 import {fetchAndCache} from '../services/usda-cache';
 import {fetchWikidataWithCache} from '../services/wikidata-cache';
 
@@ -17,6 +18,8 @@ const REFERENCE_CACHE_OPTIONS = {
 const PSD_REFERENCE_MAX_AGE_MINUTES = 7 * 24 * 60;
 const ENRICH_CACHE_TTL_MINUTES = 7 * 24 * 60;
 const ENRICH_ERROR_CACHE_TTL_MINUTES = 30;
+const ENRICH_CACHE_TTL_MS = ENRICH_CACHE_TTL_MINUTES * 60 * 1000;
+const ENRICH_ERROR_CACHE_TTL_MS = ENRICH_ERROR_CACHE_TTL_MINUTES * 60 * 1000;
 
 const cloneMetadata = (value?: Record<string, unknown>|null) => {
   if (value && typeof value === 'object' && !Array.isArray(value))
@@ -134,16 +137,13 @@ export function registerUsdaRoutes(
         new Map(existingEntities.map((entity) => [entity.targetId, entity]));
     const now = Date.now();
     const metaKey = {
-      provider_namespace_kind_sourceKey: {
-        provider: 'wikidata',
-        namespace: dataset,
-        kind,
-        sourceKey: '__meta__'
-      },
+      provider: 'wikidata',
+      namespace: dataset,
+      kind,
+      sourceKey: '__meta__',
     } as const;
-    const metaHit = await prisma.enrichmentCache.findUnique({where: metaKey});
-    const metaFresh =
-        metaHit && (!metaHit.expiresAt || metaHit.expiresAt.getTime() > now);
+    const metaHit = await readEnrichmentCache(prisma, metaKey);
+    const metaFresh = Boolean(metaHit);
 
     if (metaFresh || opts?.skipEnrichment) {
       const enriched = normalizedItems.map(({row, normalized}) => {
@@ -207,15 +207,14 @@ export function registerUsdaRoutes(
       entityMap.set(targetId, entity);
 
       const cacheKey = {
-        provider_namespace_kind_sourceKey:
-            {provider: 'wikidata', namespace: dataset, kind, sourceKey: code},
+        provider: 'wikidata',
+        namespace: dataset,
+        kind,
+        sourceKey: code,
       } as const;
-      const cacheHit =
-          await prisma.enrichmentCache.findUnique({where: cacheKey});
-      const cacheFresh = cacheHit &&
-          (!cacheHit.expiresAt || cacheHit.expiresAt.getTime() > now);
+      const cacheHit = await readEnrichmentCache(prisma, cacheKey);
 
-      if (cacheFresh) {
+      if (cacheHit) {
         const currentMetadata = metadataRecord(entity.metadata);
         const updatedMetadata = {
           ...currentMetadata,
@@ -293,54 +292,27 @@ export function registerUsdaRoutes(
               data: {metadata: toJsonValue(updatedMetadata)}
             });
 
-            await prisma.enrichmentCache.upsert({
-              where: cacheKey,
-              create: {
-                provider: 'wikidata',
-                namespace: dataset,
-                kind,
-                sourceKey: code,
-                paramsHash: null,
-                wikidataId: hit.id,
-                payload: enrichmentPayload,
-                status: 'success',
-                fetchedAt: new Date(now),
-                expiresAt: new Date(now + ENRICH_CACHE_TTL_MINUTES * 60 * 1000),
-              },
-              update: {
-                wikidataId: hit.id,
-                payload: enrichmentPayload,
-                status: 'success',
-                fetchedAt: new Date(now),
-                expiresAt: new Date(now + ENRICH_CACHE_TTL_MINUTES * 60 * 1000),
-              },
-            });
+            await writeEnrichmentCache(
+                prisma, cacheKey, {
+                  payload: enrichmentPayload,
+                  wikidataId: hit.id,
+                  status: 'success',
+                  fetchedAt: new Date(now).toISOString(),
+                  paramsHash: null,
+                },
+                ENRICH_CACHE_TTL_MS);
           }
         } catch (err) {
           server.log.warn(
               {err, kind, code, name}, 'wikidata enrichment failed');
-          await prisma.enrichmentCache.upsert({
-            where: cacheKey,
-            create: {
-              provider: 'wikidata',
-              namespace: dataset,
-              kind,
-              sourceKey: code,
-              paramsHash: null,
-              wikidataId: null,
-              payload: Prisma.JsonNull,
-              status: 'error',
-              fetchedAt: new Date(now),
-              expiresAt:
-                  new Date(now + ENRICH_ERROR_CACHE_TTL_MINUTES * 60 * 1000),
-            },
-            update: {
-              status: 'error',
-              fetchedAt: new Date(now),
-              expiresAt:
-                  new Date(now + ENRICH_ERROR_CACHE_TTL_MINUTES * 60 * 1000),
-            },
-          });
+          await writeEnrichmentCache(
+              prisma, cacheKey, {
+                payload: Prisma.JsonNull,
+                wikidataId: null,
+                status: 'error',
+                fetchedAt: new Date(now).toISOString(),
+              },
+              ENRICH_ERROR_CACHE_TTL_MS);
         }
       }
 
@@ -353,27 +325,14 @@ export function registerUsdaRoutes(
     }
 
     if (!metaFresh && !opts?.skipEnrichment) {
-      await prisma.enrichmentCache.upsert({
-        where: metaKey,
-        create: {
-          provider: 'wikidata',
-          namespace: dataset,
-          kind,
-          sourceKey: '__meta__',
-          paramsHash: null,
-          wikidataId: null,
-          payload: {total: items.length},
-          status: 'success',
-          fetchedAt: new Date(now),
-          expiresAt: new Date(now + ENRICH_CACHE_TTL_MINUTES * 60 * 1000),
-        },
-        update: {
-          payload: {total: items.length},
-          status: 'success',
-          fetchedAt: new Date(now),
-          expiresAt: new Date(now + ENRICH_CACHE_TTL_MINUTES * 60 * 1000),
-        },
-      });
+      await writeEnrichmentCache(
+          prisma, metaKey, {
+            payload: {total: items.length},
+            wikidataId: null,
+            status: 'success',
+            fetchedAt: new Date(now).toISOString(),
+          },
+          ENRICH_CACHE_TTL_MS);
     }
 
     server.log.info(
