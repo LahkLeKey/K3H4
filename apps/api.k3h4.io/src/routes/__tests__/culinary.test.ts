@@ -1,5 +1,6 @@
 import '../../test/vitest-setup';
 
+import {Prisma} from '@prisma/client';
 import Fastify from 'fastify';
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 
@@ -11,13 +12,13 @@ import {type RecordTelemetryFn} from '../types';
 
 const recordTelemetry = vi.fn<RecordTelemetryFn>();
 const userId = 'user-1';
-let loadMenuItemsSpy: ReturnType<typeof vi.spyOn>;
-let loadPrepTasksSpy: ReturnType<typeof vi.spyOn>;
-let loadSupplierNeedsSpy: ReturnType<typeof vi.spyOn>;
-let createMenuItemSpy: ReturnType<typeof vi.spyOn>;
-let createPrepTaskSpy: ReturnType<typeof vi.spyOn>;
-let createSupplierNeedSpy: ReturnType<typeof vi.spyOn>;
-let pointOfSaleOverviewSpy: ReturnType<typeof vi.spyOn>;
+let loadMenuItemsSpy: any;
+let loadPrepTasksSpy: any;
+let loadSupplierNeedsSpy: any;
+let createMenuItemSpy: any;
+let createPrepTaskSpy: any;
+let createSupplierNeedSpy: any;
+let pointOfSaleOverviewSpy: any;
 
 function buildServer(mocks: any) {
   const server = Fastify();
@@ -39,15 +40,35 @@ describe('Culinary routes', () => {
                                .mockResolvedValue([]);
     createMenuItemSpy =
         vi.spyOn(culinaryLedger, 'createCulinaryMenuItem').mockResolvedValue({
-          id: 'm1'
+          id: 'm1',
+          name: 'Bowl',
+          prepMinutes: 10,
+          cost: new Prisma.Decimal('4.50'),
+          price: new Prisma.Decimal('12.00'),
+          createdAt: new Date(),
+          updatedAt: new Date(),
         });
     createPrepTaskSpy =
         vi.spyOn(culinaryLedger, 'createCulinaryPrepTask').mockResolvedValue({
-          id: 'p1'
+          id: 'p1',
+          task: 'Chop',
+          station: 'Garde',
+          status: LIFECYCLE_STATUSES.PENDING,
+          dueAt: new Date('2025-01-01'),
+          createdAt: new Date(),
+          updatedAt: new Date(),
         });
     createSupplierNeedSpy =
         vi.spyOn(culinaryLedger, 'createCulinarySupplierNeed')
-            .mockResolvedValue({id: 's1'});
+            .mockResolvedValue({
+              id: 's1',
+              item: 'Greens',
+              quantity: '3',
+              status: LIFECYCLE_STATUSES.CLOSED,
+              dueDate: new Date('2025-01-02'),
+              createdAt: new Date(),
+              updatedAt: new Date(),
+            });
     pointOfSaleOverviewSpy =
         vi.spyOn(pointOfSaleLedger, 'getPointOfSaleOverview')
             .mockResolvedValue({
