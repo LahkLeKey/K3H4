@@ -10,6 +10,7 @@ const navItems = [
     { to: "/storefronts", label: "Storefronts" },
     { to: "/logistics", label: "Logistics" },
     { to: "/telemetry", label: "Telemetry" },
+    { to: "/actors", label: "Browser" },
     { to: "/ai", label: "AI" },
     { to: "/engine", label: "3D Engine" },
 ];

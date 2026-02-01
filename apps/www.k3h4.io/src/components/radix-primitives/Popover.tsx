@@ -41,7 +41,7 @@ export function Popover({
                     align={align}
                     sideOffset={sideOffset}
                     collisionPadding={collisionPadding}
-                    className={`rounded-xl border border-white/10 bg-slate-900/95 p-4 text-sm text-slate-100 shadow-2xl backdrop-blur data-[state=open]:fade-in data-[state=closed]:fade-out ${contentClassName}`.trim()}
+                    className={`z-50 rounded-xl border border-white/10 bg-slate-900/95 p-4 text-sm text-slate-100 shadow-2xl backdrop-blur data-[state=open]:fade-in data-[state=closed]:fade-out ${contentClassName}`.trim()}
                 >
                     {content}
                     <PopoverPrimitive.Arrow className="fill-slate-900" />

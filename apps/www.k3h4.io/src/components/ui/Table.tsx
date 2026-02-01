@@ -36,11 +36,15 @@ export type TableProps<T> = {
     ownerAccessor?: (row: T) => string | undefined | null;
     ownerLabel?: string;
     className?: string;
+    scrollClassName?: string;
     noDataMessage?: string;
     title?: string;
     actions?: ReactNode;
     actionBarClassName?: string;
     rowActions?: (row: T) => ReactNode;
+    rowExpansion?: (row: T) => ReactNode;
+    rowExpansionLabel?: string;
+    onRowExpand?: (row: T, expanded: boolean) => void;
     rowFeedback?: Record<string, ReactNode>;
     onRowAction?: (row: T, action: string) => Promise<void> | void;
     rowActionItems?: (row: T) => TableRowActionItem[];
@@ -51,11 +55,15 @@ export function Table<T>({
     rows,
     rowKey,
     className = "",
+    scrollClassName = "overflow-auto",
     noDataMessage = "No data to display.",
     title,
     actions,
     actionBarClassName = "",
     rowActions,
+    rowExpansion,
+    rowExpansionLabel = "Details",
+    onRowExpand,
     rowFeedback,
     onRowAction,
     rowActionItems,
@@ -65,7 +73,7 @@ export function Table<T>({
     ownerLabel = "Owner",
 }: TableProps<T>) {
     const hasActionBar = Boolean(title || actions);
-    const hasRowActions = Boolean(rowActions || rowActionItems);
+    const hasRowActions = Boolean(rowActions || rowActionItems || rowExpansion);
     const rowKeys = useMemo(() => rows.map((row, idx) => rowKey(row, idx)), [rows, rowKey]);
     const hasIdColumn = typeof idAccessor === "function";
     const hasOwnerColumn = typeof ownerAccessor === "function";
@@ -75,9 +83,26 @@ export function Table<T>({
     const [confirmingAction, setConfirmingAction] = useState<{ rowKey: string; actionId: string } | null>(null);
     const [loadingActionKey, setLoadingActionKey] = useState<string | null>(null);
     const pendingActionRef = useRef<string | null>(null);
+    const [expandedRows, setExpandedRows] = useState<Set<string>>(() => new Set());
+
+    const toggleExpanded = (key: string, row: T) => {
+        setExpandedRows((prev) => {
+            const next = new Set(prev);
+            if (next.has(key)) {
+                next.delete(key);
+                onRowExpand?.(row, false);
+            } else {
+                next.add(key);
+                onRowExpand?.(row, true);
+            }
+            return next;
+        });
+    };
 
     return (
-        <div className={`overflow-hidden rounded-2xl border border-white/10 bg-slate-950 shadow-xl ${className}`.trim()}>
+        <div
+            className={`max-w-full ${scrollClassName} rounded-2xl border border-white/10 bg-slate-950 shadow-xl ${className}`.trim()}
+        >
             {hasActionBar ? (
                 <div
                     className={`flex flex-wrap items-center justify-between gap-4 border-b border-white/5 px-4 py-3 text-slate-100 ${actionBarClassName}`.trim()}
@@ -214,6 +239,18 @@ export function Table<T>({
                                         ))}
                                         {hasRowActions ? (
                                             <td className="px-4 py-3 text-right text-slate-200">
+                                                {rowExpansion ? (
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => toggleExpanded(key, row)}
+                                                        className={`mr-2 inline-flex items-center gap-1 rounded-full border px-2 py-1 text-[11px] font-semibold uppercase tracking-[0.2em] transition ${expandedRows.has(key)
+                                                            ? "border-emerald-300/40 text-emerald-200"
+                                                            : "border-white/20 text-slate-100 hover:border-white/40"
+                                                            }`.trim()}
+                                                    >
+                                                        {expandedRows.has(key) ? "Collapse" : rowExpansionLabel}
+                                                    </button>
+                                                ) : null}
                                                 {rowActionItems?.(row)?.map((action) => {
                                                     const actionKey = `${key}-action-${action.id}`;
                                                     const confirmation = action.confirmation;
@@ -323,6 +360,13 @@ export function Table<T>({
                                             </td>
                                         ) : null}
                                     </tr>
+                                    {rowExpansion && expandedRows.has(key) ? (
+                                        <tr key={`${key}-expanded`} className="border-t border-white/5 bg-slate-900/30">
+                                            <td colSpan={columnSpan} className="px-4 py-4">
+                                                {rowExpansion(row)}
+                                            </td>
+                                        </tr>
+                                    ) : null}
                                     {feedback ? (
                                         <tr key={`${key}-feedback`} className="border-t border-white/5 bg-slate-900/40">
                                             <td

@@ -11,6 +11,7 @@ import { LogisticsPage } from "./pages/LogisticsPage";
 import { StorefrontsPage } from "./pages/StorefrontsPage";
 import { EnginePage } from "./pages/EnginePage";
 import { AiPage } from "./pages/AiPage";
+import { ActorEntityPage } from "./pages/ActorEntityPage";
 
 const queryClient = new QueryClient();
 
@@ -28,6 +29,7 @@ export default function App() {
                     <Route path="/logistics" element={session ? <LogisticsPage /> : <Navigate to="/" replace />} />
                     <Route path="/storefronts" element={session ? <StorefrontsPage /> : <Navigate to="/" replace />} />
                     <Route path="/telemetry" element={session ? <TelemetryPage /> : <Navigate to="/" replace />} />
+                    <Route path="/actors" element={session ? <ActorEntityPage /> : <Navigate to="/" replace />} />
                     <Route path="/ai" element={session ? <AiPage /> : <Navigate to="/" replace />} />
                     <Route path="/engine" element={session ? <EnginePage /> : <Navigate to="/" replace />} />
                     <Route path="/auth/*" element={<MapPage showNav={false} />} />
