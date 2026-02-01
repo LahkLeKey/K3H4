@@ -13,6 +13,7 @@ import { useGeoState } from "../../zustand-stores/geo";
 import { useMapView } from "../../react-hooks/useMapView";
 import { SessionPanel } from "../radix-components/auth/SessionPanel";
 import { primeHistoryCache, usePoiStore } from "../../zustand-stores/poi";
+import { buildApiUrl } from "../../react-hooks/lib/apiBase";
 
 const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));
 
@@ -66,7 +67,7 @@ function GeoPrefsHydrator() {
 
         const load = async () => {
             try {
-                const res = await fetch(`${apiBase}/frontend/map/bootstrap`, {
+                const res = await fetch(buildApiUrl(apiBase, "/frontend/map/bootstrap"), {
                     method: "POST",
                     headers: {
                         Authorization: `Bearer ${session.accessToken}`,

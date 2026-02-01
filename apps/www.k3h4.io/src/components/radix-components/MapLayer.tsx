@@ -19,6 +19,7 @@ import { useMapInteractionToggle } from "../../react-hooks/useMapInteractionTogg
 import { usePoiViewportSync } from "../../react-hooks/usePoiViewportSync";
 import { usePersistMapView } from "../../react-hooks/usePersistMapView";
 import { useDebouncedCallback } from "../../react-hooks/useDebouncedCallback";
+import { buildApiUrl } from "../../react-hooks/lib/apiBase";
 
 const MAX_DEM_ERROR = 28;
 const TERRAIN_EXAGGERATION = 1.6;
@@ -98,14 +99,17 @@ export function MapLayer({ readonly }: { readonly?: boolean }) {
     const poiError = poiQuery.error instanceof Error ? poiQuery.error.message : null;
 
     const terrainUrl = useMemo(
-        () => `${apiBase}/maptiler/tiles?path=/tiles/terrain-rgb-v2/{z}/{x}/{y}.png`,
+        () => buildApiUrl(apiBase, "/maptiler/tiles?path=/tiles/terrain-rgb-v2/{z}/{x}/{y}.png"),
         [apiBase],
     );
     const maptilerVectorTiles = useMemo(
-        () => `${apiBase}/maptiler/tiles?path=/tiles/v3/{z}/{x}/{y}.pbf`,
+        () => buildApiUrl(apiBase, "/maptiler/tiles?path=/tiles/v3/{z}/{x}/{y}.pbf"),
         [apiBase],
     );
-    const maptilerStyleUrl = useMemo(() => `${apiBase}/maptiler/json?path=${MAPTILER_STYLE_PATH}`, [apiBase]);
+    const maptilerStyleUrl = useMemo(
+        () => buildApiUrl(apiBase, `/maptiler/json?path=${MAPTILER_STYLE_PATH}`),
+        [apiBase],
+    );
 
     useEffect(() => {
         setMapGateTimerDone(false);
@@ -188,7 +192,10 @@ export function MapLayer({ readonly }: { readonly?: boolean }) {
                 type === "SpriteJSON" ||
                 type === "Glyphs";
             const endpoint = wantsBinary ? "tiles" : "json";
-            const proxied = `${apiBase}/maptiler/${endpoint}?path=${u.pathname}${qs ? `&${qs}` : ""}`;
+            const proxied = buildApiUrl(
+                apiBase,
+                `/maptiler/${endpoint}?path=${u.pathname}${qs ? `&${qs}` : ""}`,
+            );
             return { url: proxied } as RequestParameters;
         },
         [apiBase],
@@ -538,7 +545,7 @@ export function MapLayer({ readonly }: { readonly?: boolean }) {
         if (!ops.length) return;
 
         try {
-            await fetch(`${apiBase}/api/batch`, {
+            await fetch(buildApiUrl(apiBase, "/api/batch"), {
                 method: "POST",
                 headers: {
                     Authorization: `Bearer ${session.accessToken}`,
