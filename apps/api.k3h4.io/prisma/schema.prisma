@@ -107,6 +107,8 @@ enum EntityKind {
   CULINARY_PREP_TASK             @map("culinary-prep-task")
   CULINARY_SUPPLIER_NEED         @map("culinary-supplier-need")
   POINT_OF_SALE_TICKET           @map("point-of-sale_ticket")
+  AUTH_REFRESH_TOKEN             @map("auth_refresh_token")
+  AUTH_PROVIDER_GRANT            @map("auth_provider_grant")
 }
 
 enum EngagementPriority {
