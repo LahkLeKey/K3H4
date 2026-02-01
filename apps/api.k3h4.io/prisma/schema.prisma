@@ -52,6 +52,7 @@ enum ActorType {
   CULINARY                     @map("culinary")
   POINT_OF_SALE_STORE          @map("point-of-sale-store")
   GEO                          @map("geo")
+  FREIGHT                      @map("freight")
 }
 
 enum EntityDirection {
@@ -65,6 +66,7 @@ enum EntityKind {
   SET                            @map("set")
   ASSIGNMENT_PAYOUT              @map("assignment_payout")
   FREIGHT_PAYMENT                @map("freight_payment")
+  FREIGHT_LOAD                   @map("freight_load")
   ARCADE_TOPUP                   @map("arcade_topup")
   ARCADE_SESSION                 @map("arcade_session")
   ARCADE_PRIZE_REDEMPTION        @map("arcade_prize_redemption")
@@ -132,7 +134,6 @@ model User {
   refreshTokens    RefreshToken[]
   preference       UserPreference?
   telemetry        TelemetryEvent[]
-  freightLoads     FreightLoad[]
   providerGrants   ProviderGrant[]
   chatSessions     ChatSession[]
   aiInsights       AiInsight[]
@@ -263,28 +264,6 @@ model TelemetryEvent {
   @@index([sessionId])
   @@index([eventType])
   @@index([createdAt, id])
-}
-
-model FreightLoad {
-  id              String          @id @default(cuid())
-  userId          String
-  user            User            @relation(fields: [userId], references: [id], onDelete: Cascade)
-  title           String
-  originName      String
-  originLat       Float
-  originLng       Float
-  destinationName String
-  destinationLat  Float
-  destinationLng  Float
-  distanceKm      Decimal         @db.Decimal(10, 2)
-  durationMinutes Int
-  cost            Decimal         @db.Decimal(18, 2)
-  status          LifecycleStatus @default(PLANNING)
-  routeGeoJson    Json?
-  createdAt       DateTime        @default(now())
-  updatedAt       DateTime        @updatedAt
-
-  @@index([userId, status])
 }
 
 model ApiCacheEntry {

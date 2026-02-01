@@ -4,6 +4,7 @@ import {type FastifyInstance} from 'fastify';
 import {routeSignature} from '../lib/geo-signature';
 import {fetchOsrm} from '../lib/osrm-client';
 import {EntityDirection, EntityKind, recordBankTransactionEntity,} from '../services/bank-actor';
+import {createFreightLoad, findFreightLoad, loadFreightLoads, markFreightLoadCompleted,} from '../services/freight-actor';
 import {ensureGeoActor} from '../services/geo-actor';
 import {type GeoDirectionCachePayload, readGeoDirectionCache, writeGeoDirectionCache,} from '../services/geo-direction-cache';
 
@@ -272,8 +273,7 @@ export function registerFreightRoutes(
       async (request) => {
         const rt = withTelemetryBase(recordTelemetry, request);
         const userId = (request.user as {sub: string}).sub;
-        const loads = await prisma.freightLoad.findMany(
-            {where: {userId}, orderBy: {createdAt: 'desc'}});
+        const loads = await loadFreightLoads(prisma, userId);
         await rt({
           eventType: 'freight.list',
           source: 'api',
@@ -333,22 +333,20 @@ export function registerFreightRoutes(
         const ratePerKm = Number(body?.ratePerKm ?? 2);
         const cost = new Prisma.Decimal((distance * ratePerKm).toFixed(2));
 
-        const load = await prisma.freightLoad.create({
-          data: {
-            userId,
-            title: body?.title?.trim() || 'Freight load',
-            originName: originLabel,
-            originLat,
-            originLng,
-            destinationName: destinationLabel,
-            destinationLat,
-            destinationLng,
-            distanceKm: new Prisma.Decimal(distance.toFixed(2)),
-            durationMinutes: osrm.durationMinutes,
-            cost,
-            status: LifecycleStatus.PLANNING,
-            routeGeoJson: osrm.geometry,
-          },
+        const load = await createFreightLoad(prisma, {
+          userId,
+          title: body?.title?.trim() || 'Freight load',
+          originName: originLabel,
+          originLat,
+          originLng,
+          destinationName: destinationLabel,
+          destinationLat,
+          destinationLng,
+          distanceKm: Number(distance.toFixed(2)),
+          durationMinutes: osrm.durationMinutes,
+          cost,
+          routeGeoJson: osrm.geometry,
+          status: LifecycleStatus.PLANNING,
         });
 
         const signature = routeSignature(
@@ -391,7 +389,7 @@ export function registerFreightRoutes(
         const userId = (request.user as {sub: string}).sub;
         const id = (request.params as {id: string}).id;
 
-        const load = await prisma.freightLoad.findFirst({where: {id, userId}});
+        const load = await findFreightLoad(prisma, userId, id);
         if (!load)
           return reply.status(404).send({error: 'Freight load not found'});
 
@@ -438,12 +436,13 @@ export function registerFreightRoutes(
         const userId = (request.user as {sub: string}).sub;
         const id = (request.params as {id: string}).id;
 
-        const load = await prisma.freightLoad.findFirst({where: {id, userId}});
+        const load = await findFreightLoad(prisma, userId, id);
         if (!load)
           return reply.status(404).send({error: 'Freight load not found'});
         if (load.status === LifecycleStatus.COMPLETED)
           return reply.status(400).send({error: 'Load already completed'});
 
+        const costDecimal = new Prisma.Decimal(load.cost);
         try {
           const {
             nextBalance,
@@ -453,13 +452,12 @@ export function registerFreightRoutes(
                 {where: {id: userId}, select: {k3h4CoinBalance: true}});
             if (!user) throw new Error('User not found');
 
-            const cost = new Prisma.Decimal(load.cost.toFixed(2));
-            const nextBalance = user.k3h4CoinBalance.sub(cost);
+            const nextBalance = user.k3h4CoinBalance.sub(costDecimal);
             const savedUser = await tx.user.update(
                 {where: {id: userId}, data: {k3h4CoinBalance: nextBalance}});
             await recordBankTransactionEntity(tx, {
               userId,
-              amount: cost,
+              amount: costDecimal,
               direction: EntityDirection.DEBIT,
               kind: EntityKind.FREIGHT_PAYMENT,
               note: `Freight load ${load.title}`,
@@ -469,15 +467,14 @@ export function registerFreightRoutes(
               name: load.title,
             });
 
-            const updated = await tx.freightLoad.update(
-                {where: {id}, data: {status: LifecycleStatus.COMPLETED}});
+            const updated = await markFreightLoadCompleted(tx, id);
             return {nextBalance, updated};
           });
 
           await rt({
             eventType: 'freight.complete',
             source: 'api',
-            payload: {id, cost: load.cost.toFixed(2)}
+            payload: {id, cost: costDecimal.toFixed(2)}
           });
 
           return {load: serializeLoad(updated)};

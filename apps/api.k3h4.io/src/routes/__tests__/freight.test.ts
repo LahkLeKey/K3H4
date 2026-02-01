@@ -1,9 +1,11 @@
 import '../../test/vitest-setup.ts';
 
-import {Prisma} from '@prisma/client';
+import {LifecycleStatus, Prisma} from '@prisma/client';
 import Fastify from 'fastify';
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 
+import {createFreightLoad, findFreightLoad, loadFreightLoads, markFreightLoadCompleted,} from '../../services/freight-actor';
+import type {FreightLoadPayload} from '../../services/freight-actor';
 import {ensureGeoActor} from '../../services/geo-actor';
 import {readGeoDirectionCache, writeGeoDirectionCache,} from '../../services/geo-direction-cache';
 import {registerFreightRoutes} from '../freight';
@@ -11,6 +13,25 @@ import {type RecordTelemetryFn} from '../types';
 
 const recordTelemetry = vi.fn() as unknown as RecordTelemetryFn;
 const userId = 'user-1';
+const createLoadPayload = (overrides: Partial<FreightLoadPayload> = {}) => ({
+  id: 'l1',
+  userId,
+  title: 'Freight load',
+  originName: 'Origin',
+  originLat: 1,
+  originLng: 1,
+  destinationName: 'Destination',
+  destinationLat: 2,
+  destinationLng: 2,
+  distanceKm: 10,
+  durationMinutes: 10,
+  cost: 20,
+  status: LifecycleStatus.PLANNING,
+  routeGeoJson: null,
+  createdAt: new Date(),
+  updatedAt: new Date(),
+  ...overrides,
+});
 vi.mock('../../services/geo-actor', () => ({
                                       ensureGeoActor: vi.fn(),
                                     }));
@@ -18,6 +39,12 @@ vi.mock('../../services/geo-direction-cache', () => ({
                                                 readGeoDirectionCache: vi.fn(),
                                                 writeGeoDirectionCache: vi.fn(),
                                               }));
+vi.mock('../../services/freight-actor', () => ({
+                                          loadFreightLoads: vi.fn(),
+                                          createFreightLoad: vi.fn(),
+                                          findFreightLoad: vi.fn(),
+                                          markFreightLoadCompleted: vi.fn(),
+                                        }));
 const nativeFetch = globalThis.fetch;
 const ensureGeoActorMock =
     ensureGeoActor as unknown as ReturnType<typeof vi.fn>;
@@ -25,6 +52,14 @@ const readGeoDirectionCacheMock =
     readGeoDirectionCache as unknown as ReturnType<typeof vi.fn>;
 const writeGeoDirectionCacheMock =
     writeGeoDirectionCache as unknown as ReturnType<typeof vi.fn>;
+const loadFreightLoadsMock =
+    loadFreightLoads as unknown as ReturnType<typeof vi.fn>;
+const createFreightLoadMock =
+    createFreightLoad as unknown as ReturnType<typeof vi.fn>;
+const findFreightLoadMock =
+    findFreightLoad as unknown as ReturnType<typeof vi.fn>;
+const markFreightLoadCompletedMock =
+    markFreightLoadCompleted as unknown as ReturnType<typeof vi.fn>;
 
 function buildServer(prisma: any) {
   const server = Fastify();
@@ -42,6 +77,15 @@ describe('freight routes', () => {
     ensureGeoActorMock.mockResolvedValue({id: 'geo-actor-1'});
     readGeoDirectionCacheMock.mockResolvedValue(null);
     writeGeoDirectionCacheMock.mockResolvedValue(undefined);
+    loadFreightLoadsMock.mockClear();
+    createFreightLoadMock.mockClear();
+    findFreightLoadMock.mockClear();
+    markFreightLoadCompletedMock.mockClear();
+    loadFreightLoadsMock.mockResolvedValue([createLoadPayload()]);
+    createFreightLoadMock.mockResolvedValue(createLoadPayload());
+    findFreightLoadMock.mockResolvedValue(createLoadPayload());
+    markFreightLoadCompletedMock.mockResolvedValue(
+        {...createLoadPayload(), status: LifecycleStatus.COMPLETED});
   });
 
   afterEach(() => {
@@ -49,20 +93,13 @@ describe('freight routes', () => {
   });
 
   it('lists loads', async () => {
-    const prisma = {
-      freightLoad: {
-        findMany: vi.fn().mockResolvedValue([{
-          id: 'l1',
-          distanceKm: new Prisma.Decimal('10'),
-          cost: new Prisma.Decimal('20'),
-          createdAt: new Date()
-        }])
-      },
-    };
-    const server = buildServer(prisma);
+    const load = createLoadPayload();
+    loadFreightLoadsMock.mockResolvedValueOnce([load]);
+    const server = buildServer({});
     const res = await server.inject({method: 'GET', url: '/freight'});
     expect(res.statusCode).toBe(200);
     expect(res.json().loads).toHaveLength(1);
+    expect(loadFreightLoadsMock).toHaveBeenCalledWith({}, userId);
   });
 
   it('creates a load with osrm data', async () => {
@@ -73,23 +110,7 @@ describe('freight routes', () => {
     });
     globalThis.fetch = fetchMock;
 
-    const geoDirection = {
-      findUnique: vi.fn().mockResolvedValue(null),
-      upsert: vi.fn().mockResolvedValue({}),
-    };
-
-    const prisma = {
-      freightLoad: {
-        create: vi.fn().mockResolvedValue({
-          id: 'l1',
-          distanceKm: new Prisma.Decimal('10'),
-          cost: new Prisma.Decimal('20'),
-          createdAt: new Date()
-        })
-      },
-      geoDirection,
-    };
-    const server = buildServer(prisma);
+    const server = buildServer({});
     const res = await server.inject({
       method: 'POST',
       url: '/freight',
@@ -105,7 +126,7 @@ describe('freight routes', () => {
       },
     });
     expect(res.statusCode).toBe(200);
-    expect(prisma.freightLoad.create).toHaveBeenCalled();
+    expect(createFreightLoadMock).toHaveBeenCalled();
     expect(recordTelemetry)
         .toHaveBeenCalledWith(
             expect.anything(),
@@ -116,17 +137,7 @@ describe('freight routes', () => {
     const fetchMock = vi.fn().mockRejectedValue(new Error('network'));
     globalThis.fetch = fetchMock;
 
-    const prisma = {
-      freightLoad: {
-        create: vi.fn().mockResolvedValue({
-          id: 'l2',
-          distanceKm: new Prisma.Decimal('0'),
-          cost: new Prisma.Decimal('0'),
-          createdAt: new Date()
-        }),
-      },
-    };
-    const server = buildServer(prisma);
+    const server = buildServer({});
     const res = await server.inject({
       method: 'POST',
       url: '/freight',
@@ -142,24 +153,14 @@ describe('freight routes', () => {
     });
 
     expect(res.statusCode).toBe(502);
-    expect(prisma.freightLoad.create).not.toHaveBeenCalled();
+    expect(createFreightLoadMock).not.toHaveBeenCalled();
   });
 
   it('returns 502 when osrm returns empty route', async () => {
     const fetchMock = vi.fn().mockResolvedValue(
         {ok: true, json: async () => ({routes: []})} as Response);
     globalThis.fetch = fetchMock;
-    const prisma = {
-      freightLoad: {
-        create: vi.fn().mockResolvedValue({
-          id: 'l3',
-          distanceKm: new Prisma.Decimal('0'),
-          cost: new Prisma.Decimal('0'),
-          createdAt: new Date()
-        })
-      },
-    };
-    const server = buildServer(prisma);
+    const server = buildServer({});
     const res = await server.inject({
       method: 'POST',
       url: '/freight',
@@ -174,7 +175,7 @@ describe('freight routes', () => {
       },
     });
     expect(res.statusCode).toBe(502);
-    expect(prisma.freightLoad.create).not.toHaveBeenCalled();
+    expect(createFreightLoadMock).not.toHaveBeenCalled();
   });
 
   it('rejects invalid coordinates', async () => {
@@ -194,6 +195,7 @@ describe('freight routes', () => {
       },
     });
     expect(res.statusCode).toBe(400);
+    expect(createFreightLoadMock).not.toHaveBeenCalled();
   });
 
   it('rejects missing required text fields', async () => {
@@ -213,9 +215,12 @@ describe('freight routes', () => {
       },
     });
     expect(res.statusCode).toBe(400);
+    expect(createFreightLoadMock).not.toHaveBeenCalled();
   });
 
   it('completes a load and debits balance', async () => {
+    const load = createLoadPayload({status: LifecycleStatus.PLANNING});
+    findFreightLoadMock.mockResolvedValueOnce(load);
     const txUser = {
       findUnique: vi.fn().mockResolvedValue(
           {k3h4CoinBalance: new Prisma.Decimal('500.00')}),
@@ -241,36 +246,22 @@ describe('freight routes', () => {
         createdAt: new Date()
       })
     };
-    const txFreight = {
-      update: vi.fn().mockResolvedValue(
-          {id: 'l1', status: 'completed', cost: new Prisma.Decimal('20')})
-    };
+    const txContext = {user: txUser, actor: txActor, entity: txEntity};
 
     const prisma = {
-      freightLoad: {
-        findFirst: vi.fn().mockResolvedValue({
-          id: 'l1',
-          userId,
-          status: 'planning',
-          cost: new Prisma.Decimal('20.00')
-        })
-      },
       user: txUser,
       actor: txActor,
       entity: txEntity,
-      $transaction: vi.fn(async (cb) => cb({
-                            user: txUser,
-                            actor: txActor,
-                            entity: txEntity,
-                            freightLoad: txFreight
-                          } as any)),
+      $transaction: vi.fn(async (cb) => cb(txContext as any)),
     };
     const server = buildServer(prisma);
     const res =
         await server.inject({method: 'POST', url: '/freight/l1/complete'});
     expect(res.statusCode).toBe(200);
     expect(txEntity.create).toHaveBeenCalled();
-    expect(txFreight.update).toHaveBeenCalled();
+    expect(createFreightLoadMock).not.toHaveBeenCalled();
+    expect(markFreightLoadCompletedMock)
+        .toHaveBeenCalledWith(txContext as any, 'l1');
     expect(recordTelemetry)
         .toHaveBeenCalledWith(
             expect.anything(),
@@ -278,8 +269,8 @@ describe('freight routes', () => {
   });
 
   it('rejects missing load', async () => {
+    findFreightLoadMock.mockResolvedValueOnce(null);
     const prisma = {
-      freightLoad: {findFirst: vi.fn().mockResolvedValue(null)},
       user: {},
       actor: {findFirst: vi.fn(), create: vi.fn()},
       entity: {create: vi.fn()},
@@ -289,18 +280,13 @@ describe('freight routes', () => {
     const res =
         await server.inject({method: 'POST', url: '/freight/missing/complete'});
     expect(res.statusCode).toBe(404);
+    expect(markFreightLoadCompletedMock).not.toHaveBeenCalled();
   });
 
   it('rejects already completed load', async () => {
+    findFreightLoadMock.mockResolvedValueOnce(
+        createLoadPayload({status: LifecycleStatus.COMPLETED}));
     const prisma = {
-      freightLoad: {
-        findFirst: vi.fn().mockResolvedValue({
-          id: 'l1',
-          userId,
-          status: 'completed',
-          cost: new Prisma.Decimal('1')
-        })
-      },
       user: {},
       actor: {findFirst: vi.fn(), create: vi.fn()},
       entity: {create: vi.fn()},
@@ -310,29 +296,23 @@ describe('freight routes', () => {
     const res =
         await server.inject({method: 'POST', url: '/freight/l1/complete'});
     expect(res.statusCode).toBe(400);
+    expect(markFreightLoadCompletedMock).not.toHaveBeenCalled();
   });
 
   it('returns 400 when completion transaction fails', async () => {
+    findFreightLoadMock.mockResolvedValueOnce(createLoadPayload());
     const prisma = {
-      freightLoad: {
-        findFirst: vi.fn().mockResolvedValue({
-          id: 'l1',
-          userId,
-          status: 'planning',
-          cost: new Prisma.Decimal('5')
-        })
-      },
       $transaction: vi.fn(async () => {
         throw new Error('tx failed');
       }),
       user: {},
       actor: {findFirst: vi.fn(), create: vi.fn()},
       entity: {create: vi.fn()},
-      freightLoadUpdate: {},
     };
     const server = buildServer(prisma);
     const res =
         await server.inject({method: 'POST', url: '/freight/l1/complete'});
     expect(res.statusCode).toBe(400);
+    expect(markFreightLoadCompletedMock).not.toHaveBeenCalled();
   });
 });
