@@ -1,7 +1,7 @@
-import { Environment, OrbitControls, Stars } from "@react-three/drei";
+import { Environment, OrbitControls, Stars, useTexture } from "@react-three/drei";
 import { Physics, RigidBody, type RapierRigidBody } from "@react-three/rapier";
 import { useFrame, useThree } from "@react-three/fiber";
-import { useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
 
 import { FullscreenCanvasLayout } from "../components/r3f-components/FullscreenCanvasLayout";
@@ -17,7 +17,14 @@ type BodyConfig = {
     color: string;
 };
 
-function MouseBall() {
+type MaterialMaps = {
+    map: THREE.Texture;
+    normalMap: THREE.Texture;
+    roughnessMap: THREE.Texture;
+    emissiveMap: THREE.Texture;
+};
+
+function MouseBall({ emissiveMap }: { emissiveMap: THREE.Texture }) {
     const bodyRef = useRef<RapierRigidBody | null>(null);
     const { camera, pointer } = useThree();
     const raycaster = useMemo(() => new THREE.Raycaster(), []);
@@ -42,13 +49,20 @@ function MouseBall() {
         <RigidBody ref={bodyRef} type="kinematicPosition" colliders="ball">
             <mesh>
                 <sphereGeometry args={[0.7, 32, 32]} />
-                <meshStandardMaterial color="#fef9c3" emissive="#fef9c3" emissiveIntensity={0.6} />
+                <meshStandardMaterial
+                    color="#fef9c3"
+                    emissive="#fef9c3"
+                    emissiveIntensity={0.7}
+                    emissiveMap={emissiveMap}
+                    metalness={0.2}
+                    roughness={0.2}
+                />
             </mesh>
         </RigidBody>
     );
 }
 
-function FloatyBody({ shape, collider, position, size, color }: BodyConfig) {
+function FloatyBody({ shape, collider, position, size, color, maps }: BodyConfig & { maps: MaterialMaps }) {
     const bodyRef = useRef<RapierRigidBody | null>(null);
 
     useFrame(() => {
@@ -85,6 +99,10 @@ function FloatyBody({ shape, collider, position, size, color }: BodyConfig) {
                     roughness={0.2}
                     emissive={color}
                     emissiveIntensity={0.15}
+                    map={maps.map}
+                    normalMap={maps.normalMap}
+                    roughnessMap={maps.roughnessMap}
+                    emissiveMap={maps.emissiveMap}
                 />
             </mesh>
         </RigidBody>
@@ -92,6 +110,32 @@ function FloatyBody({ shape, collider, position, size, color }: BodyConfig) {
 }
 
 export function EnginePage() {
+    return (
+        <FullscreenCanvasLayout showDebugBorder>
+            <EngineScene />
+        </FullscreenCanvasLayout>
+    );
+}
+
+function EngineScene() {
+    const maps = useTexture({
+        map: "/assets/kenny/development-essentials/Checkerboard/checkerboard.png",
+        normalMap: "/assets/kenny/development-essentials/NormalMap/default-normal.png",
+        roughnessMap: "/assets/kenny/development-essentials/Noise/perlin-noise.png",
+        emissiveMap: "/assets/kenny/development-essentials/Gradient/gradient-radial.png",
+    }) as MaterialMaps;
+
+    useEffect(() => {
+        maps.map.colorSpace = THREE.SRGBColorSpace;
+        maps.emissiveMap.colorSpace = THREE.SRGBColorSpace;
+
+        for (const texture of [maps.map, maps.normalMap, maps.roughnessMap, maps.emissiveMap]) {
+            texture.wrapS = THREE.RepeatWrapping;
+            texture.wrapT = THREE.RepeatWrapping;
+            texture.repeat.set(2, 2);
+        }
+    }, [maps]);
+
     const bodies = useMemo<BodyConfig[]>(() => {
         const shapes: BodyShape[] = ["sphere", "box", "icosa", "torus"];
         const palette = ["#5eead4", "#60a5fa", "#818cf8", "#f472b6", "#f97316", "#facc15"];
@@ -118,7 +162,7 @@ export function EnginePage() {
     }, []);
 
     return (
-        <FullscreenCanvasLayout showDebugBorder>
+        <>
             <color attach="background" args={["#030712"]} />
             <ambientLight intensity={0.4} />
             <directionalLight position={[6, 7, 6]} intensity={1.1} />
@@ -127,11 +171,11 @@ export function EnginePage() {
             <Environment preset="night" />
             <OrbitControls enablePan={false} maxDistance={18} minDistance={4} />
             <Physics gravity={[0, 0, 0]}>
-                <MouseBall />
+                <MouseBall emissiveMap={maps.emissiveMap} />
                 {bodies.map((body) => (
-                    <FloatyBody key={body.id} {...body} />
+                    <FloatyBody key={body.id} {...body} maps={maps} />
                 ))}
             </Physics>
-        </FullscreenCanvasLayout>
+        </>
     );
 }
