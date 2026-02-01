@@ -3,7 +3,7 @@ import {type FastifyInstance} from 'fastify';
 import * as z from 'zod';
 
 import {type ActorType, type EntityDirection, type EntityKind,} from '../lib/actor-entity-constants';
-import {ActorTypeSchema, AuthHeaderSchema, EntityDirectionSchema, EntityKindSchema, IntegerLikeSchema, StandardErrorResponses, toJsonSchema, withExamples} from '../lib/schemas/openapi';
+import {ActorTypeSchema, AuthHeaderSchema, EntityDirectionSchema, EntityKindSchema, IntegerLikeSchema, makeParamsSchema, StandardErrorResponses, toJsonSchema, withExamples, zActorId} from '../lib/schemas/openapi';
 
 import {withTelemetryBase} from './telemetry';
 import {type RecordTelemetryFn} from './types';
@@ -105,6 +105,8 @@ export function registerActorEntityRoutes(
        }).passthrough();
 
   const authHeader = toJsonSchema(AuthHeaderSchema, 'AuthHeader');
+  const actorIdParamsSchema =
+      makeParamsSchema(z.object({id: zActorId}).strict(), 'ActorIdParams');
 
   const registerActorRoutes = (scope: FastifyInstance) => {
     const auth = {preHandler: [scope.authenticate]};
@@ -261,8 +263,7 @@ export function registerActorEntityRoutes(
             tags: ['actor'],
             headers: authHeader,
             security: [{bearerAuth: []}],
-            params: toJsonSchema(
-                z.object({id: z.string().min(1)}).strict(), 'ActorIdParams'),
+            params: actorIdParamsSchema,
             response: {
               200: toJsonSchema(
                   z.object({actor: actorSchema}).strict(), 'ActorGetResponse'),
@@ -301,8 +302,7 @@ export function registerActorEntityRoutes(
             tags: ['actor'],
             headers: authHeader,
             security: [{bearerAuth: []}],
-            params: toJsonSchema(
-                z.object({id: z.string().min(1)}).strict(), 'ActorIdParams'),
+            params: actorIdParamsSchema,
             body: toJsonSchema(
                 z.object({
                    label: z.string().min(1).optional(),
@@ -385,8 +385,7 @@ export function registerActorEntityRoutes(
             tags: ['actor'],
             headers: authHeader,
             security: [{bearerAuth: []}],
-            params: toJsonSchema(
-                z.object({id: z.string().min(1)}).strict(), 'ActorIdParams'),
+            params: actorIdParamsSchema,
             response: {
               200: toJsonSchema(
                   z.object({ok: z.literal(true)}).strict(),

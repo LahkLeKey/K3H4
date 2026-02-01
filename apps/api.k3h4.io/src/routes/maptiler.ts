@@ -3,7 +3,8 @@ import {type FastifyInstance, type FastifyReply, type FastifyRequest, type Route
 import * as z from 'zod';
 
 import {ensureGeoActor} from '../actors/Geo/Geo';
-import {OptionalAuthHeaderSchema, StandardErrorResponses, toJsonSchema, withExamples} from '../lib/schemas/openapi';
+import {MaptilerKind} from '../lib/openapi/route-kinds';
+import {makeParamsSchema, makeQuerySchema, makeResponses, OptionalAuthHeaderSchema, withExamples} from '../lib/schemas/openapi';
 import {fetchMaptilerWithCache} from '../services/maptiler-cache';
 import {readUserPreferencesByActor, updateUserPreferencesByActor, type UserPreferencePatch} from '../services/user-preferences';
 
@@ -177,28 +178,41 @@ export function registerMaptilerRoutes(
           'Proxies MapTiler Cloud requests with caching and optional auth for preferences.',
       operationId: 'maptiler_proxy',
       tags: ['maptiler'],
-      headers: toJsonSchema(OptionalAuthHeaderSchema, 'OptionalAuthHeader'),
-      params: toJsonSchema(
+      headers: makeParamsSchema(OptionalAuthHeaderSchema, 'OptionalAuthHeader'),
+      params: makeParamsSchema(
           z.object({
-             kind:
-                 z.enum(['json', 'tiles']).describe('Response shape to proxy'),
+             kind: MaptilerKind.describe('Response shape to proxy'),
            }).strict(),
           'MaptilerParams'),
-      querystring: toJsonSchema(
+      querystring: makeQuerySchema(
           z.object({
-             path: z.string().min(1).describe('Relative MapTiler API path'),
-             maxAgeMinutes: z.union([z.number(), z.string()]).optional(),
-             responseType: z.enum(['json', 'arrayBuffer']).optional(),
+             path:
+                 z.string()
+                     .min(1)
+                     .regex(
+                         /^\/?(geocoding|search|maps|tiles|vector-tiles|data|styles|fonts|elevation|weather|matrix|geolocation|place|static)(\/.*)?$/,
+                         'Path must start with an allowed MapTiler root')
+                     .describe(
+                         'Relative MapTiler API path (no protocol). Allowed roots: geocoding, search, maps, tiles, vector-tiles, data, styles, fonts, elevation, weather, matrix, geolocation, place, static.'),
+             maxAgeMinutes: z.union([z.number(), z.string()])
+                                .optional()
+                                .describe('Cache TTL in minutes'),
+             responseType: z.enum(['json', 'arrayBuffer'])
+                               .optional()
+                               .describe('Override response parsing'),
            }).passthrough(),
           'MaptilerQuery'),
-      response: {
-        200: withExamples(
-            {
-              type: ['object', 'array', 'string', 'number', 'boolean', 'null'],
-            },
-            [{data: 'MapTiler response'}]),
-        ...StandardErrorResponses,
-      },
+      response: makeResponses(
+          {
+            200: withExamples(
+                {
+                  type: [
+                    'object', 'array', 'string', 'number', 'boolean', 'null'
+                  ],
+                },
+                [{data: 'MapTiler response'}]),
+          },
+          {includeStandardErrors: true}),
     },
   };
 

@@ -4,7 +4,8 @@ import * as z from 'zod';
 
 import {ACTOR_TYPES, ENTITY_KINDS} from '../lib/actor-entity-constants';
 import {CHAT_ROLES, type ChatRole} from '../lib/domain-constants';
-import {AuthHeaderSchema, ChatRoleSchema, IntegerLikeSchema, StandardErrorResponses, toJsonSchema, withExamples} from '../lib/schemas/openapi';
+import {ChatResource, ChatSubresource} from '../lib/openapi/route-kinds';
+import {AuthHeaderSchema, ChatRoleSchema, IntegerLikeSchema, makeParamsSchema, makeQuerySchema, StandardErrorResponses, toJsonSchema, withExamples} from '../lib/schemas/openapi';
 
 import {recordOllamaOperation} from './ollama-operations';
 import {withTelemetryBase} from './telemetry';
@@ -68,17 +69,17 @@ const ChatMessageSchema = z.object({
                              createdAt: z.string().min(1),
                            }).passthrough();
 
-const chatResourceParamsSchema = toJsonSchema(
+const chatResourceParamsSchema = makeParamsSchema(
     z.object({
-       resource: z.enum(['sessions', 'models', 'operations']),
+       resource: ChatResource.describe('Chat resource to list'),
      }).strict(),
     'ChatResourceParams');
 
-const chatListQuerySchema = toJsonSchema(
+const chatListQuerySchema = makeQuerySchema(
     z.object({
-       limit: IntegerLikeSchema.optional(),
+       limit: IntegerLikeSchema.optional().describe('Max items to return'),
      }).strict(),
-    'ChatListQuery');
+    'ChatListQuery', [{limit: 25}]);
 
 const chatAuthSchema = toJsonSchema(AuthHeaderSchema, 'AuthHeader');
 
@@ -166,10 +167,10 @@ const chatCreateSessionSchema = {
   },
 };
 
-const chatMessagesParamsSchema = toJsonSchema(
+const chatMessagesParamsSchema = makeParamsSchema(
     z.object({
-       sessionId: z.string().min(1),
-       subresource: z.enum(['messages']),
+       sessionId: z.string().min(1).describe('Chat session id'),
+       subresource: ChatSubresource.describe('Subresource type'),
      }).strict(),
     'ChatMessagesParams');
 

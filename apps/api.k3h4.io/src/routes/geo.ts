@@ -1,10 +1,13 @@
 import {Prisma, type PrismaClient} from '@prisma/client';
 import {type FastifyInstance, type RouteShorthandOptions} from 'fastify';
+import * as z from 'zod';
 
 import {ensureGeoActor} from '../actors/Geo/Geo';
 import {ACTOR_TYPES} from '../lib/actor-entity-constants';
 import {clampDecimals, routeSignature} from '../lib/geo-signature';
+import {GeoResourceGet, GeoResourcePost} from '../lib/openapi/route-kinds';
 import {enqueueOverpass} from '../lib/overpass-queue';
+import {AuthHeaderSchema, IntegerLikeSchema, makeBodySchema, makeOk, makeParamsSchema, makeQuerySchema, makeResponses, OkResponseSchema, OptionalAuthHeaderSchema, withExamples, zLat, zLon, zRadius, zZoom} from '../lib/schemas/openapi';
 import {logGeoStatus, readGeoPoiCache, readGeoPoiCacheStale, readGeoQueryCache, readGeoRouteCache, readGeoViewHistory, writeGeoPoiCache, writeGeoQueryCache, writeGeoRouteCache,} from '../services/geo-cache';
 import {readUserPreferencesByActor, updateUserPreferencesForUser, type UserPreferencePatch} from '../services/user-preferences';
 
@@ -68,6 +71,109 @@ async function fetchOverpass(
 export function registerGeoRoutes(
     server: FastifyInstance, prisma: PrismaClient,
     recordTelemetry: RecordTelemetryFn) {
+  const geoAuthHeader = makeParamsSchema(AuthHeaderSchema, 'AuthHeader');
+  const geoOptionalAuthHeader =
+      makeParamsSchema(OptionalAuthHeaderSchema, 'OptionalAuthHeader');
+
+  const geoPoisQuerySchema = makeQuerySchema(
+      z.object({
+         lat: zLat.describe('Center latitude'),
+         lng: zLon.describe('Center longitude'),
+         radiusM: zRadius.optional().describe('Search radius in meters'),
+         kinds: z.string().min(1).optional().describe(
+             'Comma-separated OSM amenity kinds (e.g. bank,atm,cafe)'),
+       }).passthrough(),
+      'GeoPoisQuery',
+      [{lat: 37.78, lng: -122.42, radiusM: 1800, kinds: 'bank,atm,cafe'}]);
+
+  const geoPrefsBodyZod =
+      z.object({
+         center: z.object({
+                    lat: zLat.optional(),
+                    lng: zLon.optional(),
+                  }).optional(),
+         view: z.object({
+                  zoom: zZoom.optional(),
+                  bearing: z.number().optional(),
+                  pitch: z.number().optional(),
+                }).optional(),
+         poi: z.object({
+                 signature: z.string().min(1).optional(),
+                 kinds: z.array(z.string().min(1)).optional(),
+                 radiusM: zRadius.optional(),
+                 count: z.number().int().optional(),
+                 expiresAtMs: z.number().int().optional(),
+                 pois: z.array(z.unknown()).optional(),
+               }).optional(),
+       }).passthrough();
+  const geoStatusBodyZod =
+      z.object({
+         status: z.string().min(1).describe('Status label'),
+         poiStatus: z.string().min(1).optional().describe('POI fetch status'),
+         centerLat: zLat.optional(),
+         centerLng: zLon.optional(),
+         error: z.string().min(1).optional(),
+       }).passthrough();
+  const geoPrefsBodySchema = makeBodySchema(
+      geoPrefsBodyZod, 'GeoPrefsBody', [{
+        center: {lat: 37.78, lng: -122.42},
+        view: {zoom: 12, bearing: 0, pitch: 0},
+        poi: {signature: '37.78:-122.42:1800:bank,atm', radiusM: 1800},
+      }]);
+  const geoStatusBodySchema = makeBodySchema(
+      geoStatusBodyZod, 'GeoStatusBody',
+      [{status: 'loading', centerLat: 37.78, centerLng: -122.42}]);
+
+  const geoRouteResponseSchema = z.object({
+                                    distanceKm: z.number(),
+                                    durationMinutes: z.number().int(),
+                                    geojson: z.unknown(),
+                                    cached: z.boolean(),
+                                  }).passthrough();
+  const geoHistoryEntrySchema =
+      z.object({
+         id: z.string().min(1),
+         signature: z.string().min(1),
+         zoomBand: z.string().min(1),
+         bbox: z.object({
+                  minLat: z.number(),
+                  minLng: z.number(),
+                  maxLat: z.number(),
+                  maxLng: z.number(),
+                }).strict(),
+         lastPoiIds: z.array(z.string()).optional(),
+         lastPoiCount: z.number().int().optional(),
+         pois: z.array(z.object({
+                          id: z.string().min(1),
+                          name: z.string().min(1),
+                          category: z.string().nullable().optional(),
+                          lat: z.number(),
+                          lng: z.number(),
+                        }).passthrough())
+                   .optional(),
+         firstViewedAt: z.string().min(1),
+         lastViewedAt: z.string().min(1),
+         viewCount: z.number().int(),
+         staleAfter: z.string().min(1).nullable().optional(),
+       }).passthrough();
+  const geoPrefsResponseSchema =
+      z.object({
+         view: z.object({
+                  center: z.object({lat: zLat, lng: zLon}).optional(),
+                  zoom: z.number().nullable(),
+                  bearing: z.number().nullable(),
+                  pitch: z.number().nullable(),
+                }).nullable(),
+         poi: z.object({
+                 signature: z.string().min(1),
+                 kinds: z.array(z.string().min(1)),
+                 radiusM: z.number().nullable(),
+                 count: z.number().nullable(),
+                 cached: z.boolean(),
+                 fetchedAt: z.string().min(1).nullable(),
+                 pois: z.unknown().optional(),
+               }).nullable(),
+       }).passthrough();
   const persistUserGeoPrefs = async (userId: string|null, prefs: {
     center?: {lat: number; lng: number}|null;
     view?:
@@ -193,7 +299,26 @@ export function registerGeoRoutes(
     },
     schema: {
       summary: 'Fetch Geo POIs with cached rate limiting',
+      description: 'Fetches POIs from Overpass with caching and rate limiting.',
+      operationId: 'geo_poi_list',
       tags: ['geo'],
+      headers: geoOptionalAuthHeader,
+      querystring: geoPoisQuerySchema,
+      response:
+          makeResponses(
+              {
+                200: withExamples(
+                    makeOk(
+                        z.object({
+                           pois: z.array(z.unknown()),
+                           count: z.number().int(),
+                           cached: z.boolean(),
+                           stale: z.boolean().optional(),
+                         }).strict(),
+                        'GeoPoisResponse'),
+                    [{pois: [{id: 'poi_01'}], count: 1, cached: true}]),
+              },
+              {includeStandardErrors: true}),
     },
   };
   server.get(
@@ -662,6 +787,44 @@ export function registerGeoRoutes(
 
   server.get(
       '/geo/:resource',
+      {
+        schema: {
+          summary: 'Geo resource fetch',
+          description:
+              'Fetches geo route, history, or preferences. Requires bearer auth.',
+          operationId: 'geo_resource_get',
+          tags: ['geo'],
+          headers: geoAuthHeader,
+          security: [{bearerAuth: []}],
+          params: makeParamsSchema(
+              z.object({
+                 resource: GeoResourceGet.describe('Geo resource type'),
+               }).strict(),
+              'GeoResourceParams'),
+          querystring: makeQuerySchema(
+              z.object({
+                 originLat: zLat.optional(),
+                 originLng: zLon.optional(),
+                 destinationLat: zLat.optional(),
+                 destinationLng: zLon.optional(),
+                 limit: IntegerLikeSchema.optional(),
+               }).passthrough(),
+              'GeoResourceQuery'),
+          response: makeResponses(
+              {
+                200: withExamples(
+                    makeOk(
+                        z.union([
+                          geoRouteResponseSchema,
+                          z.array(geoHistoryEntrySchema),
+                          geoPrefsResponseSchema,
+                        ]),
+                        'GeoResourceResponse'),
+                    [{distanceKm: 12.4, durationMinutes: 18, cached: true}]),
+              },
+              {includeStandardErrors: true}),
+        },
+      },
       async (request, reply) => {
         const {resource} = request.params as {resource?: string};
         if (resource === 'route') return handleGeoRoute(request, reply);
@@ -673,6 +836,30 @@ export function registerGeoRoutes(
 
   server.post(
       '/geo/:resource',
+      {
+        schema: {
+          summary: 'Geo resource update',
+          description:
+              'Updates geo preferences or posts status. Prefs require bearer auth; status can be anonymous.',
+          operationId: 'geo_resource_post',
+          tags: ['geo'],
+          headers: geoOptionalAuthHeader,
+          security: [{bearerAuth: []}],
+          params: makeParamsSchema(
+              z.object({
+                 resource: GeoResourcePost.describe('Geo resource type'),
+               }).strict(),
+              'GeoResourcePostParams'),
+          body: makeBodySchema(
+              z.union([geoPrefsBodyZod, geoStatusBodyZod]), 'GeoResourceBody'),
+          response: makeResponses(
+              {
+                200: withExamples(
+                    makeOk(OkResponseSchema, 'GeoOkResponse'), [{ok: true}]),
+              },
+              {includeStandardErrors: true}),
+        },
+      },
       async (request, reply) => {
         const {resource} = request.params as {resource?: string};
         if (resource === 'prefs') return handleGeoPrefsPost(request, reply);

@@ -3,7 +3,8 @@ import {FastifyInstance, FastifyReply, FastifyRequest} from 'fastify';
 import * as z from 'zod';
 
 import {ensureGeoActor} from '../actors/Geo/Geo';
-import {AuthHeaderSchema, StandardErrorResponses, toJsonSchema, withExamples} from '../lib/schemas/openapi';
+import {OsrmService} from '../lib/openapi/route-kinds';
+import {AuthHeaderSchema, makeParamsSchema, makeQuerySchema, makeResponses, withExamples} from '../lib/schemas/openapi';
 import {fetchOsrmWithCache} from '../services/osrm-cache';
 
 import {withTelemetryBase} from './telemetry';
@@ -95,41 +96,52 @@ export function registerOsrmRoutes(
   server.get(
       '/osrm/:service', {
         ...auth,
-        schema: {
-          summary: 'Proxy OSRM routing service',
-          description: 'Proxies OSRM service requests with caching.',
-          operationId: 'osrm_proxy',
-          tags: ['osrm'],
-          headers: toJsonSchema(AuthHeaderSchema, 'AuthHeader'),
-          security: [{bearerAuth: []}],
-          params: toJsonSchema(
-              z.object({
-                 service: z.enum(
-                     ['route', 'table', 'match', 'trip', 'nearest', 'tile']),
-               }).strict(),
-              'OsrmParams'),
-          querystring: toJsonSchema(
-              z.object({
-                 profile: z.string().min(1),
-                 coordinates: z.string().min(1),
-                 format: z.enum(['json', 'flatbuffers']).optional(),
-                 maxAgeMinutes: z.union([z.number(), z.string()]).optional(),
-               }).passthrough(),
-              'OsrmQuery'),
-          response:
-              {
-                200:
-                    withExamples(
-                        {
-                          type: [
-                            'object', 'array', 'string', 'number', 'boolean',
-                            'null'
-                          ],
-                        },
-                        [{code: 'Ok'}]),
-                ...StandardErrorResponses,
-              },
-        },
+        schema:
+            {
+              summary: 'Proxy OSRM routing service',
+              description: 'Proxies OSRM service requests with caching.',
+              operationId: 'osrm_proxy',
+              tags: ['osrm'],
+              headers: makeParamsSchema(AuthHeaderSchema, 'AuthHeader'),
+              security: [{bearerAuth: []}],
+              params: makeParamsSchema(
+                  z.object({
+                     service: OsrmService.describe('OSRM service name'),
+                   }).strict(),
+                  'OsrmParams'),
+              querystring: makeQuerySchema(
+                  z.object({
+                     profile: z.string().min(1).describe(
+                         'Routing profile (e.g. driving)'),
+                     coordinates: z.string().min(1).describe(
+                         'Semicolon-separated lon,lat pairs'),
+                     format: z.enum(['json', 'flatbuffers'])
+                                 .optional()
+                                 .describe('Response format'),
+                     maxAgeMinutes: z.union([z.number(), z.string()])
+                                        .optional()
+                                        .describe('Cache TTL in minutes'),
+                   }).passthrough(),
+                  'OsrmQuery', [{
+                    profile: 'driving',
+                    coordinates: '-122.42,37.78;-122.45,37.91',
+                    format: 'json',
+                  }]),
+              response:
+                  makeResponses(
+                      {
+                        200:
+                            withExamples(
+                                {
+                                  type: [
+                                    'object', 'array', 'string',
+                                    'number', 'boolean', 'null'
+                                  ],
+                                },
+                                [{code: 'Ok'}]),
+                      },
+                      {includeStandardErrors: true}),
+            },
       },
       async (request, reply) => {
         const {service} = request.params as {service?: string};

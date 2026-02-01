@@ -2,7 +2,8 @@ import {type PrismaClient} from '@prisma/client';
 import {type FastifyInstance, type FastifyReply} from 'fastify';
 import * as z from 'zod';
 
-import {AuthHeaderSchema, IntegerLikeSchema, StandardErrorResponses, toJsonSchema, withExamples} from '../lib/schemas/openapi';
+import {WikidataEntityType, WikidataSearchKind, WikidataSubresource} from '../lib/openapi/route-kinds';
+import {AuthHeaderSchema, IntegerLikeSchema, makeParamsSchema, makeQuerySchema, StandardErrorResponses, toJsonSchema, withExamples} from '../lib/schemas/openapi';
 import {fetchWikidataWithCache} from '../services/wikidata-cache';
 
 import {buildTelemetryBase} from './telemetry';
@@ -53,12 +54,13 @@ export function registerWikidataRoutes(
     server: FastifyInstance, prisma: PrismaClient,
     recordTelemetry: RecordTelemetryFn) {
   const auth = {preHandler: [server.authenticate]};
-  const authHeader = toJsonSchema(AuthHeaderSchema, 'AuthHeader');
-  const baseEntityQuery = toJsonSchema(
+  const authHeader = makeParamsSchema(AuthHeaderSchema, 'AuthHeader');
+  const baseEntityQuery = makeQuerySchema(
       z.object({
-         maxAgeMinutes: IntegerLikeSchema.optional(),
+         maxAgeMinutes:
+             IntegerLikeSchema.optional().describe('Cache TTL in minutes'),
        }).passthrough(),
-      'WikidataEntityQuery');
+      'WikidataEntityQuery', [{maxAgeMinutes: 120}]);
 
   const resolveEntityType = (value: string) => {
     if (value === 'items' || value === 'item') return 'items';
@@ -143,10 +145,10 @@ export function registerWikidataRoutes(
           tags: ['wikidata'],
           headers: authHeader,
           security: [{bearerAuth: []}],
-          params: toJsonSchema(
+          params: makeParamsSchema(
               z.object({
-                 entityType: z.enum(['items', 'properties']),
-                 id: z.string().min(1),
+                 entityType: WikidataEntityType.describe('Entity type'),
+                 id: z.string().min(1).describe('Wikidata id (e.g. Q42, P31)'),
                }).strict(),
               'WikidataEntityParams'),
           querystring: baseEntityQuery,
@@ -177,36 +179,32 @@ export function registerWikidataRoutes(
   server.get(
       '/wikidata/:entityType/:id/:subresource', {
         ...auth,
-        schema:
-            {
-              summary: 'Fetch Wikidata subresource',
-              description: 'Fetches Wikidata statements, labels, or sitelinks.',
-              operationId: 'wikidata_entity_subresource_get',
-              tags: ['wikidata'],
-              headers: authHeader,
-              security: [{bearerAuth: []}],
-              params: toJsonSchema(
-                  z.object({
-                     entityType: z.enum(['items', 'properties']),
-                     id: z.string().min(1),
-                     subresource: z.enum(['statements', 'labels', 'sitelinks']),
-                   }).strict(),
-                  'WikidataSubresourceParams'),
-              querystring: baseEntityQuery,
-              response:
-                  {
-                    200:
-                        withExamples(
-                            {
-                              type: [
-                                'object', 'array', 'string',
-                                'number', 'boolean', 'null'
-                              ],
-                            },
-                            [{subresource: 'labels'}]),
-                    ...StandardErrorResponses,
-                  },
-            },
+        schema: {
+          summary: 'Fetch Wikidata subresource',
+          description: 'Fetches Wikidata statements, labels, or sitelinks.',
+          operationId: 'wikidata_entity_subresource_get',
+          tags: ['wikidata'],
+          headers: authHeader,
+          security: [{bearerAuth: []}],
+          params: makeParamsSchema(
+              z.object({
+                 entityType: WikidataEntityType.describe('Entity type'),
+                 id: z.string().min(1).describe('Wikidata id (e.g. Q42)'),
+                 subresource: WikidataSubresource.describe('Subresource type'),
+               }).strict(),
+              'WikidataSubresourceParams'),
+          querystring: baseEntityQuery,
+          response: {
+            200: withExamples(
+                {
+                  type: [
+                    'object', 'array', 'string', 'number', 'boolean', 'null'
+                  ],
+                },
+                [{subresource: 'labels'}]),
+            ...StandardErrorResponses,
+          },
+        },
       },
       async (request, reply) => {
         const {entityType, id, subresource} = request.params as {
@@ -227,37 +225,33 @@ export function registerWikidataRoutes(
   server.get(
       '/wikidata/:entityType/:id/:subresource/:subId', {
         ...auth,
-        schema:
-            {
-              summary: 'Fetch Wikidata subresource entry',
-              description: 'Fetches a specific subresource entry.',
-              operationId: 'wikidata_entity_subresource_entry_get',
-              tags: ['wikidata'],
-              headers: authHeader,
-              security: [{bearerAuth: []}],
-              params: toJsonSchema(
-                  z.object({
-                     entityType: z.enum(['items', 'properties']),
-                     id: z.string().min(1),
-                     subresource: z.enum(['statements', 'labels', 'sitelinks']),
-                     subId: z.string().min(1),
-                   }).strict(),
-                  'WikidataSubresourceEntryParams'),
-              querystring: baseEntityQuery,
-              response:
-                  {
-                    200:
-                        withExamples(
-                            {
-                              type: [
-                                'object', 'array', 'string',
-                                'number', 'boolean', 'null'
-                              ],
-                            },
-                            [{subId: 'en'}]),
-                    ...StandardErrorResponses,
-                  },
-            },
+        schema: {
+          summary: 'Fetch Wikidata subresource entry',
+          description: 'Fetches a specific subresource entry.',
+          operationId: 'wikidata_entity_subresource_entry_get',
+          tags: ['wikidata'],
+          headers: authHeader,
+          security: [{bearerAuth: []}],
+          params: makeParamsSchema(
+              z.object({
+                 entityType: WikidataEntityType.describe('Entity type'),
+                 id: z.string().min(1).describe('Wikidata id (e.g. Q42)'),
+                 subresource: WikidataSubresource.describe('Subresource type'),
+                 subId: z.string().min(1).describe('Subresource id (e.g. en)'),
+               }).strict(),
+              'WikidataSubresourceEntryParams'),
+          querystring: baseEntityQuery,
+          response: {
+            200: withExamples(
+                {
+                  type: [
+                    'object', 'array', 'string', 'number', 'boolean', 'null'
+                  ],
+                },
+                [{subId: 'en'}]),
+            ...StandardErrorResponses,
+          },
+        },
       },
       async (request, reply) => {
         const {entityType, id, subresource, subId} = request.params as {
@@ -287,29 +281,34 @@ export function registerWikidataRoutes(
           tags: ['wikidata'],
           headers: authHeader,
           security: [{bearerAuth: []}],
-          params: toJsonSchema(
+          params: makeParamsSchema(
               z.object({
-                 kind: z.enum(['items', 'properties']),
+                 kind: WikidataSearchKind.describe('Search target type'),
                }).strict(),
               'WikidataSearchParams'),
-          querystring: toJsonSchema(
+          querystring: makeQuerySchema(
               z.object({
-                 q: z.string().min(1),
-                 language: z.string().min(1).optional(),
-                 limit: IntegerLikeSchema.optional(),
-                 continue: z.string().min(1).optional(),
-                 maxAgeMinutes: IntegerLikeSchema.optional(),
+                 q: z.string().min(1).describe('Search query'),
+                 language:
+                     z.string().min(1).optional().describe('Language code'),
+                 limit: IntegerLikeSchema.optional().describe('Max results'),
+                 continue:
+                     z.string().min(1).optional().describe('Pagination token'),
+                 maxAgeMinutes: IntegerLikeSchema.optional().describe(
+                     'Cache TTL in minutes'),
                }).strict(),
-              'WikidataSearchQuery'),
+              'WikidataSearchQuery',
+              [{q: 'Douglas Adams', language: 'en', limit: 5}]),
           response:
               {
                 200:
                     withExamples(
                         {
-                          type: [
-                            'object', 'array', 'string', 'number', 'boolean',
-                            'null'
-                          ],
+                          type:
+                              [
+                                'object', 'array', 'string',
+                                'number', 'boolean', 'null'
+                              ],
                         },
                         [{search: [{id: 'Q42', label: 'Douglas Adams'}]}]),
                 ...StandardErrorResponses,

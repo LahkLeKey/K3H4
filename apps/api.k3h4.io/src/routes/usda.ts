@@ -1,8 +1,11 @@
 import {Prisma, type PrismaClient} from '@prisma/client';
 import {type FastifyInstance, type FastifyReply} from 'fastify';
+import * as z from 'zod';
 
 import type {EntityKind} from '../lib/actor-entity-constants';
 import {ACTOR_TYPES, ENTITY_KINDS} from '../lib/actor-entity-constants';
+import {UsdaDataset, UsdaDetail, UsdaResource, UsdaSubresource} from '../lib/openapi/route-kinds';
+import {AuthHeaderSchema, IntegerLikeSchema, makeParamsSchema, makeQuerySchema, makeResponses, withExamples} from '../lib/schemas/openapi';
 import {createTelemetryTimer} from '../lib/telemetry-timer';
 import {readEnrichmentCache, writeEnrichmentCache} from '../services/enrichment-cache';
 import {fetchAndCache} from '../services/usda-cache';
@@ -67,6 +70,47 @@ export function registerUsdaRoutes(
   const auth = {preHandler: [server.authenticate]};
   const withApiTiming = (request: Parameters<RecordTelemetryFn>[0]) =>
       createTelemetryTimer(request, recordTelemetry, {source: 'api'});
+
+  const usdaAuthHeader = makeParamsSchema(AuthHeaderSchema, 'AuthHeader');
+  const usdaParamsSchema = makeParamsSchema(
+      z.object({
+         dataset: UsdaDataset.describe('USDA dataset'),
+         resource: UsdaResource.describe('Dataset resource'),
+       }).strict(),
+      'UsdaParams');
+  const usdaSubresourceParamsSchema = makeParamsSchema(
+      z.object({
+         dataset: UsdaDataset.describe('USDA dataset'),
+         resource: UsdaResource.describe('Dataset resource'),
+         subresource: UsdaSubresource.describe('Subresource selector'),
+       }).strict(),
+      'UsdaSubresourceParams');
+  const usdaDetailParamsSchema = makeParamsSchema(
+      z.object({
+         dataset: UsdaDataset.describe('USDA dataset'),
+         resource: UsdaResource.describe('Dataset resource'),
+         subresource: UsdaSubresource.describe('Subresource selector'),
+         detail: UsdaDetail.describe('Detail selector'),
+       }).strict(),
+      'UsdaDetailParams');
+  const usdaQuerySchema = makeQuerySchema(
+      z.object({
+         fast:
+             z.boolean().optional().describe('Skip enrichment when supported'),
+         commodityCode: z.union([IntegerLikeSchema, z.string().min(1)])
+                            .optional()
+                            .describe('Commodity code (ESR/PSD)'),
+         countryCode: z.union([IntegerLikeSchema, z.string().min(1)])
+                          .optional()
+                          .describe('Country code (ESR)'),
+         marketYear: IntegerLikeSchema.optional().describe('Market year'),
+         partnerCode: z.string().min(1).optional().describe('Partner code'),
+         reporterCode: z.string().min(1).optional().describe('Reporter code'),
+         year: IntegerLikeSchema.optional().describe('Year'),
+         month: IntegerLikeSchema.optional().describe('Month'),
+       }).passthrough(),
+      'UsdaQuery',
+      [{commodityCode: 'WHEAT', marketYear: 2024, countryCode: 'US'}]);
 
   const datasetActorIds: Record<string, string> = {};
   const entityKindByLabel:
@@ -760,8 +804,84 @@ export function registerUsdaRoutes(
     return badRequest(reply, 'resource is invalid');
   };
 
-  server.get('/usda/:dataset/:resource', auth, handleUsdaRequest);
-  server.get('/usda/:dataset/:resource/:subresource', auth, handleUsdaRequest);
   server.get(
-      '/usda/:dataset/:resource/:subresource/:detail', auth, handleUsdaRequest);
+      '/usda/:dataset/:resource', {
+        ...auth,
+        schema: {
+          summary: 'Fetch USDA dataset resource',
+          description:
+              'Fetches USDA dataset resources with caching and enrichment.',
+          operationId: 'usda_resource_get',
+          tags: ['usda'],
+          headers: usdaAuthHeader,
+          security: [{bearerAuth: []}],
+          params: usdaParamsSchema,
+          querystring: usdaQuerySchema,
+          response: makeResponses(
+              {
+                200: withExamples(
+                    {
+                      type: [
+                        'object', 'array', 'string', 'number', 'boolean', 'null'
+                      ],
+                    },
+                    [{data: 'USDA response'}]),
+              },
+              {includeStandardErrors: true}),
+        },
+      },
+      handleUsdaRequest);
+  server.get(
+      '/usda/:dataset/:resource/:subresource', {
+        ...auth,
+        schema: {
+          summary: 'Fetch USDA dataset subresource',
+          description: 'Fetches USDA dataset subresources with cache control.',
+          operationId: 'usda_subresource_get',
+          tags: ['usda'],
+          headers: usdaAuthHeader,
+          security: [{bearerAuth: []}],
+          params: usdaSubresourceParamsSchema,
+          querystring: usdaQuerySchema,
+          response: makeResponses(
+              {
+                200: withExamples(
+                    {
+                      type: [
+                        'object', 'array', 'string', 'number', 'boolean', 'null'
+                      ],
+                    },
+                    [{data: 'USDA response'}]),
+              },
+              {includeStandardErrors: true}),
+        },
+      },
+      handleUsdaRequest);
+  server.get(
+      '/usda/:dataset/:resource/:subresource/:detail', {
+        ...auth,
+        schema: {
+          summary: 'Fetch USDA dataset detail',
+          description:
+              'Fetches USDA dataset detail endpoints (e.g. data-release).',
+          operationId: 'usda_detail_get',
+          tags: ['usda'],
+          headers: usdaAuthHeader,
+          security: [{bearerAuth: []}],
+          params: usdaDetailParamsSchema,
+          querystring: usdaQuerySchema,
+          response: makeResponses(
+              {
+                200: withExamples(
+                    {
+                      type: [
+                        'object', 'array', 'string', 'number', 'boolean', 'null'
+                      ],
+                    },
+                    [{data: 'USDA response'}]),
+              },
+              {includeStandardErrors: true}),
+        },
+      },
+      handleUsdaRequest);
 }

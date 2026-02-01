@@ -3,7 +3,7 @@ import {type FastifyInstance} from 'fastify';
 import * as z from 'zod';
 
 import {ensureGeoActor, ensureGeoGlobalActor} from '../actors/Geo/Geo';
-import {GeoFormatSchema, IntegerLikeSchema, OptionalAuthHeaderSchema, StandardErrorResponses, toJsonSchema, withExamples} from '../lib/schemas/openapi';
+import {makeParamsSchema, makeQuerySchema, makeResponses, OptionalAuthHeaderSchema, withExamples, zFormat, zTileXY, zZoom} from '../lib/schemas/openapi';
 import {GEO_DEM_TTL_MS, readGeoDemTileCache, writeGeoDemTileCache} from '../services/geo-cache';
 import {demSignature, TERRAIN_PROVIDER} from '../services/geo-dem-cache';
 
@@ -48,30 +48,35 @@ export function registerDemRoutes(
               'Returns terrain-rgb tiles in png/webp with cache headers.',
           operationId: 'geo_dem_getTile',
           tags: ['geo'],
-          headers: toJsonSchema(OptionalAuthHeaderSchema, 'OptionalAuthHeader'),
-          params: toJsonSchema(
+          headers:
+              makeParamsSchema(OptionalAuthHeaderSchema, 'OptionalAuthHeader'),
+          params: makeParamsSchema(
               z.object({
-                 z: IntegerLikeSchema.describe('Zoom level'),
-                 x: IntegerLikeSchema.describe('Tile X'),
-                 y: IntegerLikeSchema.describe('Tile Y'),
-                 format: GeoFormatSchema.optional().default('png'),
+                 z: zZoom,
+                 ...zTileXY.shape,
+                 format: zFormat.optional().default('png'),
                }).strict(),
               'DemTileParams'),
-          querystring: toJsonSchema(
+          querystring: makeQuerySchema(
               z.object({
                  provider:
-                     z.string().min(1).optional().default(TERRAIN_PROVIDER),
+                     z.string()
+                         .min(1)
+                         .optional()
+                         .default(TERRAIN_PROVIDER)
+                         .describe('DEM tile provider (currently maptiler)'),
                }).strict(),
               'DemTileQuery'),
-          response: {
-            200: withExamples(
-                {
-                  type: 'string',
-                  format: 'binary',
-                },
-                ['<binary image data>']),
-            ...StandardErrorResponses,
-          },
+          response: makeResponses(
+              {
+                200: withExamples(
+                    {
+                      type: 'string',
+                      format: 'binary',
+                    },
+                    ['<binary image data>']),
+              },
+              {includeStandardErrors: true}),
         },
       },
       async (request, reply) => {
