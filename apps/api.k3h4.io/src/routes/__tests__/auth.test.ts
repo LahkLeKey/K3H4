@@ -1,6 +1,6 @@
 import '../../test/vitest-setup';
 
-import {Prisma} from '@prisma/client';
+import {Entity, Prisma} from '@prisma/client';
 import Fastify from 'fastify';
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 
@@ -13,13 +13,14 @@ import {type RecordTelemetryFn} from '../types';
 const recordTelemetry = vi.fn() as RecordTelemetryFn & {mockClear: () => void};
 const userId = 'user-1';
 const nativeFetch = globalThis.fetch;
-const mockEntity = {} as Prisma.Entity;
+const mockEntity = {} as Entity;
 const mockBatchPayload = {
   count: 0
 } as Prisma.BatchPayload;
 
 const useFetchMock = (mock: ReturnType<typeof vi.fn>) => {
-  const typed = mock as typeof fetch & {preconnect: typeof fetch['preconnect']};
+  const typed = mock as unknown as typeof fetch &
+      {preconnect: (typeof fetch)['preconnect']};
   typed.preconnect = vi.fn();
   globalThis.fetch = typed;
   return typed;
