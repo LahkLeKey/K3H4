@@ -48,7 +48,18 @@ export function registerCoreHooks(server: FastifyInstance) {
 
   server.addHook('onRoute', (routeOptions) => {
     const existing = routeOptions.schema?.tags;
-    if (existing && Array.isArray(existing) && existing.length > 0) return;
+    if (existing && Array.isArray(existing) && existing.length > 0) {
+      const normalized = existing.map((tag) => {
+        const key = typeof tag === 'string' ? tag.trim() : String(tag);
+        const mapped = swaggerTagMap[key] ?? swaggerTagMap[key.toLowerCase()];
+        return mapped?.name ?? key;
+      });
+      routeOptions.schema = {
+        ...(routeOptions.schema ?? {}),
+        tags: normalized,
+      };
+      return;
+    }
 
     const segments = routeOptions.url?.split('/').filter(Boolean) ?? [];
     const firstSegment = segments[0];

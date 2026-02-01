@@ -25,8 +25,11 @@ const describe = {
   chat: 'Chat sessions and models',
   frontend: 'Frontend integration helpers',
   building: 'Building lookup and geometry',
+  buildings: 'Building lookup and geometry',
   actor: 'Actors and entities',
   entity: 'Actors and entities',
+  api: 'Core API helpers',
+  pois: 'Points of interest',
 };
 
 export const swaggerTags: Record < string, {
@@ -57,8 +60,11 @@ export const swaggerTags: Record < string, {
   chat: {name: 'Chat', description: describe.chat},
   frontend: {name: 'Frontend', description: describe.frontend},
   building: {name: 'Building', description: describe.building},
+  buildings: {name: 'Building', description: describe.buildings},
   actor: {name: 'Actor', description: describe.actor},
   entity: {name: 'Entity', description: describe.entity},
+  api: {name: 'API', description: describe.api},
+  pois: {name: 'POIs', description: describe.pois},
 };
 
 export const swaggerTagMap: Record < string, {
@@ -94,8 +100,11 @@ export const swaggerTagMap: Record < string, {
   chat: swaggerTags.chat,
   frontend: swaggerTags.frontend,
   building: swaggerTags.building,
+  buildings: swaggerTags.building,
   actor: swaggerTags.actor,
   entity: swaggerTags.entity,
+  api: swaggerTags.api,
+  pois: swaggerTags.pois,
 };
 
 export const docsStaticDir =
