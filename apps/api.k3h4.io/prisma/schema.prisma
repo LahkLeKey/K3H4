@@ -136,7 +136,6 @@ model User {
   createdAt        DateTime          @default(now())
   updatedAt        DateTime          @updatedAt
   refreshTokens    RefreshToken[]
-  preference       UserPreference?
   telemetry        TelemetryEvent[]
   providerGrants   ProviderGrant[]
   chatSessions     ChatSession[]
@@ -186,36 +185,6 @@ model PointOfInterest {
   @@unique([osmType, osmId], name: "poi_osm_composite")
   @@index([latitude, longitude])
   @@index([category])
-}
-
-model UserPreference {
-  id                    String    @id @default(cuid())
-  userId                String    @unique
-  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  theme                 String    @default("system")
-  locale                String    @default("en-US")
-  timezone              String    @default("UTC")
-  marketingOptIn        Boolean   @default(false)
-  note                  String?
-  lastCenterLat         Decimal?  @db.Decimal(11, 6)
-  lastCenterLng         Decimal?  @db.Decimal(11, 6)
-  lastZoom              Float?
-  lastBearing           Float?
-  lastPitch             Float?
-  lastPoiSignature      String?
-  lastPoiKinds          String?
-  lastPoiRadiusM        Int?
-  lastPoiCount          Int?
-  lastPoiFetchedAt      DateTime?
-  maptilerStyle         String    @default("streets-v2")
-  maptilerLanguage      String    @default("en")
-  maptilerLastPath      String?
-  maptilerLastParams    Json?
-  maptilerLastKind      String?
-  maptilerLastSignature String?
-  maptilerLastFetchedAt DateTime?
-  createdAt             DateTime  @default(now())
-  updatedAt             DateTime  @updatedAt
 }
 
 model TelemetryEvent {
