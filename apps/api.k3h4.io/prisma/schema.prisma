@@ -49,6 +49,7 @@ enum ActorType {
   PERSONA                      @map("persona")
   STAFFING                     @map("staffing")
   ASSIGNMENT                   @map("assignment")
+  AUTH                         @map("auth")
   CULINARY                     @map("culinary")
   POINT_OF_SALE_STORE          @map("point-of-sale-store")
   GEO                          @map("geo")
@@ -56,6 +57,8 @@ enum ActorType {
   WIKIDATA_CACHE               @map("wikidata-cache")
   ENRICHMENT_CACHE             @map("enrichment-cache")
   AI_INSIGHT                   @map("ai-insight")
+  AUTH_REFRESH_TOKEN           @map("auth_refresh_token")
+  AUTH_PROVIDER_GRANT          @map("auth_provider_grant")
 }
 
 enum EntityDirection {
@@ -135,9 +138,7 @@ model User {
   avatarUrl        String?
   createdAt        DateTime          @default(now())
   updatedAt        DateTime          @updatedAt
-  refreshTokens    RefreshToken[]
   telemetry        TelemetryEvent[]
-  providerGrants   ProviderGrant[]
   chatSessions     ChatSession[]
   ollamaOperations OllamaOperation[]
   actors           Actor[]
@@ -145,28 +146,6 @@ model User {
   @@unique([provider, providerId])
 }
 
-model RefreshToken {
-  id        String   @id @default(cuid())
-  token     String   @unique
-  userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  createdAt DateTime @default(now())
-  expiresAt DateTime
-}
-
-model ProviderGrant {
-  id          String    @id @default(cuid())
-  userId      String
-  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  provider    String
-  providerId  String
-  accessToken String
-  scope       String?
-  expiresAt   DateTime?
-  createdAt   DateTime  @default(now())
-
-  @@unique([provider, providerId])
-}
 
 model PointOfInterest {
   id         String   @id @default(cuid())

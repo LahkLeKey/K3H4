@@ -5,6 +5,7 @@ import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 
 import * as culinaryLedger from '../../services/culinary-ledger';
 import * as staffingActor from '../../services/staffing-actor';
+import * as authEntities from '../../services/auth-entities';
 import {registerAuthRoutes} from '../auth';
 import {type RecordTelemetryFn} from '../types';
 
@@ -40,6 +41,12 @@ describe('auth routes', () => {
     globalThis.fetch = nativeFetch;
     process.env.GITHUB_CLIENT_ID = 'gh-id';
     process.env.GITHUB_CLIENT_SECRET = 'gh-secret';
+    vi.spyOn(authEntities, 'storeRefreshToken').mockResolvedValue(undefined);
+    vi.spyOn(authEntities, 'upsertProviderGrant').mockResolvedValue(undefined);
+    vi.spyOn(authEntities, 'readProviderGrantsForUser').mockResolvedValue([]);
+    vi.spyOn(authEntities, 'deleteProviderGrantsForUser').mockResolvedValue(undefined);
+    vi.spyOn(authEntities, 'deleteRefreshTokensForUser').mockResolvedValue(undefined);
+    vi.spyOn(authEntities, 'findRefreshTokenEntity').mockResolvedValue(null);
   });
 
   afterEach(() => {
@@ -86,7 +93,6 @@ describe('auth routes', () => {
     globalThis.fetch = fetchMock;
 
     const prisma = {
-      refreshToken: {create: vi.fn().mockResolvedValue({})},
       user: {
         upsert: vi.fn().mockResolvedValue({id: userId, email: 'user@test.com'})
       },
@@ -99,7 +105,7 @@ describe('auth routes', () => {
     });
     expect(res.statusCode).toBe(200);
     expect(prisma.user.upsert).toHaveBeenCalled();
-    expect(prisma.refreshToken.create).toHaveBeenCalled();
+    expect(authEntities.storeRefreshToken).toHaveBeenCalled();
     expect(recordTelemetry)
         .toHaveBeenCalledWith(expect.anything(), expect.objectContaining({
           eventType: 'auth.github.callback.success'
@@ -129,7 +135,6 @@ describe('auth routes', () => {
     globalThis.fetch = fetchMock;
 
     const prisma = {
-      refreshToken: {create: vi.fn().mockResolvedValue({})},
       user: {
         upsert:
             vi.fn().mockResolvedValue({id: userId, email: 'primary@test.com'})
@@ -152,7 +157,7 @@ describe('auth routes', () => {
         {ok: false, json: async () => ({error: 'bad_verification_code'})} as
         Response);
     globalThis.fetch = fetchMock;
-    const prisma = {refreshToken: {create: vi.fn()}, user: {upsert: vi.fn()}};
+    const prisma = {user: {upsert: vi.fn()}};
     const server = buildServer(prisma);
     const res = await server.inject({
       method: 'POST',
@@ -213,8 +218,7 @@ describe('auth routes', () => {
           Response);
     });
     globalThis.fetch = fetchMock;
-    const server =
-        buildServer({user: {upsert: vi.fn()}, refreshToken: {create: vi.fn()}});
+    const server = buildServer({user: {upsert: vi.fn()}});
     const res = await server.inject({
       method: 'POST',
       url: '/auth/github/callback',
@@ -242,8 +246,7 @@ describe('auth routes', () => {
           Response);
     });
     globalThis.fetch = fetchMock;
-    const server =
-        buildServer({user: {upsert: vi.fn()}, refreshToken: {create: vi.fn()}});
+    const server = buildServer({user: {upsert: vi.fn()}});
     const res = await server.inject({
       method: 'POST',
       url: '/auth/github/callback',
@@ -268,8 +271,7 @@ describe('auth routes', () => {
       return Promise.resolve({ok: false, json: async () => ({})} as Response);
     });
     globalThis.fetch = fetchMock;
-    const server =
-        buildServer({user: {upsert: vi.fn()}, refreshToken: {create: vi.fn()}});
+    const server = buildServer({user: {upsert: vi.fn()}});
     const res = await server.inject({
       method: 'POST',
       url: '/auth/github/callback',
@@ -293,8 +295,7 @@ describe('auth routes', () => {
       return Promise.resolve({ok: false, json: async () => ({})} as Response);
     });
     globalThis.fetch = fetchMock;
-    const server =
-        buildServer({user: {upsert: vi.fn()}, refreshToken: {create: vi.fn()}});
+    const server = buildServer({user: {upsert: vi.fn()}});
     const res = await server.inject({
       method: 'POST',
       url: '/auth/github/callback',
@@ -306,8 +307,7 @@ describe('auth routes', () => {
   it('handles callback exceptions', async () => {
     const fetchMock = vi.fn().mockRejectedValue(new Error('network'));
     globalThis.fetch = fetchMock;
-    const server =
-        buildServer({user: {upsert: vi.fn()}, refreshToken: {create: vi.fn()}});
+    const server = buildServer({user: {upsert: vi.fn()}});
     const res = await server.inject({
       method: 'POST',
       url: '/auth/github/callback',
@@ -336,7 +336,6 @@ describe('auth routes', () => {
     process.env.LINKEDIN_CLIENT_ID = 'ln-id';
     process.env.LINKEDIN_CLIENT_SECRET = 'ln-secret';
     const prisma = {
-      refreshToken: {create: vi.fn().mockResolvedValue({})},
       user: {
         upsert: vi.fn().mockResolvedValue({id: 'ln-1', email: 'l@test.com'})
       },
@@ -358,8 +357,7 @@ describe('auth routes', () => {
     globalThis.fetch = fetchMock;
     process.env.LINKEDIN_CLIENT_ID = 'ln-id';
     process.env.LINKEDIN_CLIENT_SECRET = 'ln-secret';
-    const server =
-        buildServer({user: {upsert: vi.fn()}, refreshToken: {create: vi.fn()}});
+    const server = buildServer({user: {upsert: vi.fn()}});
     const state = await getLinkedinState(server);
     const res = await server.inject({
       method: 'POST',
@@ -381,8 +379,7 @@ describe('auth routes', () => {
     globalThis.fetch = fetchMock;
     process.env.LINKEDIN_CLIENT_ID = 'ln-id';
     process.env.LINKEDIN_CLIENT_SECRET = 'ln-secret';
-    const server =
-        buildServer({user: {upsert: vi.fn()}, refreshToken: {create: vi.fn()}});
+    const server = buildServer({user: {upsert: vi.fn()}});
     const state = await getLinkedinState(server);
     const res = await server.inject({
       method: 'POST',
@@ -413,7 +410,6 @@ describe('auth routes', () => {
       freightLoad: {deleteMany: vi.fn().mockResolvedValue({count: 0})},
       warehouseItem: {deleteMany: vi.fn().mockResolvedValue({count: 0})},
       userPreference: {deleteMany: vi.fn().mockResolvedValue({count: 0})},
-      refreshToken: {deleteMany: vi.fn().mockResolvedValue({count: 0})},
       user: {
         findUnique:
             vi.fn().mockResolvedValue({id: userId, email: 'user@test.com'}),
@@ -446,6 +442,10 @@ describe('auth routes', () => {
     expect(prisma.user.delete).toHaveBeenCalledWith({where: {id: userId}});
     expect(deleteStaffingSpy).toHaveBeenCalledWith(prisma, userId);
     expect(deleteCulinarySpy).toHaveBeenCalledWith(prisma, userId);
+    expect(authEntities.deleteProviderGrantsForUser)
+      .toHaveBeenCalledWith(prisma, userId);
+    expect(authEntities.deleteRefreshTokensForUser)
+      .toHaveBeenCalledWith(prisma, userId);
   });
 
   it('rejects delete when confirmation text is wrong', async () => {

@@ -9,6 +9,8 @@ import {deleteCulinaryActorWithEntities} from '../services/culinary-ledger';
 import {deleteFreightActorWithEntities} from '../services/freight-actor';
 import {deleteStaffingActorWithEntities} from '../services/staffing-actor';
 import {deleteWarehouseActorWithEntities} from '../services/warehouse-actor';
+import {deleteUserPreferencesForUser} from '../services/user-preferences';
+import {deleteProviderGrantsForUser, deleteRefreshTokensForUser, findRefreshTokenEntity, readProviderGrantsForUser, storeRefreshToken, upsertProviderGrant} from '../services/auth-entities';
 
 import {withTelemetryBase} from './telemetry';
 import {type RecordTelemetryFn} from './types';
@@ -107,8 +109,7 @@ const createSessionTokens = async (
     email?: string) => {
   const refreshToken = randomBytes(48).toString('hex');
   const expiresAt = new Date(Date.now() + 1000 * 60 * 60 * 24 * 30);
-  await prisma.refreshToken.create(
-      {data: {token: refreshToken, userId, expiresAt}});
+    await storeRefreshToken(prisma, userId, refreshToken, expiresAt);
   const accessToken =
       server.jwt.sign({sub: userId, email: email ?? ''}, {expiresIn: '15m'});
   return {accessToken, refreshToken, expiresAt};
@@ -168,11 +169,15 @@ const runDeleteJob = async (
       },
       {
         key: 'userPreferences',
-        action: () => prisma.userPreference.deleteMany({where: {userId}})
+        action: () => deleteUserPreferencesForUser(prisma, userId)
+      },
+      {
+        key: 'providerGrants',
+        action: () => deleteProviderGrantsForUser(prisma, userId)
       },
       {
         key: 'refreshTokens',
-        action: () => prisma.refreshToken.deleteMany({where: {userId}})
+        action: () => deleteRefreshTokensForUser(prisma, userId)
       },
       {key: 'user', action: () => prisma.user.delete({where: {id: userId}})},
     ];
@@ -342,20 +347,18 @@ export function registerAuthRoutes(
 
       // Persist provider grant so we can revoke on signout
       try {
-        await (prisma as any).providerGrant.upsert({
-          where: {provider_providerId: {provider: 'github', providerId}},
-          create: {
-            userId: user.id,
-            provider: 'github',
+        const scope =
+            typeof (tokenData as any).scope === 'string' ?
+            (tokenData as any).scope :
+            null;
+        await upsertProviderGrant(
+            prisma,
+            user.id,
+            'github',
             providerId,
-            accessToken: tokenData.access_token ?? '',
-            scope: (tokenData as any).scope ?? null,
-          },
-          update: {
-            accessToken: tokenData.access_token ?? '',
-            scope: (tokenData as any).scope ?? null,
-          },
-        });
+            tokenData.access_token ?? '',
+            scope,
+            null);
       } catch (err) {
         request.log.warn({err}, 'persisting github grant failed');
       }
@@ -527,21 +530,14 @@ export function registerAuthRoutes(
       const maybeExpires = (tokenData as any).expires_in ?
           new Date(Date.now() + Number((tokenData as any).expires_in) * 1000) :
           undefined;
-      await (prisma as any).providerGrant.upsert({
-        where: {provider_providerId: {provider: 'linkedin', providerId}},
-        create: {
-          userId: user.id,
-          provider: 'linkedin',
+      await upsertProviderGrant(
+          prisma,
+          user.id,
+          'linkedin',
           providerId,
-          accessToken: tokenData.access_token ?? '',
-          scope: null,
-          expiresAt: maybeExpires ?? null,
-        },
-        update: {
-          accessToken: tokenData.access_token ?? '',
-          expiresAt: maybeExpires ?? null,
-        },
-      });
+          tokenData.access_token ?? '',
+          null,
+          maybeExpires ?? null);
     } catch (err) {
       request.log.warn({err}, 'persisting linkedin grant failed');
     }
@@ -661,9 +657,8 @@ export function registerAuthRoutes(
         const provided = body?.refreshToken ||
             (request.headers['x-refresh-token'] as string | undefined) || null;
         if (provided) {
-          const found =
-              await prisma.refreshToken.findUnique({where: {token: provided}});
-          if (found) userId = found.userId;
+          const found = await findRefreshTokenEntity(prisma, provided);
+          if (found?.actor?.userId) userId = found.actor.userId;
         }
       }
 
@@ -673,14 +668,20 @@ export function registerAuthRoutes(
       }
 
       // Find stored provider grants and attempt to revoke them at provider
-      const grants =
-          await (prisma as any).providerGrant.findMany({where: {userId}});
+      const grants = await readProviderGrantsForUser(prisma, userId);
       for (const g of grants) {
         try {
-          if (g.provider === 'github') {
+          const metadata =
+              (g.metadata as Prisma.JsonObject | null) ?? ({} as Prisma.JsonObject);
+          const provider =
+              typeof metadata.provider === 'string' ? metadata.provider : null;
+          const accessToken =
+              typeof metadata.accessToken === 'string' ? metadata.accessToken : null;
+          if (!provider || !accessToken) continue;
+          if (provider === 'github') {
             const clientId = process.env.GITHUB_CLIENT_ID;
             const clientSecret = process.env.GITHUB_CLIENT_SECRET;
-            if (clientId && clientSecret && g.accessToken) {
+            if (clientId && clientSecret) {
               const basic =
                   Buffer.from(`${clientId}:${clientSecret}`).toString('base64');
               // Best-effort revoke using GitHub Applications API
@@ -694,17 +695,17 @@ export function registerAuthRoutes(
                       Accept: 'application/vnd.github.v3+json',
                       'Content-Type': 'application/json',
                     },
-                    body: JSON.stringify({access_token: g.accessToken}),
+                    body: JSON.stringify({access_token: accessToken}),
                   })
                   .catch(() => null);
             }
           }
-          if (g.provider === 'linkedin') {
+          if (provider === 'linkedin') {
             const clientId = process.env.LINKEDIN_CLIENT_ID;
             const clientSecret = process.env.LINKEDIN_CLIENT_SECRET;
-            if (clientId && clientSecret && g.accessToken) {
+            if (clientId && clientSecret) {
               const params = new URLSearchParams();
-              params.set('token', g.accessToken);
+              params.set('token', accessToken);
               // LinkedIn revoke - best-effort
               await fetch('https://www.linkedin.com/oauth/v2/revoke', {
                 method: 'POST',
@@ -714,16 +715,15 @@ export function registerAuthRoutes(
             }
           }
         } catch (err) {
-          request.log.warn({err, grant: g}, 'revoke provider token failed');
+          request.log.warn({err, grant: g.metadata},
+              'revoke provider token failed');
         }
       }
 
       // Remove provider grants and refresh tokens from DB to ensure server-side
       // session state cleared
-      await (prisma as any)
-          .providerGrant.deleteMany({where: {userId}})
-          .catch(() => null);
-      await prisma.refreshToken.deleteMany({where: {userId}});
+        await deleteProviderGrantsForUser(prisma, userId);
+        await deleteRefreshTokensForUser(prisma, userId);
 
       await rt({eventType: 'auth.signout', source: 'api', payload: {userId}});
       return {ok: true};
