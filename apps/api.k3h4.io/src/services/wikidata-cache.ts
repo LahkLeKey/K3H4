@@ -1,4 +1,4 @@
-import {PrismaClient} from '@prisma/client';
+import {type Prisma, PrismaClient} from '@prisma/client';
 import {createHash} from 'crypto';
 
 import {fetchWikidataJson, type WikidataFetchResult} from '../lib/wikidata-client';
@@ -20,7 +20,7 @@ type Params = Record<string, string|number|boolean|null|undefined>|undefined;
 type WikidataCachePayload = {
   resource: string; endpoint: string;
   params?: Params; paramsHash: string; url: string; statusCode: number;
-  payload: unknown;
+  payload: Prisma.JsonValue;
   fetchedAt: string;
   expiresAt: string | null;
   cacheControlSeconds: number | null;
@@ -116,7 +116,7 @@ export async function fetchWikidataWithCache<T = unknown>(
     paramsHash,
     url: response.url,
     statusCode: response.status,
-    payload: response.payload,
+    payload: response.payload as Prisma.JsonValue,
     fetchedAt: new Date(now).toISOString(),
     expiresAt: expiresAt ? expiresAt.toISOString() : null,
     cacheControlSeconds: response.cacheControlSeconds ?? null,
