@@ -577,7 +577,8 @@ function numberFromJson(value: unknown) {
 function toInputJsonValue(value: unknown|null|undefined): Prisma.InputJsonValue|
     undefined {
   if (value === undefined) return undefined;
-  if (value === null) return Prisma.JsonNull as Prisma.InputJsonValue;
+  if (value === null)
+    return Prisma.JsonNull as unknown as Prisma.InputJsonValue;
   return value as Prisma.InputJsonValue;
 }
 
