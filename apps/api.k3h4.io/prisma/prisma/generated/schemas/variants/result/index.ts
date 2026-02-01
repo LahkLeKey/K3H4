@@ -12,8 +12,6 @@ export { PoiEnrichmentCacheResultSchema } from './PoiEnrichmentCache.result';
 export { UserPreferenceResultSchema } from './UserPreference.result';
 export { TelemetryEventResultSchema } from './TelemetryEvent.result';
 export { ApiCacheEntryResultSchema } from './ApiCacheEntry.result';
-export { WikidataCacheEntryResultSchema } from './WikidataCacheEntry.result';
-export { EnrichmentCacheResultSchema } from './EnrichmentCache.result';
 export { ChatSessionResultSchema } from './ChatSession.result';
 export { ChatMessageResultSchema } from './ChatMessage.result';
 export { OllamaOperationResultSchema } from './OllamaOperation.result';
