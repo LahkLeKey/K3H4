@@ -59,6 +59,7 @@ enum ActorType {
   AI_INSIGHT                   @map("ai-insight")
   AI_OPERATION                 @map("ai-operation")
   CHAT_SESSION                 @map("chat-session")
+  POINT_OF_INTEREST            @map("point-of-interest")
   AUTH_REFRESH_TOKEN           @map("auth_refresh_token")
   AUTH_PROVIDER_GRANT          @map("auth_provider_grant")
 }
@@ -150,25 +151,6 @@ model User {
   @@unique([provider, providerId])
 }
 
-model PointOfInterest {
-  id         String   @id @default(cuid())
-  osmType    String   @default("node")
-  osmId      BigInt
-  name       String?
-  category   String?
-  latitude   Decimal  @db.Decimal(11, 6)
-  longitude  Decimal  @db.Decimal(11, 6)
-  tags       Json?
-  source     String   @default("osm")
-  lastSeenAt DateTime @default(now())
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
-
-  @@unique([osmType, osmId], name: "poi_osm_composite")
-  @@index([latitude, longitude])
-  @@index([category])
-}
-
 model TelemetryEvent {
   id         String   @id @default(cuid())
   userId     String?
@@ -206,22 +188,31 @@ model ApiCacheEntry {
 }
 
 model Actor {
-  id        String    @id @default(cuid())
-  userId    String?
-  user      User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
-  label     String
-  type      ActorType
-  note      String?
-  source    String?
-  metadata  Json?
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
+  id         String    @id @default(cuid())
+  userId     String?
+  user       User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
+  label      String
+  type       ActorType
+  note       String?
+  source     String?
+  metadata   Json?
+  osmType    String?
+  osmId      BigInt?   @db.BigInt
+  latitude   Decimal?  @db.Decimal(11, 6)
+  longitude  Decimal?  @db.Decimal(11, 6)
+  category   String?
+  lastSeenAt DateTime?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
 
   entities Entity[]
   caches   ActorCache[]
 
+  @@unique([type, osmType, osmId], name: "actor_poi_osm_unique")
   @@index([userId])
   @@index([type])
+  @@index([category])
+  @@index([latitude, longitude])
 }
 
 model Entity {

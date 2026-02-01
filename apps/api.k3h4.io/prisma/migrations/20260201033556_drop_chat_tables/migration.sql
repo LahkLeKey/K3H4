@@ -17,6 +17,9 @@ ALTER TABLE "ChatMessage" DROP CONSTRAINT "ChatMessage_sessionId_fkey";
 -- DropForeignKey
 ALTER TABLE "ChatSession" DROP CONSTRAINT "ChatSession_userId_fkey";
 
+-- DropForeignKey
+ALTER TABLE "OllamaOperation" DROP CONSTRAINT "OllamaOperation_sessionId_fkey";
+
 -- DropTable
 DROP TABLE "ChatMessage";
 

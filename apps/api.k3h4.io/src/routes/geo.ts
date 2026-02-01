@@ -1,4 +1,4 @@
-import {Prisma, type PrismaClient} from '@prisma/client';
+import {ActorType, Prisma, type PrismaClient} from '@prisma/client';
 import {type FastifyInstance, type RouteShorthandOptions} from 'fastify';
 
 import {clampDecimals, routeSignature} from '../lib/geo-signature';
@@ -363,11 +363,14 @@ export function registerGeoRoutes(
             (r) =>
                 (Array.isArray(r.lastPoiIds) ? (r.lastPoiIds as string[]) :
                                                []))));
-        const pois = allPoiIds.length ? await prisma.pointOfInterest.findMany({
-          where: {id: {in : allPoiIds}},
+        const pois = allPoiIds.length ? await prisma.actor.findMany({
+          where: {
+            id: {in : allPoiIds},
+            type: ActorType.POINT_OF_INTEREST,
+          },
           select: {
             id: true,
-            name: true,
+            label: true,
             category: true,
             latitude: true,
             longitude: true
@@ -397,8 +400,8 @@ export function registerGeoRoutes(
                     .filter(Boolean)
                     .map((p) => ({
                            id: p!.id,
-                           name: p!.name,
-                           category: p!.category,
+                           name: p!.label,
+                           category: p!.category ?? null,
                            lat: Number(p!.latitude),
                            lng: Number(p!.longitude),
                          })),
