@@ -497,11 +497,11 @@ function mapEntityToChatMessage(row: {
 
 function buildMessageMetadata(
     params: {role: ChatRole; content: string; metadata?: unknown | null;}):
-    Prisma.JsonValue {
+    Prisma.InputJsonObject {
   return pruneJsonObject({
-           role: params.role.toLowerCase(),
-           content: params.content,
-           metadata: params.metadata ?? null,
+           role: toInputJsonValue(params.role.toLowerCase()),
+           content: toInputJsonValue(params.content),
+           metadata: toInputJsonValue(params.metadata),
          }) ??
       {};
 }
@@ -519,27 +519,30 @@ function getSessionMetadata(metadata: Prisma.JsonValue|null):
 }
 
 function buildSessionMetadata(params: SessionMetadataRecord):
-    Prisma.JsonObject {
+    Prisma.InputJsonObject {
   return pruneJsonObject({
-           title: params.title,
-           systemPrompt: params.systemPrompt,
-           model: params.model,
-           temperature: params.temperature,
-           metadata: params.metadata,
+           title: toInputJsonValue(params.title),
+           systemPrompt: toInputJsonValue(params.systemPrompt),
+           model: toInputJsonValue(params.model),
+           temperature: toInputJsonValue(params.temperature),
+           metadata: toInputJsonValue(params.metadata),
          }) ??
       {};
 }
 
 function mergeSessionMetadata(
     base: Prisma.JsonValue|null|undefined,
-    patch: SessionMetadataPatch): Prisma.JsonObject {
+    patch: SessionMetadataPatch): Prisma.InputJsonObject {
   const existing = asRecord(base);
-  const next: Record<string, unknown> = {...existing};
-  if (patch.title !== undefined) next.title = patch.title;
-  if (patch.systemPrompt !== undefined) next.systemPrompt = patch.systemPrompt;
-  if (patch.model !== undefined) next.model = patch.model;
-  if (patch.temperature !== undefined) next.temperature = patch.temperature;
-  if (patch.metadata !== undefined) next.metadata = patch.metadata;
+  const next = {...existing} as Record<string, Prisma.InputJsonValue|undefined>;
+  if (patch.title !== undefined) next.title = toInputJsonValue(patch.title);
+  if (patch.systemPrompt !== undefined)
+    next.systemPrompt = toInputJsonValue(patch.systemPrompt);
+  if (patch.model !== undefined) next.model = toInputJsonValue(patch.model);
+  if (patch.temperature !== undefined)
+    next.temperature = toInputJsonValue(patch.temperature);
+  if (patch.metadata !== undefined)
+    next.metadata = toInputJsonValue(patch.metadata);
   return pruneJsonObject(next) ?? {};
 }
 
@@ -571,11 +574,19 @@ function numberFromJson(value: unknown) {
   return numeric;
 }
 
-function pruneJsonObject(value: Record<string, unknown>): Prisma.JsonObject|
-    null {
+function toInputJsonValue(value: unknown|null|undefined): Prisma.InputJsonValue|
+    undefined {
+  if (value === undefined) return undefined;
+  if (value === null) return Prisma.JsonNull as Prisma.InputJsonValue;
+  return value as Prisma.InputJsonValue;
+}
+
+function pruneJsonObject(
+    value: Record<string, Prisma.InputJsonValue|undefined>):
+    Prisma.InputJsonObject|null {
   const entries = Object.entries(value).filter(([, val]) => val !== undefined);
   if (!entries.length) return null;
-  return Object.fromEntries(entries) as Prisma.JsonObject;
+  return Object.fromEntries(entries) as Prisma.InputJsonObject;
 }
 
 function clampNumber(

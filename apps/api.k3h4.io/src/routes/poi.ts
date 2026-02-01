@@ -40,8 +40,15 @@ const POI_ACTOR_PREFIX = 'poi';
 const buildPoiActorId = (osmType: string, osmId: bigint|string|number) =>
     `${POI_ACTOR_PREFIX}:${osmType}:${osmId}`;
 
-const buildPoiMetadata = (tags: unknown): Prisma.JsonValue => ({
-  tags: tags ?? {},
+const normalizeInputJsonRecord =
+    (value: unknown): Record<string, Prisma.InputJsonValue> => {
+      if (value && typeof value === 'object' && !Array.isArray(value))
+        return value as Record<string, Prisma.InputJsonValue>;
+      return {};
+    };
+
+const buildPoiMetadata = (tags: unknown): Prisma.InputJsonObject => ({
+  tags: normalizeInputJsonRecord(tags),
 });
 
 const decimalToNumber =
@@ -173,6 +180,12 @@ const serializeGeometry = (raw: unknown) => {
   return raw as any;
 };
 
+function asRecord(value: unknown): Record<string, unknown> {
+  if (value && typeof value === 'object' && !Array.isArray(value))
+    return value as Record<string, unknown>;
+  return {};
+}
+
 const buildOverpassQuery = (bounds: Bbox, kinds: string[]) => {
   const bboxClause =
       `${bounds.minLat},${bounds.minLng},${bounds.maxLat},${bounds.maxLng}`;
@@ -239,13 +252,6 @@ async function upsertOverpassElements(
         lastSeenAt: runStarted,
       },
     });
-  }
-
-  function asRecord(value: Prisma.JsonValue|null|undefined):
-      Record<string, unknown> {
-    if (value && typeof value === 'object' && !Array.isArray(value))
-      return value as Record<string, unknown>;
-    return {};
   }
 }
 
