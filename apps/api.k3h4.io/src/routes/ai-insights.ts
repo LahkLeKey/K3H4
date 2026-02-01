@@ -1,5 +1,7 @@
-import {type AiInsight, type PrismaClient} from '@prisma/client';
+import {type PrismaClient} from '@prisma/client';
 import {type FastifyInstance, type FastifyReply, type FastifyRequest} from 'fastify';
+
+import {type AiInsightPayload, createAiInsight, loadAiInsights} from '../services/ai-insight-actor';
 
 import {recordOllamaOperation} from './ollama-operations';
 import {withTelemetryBase} from './telemetry';
@@ -76,14 +78,8 @@ export function registerAiInsightsRoutes(
         const userId = (request.user as {sub: string}).sub;
         const query = request.query as InsightsListQuery;
         const limit = clampLimit(query.limit);
-        const insights = await prisma.aiInsight.findMany({
-          where: {
-            userId,
-            targetType: query.targetType ?? undefined,
-          },
-          orderBy: {createdAt: 'desc'},
-          take: limit,
-        });
+        const insights = await loadAiInsights(
+            prisma, userId, query.targetType ?? null, limit);
         await telemetry({
           eventType: 'ai.insights.list',
           source: 'ai',
@@ -137,16 +133,16 @@ export function registerAiInsightsRoutes(
         }
         const finalDescription =
             synthesizedDescription?.trim() || descriptionDraft;
-        const insight = await prisma.aiInsight.create({
-          data: {
-            userId,
-            description: finalDescription,
-            targetType,
-            targetId,
-            targetLabel,
-            metadata: body.metadata ?? undefined,
-            payload: body.payload ?? undefined,
-          },
+        const insight = await createAiInsight(prisma, {
+          userId,
+          description: finalDescription,
+          targetType,
+          targetId,
+          targetLabel,
+          metadata: body.metadata,
+          payload: body.payload,
+          model,
+          systemPrompt,
         });
         await telemetry({
           eventType: 'ai.insight.create',
@@ -174,17 +170,17 @@ function normalizeString(value?: string|null): string|null {
   return trimmed && trimmed.length ? trimmed : null;
 }
 
-function mapInsight(row: AiInsight) {
+function mapInsight(insight: AiInsightPayload) {
   return {
-    id: row.id,
-    description: row.description,
-    targetType: row.targetType,
-    targetId: row.targetId,
-    targetLabel: row.targetLabel,
-    metadata: row.metadata ?? null,
-    payload: row.payload ?? null,
-    createdAt: row.createdAt.toISOString(),
-    updatedAt: row.updatedAt.toISOString(),
+    id: insight.id,
+    description: insight.description,
+    targetType: insight.targetType,
+    targetId: insight.targetId,
+    targetLabel: insight.targetLabel,
+    metadata: insight.metadata ?? null,
+    payload: insight.payload ?? null,
+    createdAt: insight.createdAt.toISOString(),
+    updatedAt: insight.updatedAt.toISOString(),
   };
 }
 

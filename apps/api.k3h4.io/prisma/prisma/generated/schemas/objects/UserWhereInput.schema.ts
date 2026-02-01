@@ -10,7 +10,6 @@ import { UserPreferenceWhereInputObjectSchema as UserPreferenceWhereInputObjectS
 import { TelemetryEventListRelationFilterObjectSchema as TelemetryEventListRelationFilterObjectSchema } from './TelemetryEventListRelationFilter.schema';
 import { ProviderGrantListRelationFilterObjectSchema as ProviderGrantListRelationFilterObjectSchema } from './ProviderGrantListRelationFilter.schema';
 import { ChatSessionListRelationFilterObjectSchema as ChatSessionListRelationFilterObjectSchema } from './ChatSessionListRelationFilter.schema';
-import { AiInsightListRelationFilterObjectSchema as AiInsightListRelationFilterObjectSchema } from './AiInsightListRelationFilter.schema';
 import { OllamaOperationListRelationFilterObjectSchema as OllamaOperationListRelationFilterObjectSchema } from './OllamaOperationListRelationFilter.schema';
 import { ActorListRelationFilterObjectSchema as ActorListRelationFilterObjectSchema } from './ActorListRelationFilter.schema'
 
@@ -40,7 +39,6 @@ const userwhereinputSchema = z.object({
   telemetry: z.lazy(() => TelemetryEventListRelationFilterObjectSchema).optional(),
   providerGrants: z.lazy(() => ProviderGrantListRelationFilterObjectSchema).optional(),
   chatSessions: z.lazy(() => ChatSessionListRelationFilterObjectSchema).optional(),
-  aiInsights: z.lazy(() => AiInsightListRelationFilterObjectSchema).optional(),
   ollamaOperations: z.lazy(() => OllamaOperationListRelationFilterObjectSchema).optional(),
   actors: z.lazy(() => ActorListRelationFilterObjectSchema).optional()
 }).strict();

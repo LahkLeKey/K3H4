@@ -55,6 +55,7 @@ enum ActorType {
   FREIGHT                      @map("freight")
   WIKIDATA_CACHE               @map("wikidata-cache")
   ENRICHMENT_CACHE             @map("enrichment-cache")
+  AI_INSIGHT                   @map("ai-insight")
 }
 
 enum EntityDirection {
@@ -69,6 +70,7 @@ enum EntityKind {
   ASSIGNMENT_PAYOUT              @map("assignment_payout")
   FREIGHT_PAYMENT                @map("freight_payment")
   FREIGHT_LOAD                   @map("freight_load")
+  AI_INSIGHT                     @map("ai_insight")
   ARCADE_TOPUP                   @map("arcade_topup")
   ARCADE_SESSION                 @map("arcade_session")
   ARCADE_PRIZE_REDEMPTION        @map("arcade_prize_redemption")
@@ -138,29 +140,10 @@ model User {
   telemetry        TelemetryEvent[]
   providerGrants   ProviderGrant[]
   chatSessions     ChatSession[]
-  aiInsights       AiInsight[]
   ollamaOperations OllamaOperation[]
   actors           Actor[]
 
   @@unique([provider, providerId])
-}
-
-model AiInsight {
-  id          String   @id @default(cuid())
-  userId      String
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  targetType  String?
-  targetId    String?
-  targetLabel String?
-  description String
-  metadata    Json?
-  payload     Json?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  @@index([userId])
-  @@index([targetType])
-  @@index([userId, createdAt])
 }
 
 model RefreshToken {

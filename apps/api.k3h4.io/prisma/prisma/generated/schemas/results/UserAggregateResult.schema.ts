@@ -14,7 +14,6 @@ export const UserAggregateResultSchema = z.object({  _count: z.object({
     telemetry: z.number(),
     providerGrants: z.number(),
     chatSessions: z.number(),
-    aiInsights: z.number(),
     ollamaOperations: z.number(),
     actors: z.number()
   }).optional(),

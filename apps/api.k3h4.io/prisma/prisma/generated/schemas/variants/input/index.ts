@@ -4,7 +4,6 @@
  */
 
 export { UserInputSchema } from './User.input';
-export { AiInsightInputSchema } from './AiInsight.input';
 export { RefreshTokenInputSchema } from './RefreshToken.input';
 export { ProviderGrantInputSchema } from './ProviderGrant.input';
 export { PointOfInterestInputSchema } from './PointOfInterest.input';

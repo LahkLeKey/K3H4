@@ -4,7 +4,6 @@
  */
 
 export { UserResultSchema } from './User.result';
-export { AiInsightResultSchema } from './AiInsight.result';
 export { RefreshTokenResultSchema } from './RefreshToken.result';
 export { ProviderGrantResultSchema } from './ProviderGrant.result';
 export { PointOfInterestResultSchema } from './PointOfInterest.result';

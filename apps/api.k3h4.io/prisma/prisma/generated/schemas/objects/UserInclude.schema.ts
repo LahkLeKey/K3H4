@@ -5,7 +5,6 @@ import { UserPreferenceArgsObjectSchema as UserPreferenceArgsObjectSchema } from
 import { TelemetryEventFindManySchema as TelemetryEventFindManySchema } from '../findManyTelemetryEvent.schema';
 import { ProviderGrantFindManySchema as ProviderGrantFindManySchema } from '../findManyProviderGrant.schema';
 import { ChatSessionFindManySchema as ChatSessionFindManySchema } from '../findManyChatSession.schema';
-import { AiInsightFindManySchema as AiInsightFindManySchema } from '../findManyAiInsight.schema';
 import { OllamaOperationFindManySchema as OllamaOperationFindManySchema } from '../findManyOllamaOperation.schema';
 import { ActorFindManySchema as ActorFindManySchema } from '../findManyActor.schema';
 import { UserCountOutputTypeArgsObjectSchema as UserCountOutputTypeArgsObjectSchema } from './UserCountOutputTypeArgs.schema'
@@ -16,7 +15,6 @@ const makeSchema = () => z.object({
   telemetry: z.union([z.boolean(), z.lazy(() => TelemetryEventFindManySchema)]).optional(),
   providerGrants: z.union([z.boolean(), z.lazy(() => ProviderGrantFindManySchema)]).optional(),
   chatSessions: z.union([z.boolean(), z.lazy(() => ChatSessionFindManySchema)]).optional(),
-  aiInsights: z.union([z.boolean(), z.lazy(() => AiInsightFindManySchema)]).optional(),
   ollamaOperations: z.union([z.boolean(), z.lazy(() => OllamaOperationFindManySchema)]).optional(),
   actors: z.union([z.boolean(), z.lazy(() => ActorFindManySchema)]).optional(),
   _count: z.union([z.boolean(), z.lazy(() => UserCountOutputTypeArgsObjectSchema)]).optional()

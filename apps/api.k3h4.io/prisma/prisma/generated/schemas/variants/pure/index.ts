@@ -4,7 +4,6 @@
  */
 
 export { UserModelSchema } from './User.pure';
-export { AiInsightModelSchema } from './AiInsight.pure';
 export { RefreshTokenModelSchema } from './RefreshToken.pure';
 export { ProviderGrantModelSchema } from './ProviderGrant.pure';
 export { PointOfInterestModelSchema } from './PointOfInterest.pure';
