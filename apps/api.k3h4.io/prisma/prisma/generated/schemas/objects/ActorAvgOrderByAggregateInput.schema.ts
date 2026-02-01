@@ -7,5 +7,5 @@ const makeSchema = () => z.object({
   latitude: SortOrderSchema.optional(),
   longitude: SortOrderSchema.optional()
 }).strict();
-export const PointOfInterestAvgOrderByAggregateInputObjectSchema: z.ZodType<Prisma.PointOfInterestAvgOrderByAggregateInput> = makeSchema() as unknown as z.ZodType<Prisma.PointOfInterestAvgOrderByAggregateInput>;
-export const PointOfInterestAvgOrderByAggregateInputObjectZodSchema = makeSchema();
+export const ActorAvgOrderByAggregateInputObjectSchema: z.ZodType<Prisma.ActorAvgOrderByAggregateInput> = makeSchema() as unknown as z.ZodType<Prisma.ActorAvgOrderByAggregateInput>;
+export const ActorAvgOrderByAggregateInputObjectZodSchema = makeSchema();

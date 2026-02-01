@@ -4,7 +4,6 @@
  */
 
 export { UserModelSchema } from './User.pure';
-export { PointOfInterestModelSchema } from './PointOfInterest.pure';
 export { TelemetryEventModelSchema } from './TelemetryEvent.pure';
 export { ApiCacheEntryModelSchema } from './ApiCacheEntry.pure';
 export { ActorModelSchema } from './Actor.pure';

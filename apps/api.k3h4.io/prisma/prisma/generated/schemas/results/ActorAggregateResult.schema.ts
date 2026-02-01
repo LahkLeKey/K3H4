@@ -8,17 +8,39 @@ export const ActorAggregateResultSchema = z.object({  _count: z.object({
     note: z.number(),
     source: z.number(),
     metadata: z.number(),
+    osmType: z.number(),
+    osmId: z.number(),
+    latitude: z.number(),
+    longitude: z.number(),
+    category: z.number(),
+    lastSeenAt: z.number(),
     createdAt: z.number(),
     updatedAt: z.number(),
     entities: z.number(),
     caches: z.number()
   }).optional(),
+  _sum: z.object({
+    osmId: z.bigint().nullable(),
+    latitude: z.number().nullable(),
+    longitude: z.number().nullable()
+  }).nullable().optional(),
+  _avg: z.object({
+    osmId: z.number().nullable(),
+    latitude: z.number().nullable(),
+    longitude: z.number().nullable()
+  }).nullable().optional(),
   _min: z.object({
     id: z.string().nullable(),
     userId: z.string().nullable(),
     label: z.string().nullable(),
     note: z.string().nullable(),
     source: z.string().nullable(),
+    osmType: z.string().nullable(),
+    osmId: z.bigint().nullable(),
+    latitude: z.number().nullable(),
+    longitude: z.number().nullable(),
+    category: z.string().nullable(),
+    lastSeenAt: z.date().nullable(),
     createdAt: z.date().nullable(),
     updatedAt: z.date().nullable()
   }).nullable().optional(),
@@ -28,6 +50,12 @@ export const ActorAggregateResultSchema = z.object({  _count: z.object({
     label: z.string().nullable(),
     note: z.string().nullable(),
     source: z.string().nullable(),
+    osmType: z.string().nullable(),
+    osmId: z.bigint().nullable(),
+    latitude: z.number().nullable(),
+    longitude: z.number().nullable(),
+    category: z.string().nullable(),
+    lastSeenAt: z.date().nullable(),
     createdAt: z.date().nullable(),
     updatedAt: z.date().nullable()
   }).nullable().optional()});

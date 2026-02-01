@@ -10,6 +10,12 @@ const makeSchema = () => z.object({
   note: SortOrderSchema.optional(),
   source: SortOrderSchema.optional(),
   metadata: SortOrderSchema.optional(),
+  osmType: SortOrderSchema.optional(),
+  osmId: SortOrderSchema.optional(),
+  latitude: SortOrderSchema.optional(),
+  longitude: SortOrderSchema.optional(),
+  category: SortOrderSchema.optional(),
+  lastSeenAt: SortOrderSchema.optional(),
   createdAt: SortOrderSchema.optional(),
   updatedAt: SortOrderSchema.optional()
 }).strict();

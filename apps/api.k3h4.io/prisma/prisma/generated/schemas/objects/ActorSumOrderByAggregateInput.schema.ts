@@ -7,5 +7,5 @@ const makeSchema = () => z.object({
   latitude: SortOrderSchema.optional(),
   longitude: SortOrderSchema.optional()
 }).strict();
-export const PointOfInterestSumOrderByAggregateInputObjectSchema: z.ZodType<Prisma.PointOfInterestSumOrderByAggregateInput> = makeSchema() as unknown as z.ZodType<Prisma.PointOfInterestSumOrderByAggregateInput>;
-export const PointOfInterestSumOrderByAggregateInputObjectZodSchema = makeSchema();
+export const ActorSumOrderByAggregateInputObjectSchema: z.ZodType<Prisma.ActorSumOrderByAggregateInput> = makeSchema() as unknown as z.ZodType<Prisma.ActorSumOrderByAggregateInput>;
+export const ActorSumOrderByAggregateInputObjectZodSchema = makeSchema();

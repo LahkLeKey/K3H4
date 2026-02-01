@@ -4,7 +4,6 @@
  */
 
 export { UserResultSchema } from './User.result';
-export { PointOfInterestResultSchema } from './PointOfInterest.result';
 export { TelemetryEventResultSchema } from './TelemetryEvent.result';
 export { ApiCacheEntryResultSchema } from './ApiCacheEntry.result';
 export { ActorResultSchema } from './Actor.result';
