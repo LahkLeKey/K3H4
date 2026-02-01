@@ -1,4 +1,4 @@
-import {ActorType, Prisma, PrismaClient} from '@prisma/client';
+import {ActorType, EntityKind, Prisma, PrismaClient} from '@prisma/client';
 import {type FastifyInstance} from 'fastify';
 import {randomBytes} from 'node:crypto';
 import {URLSearchParams} from 'node:url';
@@ -9,6 +9,7 @@ import {deleteBankActorWithEntities} from '../services/bank-actor';
 import {deleteCulinaryActorWithEntities} from '../services/culinary-ledger';
 import {deleteFreightActorWithEntities} from '../services/freight-actor';
 import {deleteStaffingActorWithEntities} from '../services/staffing-actor';
+import {getTelemetryActorSource} from '../services/telemetry-actor';
 import {deleteUserPreferencesForUser} from '../services/user-preferences';
 import {deleteWarehouseActorWithEntities} from '../services/warehouse-actor';
 
@@ -135,7 +136,21 @@ const runDeleteJob = async (
     const steps: Array<{key: string; action: () => Promise<unknown>}> = [
       {
         key: 'telemetry',
-        action: () => prisma.telemetryEvent.deleteMany({where: {userId}})
+        action: () => prisma.entity.deleteMany({
+          where: {
+            kind: EntityKind.TELEMETRY_EVENT,
+            actor: {source: getTelemetryActorSource(userId)},
+          },
+        })
+      },
+      {
+        key: 'telemetryActor',
+        action: () => prisma.actor.deleteMany({
+          where: {
+            type: ActorType.TELEMETRY,
+            source: getTelemetryActorSource(userId),
+          },
+        })
       },
       {
         key: 'bankLedger',

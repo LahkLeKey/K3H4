@@ -50,6 +50,7 @@ enum ActorType {
   STAFFING                     @map("staffing")
   ASSIGNMENT                   @map("assignment")
   AUTH                         @map("auth")
+  TELEMETRY                    @map("telemetry")
   CULINARY                     @map("culinary")
   POINT_OF_SALE_STORE          @map("point-of-sale-store")
   GEO                          @map("geo")
@@ -115,6 +116,7 @@ enum EntityKind {
   POINT_OF_SALE_TICKET           @map("point-of-sale_ticket")
   AUTH_REFRESH_TOKEN             @map("auth_refresh_token")
   AUTH_PROVIDER_GRANT            @map("auth_provider_grant")
+  TELEMETRY_EVENT                @map("telemetry-event")
 }
 
 enum EngagementPriority {
@@ -137,38 +139,18 @@ enum WarehouseCategory {
 }
 
 model User {
-  id              String           @id @default(cuid())
-  email           String           @unique
+  id              String   @id @default(cuid())
+  email           String   @unique
   provider        String
   providerId      String
-  k3h4CoinBalance Decimal          @default("25000") @db.Decimal(18, 2) // sandbox-only play balance
+  k3h4CoinBalance Decimal  @default("25000") @db.Decimal(18, 2) // sandbox-only play balance
   displayName     String?
   avatarUrl       String?
-  createdAt       DateTime         @default(now())
-  updatedAt       DateTime         @updatedAt
-  telemetry       TelemetryEvent[]
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
   actors          Actor[]
 
   @@unique([provider, providerId])
-}
-
-model TelemetryEvent {
-  id         String   @id @default(cuid())
-  userId     String?
-  user       User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
-  sessionId  String
-  eventType  String
-  source     String
-  path       String?
-  payload    Json?
-  durationMs Int?
-  error      Boolean  @default(false)
-  createdAt  DateTime @default(now())
-
-  @@index([userId])
-  @@index([sessionId])
-  @@index([eventType])
-  @@index([createdAt, id])
 }
 
 model Actor {

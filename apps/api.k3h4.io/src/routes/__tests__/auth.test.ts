@@ -408,7 +408,6 @@ describe('auth routes', () => {
 
   it('deletes account when confirmation matches', async () => {
     const prisma = {
-      telemetryEvent: {deleteMany: vi.fn().mockResolvedValue({count: 1})},
       entity: {deleteMany: vi.fn().mockResolvedValue({count: 0})},
       actor: {deleteMany: vi.fn().mockResolvedValue({count: 0})},
       freightLoad: {deleteMany: vi.fn().mockResolvedValue({count: 0})},
@@ -450,11 +449,12 @@ describe('auth routes', () => {
         .toHaveBeenCalledWith(prisma, userId);
     expect(authEntities.deleteRefreshTokensForUser)
         .toHaveBeenCalledWith(prisma, userId);
+    expect(prisma.entity.deleteMany).toHaveBeenCalled();
   });
 
   it('rejects delete when confirmation text is wrong', async () => {
     const prisma = {
-      telemetryEvent: {deleteMany: vi.fn()},
+      entity: {deleteMany: vi.fn()},
       user: {findUnique: vi.fn(), delete: vi.fn()},
       $transaction: vi.fn(),
     };
@@ -462,7 +462,7 @@ describe('auth routes', () => {
     const res = await server.inject(
         {method: 'POST', url: '/auth/delete', payload: {confirmText: 'nope'}});
     expect(res.statusCode).toBe(400);
-    expect(prisma.telemetryEvent.deleteMany).not.toHaveBeenCalled();
+    expect(prisma.entity.deleteMany).not.toHaveBeenCalled();
     expect(recordTelemetry)
         .not.toHaveBeenCalledWith(
             expect.anything(),
@@ -471,7 +471,7 @@ describe('auth routes', () => {
 
   it('returns 404 when user is missing', async () => {
     const prisma = {
-      telemetryEvent: {deleteMany: vi.fn()},
+      entity: {deleteMany: vi.fn()},
       user: {findUnique: vi.fn().mockResolvedValue(null), delete: vi.fn()},
       $transaction: vi.fn(),
     };
