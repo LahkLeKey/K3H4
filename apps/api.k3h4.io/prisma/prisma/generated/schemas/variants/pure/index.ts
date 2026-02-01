@@ -11,7 +11,6 @@ export { PointOfInterestModelSchema } from './PointOfInterest.pure';
 export { PoiEnrichmentCacheModelSchema } from './PoiEnrichmentCache.pure';
 export { UserPreferenceModelSchema } from './UserPreference.pure';
 export { TelemetryEventModelSchema } from './TelemetryEvent.pure';
-export { FreightLoadModelSchema } from './FreightLoad.pure';
 export { ApiCacheEntryModelSchema } from './ApiCacheEntry.pure';
 export { WikidataCacheEntryModelSchema } from './WikidataCacheEntry.pure';
 export { EnrichmentCacheModelSchema } from './EnrichmentCache.pure';

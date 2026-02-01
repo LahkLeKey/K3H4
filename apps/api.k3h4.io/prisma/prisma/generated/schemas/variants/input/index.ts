@@ -11,7 +11,6 @@ export { PointOfInterestInputSchema } from './PointOfInterest.input';
 export { PoiEnrichmentCacheInputSchema } from './PoiEnrichmentCache.input';
 export { UserPreferenceInputSchema } from './UserPreference.input';
 export { TelemetryEventInputSchema } from './TelemetryEvent.input';
-export { FreightLoadInputSchema } from './FreightLoad.input';
 export { ApiCacheEntryInputSchema } from './ApiCacheEntry.input';
 export { WikidataCacheEntryInputSchema } from './WikidataCacheEntry.input';
 export { EnrichmentCacheInputSchema } from './EnrichmentCache.input';

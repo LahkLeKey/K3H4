@@ -8,7 +8,6 @@ import { RefreshTokenListRelationFilterObjectSchema as RefreshTokenListRelationF
 import { UserPreferenceNullableScalarRelationFilterObjectSchema as UserPreferenceNullableScalarRelationFilterObjectSchema } from './UserPreferenceNullableScalarRelationFilter.schema';
 import { UserPreferenceWhereInputObjectSchema as UserPreferenceWhereInputObjectSchema } from './UserPreferenceWhereInput.schema';
 import { TelemetryEventListRelationFilterObjectSchema as TelemetryEventListRelationFilterObjectSchema } from './TelemetryEventListRelationFilter.schema';
-import { FreightLoadListRelationFilterObjectSchema as FreightLoadListRelationFilterObjectSchema } from './FreightLoadListRelationFilter.schema';
 import { ProviderGrantListRelationFilterObjectSchema as ProviderGrantListRelationFilterObjectSchema } from './ProviderGrantListRelationFilter.schema';
 import { ChatSessionListRelationFilterObjectSchema as ChatSessionListRelationFilterObjectSchema } from './ChatSessionListRelationFilter.schema';
 import { AiInsightListRelationFilterObjectSchema as AiInsightListRelationFilterObjectSchema } from './AiInsightListRelationFilter.schema';
@@ -39,7 +38,6 @@ const userwhereinputSchema = z.object({
   refreshTokens: z.lazy(() => RefreshTokenListRelationFilterObjectSchema).optional(),
   preference: z.union([z.lazy(() => UserPreferenceNullableScalarRelationFilterObjectSchema), z.lazy(() => UserPreferenceWhereInputObjectSchema)]).optional(),
   telemetry: z.lazy(() => TelemetryEventListRelationFilterObjectSchema).optional(),
-  freightLoads: z.lazy(() => FreightLoadListRelationFilterObjectSchema).optional(),
   providerGrants: z.lazy(() => ProviderGrantListRelationFilterObjectSchema).optional(),
   chatSessions: z.lazy(() => ChatSessionListRelationFilterObjectSchema).optional(),
   aiInsights: z.lazy(() => AiInsightListRelationFilterObjectSchema).optional(),

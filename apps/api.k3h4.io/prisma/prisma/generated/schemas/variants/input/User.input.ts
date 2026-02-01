@@ -13,7 +13,6 @@ export const UserInputSchema = z.object({
     refreshTokens: z.array(z.unknown()),
     preference: z.unknown().optional().nullable(),
     telemetry: z.array(z.unknown()),
-    freightLoads: z.array(z.unknown()),
     providerGrants: z.array(z.unknown()),
     chatSessions: z.array(z.unknown()),
     aiInsights: z.array(z.unknown()),

@@ -11,7 +11,6 @@ export { PointOfInterestResultSchema } from './PointOfInterest.result';
 export { PoiEnrichmentCacheResultSchema } from './PoiEnrichmentCache.result';
 export { UserPreferenceResultSchema } from './UserPreference.result';
 export { TelemetryEventResultSchema } from './TelemetryEvent.result';
-export { FreightLoadResultSchema } from './FreightLoad.result';
 export { ApiCacheEntryResultSchema } from './ApiCacheEntry.result';
 export { WikidataCacheEntryResultSchema } from './WikidataCacheEntry.result';
 export { EnrichmentCacheResultSchema } from './EnrichmentCache.result';
