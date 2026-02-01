@@ -109,8 +109,7 @@ export function registerUsdaRoutes(
          year: IntegerLikeSchema.optional().describe('Year'),
          month: IntegerLikeSchema.optional().describe('Month'),
        }).passthrough(),
-      'UsdaQuery',
-      [{commodityCode: 'WHEAT', marketYear: 2024, countryCode: 'US'}]);
+      'UsdaQuery');
 
   const datasetActorIds: Record<string, string> = {};
   const entityKindByLabel:

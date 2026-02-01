@@ -37,7 +37,7 @@ const bboxFromCenterRadius = (center: { lat: number; lng: number }, radiusM: num
 
 function GeoPrefsHydrator() {
     const { apiBase, session, signOut } = useAuthStore();
-    const { hydrateFromPrefs } = useGeoState();
+    const { hydrateFromPrefs, setMapConfig } = useGeoState();
     const { updateView, view } = useMapView();
     const { bbox, zoom, kinds, setViewport } = usePoiStore();
     const queryClient = useQueryClient();
@@ -67,7 +67,7 @@ function GeoPrefsHydrator() {
 
         const load = async () => {
             try {
-                const res = await fetch(buildApiUrl(apiBase, "/frontend/map/bootstrap"), {
+                const res = await fetch(buildApiUrl(apiBase, "/frontend/map/actions/bootstrap"), {
                     method: "POST",
                     headers: {
                         Authorization: `Bearer ${session.accessToken}`,
@@ -92,6 +92,7 @@ function GeoPrefsHydrator() {
                 const poiPref = data?.prefs?.poi ?? data?.poi ?? null;
                 const viewportPois = data?.viewportPois ?? null;
 
+                setMapConfig(data?.map ?? null);
                 if (viewResp?.center) {
                     hydrateFromPrefs({ center: viewResp.center, pois: poiPref?.pois ?? null });
                     updateView({
@@ -151,7 +152,7 @@ function GeoPrefsHydrator() {
         return () => {
             aborted = true;
         };
-    }, [apiBase, session?.accessToken, hydrateFromPrefs, updateView, signOut, bbox, zoom, kinds, view, queryClient, setViewport]);
+    }, [apiBase, session?.accessToken, hydrateFromPrefs, setMapConfig, updateView, signOut, bbox, zoom, kinds, view, queryClient, setViewport]);
 
     return null;
 }

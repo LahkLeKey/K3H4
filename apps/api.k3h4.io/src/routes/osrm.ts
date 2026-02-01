@@ -122,11 +122,7 @@ export function registerOsrmRoutes(
                                         .optional()
                                         .describe('Cache TTL in minutes'),
                    }).passthrough(),
-                  'OsrmQuery', [{
-                    profile: 'driving',
-                    coordinates: '-122.42,37.78;-122.45,37.91',
-                    format: 'json',
-                  }]),
+                  'OsrmQuery'),
               response:
                   makeResponses(
                       {

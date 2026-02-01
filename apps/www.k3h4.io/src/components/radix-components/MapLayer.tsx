@@ -23,7 +23,10 @@ import { buildApiUrl } from "../../react-hooks/lib/apiBase";
 
 const MAX_DEM_ERROR = 28;
 const TERRAIN_EXAGGERATION = 1.6;
-const MAPTILER_STYLE_PATH = "/maps/hybrid/style.json";
+const DEFAULT_STYLE_PATH = "/maps/hybrid/style.json";
+const DEFAULT_VECTOR_TILE_PATH = "/tiles/v3/{z}/{x}/{y}.pbf";
+const DEFAULT_TERRAIN_TILE_PATH = "/tiles/terrain-rgb-v2/{z}/{x}/{y}.png";
+const FALLBACK_STYLE_URL = "https://demotiles.maplibre.org/style.json";
 const EMPTY_TILE_PNG =
     "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR4nGP8z8BQDwAEsALp2UNzMgAAAABJRU5ErkJggg==";
 
@@ -57,7 +60,7 @@ export function MapLayer({ readonly }: { readonly?: boolean }) {
     }, []);
 
     const { updateView, registerMap, view } = useMapView();
-    const { status, center, requestLocation, setCenterFromMap } = useGeoState();
+    const { status, center, requestLocation, setCenterFromMap, mapConfig } = useGeoState();
     const { session, apiBase, signOut } = useAuthStore();
     const { setViewport } = usePoiStore();
     const poiQuery = usePoiQuery({ enabled: !readonly });
@@ -98,17 +101,21 @@ export function MapLayer({ readonly }: { readonly?: boolean }) {
                 : "idle";
     const poiError = poiQuery.error instanceof Error ? poiQuery.error.message : null;
 
-    const terrainUrl = useMemo(
-        () => buildApiUrl(apiBase, "/maptiler/tiles?path=/tiles/terrain-rgb-v2/{z}/{x}/{y}.png"),
-        [apiBase],
-    );
-    const maptilerVectorTiles = useMemo(
-        () => buildApiUrl(apiBase, "/maptiler/tiles?path=/tiles/v3/{z}/{x}/{y}.pbf"),
-        [apiBase],
-    );
+    const stylePath = mapConfig?.stylePath ?? DEFAULT_STYLE_PATH;
+    const vectorTilePath = mapConfig?.vectorTilePath ?? DEFAULT_VECTOR_TILE_PATH;
+    const terrainTilePath = mapConfig?.terrainTilePath ?? DEFAULT_TERRAIN_TILE_PATH;
     const maptilerStyleUrl = useMemo(
-        () => buildApiUrl(apiBase, `/maptiler/json?path=${MAPTILER_STYLE_PATH}`),
-        [apiBase],
+        () => buildApiUrl(apiBase, `/maptiler/json?path=${stylePath}`),
+        [apiBase, stylePath],
+    );
+    const mapStyleUrl = mapConfig ? maptilerStyleUrl : FALLBACK_STYLE_URL;
+    const maptilerVectorTiles = useMemo(
+        () => buildApiUrl(apiBase, `/maptiler/tiles?path=${vectorTilePath}`),
+        [apiBase, vectorTilePath],
+    );
+    const terrainUrl = useMemo(
+        () => buildApiUrl(apiBase, `/maptiler/tiles?path=${terrainTilePath}`),
+        [apiBase, terrainTilePath],
     );
 
     useEffect(() => {
@@ -262,7 +269,7 @@ export function MapLayer({ readonly }: { readonly?: boolean }) {
 
         const map = new maplibregl.Map({
             container: ref.current,
-            style: maptilerStyleUrl,
+            style: mapStyleUrl,
             center: [initialCenter.lng, initialCenter.lat],
             zoom: 14.5,
             pitch: 58,
@@ -413,7 +420,7 @@ export function MapLayer({ readonly }: { readonly?: boolean }) {
     }, [
         buildDeckLayers,
         debouncedHoverPick,
-        maptilerStyleUrl,
+        mapStyleUrl,
         maptilerVectorTiles,
         pickPoiAndFetch,
         proxiedMaptilerRequest,
