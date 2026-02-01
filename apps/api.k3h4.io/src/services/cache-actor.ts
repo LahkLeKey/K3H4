@@ -1,6 +1,6 @@
 import {ActorType, PrismaClient} from '@prisma/client';
 
-export type CacheScope = 'wikidata'|'enrichment';
+export type CacheScope = 'wikidata'|'enrichment'|'api';
 
 const SCOPES: Record < CacheScope, {
   type: ActorType;
@@ -20,6 +20,12 @@ const SCOPES: Record < CacheScope, {
     label: 'Enrichment Cache',
     source: 'enrichment-cache',
     note: 'Actor that owns enrichment cache hits',
+  },
+  api: {
+    type: ActorType.API_CACHE,
+    label: 'API Cache',
+    source: 'api-cache',
+    note: 'Actor that owns shared API cache entries',
   },
 };
 

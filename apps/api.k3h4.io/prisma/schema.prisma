@@ -56,6 +56,7 @@ enum ActorType {
   FREIGHT                      @map("freight")
   WIKIDATA_CACHE               @map("wikidata-cache")
   ENRICHMENT_CACHE             @map("enrichment-cache")
+  API_CACHE                    @map("api-cache")
   AI_INSIGHT                   @map("ai-insight")
   AI_OPERATION                 @map("ai-operation")
   CHAT_SESSION                 @map("chat-session")
@@ -168,23 +169,6 @@ model TelemetryEvent {
   @@index([sessionId])
   @@index([eventType])
   @@index([createdAt, id])
-}
-
-model ApiCacheEntry {
-  id         String    @id @default(cuid())
-  provider   String
-  scope      String
-  endpoint   String
-  params     Json?
-  paramsHash String
-  payload    Json?
-  fetchedAt  DateTime  @default(now())
-  expiresAt  DateTime?
-  createdAt  DateTime  @default(now())
-  updatedAt  DateTime  @updatedAt
-
-  @@unique([provider, scope, endpoint, paramsHash])
-  @@index([provider, scope, endpoint])
 }
 
 model Actor {
