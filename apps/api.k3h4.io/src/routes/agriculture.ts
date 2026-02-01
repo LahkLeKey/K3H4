@@ -2,7 +2,8 @@ import {ActorType, type Entity, EntityKind, LifecycleStatus, Prisma, type Prisma
 import {type FastifyInstance} from 'fastify';
 
 import {lifecycleStatusOrDefault, parseLifecycleStatus} from '../lib/status-utils';
-import {AgricultureSlotSnapshot, buildAgricultureSlotSnapshotFromEntities, ensureAgricultureActor,} from '../services/agriculture-actor';
+import {AgricultureSlotSnapshot, buildAgricultureSlotSnapshotFromEntities, ensureAgricultureActor, resolveAgricultureSlotSnapshot,} from '../services/agriculture-actor';
+import {findFreightLoad} from '../services/freight-actor';
 
 import {withTelemetryBase} from './telemetry';
 import {type RecordTelemetryFn} from './types';
@@ -1236,6 +1237,14 @@ export function registerAgricultureRoutes(
           return reply.status(400).send(
               {error: 'lot, destination, and mode are required'});
         }
+        const freightLoadIdCandidate = body?.freightLoadId?.trim();
+        const freightLoadId = freightLoadIdCandidate || null;
+        if (freightLoadId) {
+          const load = await findFreightLoad(prisma, userId, freightLoadId);
+          if (!load) {
+            return reply.status(404).send({error: 'Freight load not found'});
+          }
+        }
         const actor = await ensureAgricultureActor(prisma, userId);
         const shipment = await prisma.entity.create({
           data: {
@@ -1246,7 +1255,7 @@ export function registerAgricultureRoutes(
               destination: body.destination.trim(),
               mode: body.mode.trim(),
               eta: body.eta ? new Date(body.eta).toISOString() : null,
-              freightLoadId: body.freightLoadId || null,
+              freightLoadId,
             }),
           },
         });

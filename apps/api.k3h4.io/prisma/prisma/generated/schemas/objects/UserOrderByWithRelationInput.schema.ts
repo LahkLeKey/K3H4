@@ -9,8 +9,7 @@ import { ProviderGrantOrderByRelationAggregateInputObjectSchema as ProviderGrant
 import { ChatSessionOrderByRelationAggregateInputObjectSchema as ChatSessionOrderByRelationAggregateInputObjectSchema } from './ChatSessionOrderByRelationAggregateInput.schema';
 import { AiInsightOrderByRelationAggregateInputObjectSchema as AiInsightOrderByRelationAggregateInputObjectSchema } from './AiInsightOrderByRelationAggregateInput.schema';
 import { OllamaOperationOrderByRelationAggregateInputObjectSchema as OllamaOperationOrderByRelationAggregateInputObjectSchema } from './OllamaOperationOrderByRelationAggregateInput.schema';
-import { ActorOrderByRelationAggregateInputObjectSchema as ActorOrderByRelationAggregateInputObjectSchema } from './ActorOrderByRelationAggregateInput.schema';
-import { FreightLoadOrderByRelationAggregateInputObjectSchema as FreightLoadOrderByRelationAggregateInputObjectSchema } from './FreightLoadOrderByRelationAggregateInput.schema'
+import { ActorOrderByRelationAggregateInputObjectSchema as ActorOrderByRelationAggregateInputObjectSchema } from './ActorOrderByRelationAggregateInput.schema'
 
 const makeSchema = () => z.object({
   id: SortOrderSchema.optional(),
@@ -29,8 +28,7 @@ const makeSchema = () => z.object({
   chatSessions: z.lazy(() => ChatSessionOrderByRelationAggregateInputObjectSchema).optional(),
   aiInsights: z.lazy(() => AiInsightOrderByRelationAggregateInputObjectSchema).optional(),
   ollamaOperations: z.lazy(() => OllamaOperationOrderByRelationAggregateInputObjectSchema).optional(),
-  actors: z.lazy(() => ActorOrderByRelationAggregateInputObjectSchema).optional(),
-  freightLoads: z.lazy(() => FreightLoadOrderByRelationAggregateInputObjectSchema).optional()
+  actors: z.lazy(() => ActorOrderByRelationAggregateInputObjectSchema).optional()
 }).strict();
 export const UserOrderByWithRelationInputObjectSchema: z.ZodType<Prisma.UserOrderByWithRelationInput> = makeSchema() as unknown as z.ZodType<Prisma.UserOrderByWithRelationInput>;
 export const UserOrderByWithRelationInputObjectZodSchema = makeSchema();

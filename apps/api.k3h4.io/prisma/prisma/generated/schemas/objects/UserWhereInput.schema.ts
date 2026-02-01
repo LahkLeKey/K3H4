@@ -12,8 +12,7 @@ import { ProviderGrantListRelationFilterObjectSchema as ProviderGrantListRelatio
 import { ChatSessionListRelationFilterObjectSchema as ChatSessionListRelationFilterObjectSchema } from './ChatSessionListRelationFilter.schema';
 import { AiInsightListRelationFilterObjectSchema as AiInsightListRelationFilterObjectSchema } from './AiInsightListRelationFilter.schema';
 import { OllamaOperationListRelationFilterObjectSchema as OllamaOperationListRelationFilterObjectSchema } from './OllamaOperationListRelationFilter.schema';
-import { ActorListRelationFilterObjectSchema as ActorListRelationFilterObjectSchema } from './ActorListRelationFilter.schema';
-import { FreightLoadListRelationFilterObjectSchema as FreightLoadListRelationFilterObjectSchema } from './FreightLoadListRelationFilter.schema'
+import { ActorListRelationFilterObjectSchema as ActorListRelationFilterObjectSchema } from './ActorListRelationFilter.schema'
 
 import { DecimalJSLikeSchema, isValidDecimalInput } from '../helpers/decimal-helpers';
 const userwhereinputSchema = z.object({
@@ -43,8 +42,7 @@ const userwhereinputSchema = z.object({
   chatSessions: z.lazy(() => ChatSessionListRelationFilterObjectSchema).optional(),
   aiInsights: z.lazy(() => AiInsightListRelationFilterObjectSchema).optional(),
   ollamaOperations: z.lazy(() => OllamaOperationListRelationFilterObjectSchema).optional(),
-  actors: z.lazy(() => ActorListRelationFilterObjectSchema).optional(),
-  freightLoads: z.lazy(() => FreightLoadListRelationFilterObjectSchema).optional()
+  actors: z.lazy(() => ActorListRelationFilterObjectSchema).optional()
 }).strict();
 export const UserWhereInputObjectSchema: z.ZodType<Prisma.UserWhereInput> = userwhereinputSchema as unknown as z.ZodType<Prisma.UserWhereInput>;
 export const UserWhereInputObjectZodSchema = userwhereinputSchema;

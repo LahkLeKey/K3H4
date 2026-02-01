@@ -3,6 +3,7 @@ import {type FastifyInstance} from 'fastify';
 
 import {lifecycleStatusOrDefault, parseLifecycleStatus} from '../lib/status-utils';
 import {AgricultureSlotSnapshot, resolveAgricultureSlotSnapshot,} from '../services/agriculture-actor';
+import {findFreightLoad} from '../services/freight-actor';
 import {buildWarehouseItemPayload, ensureWarehouseActor} from '../services/warehouse-actor';
 
 import {buildTelemetryBase} from './telemetry';
@@ -92,8 +93,7 @@ export function registerWarehouseRoutes(
 
         const freightLoadId = body?.freightLoadId?.trim() || undefined;
         if (freightLoadId) {
-          const load = await prisma.freightLoad.findFirst(
-              {where: {id: freightLoadId, userId}});
+          const load = await findFreightLoad(prisma, userId, freightLoadId);
           if (!load) {
             return reply.status(404).send({error: 'Freight load not found'});
           }
@@ -217,8 +217,7 @@ export function registerWarehouseRoutes(
           freightLoadId = body.freightLoadId.trim() || undefined;
         }
         if (freightLoadId) {
-          const load = await prisma.freightLoad.findFirst(
-              {where: {id: freightLoadId, userId}});
+          const load = await findFreightLoad(prisma, userId, freightLoadId);
           if (!load) {
             return reply.status(404).send({error: 'Freight load not found'});
           }

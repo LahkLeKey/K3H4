@@ -16,8 +16,7 @@ export const UserAggregateResultSchema = z.object({  _count: z.object({
     chatSessions: z.number(),
     aiInsights: z.number(),
     ollamaOperations: z.number(),
-    actors: z.number(),
-    freightLoads: z.number()
+    actors: z.number()
   }).optional(),
   _sum: z.object({
     k3h4CoinBalance: z.number().nullable()

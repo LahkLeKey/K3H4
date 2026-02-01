@@ -8,7 +8,6 @@ export { AiInsightModelSchema } from './AiInsight.pure';
 export { RefreshTokenModelSchema } from './RefreshToken.pure';
 export { ProviderGrantModelSchema } from './ProviderGrant.pure';
 export { PointOfInterestModelSchema } from './PointOfInterest.pure';
-export { FreightLoadModelSchema } from './FreightLoad.pure';
 export { UserPreferenceModelSchema } from './UserPreference.pure';
 export { TelemetryEventModelSchema } from './TelemetryEvent.pure';
 export { ApiCacheEntryModelSchema } from './ApiCacheEntry.pure';

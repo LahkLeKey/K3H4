@@ -16,6 +16,5 @@ export const UserDeleteResultSchema = z.nullable(z.object({
   chatSessions: z.array(z.unknown()),
   aiInsights: z.array(z.unknown()),
   ollamaOperations: z.array(z.unknown()),
-  actors: z.array(z.unknown()),
-  freightLoads: z.array(z.unknown())
+  actors: z.array(z.unknown())
 }));
