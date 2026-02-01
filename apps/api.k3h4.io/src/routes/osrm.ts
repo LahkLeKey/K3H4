@@ -1,7 +1,10 @@
 import {PrismaClient} from '@prisma/client';
 import {FastifyInstance, FastifyReply, FastifyRequest} from 'fastify';
+import * as z from 'zod';
 
 import {ensureGeoActor} from '../actors/Geo/Geo';
+import {OsrmService} from '../lib/openapi/route-kinds';
+import {AuthHeaderSchema, makeParamsSchema, makeQuerySchema, makeResponses, withExamples} from '../lib/schemas/openapi';
 import {fetchOsrmWithCache} from '../services/osrm-cache';
 
 import {withTelemetryBase} from './telemetry';
@@ -91,21 +94,53 @@ export function registerOsrmRoutes(
   };
 
   server.get(
-      '/osrm/route', {...auth},
-      async (request, reply) => handler('route', request, reply));
-  server.get(
-      '/osrm/table', {...auth},
-      async (request, reply) => handler('table', request, reply));
-  server.get(
-      '/osrm/match', {...auth},
-      async (request, reply) => handler('match', request, reply));
-  server.get(
-      '/osrm/trip', {...auth},
-      async (request, reply) => handler('trip', request, reply));
-  server.get(
-      '/osrm/nearest', {...auth},
-      async (request, reply) => handler('nearest', request, reply));
-  server.get(
-      '/osrm/tile', {...auth},
-      async (request, reply) => handler('tile', request, reply));
+      '/osrm/:service', {
+        ...auth,
+        schema:
+            {
+              summary: 'Proxy OSRM routing service',
+              description: 'Proxies OSRM service requests with caching.',
+              operationId: 'osrm_proxy',
+              tags: ['osrm'],
+              headers: makeParamsSchema(AuthHeaderSchema, 'AuthHeader'),
+              security: [{bearerAuth: []}],
+              params: makeParamsSchema(
+                  z.object({
+                     service: OsrmService.describe('OSRM service name'),
+                   }).strict(),
+                  'OsrmParams'),
+              querystring: makeQuerySchema(
+                  z.object({
+                     profile: z.string().min(1).describe(
+                         'Routing profile (e.g. driving)'),
+                     coordinates: z.string().min(1).describe(
+                         'Semicolon-separated lon,lat pairs'),
+                     format: z.enum(['json', 'flatbuffers'])
+                                 .optional()
+                                 .describe('Response format'),
+                     maxAgeMinutes: z.union([z.number(), z.string()])
+                                        .optional()
+                                        .describe('Cache TTL in minutes'),
+                   }).passthrough(),
+                  'OsrmQuery'),
+              response:
+                  makeResponses(
+                      {
+                        200:
+                            withExamples(
+                                {
+                                  type: [
+                                    'object', 'array', 'string',
+                                    'number', 'boolean', 'null'
+                                  ],
+                                },
+                                [{code: 'Ok'}]),
+                      },
+                      {includeStandardErrors: true}),
+            },
+      },
+      async (request, reply) => {
+        const {service} = request.params as {service?: string};
+        return handler(service ?? '', request, reply);
+      });
 }

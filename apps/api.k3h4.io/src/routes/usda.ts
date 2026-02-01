@@ -1,8 +1,11 @@
 import {Prisma, type PrismaClient} from '@prisma/client';
 import {type FastifyInstance, type FastifyReply} from 'fastify';
+import * as z from 'zod';
 
 import type {EntityKind} from '../lib/actor-entity-constants';
 import {ACTOR_TYPES, ENTITY_KINDS} from '../lib/actor-entity-constants';
+import {UsdaDataset, UsdaDetail, UsdaResource, UsdaSubresource} from '../lib/openapi/route-kinds';
+import {AuthHeaderSchema, IntegerLikeSchema, makeParamsSchema, makeQuerySchema, makeResponses, withExamples} from '../lib/schemas/openapi';
 import {createTelemetryTimer} from '../lib/telemetry-timer';
 import {readEnrichmentCache, writeEnrichmentCache} from '../services/enrichment-cache';
 import {fetchAndCache} from '../services/usda-cache';
@@ -67,6 +70,46 @@ export function registerUsdaRoutes(
   const auth = {preHandler: [server.authenticate]};
   const withApiTiming = (request: Parameters<RecordTelemetryFn>[0]) =>
       createTelemetryTimer(request, recordTelemetry, {source: 'api'});
+
+  const usdaAuthHeader = makeParamsSchema(AuthHeaderSchema, 'AuthHeader');
+  const usdaParamsSchema = makeParamsSchema(
+      z.object({
+         dataset: UsdaDataset.describe('USDA dataset'),
+         resource: UsdaResource.describe('Dataset resource'),
+       }).strict(),
+      'UsdaParams');
+  const usdaSubresourceParamsSchema = makeParamsSchema(
+      z.object({
+         dataset: UsdaDataset.describe('USDA dataset'),
+         resource: UsdaResource.describe('Dataset resource'),
+         subresource: UsdaSubresource.describe('Subresource selector'),
+       }).strict(),
+      'UsdaSubresourceParams');
+  const usdaDetailParamsSchema = makeParamsSchema(
+      z.object({
+         dataset: UsdaDataset.describe('USDA dataset'),
+         resource: UsdaResource.describe('Dataset resource'),
+         subresource: UsdaSubresource.describe('Subresource selector'),
+         detail: UsdaDetail.describe('Detail selector'),
+       }).strict(),
+      'UsdaDetailParams');
+  const usdaQuerySchema = makeQuerySchema(
+      z.object({
+         fast:
+             z.boolean().optional().describe('Skip enrichment when supported'),
+         commodityCode: z.union([IntegerLikeSchema, z.string().min(1)])
+                            .optional()
+                            .describe('Commodity code (ESR/PSD)'),
+         countryCode: z.union([IntegerLikeSchema, z.string().min(1)])
+                          .optional()
+                          .describe('Country code (ESR)'),
+         marketYear: IntegerLikeSchema.optional().describe('Market year'),
+         partnerCode: z.string().min(1).optional().describe('Partner code'),
+         reporterCode: z.string().min(1).optional().describe('Reporter code'),
+         year: IntegerLikeSchema.optional().describe('Year'),
+         month: IntegerLikeSchema.optional().describe('Month'),
+       }).passthrough(),
+      'UsdaQuery');
 
   const datasetActorIds: Record<string, string> = {};
   const entityKindByLabel:
@@ -352,499 +395,335 @@ export function registerUsdaRoutes(
     return enriched;
   };
 
-  // ESR reference endpoints
-  server.get('/usda/esr/regions', auth, async (request) => {
-    const withTiming = withApiTiming(request);
-    const fast = Boolean((request.query as any)?.fast);
-    return withTiming('usda.esr.regions.fetch', {payload: {fast}}, async () => {
-      const payload = await fetchAndCache(
-          prisma, 'esr', '/api/esr/regions', undefined,
-          REFERENCE_CACHE_OPTIONS);
-      const enriched = await enrichReference(
-          'region', 'esr', payload, {skipEnrichment: fast});
-      return enriched;
-    });
-  });
+  const psdReferenceCache = {
+    maxAgeMinutes: PSD_REFERENCE_MAX_AGE_MINUTES,
+    staleWhileRevalidate: true,
+    logger: server.log,
+  };
 
-  server.get('/usda/esr/countries', auth, async (request) => {
+  const referenceConfig: Record < string, Record < string, {
+    path: string;
+    cache: {
+      maxAgeMinutes: number;
+      staleWhileRevalidate?: boolean;
+      logger?: typeof server.log
+    };
+    enrich?: {
+      kind: 'region'|'country'|'commodity'|'unit'|'attribute';
+      allowFast?: boolean
+    };
+    event: string;
+  }
+  >> = {
+    esr: {
+      regions: {
+        path: '/api/esr/regions',
+        cache: REFERENCE_CACHE_OPTIONS,
+        enrich: {kind: 'region', allowFast: true},
+        event: 'usda.esr.regions.fetch',
+      },
+      countries: {
+        path: '/api/esr/countries',
+        cache: REFERENCE_CACHE_OPTIONS,
+        enrich: {kind: 'country', allowFast: true},
+        event: 'usda.esr.countries.fetch',
+      },
+      commodities: {
+        path: '/api/esr/commodities',
+        cache: REFERENCE_CACHE_OPTIONS,
+        enrich: {kind: 'commodity', allowFast: true},
+        event: 'usda.esr.commodities.fetch',
+      },
+      units: {
+        path: '/api/esr/unitsOfMeasure',
+        cache: {maxAgeMinutes: DEFAULT_MAX_AGE_MINUTES},
+        event: 'usda.esr.units.fetch',
+      },
+    },
+    gats: {
+      regions: {
+        path: '/api/gats/regions',
+        cache: {maxAgeMinutes: DEFAULT_MAX_AGE_MINUTES},
+        enrich: {kind: 'region', allowFast: true},
+        event: 'usda.gats.regions.fetch',
+      },
+      countries: {
+        path: '/api/gats/countries',
+        cache: {maxAgeMinutes: DEFAULT_MAX_AGE_MINUTES},
+        enrich: {kind: 'country', allowFast: true},
+        event: 'usda.gats.countries.fetch',
+      },
+      commodities: {
+        path: '/api/gats/commodities',
+        cache: {maxAgeMinutes: DEFAULT_MAX_AGE_MINUTES},
+        enrich: {kind: 'commodity', allowFast: true},
+        event: 'usda.gats.commodities.fetch',
+      },
+      'hs6-commodities': {
+        path: '/api/gats/HS6Commodities',
+        cache: {maxAgeMinutes: DEFAULT_MAX_AGE_MINUTES},
+        enrich: {kind: 'commodity', allowFast: true},
+        event: 'usda.gats.hs6.fetch',
+      },
+      units: {
+        path: '/api/gats/unitsOfMeasure',
+        cache: {maxAgeMinutes: DEFAULT_MAX_AGE_MINUTES},
+        event: 'usda.gats.units.fetch',
+      },
+      'customs-districts': {
+        path: '/api/gats/customsDistricts',
+        cache: {maxAgeMinutes: DEFAULT_MAX_AGE_MINUTES},
+        event: 'usda.gats.customsDistricts.fetch',
+      },
+    },
+    psd: {
+      regions: {
+        path: '/api/psd/regions',
+        cache: psdReferenceCache,
+        enrich: {kind: 'region'},
+        event: 'usda.psd.regions.fetch',
+      },
+      countries: {
+        path: '/api/psd/countries',
+        cache: psdReferenceCache,
+        enrich: {kind: 'country', allowFast: true},
+        event: 'usda.psd.countries.fetch',
+      },
+      commodities: {
+        path: '/api/psd/commodities',
+        cache: psdReferenceCache,
+        enrich: {kind: 'commodity'},
+        event: 'usda.psd.commodities.fetch',
+      },
+      units: {
+        path: '/api/psd/unitsOfMeasure',
+        cache: psdReferenceCache,
+        enrich: {kind: 'unit'},
+        event: 'usda.psd.units.fetch',
+      },
+      'commodity-attributes': {
+        path: '/api/psd/commodityAttributes',
+        cache: psdReferenceCache,
+        enrich: {kind: 'attribute'},
+        event: 'usda.psd.attributes.fetch',
+      },
+    },
+  };
+
+  const handleReference = async (
+      dataset: 'esr'|'gats'|'psd',
+      resource: string,
+      request: Parameters<RecordTelemetryFn>[0],
+      ) => {
+    const config = referenceConfig[dataset]?.[resource];
+    if (!config) return null;
     const withTiming = withApiTiming(request);
     const fast = Boolean((request.query as any)?.fast);
     return withTiming(
-        'usda.esr.countries.fetch', {payload: {fast}}, async () => {
+        config.event,
+        {payload: config.enrich?.allowFast ? {fast} : undefined},
+        async () => {
           const payload = await fetchAndCache(
-              prisma, 'esr', '/api/esr/countries', undefined,
-              REFERENCE_CACHE_OPTIONS);
-          const enriched = await enrichReference(
-              'country', 'esr', payload, {skipEnrichment: fast});
-          return enriched;
-        });
-  });
-
-  server.get('/usda/esr/commodities', auth, async (request) => {
-    const withTiming = withApiTiming(request);
-    const fast = Boolean((request.query as any)?.fast);
-    return withTiming(
-        'usda.esr.commodities.fetch', {payload: {fast}}, async () => {
-          const payload = await fetchAndCache(
-              prisma, 'esr', '/api/esr/commodities', undefined,
-              REFERENCE_CACHE_OPTIONS);
-          const enriched = await enrichReference(
-              'commodity', 'esr', payload, {skipEnrichment: fast});
-          return enriched;
-        });
-  });
-
-  server.get('/usda/esr/units', auth, async (request) => {
-    const withTiming = withApiTiming(request);
-    return withTiming(
-        'usda.esr.units.fetch', {payload: undefined}, async () => {
-          const payload = await fetchAndCache(
-              prisma, 'esr', '/api/esr/unitsOfMeasure', undefined,
-              {maxAgeMinutes: DEFAULT_MAX_AGE_MINUTES});
+              prisma, dataset, config.path, undefined, config.cache);
+          if (config.enrich) {
+            return enrichReference(config.enrich.kind, dataset, payload, {
+              skipEnrichment: Boolean(config.enrich.allowFast && fast),
+            });
+          }
           return payload;
-        });
-  });
+        },
+    );
+  };
 
-  server.get('/usda/esr/data-release', auth, async (request) => {
+  const handleUsdaRequest = async (request: any, reply: FastifyReply) => {
+    const {dataset, resource, subresource, detail} = request.params as {
+      dataset?: string;
+      resource?: string;
+      subresource?: string;
+      detail?: string;
+    };
+
+    if (!dataset || !resource)
+      return badRequest(reply, 'dataset and resource are required');
+
+    if (dataset !== 'esr' && dataset !== 'gats' && dataset !== 'psd')
+      return badRequest(reply, 'dataset is invalid');
+
+    const reference = await handleReference(dataset, resource, request);
+    if (reference) return reference;
+
     const withTiming = withApiTiming(request);
-    return withTiming(
-        'usda.esr.dataRelease.fetch', {payload: undefined}, async () => {
-          const payload = await fetchAndCache(
-              prisma, 'esr', '/api/esr/datareleasedates', undefined,
-              {maxAgeMinutes: DEFAULT_MAX_AGE_MINUTES});
-          return payload;
-        });
-  });
 
-  server.get(
-      '/usda/esr/exports/all-countries', auth, async (request, reply) => {
-        const withTiming = withApiTiming(request);
-        const {commodityCode, marketYear} = request.query as {
-          commodityCode?: string;
-          marketYear?: string
-        };
-        const commodity = toInt(commodityCode);
-        const year = toInt(marketYear);
-        if (commodity === null || year === null)
-          return badRequest(
-              reply, 'commodityCode and marketYear are required numbers');
-        const path = `/api/esr/exports/commodityCode/${
-            encodeURIComponent(String(commodity))}/allCountries/marketYear/${
-            encodeURIComponent(String(year))}`;
+    if (dataset === 'esr') {
+      if (resource === 'data-release' && !subresource) {
         return withTiming(
-            'usda.esr.exports.allCountries.fetch',
-            {payload: {commodity, year}},
-            async () => {
-              const payload = await fetchAndCache(
+            'usda.esr.dataRelease.fetch', {payload: undefined}, async () => {
+              return fetchAndCache(
+                  prisma, 'esr', '/api/esr/datareleasedates', undefined,
+                  {maxAgeMinutes: DEFAULT_MAX_AGE_MINUTES});
+            });
+      }
+
+      if (resource === 'exports' && subresource) {
+        if (subresource === 'all-countries') {
+          const {commodityCode, marketYear} = request.query as {
+            commodityCode?: string;
+            marketYear?: string;
+          };
+          const commodity = toInt(commodityCode);
+          const year = toInt(marketYear);
+          if (commodity === null || year === null)
+            return badRequest(
+                reply, 'commodityCode and marketYear are required numbers');
+          const path = `/api/esr/exports/commodityCode/${
+              encodeURIComponent(String(commodity))}/allCountries/marketYear/${
+              encodeURIComponent(String(year))}`;
+          return withTiming(
+              'usda.esr.exports.allCountries.fetch',
+              {payload: {commodity, year}},
+              async () => fetchAndCache(
                   prisma, 'esr', path, undefined,
-                  {maxAgeMinutes: DEFAULT_MAX_AGE_MINUTES});
-              return payload;
-            },
+                  {maxAgeMinutes: DEFAULT_MAX_AGE_MINUTES}),
+          );
+        }
+
+        if (subresource === 'by-country') {
+          const {commodityCode, countryCode, marketYear} = request.query as {
+            commodityCode?: string;
+            countryCode?: string;
+            marketYear?: string;
+          };
+          const commodity = toInt(commodityCode);
+          const country = toInt(countryCode);
+          const year = toInt(marketYear);
+          if (commodity === null || country === null || year === null)
+            return badRequest(
+                reply,
+                'commodityCode, countryCode, and marketYear are required numbers');
+          const path = `/api/esr/exports/commodityCode/${
+              encodeURIComponent(String(commodity))}/countryCode/${
+              encodeURIComponent(String(
+                  country))}/marketYear/${encodeURIComponent(String(year))}`;
+          return withTiming(
+              'usda.esr.exports.byCountry.fetch',
+              {payload: {commodity, country, year}},
+              async () => fetchAndCache(
+                  prisma, 'esr', path, undefined,
+                  {maxAgeMinutes: DEFAULT_MAX_AGE_MINUTES}),
+          );
+        }
+      }
+    }
+
+    if (dataset === 'gats') {
+      if (resource === 'census' || resource === 'un') {
+        if (detail === 'data-release') {
+          if (resource === 'census' &&
+              (subresource === 'exports' || subresource === 'imports')) {
+            const path = subresource === 'exports' ?
+                '/api/gats/census/data/exports/dataReleaseDates' :
+                '/api/gats/census/data/imports/dataReleaseDates';
+            const event = subresource === 'exports' ?
+                'usda.gats.census.exports.release.fetch' :
+                'usda.gats.census.imports.release.fetch';
+            return withTiming(
+                event,
+                {payload: undefined},
+                async () => fetchAndCache(
+                    prisma, 'gats', path, undefined,
+                    {maxAgeMinutes: DEFAULT_MAX_AGE_MINUTES}),
+            );
+          }
+
+          if (resource === 'un' &&
+              (subresource === 'exports' || subresource === 'imports')) {
+            const path = subresource === 'exports' ?
+                '/api/gats/UNTrade/data/exports/dataReleaseDates' :
+                '/api/gats/UNTrade/data/imports/dataReleaseDates';
+            const event = subresource === 'exports' ?
+                'usda.gats.un.exports.release.fetch' :
+                'usda.gats.un.imports.release.fetch';
+            return withTiming(
+                event,
+                {payload: undefined},
+                async () => fetchAndCache(
+                    prisma, 'gats', path, undefined,
+                    {maxAgeMinutes: DEFAULT_MAX_AGE_MINUTES}),
+            );
+          }
+        }
+      }
+
+      if ((resource === 'census' || resource === 'customs') && subresource) {
+        const {partnerCode, year, month} = request.query as {
+          partnerCode?: string;
+          year?: string;
+          month?: string;
+        };
+        const partner = toStringParam(partnerCode);
+        const y = toInt(year);
+        const m = toInt(month);
+        if (!partner || y === null || m === null)
+          return badRequest(reply, 'partnerCode, year, and month are required');
+
+        const base = resource === 'census' ? 'census' : 'customs';
+        const type = subresource;
+        if (type !== 'imports' && type !== 'exports' && type !== 'reexports')
+          return badRequest(reply, 'subresource is invalid');
+        const path = base === 'census' ?
+            `/api/gats/census${
+                type === 'imports'     ? 'Imports' :
+                    type === 'exports' ? 'Exports' :
+                                         'ReExports'}/partnerCode/${
+                encodeURIComponent(
+                    partner)}/year/${encodeURIComponent(String(y))}/month/${
+                encodeURIComponent(String(m))}` :
+            `/api/gats/customsDistrict${
+                type === 'imports'     ? 'Imports' :
+                    type === 'exports' ? 'Exports' :
+                                         'ReExports'}/partnerCode/${
+                encodeURIComponent(
+                    partner)}/year/${encodeURIComponent(String(y))}/month/${
+                encodeURIComponent(String(m))}`;
+        const event = `usda.gats.${base}.${type}.fetch`;
+        return withTiming(
+            event,
+            {payload: {partner, y, m}},
+            async () => fetchAndCache(
+                prisma, 'gats', path, undefined,
+                {maxAgeMinutes: DEFAULT_MAX_AGE_MINUTES}),
         );
-      });
+      }
 
-  server.get('/usda/esr/exports/by-country', auth, async (request, reply) => {
-    const withTiming = withApiTiming(request);
-    const {commodityCode, countryCode, marketYear} = request.query as {
-      commodityCode?: string;
-      countryCode?: string;
-      marketYear?: string
-    };
-    const commodity = toInt(commodityCode);
-    const country = toInt(countryCode);
-    const year = toInt(marketYear);
-    if (commodity === null || country === null || year === null)
-      return badRequest(
-          reply,
-          'commodityCode, countryCode, and marketYear are required numbers');
-    const path = `/api/esr/exports/commodityCode/${
-        encodeURIComponent(String(commodity))}/countryCode/${
-        encodeURIComponent(
-            String(country))}/marketYear/${encodeURIComponent(String(year))}`;
-    return withTiming(
-        'usda.esr.exports.byCountry.fetch',
-        {payload: {commodity, country, year}},
-        async () => {
-          const payload = await fetchAndCache(
-              prisma, 'esr', path, undefined,
-              {maxAgeMinutes: DEFAULT_MAX_AGE_MINUTES});
-          return payload;
-        },
-    );
-  });
-
-  // GATS release endpoints
-  server.get(
-      '/usda/gats/census/exports/data-release', auth, async (request) => {
-        const withTiming = withApiTiming(request);
+      if (resource === 'un' && subresource) {
+        const {reporterCode, year} = request.query as {
+          reporterCode?: string;
+          year?: string;
+        };
+        const reporter = toStringParam(reporterCode);
+        const y = toStringParam(year);
+        if (!reporter || !y)
+          return badRequest(reply, 'reporterCode and year are required');
+        if (subresource !== 'imports' && subresource !== 'exports' &&
+            subresource !== 'reexports')
+          return badRequest(reply, 'subresource is invalid');
+        const path = `/api/gats/UNTrade${
+            subresource === 'imports'     ? 'Imports' :
+                subresource === 'exports' ? 'Exports' :
+                                            'ReExports'}/reporterCode/${
+            encodeURIComponent(reporter)}/year/${encodeURIComponent(y)}`;
         return withTiming(
-            'usda.gats.census.exports.release.fetch', {payload: undefined},
-            async () => {
-              const payload = await fetchAndCache(
-                  prisma, 'gats',
-                  '/api/gats/census/data/exports/dataReleaseDates', undefined,
-                  {maxAgeMinutes: DEFAULT_MAX_AGE_MINUTES});
-              return payload;
-            });
-      });
+            `usda.gats.un.${subresource}.fetch`,
+            {payload: {reporter, y}},
+            async () => fetchAndCache(
+                prisma, 'gats', path, undefined,
+                {maxAgeMinutes: DEFAULT_MAX_AGE_MINUTES}),
+        );
+      }
+    }
 
-  server.get(
-      '/usda/gats/census/imports/data-release', auth, async (request) => {
-        const withTiming = withApiTiming(request);
-        return withTiming(
-            'usda.gats.census.imports.release.fetch', {payload: undefined},
-            async () => {
-              const payload = await fetchAndCache(
-                  prisma, 'gats',
-                  '/api/gats/census/data/imports/dataReleaseDates', undefined,
-                  {maxAgeMinutes: DEFAULT_MAX_AGE_MINUTES});
-              return payload;
-            });
-      });
-
-  server.get('/usda/gats/un/exports/data-release', auth, async (request) => {
-    const withTiming = withApiTiming(request);
-    return withTiming(
-        'usda.gats.un.exports.release.fetch', {payload: undefined},
-        async () => {
-          const payload = await fetchAndCache(
-              prisma, 'gats', '/api/gats/UNTrade/data/exports/dataReleaseDates',
-              undefined, {maxAgeMinutes: DEFAULT_MAX_AGE_MINUTES});
-          return payload;
-        });
-  });
-
-  server.get('/usda/gats/un/imports/data-release', auth, async (request) => {
-    const withTiming = withApiTiming(request);
-    return withTiming(
-        'usda.gats.un.imports.release.fetch', {payload: undefined},
-        async () => {
-          const payload = await fetchAndCache(
-              prisma, 'gats', '/api/gats/UNTrade/data/imports/dataReleaseDates',
-              undefined, {maxAgeMinutes: DEFAULT_MAX_AGE_MINUTES});
-          return payload;
-        });
-  });
-
-  // GATS reference endpoints
-  server.get('/usda/gats/regions', auth, async (request) => {
-    const withTiming = withApiTiming(request);
-    const fast = Boolean((request.query as any)?.fast);
-    return withTiming(
-        'usda.gats.regions.fetch', {payload: {fast}}, async () => {
-          const payload = await fetchAndCache(
-              prisma, 'gats', '/api/gats/regions', undefined,
-              {maxAgeMinutes: DEFAULT_MAX_AGE_MINUTES});
-          const enriched = await enrichReference(
-              'region', 'gats', payload, {skipEnrichment: fast});
-          return enriched;
-        });
-  });
-
-  server.get('/usda/gats/countries', auth, async (request) => {
-    const withTiming = withApiTiming(request);
-    const fast = Boolean((request.query as any)?.fast);
-    return withTiming(
-        'usda.gats.countries.fetch', {payload: {fast}}, async () => {
-          const payload = await fetchAndCache(
-              prisma, 'gats', '/api/gats/countries', undefined,
-              {maxAgeMinutes: DEFAULT_MAX_AGE_MINUTES});
-          const enriched = await enrichReference(
-              'country', 'gats', payload, {skipEnrichment: fast});
-          return enriched;
-        });
-  });
-
-  server.get('/usda/gats/commodities', auth, async (request) => {
-    const withTiming = withApiTiming(request);
-    const fast = Boolean((request.query as any)?.fast);
-    return withTiming(
-        'usda.gats.commodities.fetch', {payload: {fast}}, async () => {
-          const payload = await fetchAndCache(
-              prisma, 'gats', '/api/gats/commodities', undefined,
-              {maxAgeMinutes: DEFAULT_MAX_AGE_MINUTES});
-          const enriched = await enrichReference(
-              'commodity', 'gats', payload, {skipEnrichment: fast});
-          return enriched;
-        });
-  });
-
-  server.get('/usda/gats/hs6-commodities', auth, async (request) => {
-    const withTiming = withApiTiming(request);
-    const fast = Boolean((request.query as any)?.fast);
-    return withTiming('usda.gats.hs6.fetch', {payload: {fast}}, async () => {
-      const payload = await fetchAndCache(
-          prisma, 'gats', '/api/gats/HS6Commodities', undefined,
-          {maxAgeMinutes: DEFAULT_MAX_AGE_MINUTES});
-      const enriched = await enrichReference(
-          'commodity', 'gats', payload, {skipEnrichment: fast});
-      return enriched;
-    });
-  });
-
-  server.get('/usda/gats/units', auth, async (request) => {
-    const withTiming = withApiTiming(request);
-    return withTiming(
-        'usda.gats.units.fetch', {payload: undefined}, async () => {
-          const payload = await fetchAndCache(
-              prisma, 'gats', '/api/gats/unitsOfMeasure', undefined,
-              {maxAgeMinutes: DEFAULT_MAX_AGE_MINUTES});
-          return payload;
-        });
-  });
-
-  server.get('/usda/gats/customs-districts', auth, async (request) => {
-    const withTiming = withApiTiming(request);
-    return withTiming(
-        'usda.gats.customsDistricts.fetch', {payload: undefined}, async () => {
-          const payload = await fetchAndCache(
-              prisma, 'gats', '/api/gats/customsDistricts', undefined,
-              {maxAgeMinutes: DEFAULT_MAX_AGE_MINUTES});
-          return payload;
-        });
-  });
-
-  // GATS census flows
-  server.get('/usda/gats/census/imports', auth, async (request, reply) => {
-    const withTiming = withApiTiming(request);
-    const {partnerCode, year, month} = request.query as {
-      partnerCode?: string;
-      year?: string;
-      month?: string
-    };
-    const partner = toStringParam(partnerCode);
-    const y = toInt(year);
-    const m = toInt(month);
-    if (!partner || y === null || m === null)
-      return badRequest(reply, 'partnerCode, year, and month are required');
-    const path = `/api/gats/censusImports/partnerCode/${
-        encodeURIComponent(partner)}/year/${
-        encodeURIComponent(String(y))}/month/${encodeURIComponent(String(m))}`;
-    return withTiming(
-        'usda.gats.census.imports.fetch',
-        {payload: {partner, y, m}},
-        async () => {
-          const payload = await fetchAndCache(
-              prisma, 'gats', path, undefined,
-              {maxAgeMinutes: DEFAULT_MAX_AGE_MINUTES});
-          return payload;
-        },
-    );
-  });
-
-  server.get('/usda/gats/census/exports', auth, async (request, reply) => {
-    const withTiming = withApiTiming(request);
-    const {partnerCode, year, month} = request.query as {
-      partnerCode?: string;
-      year?: string;
-      month?: string
-    };
-    const partner = toStringParam(partnerCode);
-    const y = toInt(year);
-    const m = toInt(month);
-    if (!partner || y === null || m === null)
-      return badRequest(reply, 'partnerCode, year, and month are required');
-    const path = `/api/gats/censusExports/partnerCode/${
-        encodeURIComponent(partner)}/year/${
-        encodeURIComponent(String(y))}/month/${encodeURIComponent(String(m))}`;
-    return withTiming(
-        'usda.gats.census.exports.fetch',
-        {payload: {partner, y, m}},
-        async () => {
-          const payload = await fetchAndCache(
-              prisma, 'gats', path, undefined,
-              {maxAgeMinutes: DEFAULT_MAX_AGE_MINUTES});
-          return payload;
-        },
-    );
-  });
-
-  server.get('/usda/gats/census/reexports', auth, async (request, reply) => {
-    const withTiming = withApiTiming(request);
-    const {partnerCode, year, month} = request.query as {
-      partnerCode?: string;
-      year?: string;
-      month?: string
-    };
-    const partner = toStringParam(partnerCode);
-    const y = toInt(year);
-    const m = toInt(month);
-    if (!partner || y === null || m === null)
-      return badRequest(reply, 'partnerCode, year, and month are required');
-    const path = `/api/gats/censusReExports/partnerCode/${
-        encodeURIComponent(partner)}/year/${
-        encodeURIComponent(String(y))}/month/${encodeURIComponent(String(m))}`;
-    return withTiming(
-        'usda.gats.census.reexports.fetch',
-        {payload: {partner, y, m}},
-        async () => {
-          const payload = await fetchAndCache(
-              prisma, 'gats', path, undefined,
-              {maxAgeMinutes: DEFAULT_MAX_AGE_MINUTES});
-          return payload;
-        },
-    );
-  });
-
-  // GATS customs district flows
-  server.get('/usda/gats/customs/imports', auth, async (request, reply) => {
-    const withTiming = withApiTiming(request);
-    const {partnerCode, year, month} = request.query as {
-      partnerCode?: string;
-      year?: string;
-      month?: string
-    };
-    const partner = toStringParam(partnerCode);
-    const y = toInt(year);
-    const m = toInt(month);
-    if (!partner || y === null || m === null)
-      return badRequest(reply, 'partnerCode, year, and month are required');
-    const path = `/api/gats/customsDistrictImports/partnerCode/${
-        encodeURIComponent(partner)}/year/${
-        encodeURIComponent(String(y))}/month/${encodeURIComponent(String(m))}`;
-    return withTiming(
-        'usda.gats.customs.imports.fetch',
-        {payload: {partner, y, m}},
-        async () => {
-          const payload = await fetchAndCache(
-              prisma, 'gats', path, undefined,
-              {maxAgeMinutes: DEFAULT_MAX_AGE_MINUTES});
-          return payload;
-        },
-    );
-  });
-
-  server.get('/usda/gats/customs/exports', auth, async (request, reply) => {
-    const withTiming = withApiTiming(request);
-    const {partnerCode, year, month} = request.query as {
-      partnerCode?: string;
-      year?: string;
-      month?: string
-    };
-    const partner = toStringParam(partnerCode);
-    const y = toInt(year);
-    const m = toInt(month);
-    if (!partner || y === null || m === null)
-      return badRequest(reply, 'partnerCode, year, and month are required');
-    const path = `/api/gats/customsDistrictExports/partnerCode/${
-        encodeURIComponent(partner)}/year/${
-        encodeURIComponent(String(y))}/month/${encodeURIComponent(String(m))}`;
-    return withTiming(
-        'usda.gats.customs.exports.fetch',
-        {payload: {partner, y, m}},
-        async () => {
-          const payload = await fetchAndCache(
-              prisma, 'gats', path, undefined,
-              {maxAgeMinutes: DEFAULT_MAX_AGE_MINUTES});
-          return payload;
-        },
-    );
-  });
-
-  server.get('/usda/gats/customs/reexports', auth, async (request, reply) => {
-    const withTiming = withApiTiming(request);
-    const {partnerCode, year, month} = request.query as {
-      partnerCode?: string;
-      year?: string;
-      month?: string
-    };
-    const partner = toStringParam(partnerCode);
-    const y = toInt(year);
-    const m = toInt(month);
-    if (!partner || y === null || m === null)
-      return badRequest(reply, 'partnerCode, year, and month are required');
-    const path = `/api/gats/customsDistrictReExports/partnerCode/${
-        encodeURIComponent(partner)}/year/${
-        encodeURIComponent(String(y))}/month/${encodeURIComponent(String(m))}`;
-    return withTiming(
-        'usda.gats.customs.reexports.fetch',
-        {payload: {partner, y, m}},
-        async () => {
-          const payload = await fetchAndCache(
-              prisma, 'gats', path, undefined,
-              {maxAgeMinutes: DEFAULT_MAX_AGE_MINUTES});
-          return payload;
-        },
-    );
-  });
-
-  // GATS UN trade flows
-  server.get('/usda/gats/un/imports', auth, async (request, reply) => {
-    const withTiming = withApiTiming(request);
-    const {reporterCode, year} = request.query as {
-      reporterCode?: string;
-      year?: string
-    };
-    const reporter = toStringParam(reporterCode);
-    const y = toStringParam(year);
-    if (!reporter || !y)
-      return badRequest(reply, 'reporterCode and year are required');
-    const path = `/api/gats/UNTradeImports/reporterCode/${
-        encodeURIComponent(reporter)}/year/${encodeURIComponent(y)}`;
-    return withTiming(
-        'usda.gats.un.imports.fetch',
-        {payload: {reporter, y}},
-        async () => {
-          const payload = await fetchAndCache(
-              prisma, 'gats', path, undefined,
-              {maxAgeMinutes: DEFAULT_MAX_AGE_MINUTES});
-          return payload;
-        },
-    );
-  });
-
-  server.get('/usda/gats/un/exports', auth, async (request, reply) => {
-    const withTiming = withApiTiming(request);
-    const {reporterCode, year} = request.query as {
-      reporterCode?: string;
-      year?: string
-    };
-    const reporter = toStringParam(reporterCode);
-    const y = toStringParam(year);
-    if (!reporter || !y)
-      return badRequest(reply, 'reporterCode and year are required');
-    const path = `/api/gats/UNTradeExports/reporterCode/${
-        encodeURIComponent(reporter)}/year/${encodeURIComponent(y)}`;
-    return withTiming(
-        'usda.gats.un.exports.fetch',
-        {payload: {reporter, y}},
-        async () => {
-          const payload = await fetchAndCache(
-              prisma, 'gats', path, undefined,
-              {maxAgeMinutes: DEFAULT_MAX_AGE_MINUTES});
-          return payload;
-        },
-    );
-  });
-
-  server.get('/usda/gats/un/reexports', auth, async (request, reply) => {
-    const withTiming = withApiTiming(request);
-    const {reporterCode, year} = request.query as {
-      reporterCode?: string;
-      year?: string
-    };
-    const reporter = toStringParam(reporterCode);
-    const y = toStringParam(year);
-    if (!reporter || !y)
-      return badRequest(reply, 'reporterCode and year are required');
-    const path = `/api/gats/UNTradeReExports/reporterCode/${
-        encodeURIComponent(reporter)}/year/${encodeURIComponent(y)}`;
-    return withTiming(
-        'usda.gats.un.reexports.fetch',
-        {payload: {reporter, y}},
-        async () => {
-          const payload = await fetchAndCache(
-              prisma, 'gats', path, undefined,
-              {maxAgeMinutes: DEFAULT_MAX_AGE_MINUTES});
-          return payload;
-        },
-    );
-  });
-
-  // PSD endpoints
-  server.get(
-      '/usda/psd/commodity/data-release', auth, async (request, reply) => {
-        const withTiming = withApiTiming(request);
+    if (dataset === 'psd') {
+      if (resource === 'commodity' && subresource === 'data-release') {
         const {commodityCode} = request.query as {commodityCode?: string};
         const commodity = toStringParam(commodityCode);
         if (!commodity) return badRequest(reply, 'commodityCode is required');
@@ -853,167 +732,155 @@ export function registerUsdaRoutes(
         return withTiming(
             'usda.psd.release.fetch',
             {payload: {commodity}},
-            async () => {
-              const payload = await fetchAndCache(
-                  prisma, 'psd', path, undefined,
-                  {maxAgeMinutes: DEFAULT_MAX_AGE_MINUTES});
-              return payload;
-            },
+            async () => fetchAndCache(
+                prisma, 'psd', path, undefined,
+                {maxAgeMinutes: DEFAULT_MAX_AGE_MINUTES}),
         );
-      });
+      }
 
-  server.get('/usda/psd/regions', auth, async (request) => {
-    const withTiming = withApiTiming(request);
-    return withTiming(
-        'usda.psd.regions.fetch', {payload: undefined}, async () => {
-          const payload = await fetchAndCache(
-              prisma, 'psd', '/api/psd/regions', undefined, {
-                maxAgeMinutes: PSD_REFERENCE_MAX_AGE_MINUTES,
-                staleWhileRevalidate: true,
-                logger: server.log,
-              });
-          const enriched = await enrichReference('region', 'psd', payload);
-          return enriched;
-        });
-  });
-
-  server.get('/usda/psd/countries', auth, async (request) => {
-    const withTiming = withApiTiming(request);
-    const fast = Boolean((request.query as any)?.fast);
-    return withTiming(
-        'usda.psd.countries.fetch', {payload: {fast}}, async () => {
-          const payload = await fetchAndCache(
-              prisma, 'psd', '/api/psd/countries', undefined, {
-                maxAgeMinutes: PSD_REFERENCE_MAX_AGE_MINUTES,
-                staleWhileRevalidate: true,
-                logger: server.log,
-              });
-          const enriched = await enrichReference(
-              'country', 'psd', payload, {skipEnrichment: fast});
-          return enriched;
-        });
-  });
-
-  server.get('/usda/psd/commodities', auth, async (request) => {
-    const withTiming = withApiTiming(request);
-    return withTiming(
-        'usda.psd.commodities.fetch', {payload: undefined}, async () => {
-          const payload = await fetchAndCache(
-              prisma, 'psd', '/api/psd/commodities', undefined, {
-                maxAgeMinutes: PSD_REFERENCE_MAX_AGE_MINUTES,
-                staleWhileRevalidate: true,
-                logger: server.log,
-              });
-          const enriched = await enrichReference('commodity', 'psd', payload);
-          return enriched;
-        });
-  });
-
-  server.get('/usda/psd/units', auth, async (request) => {
-    const withTiming = withApiTiming(request);
-    return withTiming(
-        'usda.psd.units.fetch', {payload: undefined}, async () => {
-          const payload = await fetchAndCache(
-              prisma, 'psd', '/api/psd/unitsOfMeasure', undefined, {
-                maxAgeMinutes: PSD_REFERENCE_MAX_AGE_MINUTES,
-                staleWhileRevalidate: true,
-                logger: server.log,
-              });
-          const enriched = await enrichReference('unit', 'psd', payload);
-          return enriched;
-        });
-  });
-
-  server.get('/usda/psd/commodity-attributes', auth, async (request) => {
-    const withTiming = withApiTiming(request);
-    return withTiming(
-        'usda.psd.attributes.fetch', {payload: undefined}, async () => {
-          const payload = await fetchAndCache(
-              prisma, 'psd', '/api/psd/commodityAttributes', undefined, {
-                maxAgeMinutes: PSD_REFERENCE_MAX_AGE_MINUTES,
-                staleWhileRevalidate: true,
-                logger: server.log,
-              });
-          const enriched = await enrichReference('attribute', 'psd', payload);
-          return enriched;
-        });
-  });
-
-  server.get(
-      '/usda/psd/commodity/all-countries', auth, async (request, reply) => {
-        const withTiming = withApiTiming(request);
-        const {commodityCode, marketYear} = request.query as {
+      if (resource === 'commodity' && subresource) {
+        const {commodityCode, countryCode, marketYear} = request.query as {
           commodityCode?: string;
-          marketYear?: string
+          countryCode?: string;
+          marketYear?: string;
         };
         const commodity = toStringParam(commodityCode);
+        const country = toStringParam(countryCode);
         const year = toInt(marketYear);
-        if (!commodity || year === null)
-          return badRequest(reply, 'commodityCode and marketYear are required');
-        const path = `/api/psd/commodity/${
-            encodeURIComponent(commodity)}/country/all/year/${
-            encodeURIComponent(String(year))}`;
-        return withTiming(
-            'usda.psd.commodity.allCountries.fetch',
-            {payload: {commodity, year}},
-            async () => {
-              const payload = await fetchAndCache(
+
+        if (subresource === 'all-countries') {
+          if (!commodity || year === null)
+            return badRequest(
+                reply, 'commodityCode and marketYear are required');
+          const path = `/api/psd/commodity/${
+              encodeURIComponent(commodity)}/country/all/year/${
+              encodeURIComponent(String(year))}`;
+          return withTiming(
+              'usda.psd.commodity.allCountries.fetch',
+              {payload: {commodity, year}},
+              async () => fetchAndCache(
                   prisma, 'psd', path, undefined,
-                  {maxAgeMinutes: DEFAULT_MAX_AGE_MINUTES});
-              return payload;
-            },
-        );
-      });
+                  {maxAgeMinutes: DEFAULT_MAX_AGE_MINUTES}),
+          );
+        }
 
-  server.get('/usda/psd/commodity/by-country', auth, async (request, reply) => {
-    const withTiming = withApiTiming(request);
-    const {commodityCode, countryCode, marketYear} = request.query as {
-      commodityCode?: string;
-      countryCode?: string;
-      marketYear?: string
-    };
-    const commodity = toStringParam(commodityCode);
-    const country = toStringParam(countryCode);
-    const year = toInt(marketYear);
-    if (!commodity || !country || year === null)
-      return badRequest(
-          reply, 'commodityCode, countryCode, and marketYear are required');
-    const path = `/api/psd/commodity/${encodeURIComponent(commodity)}/country/${
-        encodeURIComponent(country)}/year/${encodeURIComponent(String(year))}`;
-    return withTiming(
-        'usda.psd.commodity.country.fetch',
-        {payload: {commodity, country, year}},
-        async () => {
-          const payload = await fetchAndCache(
-              prisma, 'psd', path, undefined,
-              {maxAgeMinutes: DEFAULT_MAX_AGE_MINUTES});
-          return payload;
-        },
-    );
-  });
+        if (subresource === 'by-country') {
+          if (!commodity || !country || year === null)
+            return badRequest(
+                reply,
+                'commodityCode, countryCode, and marketYear are required');
+          const path =
+              `/api/psd/commodity/${encodeURIComponent(commodity)}/country/${
+                  encodeURIComponent(
+                      country)}/year/${encodeURIComponent(String(year))}`;
+          return withTiming(
+              'usda.psd.commodity.country.fetch',
+              {payload: {commodity, country, year}},
+              async () => fetchAndCache(
+                  prisma, 'psd', path, undefined,
+                  {maxAgeMinutes: DEFAULT_MAX_AGE_MINUTES}),
+          );
+        }
 
-  server.get('/usda/psd/commodity/world', auth, async (request, reply) => {
-    const withTiming = withApiTiming(request);
-    const {commodityCode, marketYear} = request.query as {
-      commodityCode?: string;
-      marketYear?: string
-    };
-    const commodity = toStringParam(commodityCode);
-    const year = toInt(marketYear);
-    if (!commodity || year === null)
-      return badRequest(reply, 'commodityCode and marketYear are required');
-    const path =
-        `/api/psd/commodity/${encodeURIComponent(commodity)}/world/year/${
-            encodeURIComponent(String(year))}`;
-    return withTiming(
-        'usda.psd.commodity.world.fetch',
-        {payload: {commodity, year}},
-        async () => {
-          const payload = await fetchAndCache(
-              prisma, 'psd', path, undefined,
-              {maxAgeMinutes: DEFAULT_MAX_AGE_MINUTES});
-          return payload;
+        if (subresource === 'world') {
+          if (!commodity || year === null)
+            return badRequest(
+                reply, 'commodityCode and marketYear are required');
+          const path =
+              `/api/psd/commodity/${encodeURIComponent(commodity)}/world/year/${
+                  encodeURIComponent(String(year))}`;
+          return withTiming(
+              'usda.psd.commodity.world.fetch',
+              {payload: {commodity, year}},
+              async () => fetchAndCache(
+                  prisma, 'psd', path, undefined,
+                  {maxAgeMinutes: DEFAULT_MAX_AGE_MINUTES}),
+          );
+        }
+      }
+    }
+
+    return badRequest(reply, 'resource is invalid');
+  };
+
+  server.get(
+      '/usda/:dataset/:resource', {
+        ...auth,
+        schema: {
+          summary: 'Fetch USDA dataset resource',
+          description:
+              'Fetches USDA dataset resources with caching and enrichment.',
+          operationId: 'usda_resource_get',
+          tags: ['usda'],
+          headers: usdaAuthHeader,
+          security: [{bearerAuth: []}],
+          params: usdaParamsSchema,
+          querystring: usdaQuerySchema,
+          response: makeResponses(
+              {
+                200: withExamples(
+                    {
+                      type: [
+                        'object', 'array', 'string', 'number', 'boolean', 'null'
+                      ],
+                    },
+                    [{data: 'USDA response'}]),
+              },
+              {includeStandardErrors: true}),
         },
-    );
-  });
+      },
+      handleUsdaRequest);
+  server.get(
+      '/usda/:dataset/:resource/:subresource', {
+        ...auth,
+        schema: {
+          summary: 'Fetch USDA dataset subresource',
+          description: 'Fetches USDA dataset subresources with cache control.',
+          operationId: 'usda_subresource_get',
+          tags: ['usda'],
+          headers: usdaAuthHeader,
+          security: [{bearerAuth: []}],
+          params: usdaSubresourceParamsSchema,
+          querystring: usdaQuerySchema,
+          response: makeResponses(
+              {
+                200: withExamples(
+                    {
+                      type: [
+                        'object', 'array', 'string', 'number', 'boolean', 'null'
+                      ],
+                    },
+                    [{data: 'USDA response'}]),
+              },
+              {includeStandardErrors: true}),
+        },
+      },
+      handleUsdaRequest);
+  server.get(
+      '/usda/:dataset/:resource/:subresource/:detail', {
+        ...auth,
+        schema: {
+          summary: 'Fetch USDA dataset detail',
+          description:
+              'Fetches USDA dataset detail endpoints (e.g. data-release).',
+          operationId: 'usda_detail_get',
+          tags: ['usda'],
+          headers: usdaAuthHeader,
+          security: [{bearerAuth: []}],
+          params: usdaDetailParamsSchema,
+          querystring: usdaQuerySchema,
+          response: makeResponses(
+              {
+                200: withExamples(
+                    {
+                      type: [
+                        'object', 'array', 'string', 'number', 'boolean', 'null'
+                      ],
+                    },
+                    [{data: 'USDA response'}]),
+              },
+              {includeStandardErrors: true}),
+        },
+      },
+      handleUsdaRequest);
 }

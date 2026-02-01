@@ -788,18 +788,37 @@ export function registerPoiRoutes(
     };
   };
 
-  // Public variants (keep compatibility with current unauthenticated map
-  // probes)
-  server.get('/pois', listHandler);
-  server.get('/pois/metadata', metadataHandler);
-  server.post('/pois/sync', authOpts, syncHandler);
-  server.get('/pois/:id', detailHandler);
+  // Shared GET endpoints for both anonymous and authenticated map routes
+  const readTargets: Array<{prefix: string; options?: typeof authOpts;}> = [
+    {prefix: '/pois'},
+    {prefix: '/api/pois', options: authOpts},
+  ];
 
-  // Authenticated variants for the signed-in map experience
-  server.get('/api/pois', authOpts, listHandler);
-  server.get('/api/pois/metadata', authOpts, metadataHandler);
-  server.post('/api/pois/sync', authOpts, syncHandler);
-  server.get('/api/pois/:id', authOpts, detailHandler);
+  type PoiReadHandler = (
+      request: FastifyRequest,
+      reply: FastifyReply,
+      ) => Promise<unknown>|unknown;
+
+  const readRoutes: Array<{suffix: string; handler: PoiReadHandler}> = [
+    {suffix: '', handler: listHandler},
+    {suffix: '/metadata', handler: metadataHandler},
+    {suffix: '/:id', handler: detailHandler},
+  ];
+
+  for (const target of readTargets) {
+    for (const route of readRoutes) {
+      const path = `${target.prefix}${route.suffix}`;
+      if (target.options) {
+        server.get(path, target.options, route.handler);
+      } else {
+        server.get(path, route.handler);
+      }
+    }
+  }
+
+  for (const path of ['/pois/actions/sync', '/api/pois/actions/sync']) {
+    server.post(path, authOpts, syncHandler);
+  }
 
   // Batch enrich POIs by ids
   server.post(

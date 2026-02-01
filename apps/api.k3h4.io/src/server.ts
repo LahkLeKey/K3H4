@@ -43,7 +43,7 @@ await server.register(fastifyRateLimit, {
   // throttle external APIs.
   max: Number(process.env.RATE_LIMIT_MAX || 600),
   timeWindow: process.env.RATE_LIMIT_WINDOW || '1 minute',
-  allowList: (request) => request.url?.startsWith('/telemetry') || false,
+  allowList: (request) => request.url?.startsWith('/entity/telemetry') || false,
   errorResponseBuilder: () =>
       ({error: 'Too many requests', code: 429, retryAfter: 60}),
   addHeaders: {
@@ -145,10 +145,13 @@ server.decorate(
     },
 );
 
-server.get('/health', async () => ({status: 'ok'}));
+server.get('/entity/health', async () => ({status: 'ok'}));
 
 const recordTelemetry = createTelemetryRecorder(prisma);
-registerTelemetryRoutes(server, prisma, recordTelemetry);
+await server.register(
+    async (scoped) => registerTelemetryRoutes(scoped, prisma, recordTelemetry),
+    {prefix: '/entity'},
+);
 
 await registerAllRoutes(server, prisma, recordTelemetry);
 

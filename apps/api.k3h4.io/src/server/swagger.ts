@@ -21,6 +21,15 @@ const describe = {
   maptiler: 'MapTiler Cloud API proxy',
   osrm: 'OSRM routing proxy',
   telemetry: 'Telemetry intake',
+  ai: 'AI insights and operations',
+  chat: 'Chat sessions and models',
+  frontend: 'Frontend integration helpers',
+  building: 'Building lookup and geometry',
+  buildings: 'Building lookup and geometry',
+  actor: 'Actors and entities',
+  entity: 'Actors and entities',
+  api: 'Core API helpers',
+  pois: 'Points of interest',
 };
 
 export const swaggerTags: Record < string, {
@@ -47,6 +56,15 @@ export const swaggerTags: Record < string, {
   maptiler: {name: 'MapTiler', description: describe.maptiler},
   osrm: {name: 'OSRM', description: describe.osrm},
   telemetry: {name: 'Telemetry', description: describe.telemetry},
+  ai: {name: 'AI', description: describe.ai},
+  chat: {name: 'Chat', description: describe.chat},
+  frontend: {name: 'Frontend', description: describe.frontend},
+  building: {name: 'Building', description: describe.building},
+  buildings: {name: 'Building', description: describe.buildings},
+  actor: {name: 'Actor', description: describe.actor},
+  entity: {name: 'Entity', description: describe.entity},
+  api: {name: 'API', description: describe.api},
+  pois: {name: 'POIs', description: describe.pois},
 };
 
 export const swaggerTagMap: Record < string, {
@@ -78,6 +96,15 @@ export const swaggerTagMap: Record < string, {
   geo: swaggerTags.geo,
   maptiler: swaggerTags.maptiler,
   osrm: swaggerTags.osrm,
+  ai: swaggerTags.ai,
+  chat: swaggerTags.chat,
+  frontend: swaggerTags.frontend,
+  building: swaggerTags.building,
+  buildings: swaggerTags.building,
+  actor: swaggerTags.actor,
+  entity: swaggerTags.entity,
+  api: swaggerTags.api,
+  pois: swaggerTags.pois,
 };
 
 export const docsStaticDir =
@@ -114,6 +141,44 @@ export const buildOpenApiOptions =
               bearerFormat: 'JWT',
               description:
                   'Paste your k3h4.accessToken; the UI prefixes Bearer for you.',
+            },
+          },
+          parameters: {
+            IdParam: {
+              name: 'id',
+              in: 'path',
+              required: true,
+              schema: {type: 'string'},
+            },
+            DomainParam: {
+              name: 'domain',
+              in: 'path',
+              required: true,
+              schema: {type: 'string'},
+            },
+            ResourceParam: {
+              name: 'resource',
+              in: 'path',
+              required: true,
+              schema: {type: 'string'},
+            },
+            ActionParam: {
+              name: 'action',
+              in: 'path',
+              required: true,
+              schema: {type: 'string'},
+            },
+            SessionIdParam: {
+              name: 'sessionId',
+              in: 'path',
+              required: true,
+              schema: {type: 'string'},
+            },
+            ActorIdParam: {
+              name: 'actorId',
+              in: 'path',
+              required: true,
+              schema: {type: 'string'},
             },
           },
         },

@@ -5,6 +5,7 @@ import { Badge, Button, Card, FormField, Input, SectionHeader, Table, TableCard,
 import type { TableColumn } from "../components/ui";
 import { StarfieldLayout } from "../components/radix-components/StarfieldLayout";
 import { useAuthStore } from "../react-hooks/auth";
+import { buildApiUrl } from "../react-hooks/lib/apiBase";
 import type { FormEvent } from "react";
 
 type ChatSessionSummary = {
@@ -166,7 +167,7 @@ export function AiPage() {
         setLoadingSessions(true);
         try {
             setError(null);
-            const res = await fetch(`${apiBase}/chat/sessions`, {
+            const res = await fetch(buildApiUrl(apiBase, "/chat/sessions"), {
                 method: "GET",
                 headers: buildHeaders(false),
             });
@@ -189,7 +190,7 @@ export function AiPage() {
             setModelFetchError(null);
             const headers: Record<string, string> = {};
             if (token) headers.Authorization = `Bearer ${token}`;
-            const res = await fetch(`${apiBase}/chat/models`, {
+            const res = await fetch(buildApiUrl(apiBase, "/chat/models"), {
                 method: "GET",
                 headers,
             });
@@ -225,7 +226,7 @@ export function AiPage() {
         setLoadingInsights(true);
         try {
             setInsightsError(null);
-            const res = await fetch(`${apiBase}/ai/insights?limit=20`, {
+            const res = await fetch(buildApiUrl(apiBase, "/ai/insights?limit=20"), {
                 method: "GET",
                 headers: buildHeaders(false),
             });
@@ -250,7 +251,7 @@ export function AiPage() {
             if (sourceFilter !== "all") params.set("source", sourceFilter);
             const sessionQueryId = sessionFilter === "active" ? activeSession?.id ?? null : null;
             if (sessionQueryId) params.set("sessionId", sessionQueryId);
-            const res = await fetch(`${apiBase}/ai/ollama/operations?${params.toString()}`, {
+            const res = await fetch(buildApiUrl(apiBase, `/ai/ollama/operations?${params.toString()}`), {
                 method: "GET",
                 headers: buildHeaders(false),
             });
@@ -288,7 +289,7 @@ export function AiPage() {
         setCreatingInsight(true);
         setCreateInsightError(null);
         try {
-            const response = await fetch(`${apiBase}/ai/insights`, {
+            const response = await fetch(buildApiUrl(apiBase, "/ai/insights"), {
                 method: "POST",
                 headers: buildHeaders(true),
                 body: JSON.stringify({
@@ -349,7 +350,7 @@ export function AiPage() {
             setLoadingMessages(true);
             try {
                 setError(null);
-                const res = await fetch(`${apiBase}/chat/sessions/${sessionId}/messages`, {
+                const res = await fetch(buildApiUrl(apiBase, `/chat/sessions/${sessionId}/messages`), {
                     headers: buildHeaders(false),
                 });
                 if (handleUnauthorized(res)) return;
@@ -376,7 +377,7 @@ export function AiPage() {
         setLoadingSessions(true);
         try {
             setError(null);
-            const res = await fetch(`${apiBase}/chat/sessions`, {
+            const res = await fetch(buildApiUrl(apiBase, "/chat/sessions"), {
                 method: "POST",
                 headers: buildHeaders(true),
                 body: JSON.stringify({ systemPrompt: systemPromptDraft || undefined, model: selectedModel }),
@@ -418,7 +419,7 @@ export function AiPage() {
             setMessages((prev) => [...prev, optimisticMessage]);
             setChatInput("");
             try {
-                const res = await fetch(`${apiBase}/chat/sessions/${activeSession.id}/messages`, {
+                const res = await fetch(buildApiUrl(apiBase, `/chat/sessions/${activeSession.id}/messages`), {
                     method: "POST",
                     headers: buildHeaders(true),
                     body: JSON.stringify({ message: trimmed }),

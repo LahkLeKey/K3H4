@@ -3,6 +3,12 @@ import { apiUrl } from "../react-hooks/lib/apiBase";
 
 type GeoStatus = "idle" | "locating" | "ready" | "blocked" | "error";
 
+type MapConfig = {
+    stylePath: string;
+    vectorTilePath: string;
+    terrainTilePath: string;
+};
+
 type GeoState = {
     status: GeoStatus;
     center: { lat: number; lng: number } | null;
@@ -17,10 +23,12 @@ type GeoState = {
     lastFetchRadius: number | null;
     lastFetchKinds: string | null;
     lastSignature: string | null;
+    mapConfig: MapConfig | null;
     requestLocation: (opts?: { force?: boolean }) => void;
     fetchNearbyPois: (opts?: { radiusM?: number; kinds?: string[]; token?: string; force?: boolean }) => Promise<void>;
     hydrateFromPrefs: (opts: { center?: { lat: number; lng: number } | null; pois?: any[] | null }) => void;
     setCenterFromMap: (center: { lat: number; lng: number }) => void;
+    setMapConfig: (config: MapConfig | null) => void;
     reset: () => void;
 };
 
@@ -53,7 +61,7 @@ const logStatus = async (payload: {
 
 const coalesceMap = new Map<string, Promise<any>>();
 
-const initialState: Omit<GeoState, "requestLocation" | "fetchNearbyPois" | "hydrateFromPrefs" | "setCenterFromMap" | "reset"> = {
+const initialState: Omit<GeoState, "requestLocation" | "fetchNearbyPois" | "hydrateFromPrefs" | "setCenterFromMap" | "setMapConfig" | "reset"> = {
     status: "idle",
     center: null,
     error: null,
@@ -67,6 +75,7 @@ const initialState: Omit<GeoState, "requestLocation" | "fetchNearbyPois" | "hydr
     lastFetchRadius: null,
     lastFetchKinds: null,
     lastSignature: null,
+    mapConfig: null,
 };
 const toKindsString = (kinds?: string[] | string) => (Array.isArray(kinds) ? kinds.join(",") : kinds ?? DEFAULT_KINDS);
 const makeSignature = (center: { lat: number; lng: number }, radiusM: number, kinds: string) =>
@@ -162,6 +171,8 @@ export const useGeoStore = create<GeoState>((set, get) => ({
     setCenterFromMap: (center) => {
         set({ center, status: "ready" });
     },
+
+    setMapConfig: (config) => set({ mapConfig: config }),
 
     reset: () => {
         coalesceMap.clear();

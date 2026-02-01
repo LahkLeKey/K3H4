@@ -468,57 +468,56 @@ export function registerPersonaRoutes(
       },
   );
 
+  const handlePersonaGenerate = async (request: any, reply: any) => {
+    const userId = (request.user as {sub: string}).sub;
+    const rt = withTelemetryBase(recordTelemetry, request);
+    const body = request.body as {count?: number} | undefined;
+    const count = clampCount(body?.count);
+    const actor = await personaLedger.ensurePersonaActor(prisma, userId);
+    const metadataPayload =
+        Array.from({length: count})
+            .map(() => personaLedger.buildPersonaMetadata(buildFakerPersona()));
+    await prisma.entity.createMany({
+      data: metadataPayload.map((row) => ({
+                                  actorId: actor.id,
+                                  kind: ENTITY_KINDS.PERSONA,
+                                  metadata: row,
+                                })),
+    });
+    let personas =
+        await personaLedger.loadPersonaRecordsByActor(prisma, actor.id);
+    const created = personas.slice(0, count);
+    const attributeSeeds = created.flatMap(
+        (persona) => buildSeedAttributes(persona.id, persona.tags));
+    if (attributeSeeds.length > 0) {
+      await prisma.entity.createMany({
+        data:
+            attributeSeeds.map((entry) => ({
+                                 actorId: actor.id,
+                                 kind: ENTITY_KINDS.PERSONA_ATTRIBUTE,
+                                 targetType: personaLedger.PERSONA_TARGET_TYPE,
+                                 targetId: entry.personaId,
+                                 metadata: {
+                                   category: entry.category,
+                                   value: entry.value,
+                                   weight: entry.weight,
+                                 },
+                               })),
+      });
+      personas =
+          await personaLedger.loadPersonaRecordsByActor(prisma, actor.id);
+    }
+    await rt({eventType: 'persona.generate', source: 'api', payload: {count}});
+    return {
+      personas:
+          personas.slice(0, count).map(personaLedger.personaRecordToResponse)
+    };
+  };
+
   server.post(
-      '/personas/generate',
+      '/personas/actions/generate',
       {preHandler: [server.authenticate]},
-      async (request, reply) => {
-        const userId = (request.user as {sub: string}).sub;
-        const rt = withTelemetryBase(recordTelemetry, request);
-        const body = request.body as {count?: number} | undefined;
-        const count = clampCount(body?.count);
-        const actor = await personaLedger.ensurePersonaActor(prisma, userId);
-        const metadataPayload =
-            Array.from({length: count})
-                .map(
-                    () => personaLedger.buildPersonaMetadata(
-                        buildFakerPersona()));
-        await prisma.entity.createMany({
-          data: metadataPayload.map((row) => ({
-                                      actorId: actor.id,
-                                      kind: ENTITY_KINDS.PERSONA,
-                                      metadata: row,
-                                    })),
-        });
-        let personas =
-            await personaLedger.loadPersonaRecordsByActor(prisma, actor.id);
-        const created = personas.slice(0, count);
-        const attributeSeeds = created.flatMap(
-            (persona) => buildSeedAttributes(persona.id, persona.tags));
-        if (attributeSeeds.length > 0) {
-          await prisma.entity.createMany({
-            data: attributeSeeds.map(
-                (entry) => ({
-                  actorId: actor.id,
-                  kind: ENTITY_KINDS.PERSONA_ATTRIBUTE,
-                  targetType: personaLedger.PERSONA_TARGET_TYPE,
-                  targetId: entry.personaId,
-                  metadata: {
-                    category: entry.category,
-                    value: entry.value,
-                    weight: entry.weight,
-                  },
-                })),
-          });
-          personas =
-              await personaLedger.loadPersonaRecordsByActor(prisma, actor.id);
-        }
-        await rt(
-            {eventType: 'persona.generate', source: 'api', payload: {count}});
-        return {
-          personas: personas.slice(0, count).map(
-              personaLedger.personaRecordToResponse)
-        };
-      },
+      handlePersonaGenerate,
   );
 
   server.put(
@@ -573,52 +572,50 @@ export function registerPersonaRoutes(
       },
   );
 
+  const handleCompatibilityRecompute = async (request: any, reply: any) => {
+    const userId = (request.user as {sub: string}).sub;
+    const rt = withTelemetryBase(recordTelemetry, request);
+    const actor = await personaLedger.ensurePersonaActor(prisma, userId);
+    const personas =
+        await personaLedger.loadPersonaRecordsByActor(prisma, actor.id);
+    if (personas.length < 2) {
+      await prisma.entity.deleteMany({
+        where: {actorId: actor.id, kind: ENTITY_KINDS.PERSONA_COMPATIBILITY},
+      });
+      return {compatibilities: []};
+    }
+    const payload = buildCompatibilityPayload(personas);
+    await prisma.$transaction([
+      prisma.entity.deleteMany({
+        where: {actorId: actor.id, kind: ENTITY_KINDS.PERSONA_COMPATIBILITY},
+      }),
+      prisma.entity.createMany({
+        data: payload.map((entry) => ({
+                            actorId: actor.id,
+                            kind: ENTITY_KINDS.PERSONA_COMPATIBILITY,
+                            metadata: entry.metadata,
+                          })),
+      }),
+    ]);
+    const compatibilities = await loadCompatibilityRecords(prisma, actor.id);
+    const personaMap = await personaLedger.loadPersonaMap(prisma, userId);
+    const response =
+        compatibilities
+            .map((record) => serializeCompatibility(record, personaMap))
+            .filter((item): item is NonNullable<typeof item> => Boolean(item))
+            .sort((a, b) => b.jaccardScore - a.jaccardScore);
+    await rt({
+      eventType: 'persona.compatibility.recompute',
+      source: 'api',
+      payload: {count: response.length},
+    });
+    return {compatibilities: response};
+  };
+
   server.post(
-      '/personas/compatibility/recompute',
+      '/personas/actions/recompute-compatibility',
       {preHandler: [server.authenticate]},
-      async (request, reply) => {
-        const userId = (request.user as {sub: string}).sub;
-        const rt = withTelemetryBase(recordTelemetry, request);
-        const actor = await personaLedger.ensurePersonaActor(prisma, userId);
-        const personas =
-            await personaLedger.loadPersonaRecordsByActor(prisma, actor.id);
-        if (personas.length < 2) {
-          await prisma.entity.deleteMany({
-            where:
-                {actorId: actor.id, kind: ENTITY_KINDS.PERSONA_COMPATIBILITY},
-          });
-          return {compatibilities: []};
-        }
-        const payload = buildCompatibilityPayload(personas);
-        await prisma.$transaction([
-          prisma.entity.deleteMany({
-            where:
-                {actorId: actor.id, kind: ENTITY_KINDS.PERSONA_COMPATIBILITY},
-          }),
-          prisma.entity.createMany({
-            data: payload.map((entry) => ({
-                                actorId: actor.id,
-                                kind: ENTITY_KINDS.PERSONA_COMPATIBILITY,
-                                metadata: entry.metadata,
-                              })),
-          }),
-        ]);
-        const compatibilities =
-            await loadCompatibilityRecords(prisma, actor.id);
-        const personaMap = await personaLedger.loadPersonaMap(prisma, userId);
-        const response =
-            compatibilities
-                .map((record) => serializeCompatibility(record, personaMap))
-                .filter(
-                    (item): item is NonNullable<typeof item> => Boolean(item))
-                .sort((a, b) => b.jaccardScore - a.jaccardScore);
-        await rt({
-          eventType: 'persona.compatibility.recompute',
-          source: 'api',
-          payload: {count: response.length},
-        });
-        return {compatibilities: response};
-      },
+      handleCompatibilityRecompute,
   );
 
   server.get(

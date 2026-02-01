@@ -515,43 +515,44 @@ export function registerAgricultureRoutes(
       },
   );
 
-  server.post(
-      '/agriculture/slots/unlock',
-      {preHandler: [server.authenticate]},
-      async (request, reply) => {
-        const rt = withTelemetryBase(recordTelemetry, request);
-        const userId = (request.user as {sub: string}).sub;
-        const body = request.body as {costPaid?: number | string} | undefined;
-        const actor = await ensureAgricultureActor(prisma, userId);
-        const unlockedCount = await prisma.entity.count({
-          where: {actorId: actor.id, kind: EntityKind.AGRICULTURE_SLOT},
-        });
-        if (unlockedCount >= MAX_PLOT_SLOTS)
-          return reply.status(400).send({error: 'Maximum slots reached'});
-        const slotIndex = unlockedCount;
-        const costPaid =
-            toDecimal(body?.costPaid) ?? computeSlotCost(slotIndex);
-        const slot = await prisma.entity.create({
-          data: {
-            actorId: actor.id,
-            kind: EntityKind.AGRICULTURE_SLOT,
-            name: `slot-${slotIndex}`,
-            metadata: toJsonValue({
-              slotIndex,
-              costPaid: costPaid.toFixed(2),
-            }),
-          },
-        });
-        await rt({
-          eventType: 'agriculture.slot.unlock',
-          source: 'api',
-          payload: {
-            slotIndex,
-            costPaid: costPaid.toFixed(2),
-          },
-        });
-        return buildSlotPayload(slot, null);
+  const handleSlotUnlock = async (request: any, reply: any) => {
+    const rt = withTelemetryBase(recordTelemetry, request);
+    const userId = (request.user as {sub: string}).sub;
+    const body = request.body as {costPaid?: number | string} | undefined;
+    const actor = await ensureAgricultureActor(prisma, userId);
+    const unlockedCount = await prisma.entity.count({
+      where: {actorId: actor.id, kind: EntityKind.AGRICULTURE_SLOT},
+    });
+    if (unlockedCount >= MAX_PLOT_SLOTS)
+      return reply.status(400).send({error: 'Maximum slots reached'});
+    const slotIndex = unlockedCount;
+    const costPaid = toDecimal(body?.costPaid) ?? computeSlotCost(slotIndex);
+    const slot = await prisma.entity.create({
+      data: {
+        actorId: actor.id,
+        kind: EntityKind.AGRICULTURE_SLOT,
+        name: `slot-${slotIndex}`,
+        metadata: toJsonValue({
+          slotIndex,
+          costPaid: costPaid.toFixed(2),
+        }),
       },
+    });
+    await rt({
+      eventType: 'agriculture.slot.unlock',
+      source: 'api',
+      payload: {
+        slotIndex,
+        costPaid: costPaid.toFixed(2),
+      },
+    });
+    return buildSlotPayload(slot, null);
+  };
+
+  server.post(
+      '/agriculture/slots/actions/unlock',
+      {preHandler: [server.authenticate]},
+      handleSlotUnlock,
   );
 
   server.patch(
@@ -742,62 +743,60 @@ export function registerAgricultureRoutes(
       },
   );
 
+  const handlePlotCondition = async (request: any, reply: any) => {
+    const rt = withTelemetryBase(recordTelemetry, request);
+    const userId = (request.user as {sub: string}).sub;
+    const plotId = (request.params as {id: string}).id;
+    const body = request.body as {
+      temperature?: number;
+      moisture?: number;
+      ph?: number|string;
+      notes?: string;
+    }
+    |undefined;
+    const actor = await ensureAgricultureActor(prisma, userId);
+    const plot = await prisma.entity.findFirst({
+      where: {id: plotId, actorId: actor.id, kind: EntityKind.AGRICULTURE_PLOT},
+    });
+    if (!plot) return reply.status(404).send({error: 'Plot not found'});
+    const recordedAt = new Date();
+    const condition = await prisma.$transaction(async (tx) => {
+      const created = await tx.entity.create({
+        data: {
+          actorId: actor.id,
+          kind: EntityKind.AGRICULTURE_PLOT_CONDITION,
+          targetId: plotId,
+          metadata: toJsonValue({
+            temperature: body?.temperature ?? null,
+            moisture: body?.moisture ?? null,
+            ph: body?.ph !== undefined ? String(body.ph) : null,
+            notes: body?.notes ?? null,
+          }),
+        },
+      });
+      await tx.entity.update({
+        where: {id: plotId},
+        data: {
+          metadata: toJsonValue({
+            ...metadataRecord(plot.metadata),
+            lastConditionAt: recordedAt.toISOString(),
+          }),
+        },
+      });
+      return created;
+    });
+    await rt({
+      eventType: 'agriculture.plot.condition',
+      source: 'api',
+      payload: {plotId},
+    });
+    return buildConditionPayload(condition);
+  };
+
   server.post(
-      '/agriculture/plots/:id/condition',
+      '/agriculture/plots/:id/actions/condition',
       {preHandler: [server.authenticate]},
-      async (request, reply) => {
-        const rt = withTelemetryBase(recordTelemetry, request);
-        const userId = (request.user as {sub: string}).sub;
-        const plotId = (request.params as {id: string}).id;
-        const body = request.body as {
-          temperature?: number;
-          moisture?: number;
-          ph?: number|string;
-          notes?: string;
-        }
-        |undefined;
-        const actor = await ensureAgricultureActor(prisma, userId);
-        const plot = await prisma.entity.findFirst({
-          where: {
-            id: plotId,
-            actorId: actor.id,
-            kind: EntityKind.AGRICULTURE_PLOT
-          },
-        });
-        if (!plot) return reply.status(404).send({error: 'Plot not found'});
-        const recordedAt = new Date();
-        const condition = await prisma.$transaction(async (tx) => {
-          const created = await tx.entity.create({
-            data: {
-              actorId: actor.id,
-              kind: EntityKind.AGRICULTURE_PLOT_CONDITION,
-              targetId: plotId,
-              metadata: toJsonValue({
-                temperature: body?.temperature ?? null,
-                moisture: body?.moisture ?? null,
-                ph: body?.ph !== undefined ? String(body.ph) : null,
-                notes: body?.notes ?? null,
-              }),
-            },
-          });
-          await tx.entity.update({
-            where: {id: plotId},
-            data: {
-              metadata: toJsonValue({
-                ...metadataRecord(plot.metadata),
-                lastConditionAt: recordedAt.toISOString(),
-              }),
-            },
-          });
-          return created;
-        });
-        await rt({
-          eventType: 'agriculture.plot.condition',
-          source: 'api',
-          payload: {plotId},
-        });
-        return buildConditionPayload(condition);
-      },
+      handlePlotCondition,
   );
 
   server.get(

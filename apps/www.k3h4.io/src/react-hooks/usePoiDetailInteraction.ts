@@ -4,6 +4,7 @@ import {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 
 import type {Poi} from '../components/r3f-components/MapPinsOverlay';
 
+import {buildApiUrl} from './lib/apiBase';
 import {useDebouncedCallback} from './useDebouncedCallback';
 
 export type PoiDetail = {
@@ -145,8 +146,10 @@ export function usePoiDetailInteraction(
                     qs.set('originLon', String(originForRoute.lng));
                   }
 
-                  const enrichUrl =
-                      `${apiBase}/api/poi/${osmId}/enrich?${qs.toString()}`;
+                  const enrichUrl = buildApiUrl(
+                      apiBase,
+                      `/api/poi/${osmId}/enrich?${qs.toString()}`,
+                  );
                   const res = await fetch(
                       enrichUrl,
                       {headers: headers as any, credentials: 'include'});
@@ -160,8 +163,11 @@ export function usePoiDetailInteraction(
                   // fall through to legacy if 404
                 }
 
-                const legacyUrl = `${apiBase}${
-                    authed ? '/api/pois' : '/pois'}/${id}?includeGeometry=true`;
+                const legacyUrl = buildApiUrl(
+                    apiBase,
+                    `${authed ? '/api/pois' : '/pois'}/${
+                        id}?includeGeometry=true`,
+                );
                 const legacyRes = await fetch(
                     legacyUrl,
                     {headers: headers as any, credentials: 'include'});

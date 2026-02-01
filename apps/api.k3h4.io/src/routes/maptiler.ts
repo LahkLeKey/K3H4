@@ -1,7 +1,10 @@
 import {PrismaClient} from '@prisma/client';
 import {type FastifyInstance, type FastifyReply, type FastifyRequest, type RouteShorthandOptions} from 'fastify';
+import * as z from 'zod';
 
 import {ensureGeoActor} from '../actors/Geo/Geo';
+import {MaptilerKind} from '../lib/openapi/route-kinds';
+import {makeParamsSchema, makeQuerySchema, makeResponses, OptionalAuthHeaderSchema, withExamples} from '../lib/schemas/openapi';
 import {fetchMaptilerWithCache} from '../services/maptiler-cache';
 import {readUserPreferencesByActor, updateUserPreferencesByActor, type UserPreferencePatch} from '../services/user-preferences';
 
@@ -163,36 +166,63 @@ export function registerMaptilerRoutes(
     return response.body;
   };
 
-  const maptilerJsonRouteOptions: RateLimitedRouteShorthandOptions = {
+  const maptilerRouteOptions: RateLimitedRouteShorthandOptions = {
     ...optionalAuth,
     rateLimit: {
       max: MAPTILER_RATE_LIMIT_MAX,
       timeWindow: MAPTILER_RATE_LIMIT_WINDOW,
     },
     schema: {
-      summary: 'Proxy MapTiler Cloud JSON endpoints with caching',
+      summary: 'Proxy MapTiler Cloud endpoints with caching',
+      description:
+          'Proxies MapTiler Cloud requests with caching and optional auth for preferences.',
+      operationId: 'maptiler_proxy',
       tags: ['maptiler'],
+      headers: makeParamsSchema(OptionalAuthHeaderSchema, 'OptionalAuthHeader'),
+      params: makeParamsSchema(
+          z.object({
+             kind: MaptilerKind.describe('Response shape to proxy'),
+           }).strict(),
+          'MaptilerParams'),
+      querystring: makeQuerySchema(
+          z.object({
+             path:
+                 z.string()
+                     .min(1)
+                     .regex(
+                         /^\/?(geocoding|search|maps|tiles|vector-tiles|data|styles|fonts|elevation|weather|matrix|geolocation|place|static)(\/.*)?$/,
+                         'Path must start with an allowed MapTiler root')
+                     .describe(
+                         'Relative MapTiler API path (no protocol). Allowed roots: geocoding, search, maps, tiles, vector-tiles, data, styles, fonts, elevation, weather, matrix, geolocation, place, static.'),
+             maxAgeMinutes: z.union([z.number(), z.string()])
+                                .optional()
+                                .describe('Cache TTL in minutes'),
+             responseType: z.enum(['json', 'arrayBuffer'])
+                               .optional()
+                               .describe('Override response parsing'),
+           }).passthrough(),
+          'MaptilerQuery'),
+      response: makeResponses(
+          {
+            200: withExamples(
+                {
+                  type: [
+                    'object', 'array', 'string', 'number', 'boolean', 'null'
+                  ],
+                },
+                [{data: 'MapTiler response'}]),
+          },
+          {includeStandardErrors: true}),
     },
   };
 
   server.get(
-      '/maptiler/json', maptilerJsonRouteOptions,
-      async (request, reply) => handler('json', request, reply));
-
-  const maptilerTilesRouteOptions: RateLimitedRouteShorthandOptions = {
-    ...optionalAuth,
-    rateLimit: {
-      max: MAPTILER_RATE_LIMIT_MAX,
-      timeWindow: MAPTILER_RATE_LIMIT_WINDOW,
-    },
-    schema: {
-      summary:
-          'Proxy MapTiler Cloud binary endpoints (tiles/static) with caching',
-      tags: ['maptiler'],
-    },
-  };
-
-  server.get(
-      '/maptiler/tiles', maptilerTilesRouteOptions,
-      async (request, reply) => handler('arrayBuffer', request, reply));
+      '/maptiler/:kind', maptilerRouteOptions, async (request, reply) => {
+        const {kind} = request.params as {kind?: string};
+        if (kind !== 'json' && kind !== 'tiles') {
+          return badRequest(reply, 'kind must be json or tiles');
+        }
+        const responseType = kind === 'tiles' ? 'arrayBuffer' : 'json';
+        return handler(responseType, request, reply);
+      });
 }

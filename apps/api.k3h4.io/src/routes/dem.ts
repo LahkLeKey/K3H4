@@ -1,7 +1,9 @@
 import {type PrismaClient} from '@prisma/client';
 import {type FastifyInstance} from 'fastify';
+import * as z from 'zod';
 
 import {ensureGeoActor, ensureGeoGlobalActor} from '../actors/Geo/Geo';
+import {makeParamsSchema, makeQuerySchema, makeResponses, OptionalAuthHeaderSchema, withExamples, zFormat, zTileXY, zZoom} from '../lib/schemas/openapi';
 import {GEO_DEM_TTL_MS, readGeoDemTileCache, writeGeoDemTileCache} from '../services/geo-cache';
 import {demSignature, TERRAIN_PROVIDER} from '../services/geo-dem-cache';
 
@@ -42,7 +44,39 @@ export function registerDemRoutes(
       {
         schema: {
           summary: 'Serve DEM tiles via MapTiler Terrain-RGB with cache',
+          description:
+              'Returns terrain-rgb tiles in png/webp with cache headers.',
+          operationId: 'geo_dem_getTile',
           tags: ['geo'],
+          headers:
+              makeParamsSchema(OptionalAuthHeaderSchema, 'OptionalAuthHeader'),
+          params: makeParamsSchema(
+              z.object({
+                 z: zZoom,
+                 ...zTileXY.shape,
+                 format: zFormat.optional().default('png'),
+               }).strict(),
+              'DemTileParams'),
+          querystring: makeQuerySchema(
+              z.object({
+                 provider:
+                     z.string()
+                         .min(1)
+                         .optional()
+                         .default(TERRAIN_PROVIDER)
+                         .describe('DEM tile provider (currently maptiler)'),
+               }).strict(),
+              'DemTileQuery'),
+          response: makeResponses(
+              {
+                200: withExamples(
+                    {
+                      type: 'string',
+                      format: 'binary',
+                    },
+                    ['<binary image data>']),
+              },
+              {includeStandardErrors: true}),
         },
       },
       async (request, reply) => {

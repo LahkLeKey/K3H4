@@ -3,6 +3,8 @@ import maplibregl, { type MapSourceDataEvent, type RequestParameters, type Resou
 import { MapboxOverlay } from "@deck.gl/mapbox";
 import { TerrainLayer } from "@deck.gl/geo-layers";
 import { setLoaderOptions } from "@loaders.gl/core";
+import { Canvas } from "@react-three/fiber";
+import { Stars } from "@react-three/drei";
 
 type DeckMapboxOverlay = InstanceType<typeof MapboxOverlay>;
 
@@ -19,12 +21,40 @@ import { useMapInteractionToggle } from "../../react-hooks/useMapInteractionTogg
 import { usePoiViewportSync } from "../../react-hooks/usePoiViewportSync";
 import { usePersistMapView } from "../../react-hooks/usePersistMapView";
 import { useDebouncedCallback } from "../../react-hooks/useDebouncedCallback";
+import { buildApiUrl } from "../../react-hooks/lib/apiBase";
+import { R3FErrorBoundary } from "../r3f-components/R3FErrorBoundary";
 
 const MAX_DEM_ERROR = 28;
 const TERRAIN_EXAGGERATION = 1.6;
-const MAPTILER_STYLE_PATH = "/maps/hybrid/style.json";
+const DEFAULT_STYLE_PATH = "/maps/hybrid/style.json";
+const DEFAULT_VECTOR_TILE_PATH = "/tiles/v3/{z}/{x}/{y}.pbf";
+const DEFAULT_TERRAIN_TILE_PATH = "/tiles/terrain-rgb-v2/{z}/{x}/{y}.png";
+const FALLBACK_STYLE_URL = "https://demotiles.maplibre.org/style.json";
 const EMPTY_TILE_PNG =
     "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR4nGP8z8BQDwAEsALp2UNzMgAAAABJRU5ErkJggg==";
+const STAR_LAYERS = [
+    { radius: 150, depth: 120, count: 1900, factor: 1.0, saturation: 0.06, fade: true, speed: 0.24 },
+    { radius: 95, depth: 70, count: 1200, factor: 0.82, saturation: 0.08, fade: true, speed: 0.42 },
+];
+
+function StarfieldBackground() {
+    return (
+        <div className="absolute inset-0 z-0 overflow-hidden bg-slate-950">
+            <div className="pointer-events-none absolute inset-0">
+                <R3FErrorBoundary>
+                    <Canvas dpr={[1, 2]} camera={{ position: [0, 0, 9], fov: 45 }} gl={{ antialias: true, alpha: false }}>
+                        <color attach="background" args={["#020617"]} />
+                        <ambientLight intensity={0.18} color="#cbd5e1" />
+                        {STAR_LAYERS.map((layer, idx) => (
+                            <Stars key={idx} {...layer} />
+                        ))}
+                    </Canvas>
+                </R3FErrorBoundary>
+                <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(168,85,247,0.12),transparent_40%),radial-gradient(circle_at_75%_10%,rgba(56,189,248,0.12),transparent_38%),radial-gradient(circle_at_70%_80%,rgba(34,197,94,0.12),transparent_38%)]" />
+            </div>
+        </div>
+    );
+}
 
 const tileXY = (lng: number, lat: number, zoom: number) => {
     const z = Math.round(zoom);
@@ -56,7 +86,7 @@ export function MapLayer({ readonly }: { readonly?: boolean }) {
     }, []);
 
     const { updateView, registerMap, view } = useMapView();
-    const { status, center, requestLocation, setCenterFromMap } = useGeoState();
+    const { status, center, requestLocation, setCenterFromMap, mapConfig } = useGeoState();
     const { session, apiBase, signOut } = useAuthStore();
     const { setViewport } = usePoiStore();
     const poiQuery = usePoiQuery({ enabled: !readonly });
@@ -97,15 +127,22 @@ export function MapLayer({ readonly }: { readonly?: boolean }) {
                 : "idle";
     const poiError = poiQuery.error instanceof Error ? poiQuery.error.message : null;
 
-    const terrainUrl = useMemo(
-        () => `${apiBase}/maptiler/tiles?path=/tiles/terrain-rgb-v2/{z}/{x}/{y}.png`,
-        [apiBase],
+    const stylePath = mapConfig?.stylePath ?? DEFAULT_STYLE_PATH;
+    const vectorTilePath = mapConfig?.vectorTilePath ?? DEFAULT_VECTOR_TILE_PATH;
+    const terrainTilePath = mapConfig?.terrainTilePath ?? DEFAULT_TERRAIN_TILE_PATH;
+    const maptilerStyleUrl = useMemo(
+        () => buildApiUrl(apiBase, `/maptiler/json?path=${stylePath}`),
+        [apiBase, stylePath],
     );
+    const mapStyleUrl = mapConfig ? maptilerStyleUrl : FALLBACK_STYLE_URL;
     const maptilerVectorTiles = useMemo(
-        () => `${apiBase}/maptiler/tiles?path=/tiles/v3/{z}/{x}/{y}.pbf`,
-        [apiBase],
+        () => buildApiUrl(apiBase, `/maptiler/tiles?path=${vectorTilePath}`),
+        [apiBase, vectorTilePath],
     );
-    const maptilerStyleUrl = useMemo(() => `${apiBase}/maptiler/json?path=${MAPTILER_STYLE_PATH}`, [apiBase]);
+    const terrainUrl = useMemo(
+        () => buildApiUrl(apiBase, `/maptiler/tiles?path=${terrainTilePath}`),
+        [apiBase, terrainTilePath],
+    );
 
     useEffect(() => {
         setMapGateTimerDone(false);
@@ -188,7 +225,10 @@ export function MapLayer({ readonly }: { readonly?: boolean }) {
                 type === "SpriteJSON" ||
                 type === "Glyphs";
             const endpoint = wantsBinary ? "tiles" : "json";
-            const proxied = `${apiBase}/maptiler/${endpoint}?path=${u.pathname}${qs ? `&${qs}` : ""}`;
+            const proxied = buildApiUrl(
+                apiBase,
+                `/maptiler/${endpoint}?path=${u.pathname}${qs ? `&${qs}` : ""}`,
+            );
             return { url: proxied } as RequestParameters;
         },
         [apiBase],
@@ -249,13 +289,14 @@ export function MapLayer({ readonly }: { readonly?: boolean }) {
     }, [status, center]);
 
     useEffect(() => {
+        if (!session) return;
         if (mapRef.current) return;
         const initialCenter = initialCenterRef.current;
         if (!ref.current || !initialCenter || status !== "ready") return;
 
         const map = new maplibregl.Map({
             container: ref.current,
-            style: maptilerStyleUrl,
+            style: mapStyleUrl,
             center: [initialCenter.lng, initialCenter.lat],
             zoom: 14.5,
             pitch: 58,
@@ -388,9 +429,9 @@ export function MapLayer({ readonly }: { readonly?: boolean }) {
         map.on("mousemove", (ev) => { debouncedHoverPick(ev.lngLat.lng, ev.lngLat.lat); });
         map.on("move", () => { sync(); bump(); });
         map.on("moveend", () => { syncAndStoreCenter(); bump(); });
-        map.on("zoom", bump);
-        map.on("rotate", bump);
-        map.on("pitch", bump);
+        map.on("zoom", () => { sync(); bump(); });
+        map.on("rotate", () => { sync(); bump(); });
+        map.on("pitch", () => { sync(); bump(); });
         map.on("render", bump);
         registerMap(map);
 
@@ -406,7 +447,7 @@ export function MapLayer({ readonly }: { readonly?: boolean }) {
     }, [
         buildDeckLayers,
         debouncedHoverPick,
-        maptilerStyleUrl,
+        mapStyleUrl,
         maptilerVectorTiles,
         pickPoiAndFetch,
         proxiedMaptilerRequest,
@@ -493,6 +534,7 @@ export function MapLayer({ readonly }: { readonly?: boolean }) {
     const readyProgress = Math.round((loadSteps.filter((step) => step.done).length / loadSteps.length) * 100);
     const mapReady = mapLoaded && (terrainReady || mapGateTimerDone);
     const showPreparingOverlay = Boolean(session) && !mapReady;
+    const showTilesBrokenDialog = Boolean(session);
 
     const prewarmedRef = useRef<Record<string, boolean>>({});
     const prewarmTiles = useDebouncedCallback(async () => {
@@ -538,7 +580,7 @@ export function MapLayer({ readonly }: { readonly?: boolean }) {
         if (!ops.length) return;
 
         try {
-            await fetch(`${apiBase}/api/batch`, {
+            await fetch(buildApiUrl(apiBase, "/api/batch"), {
                 method: "POST",
                 headers: {
                     Authorization: `Bearer ${session.accessToken}`,
@@ -566,6 +608,10 @@ export function MapLayer({ readonly }: { readonly?: boolean }) {
         prewarmTiles();
     }, [mapReady, prewarmTiles]);
 
+    if (!session) {
+        return <StarfieldBackground />;
+    }
+
     if (status === "blocked" || status === "error") {
         return <MapStatusOverlay state="blocked" />;
     }
@@ -577,6 +623,24 @@ export function MapLayer({ readonly }: { readonly?: boolean }) {
     return (
         <>
             <div ref={ref} className="absolute inset-0 z-0" />
+            {showTilesBrokenDialog ? (
+                <div className="pointer-events-none absolute left-1/2 top-1/2 z-50 w-[520px] max-w-[calc(100%-48px)] -translate-x-1/2 -translate-y-1/2">
+                    <div className="space-y-4 rounded-2xl border border-rose-400/40 bg-slate-900/95 p-6 text-white shadow-2xl">
+                        <div className="flex items-center gap-3">
+                            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-rose-500/20 text-rose-200">
+                                <span className="text-2xl">⚠️</span>
+                            </div>
+                            <div>
+                                <p className="text-sm uppercase tracking-[0.24em] text-rose-200/80">Map outage</p>
+                                <h2 className="text-2xl font-semibold text-white">Map tiles are currently broken</h2>
+                            </div>
+                        </div>
+                        <p className="text-base text-white/80">
+                            We’re in the middle of a backend refactor and tiles are not rendering. Please come back later.
+                        </p>
+                    </div>
+                </div>
+            ) : null}
             {showPreparingOverlay ? (
                 <div className="absolute inset-0 z-50 flex items-center justify-center bg-slate-950/85 backdrop-blur-sm">
                     <div className="w-80 max-w-[calc(100%-48px)] space-y-3 rounded-xl border border-white/10 bg-slate-900/80 p-4 text-white shadow-2xl">

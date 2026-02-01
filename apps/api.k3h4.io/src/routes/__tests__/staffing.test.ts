@@ -190,7 +190,7 @@ describe('staffing routes', () => {
 
     const res = await server.inject({
       method: 'POST',
-      url: '/staffing/candidates/candidate-1/stage',
+      url: '/staffing/candidates/candidate-1/actions/stage',
       payload: {stage: 'interviewing'}
     });
     expect(res.statusCode).toBe(200);
@@ -208,7 +208,7 @@ describe('staffing routes', () => {
     const server = buildServer(prisma);
     const res = await server.inject({
       method: 'POST',
-      url: '/staffing/candidates/candidate-1/stage',
+      url: '/staffing/candidates/candidate-1/actions/stage',
       payload: {} as any
     });
     expect(res.statusCode).toBe(400);

@@ -12,8 +12,9 @@ export const apiCatalog: ApiDomain[] = [
     summary:
         'GitHub OAuth tokens, session exchange, grants, and account deletion workflows.',
     endpoints: [
-      'POST /auth/github/url', 'POST /auth/github/callback',
-      'POST /auth/delete', 'POST /auth/logout', 'POST /auth/refresh'
+      'POST /user/auth/github/url', 'POST /user/auth/github/callback',
+      'POST /user/auth/delete', 'POST /user/auth/logout',
+      'POST /user/auth/refresh'
     ],
     tag: 'access',
   },
@@ -23,8 +24,10 @@ export const apiCatalog: ApiDomain[] = [
     accent: '#a78bfa',
     summary:
         'User profile, preferences, and k3h4-coin sandbox balance fetch/update.',
-    endpoints:
-        ['GET /profile', 'PATCH /profile', 'GET /telemetry', 'POST /telemetry'],
+    endpoints: [
+      'GET /user/profile', 'PATCH /user/profile', 'GET /entity/telemetry',
+      'POST /entity/telemetry'
+    ],
     tag: 'identity',
   },
   {
@@ -32,8 +35,10 @@ export const apiCatalog: ApiDomain[] = [
     label: 'Bank',
     accent: '#6cf1d0',
     summary: 'Balance operations, escrow-like ledger, and transaction history.',
-    endpoints:
-        ['GET /bank/balance', 'POST /bank/balance', 'GET /bank/transactions'],
+    endpoints: [
+      'GET /entity/bank/balance', 'POST /entity/bank/balance',
+      'GET /entity/bank/transactions'
+    ],
     tag: 'ledger',
   },
   {
@@ -43,13 +48,13 @@ export const apiCatalog: ApiDomain[] = [
     summary:
         'Seed/generate personas, manage attributes, approvals, and compute Jaccard + ONNX compatibility.',
     endpoints: [
-      'GET /personas',
-      'POST /personas',
-      'POST /personas/generate',
-      'PUT /personas/:id/attributes',
-      'POST /personas/compatibility/recompute',
-      'GET /personas/compatibility',
-      'POST /personas/compatibility/confusion',
+      'GET /entity/personas',
+      'POST /entity/personas',
+      'POST /entity/personas/generate',
+      'PUT /entity/personas/:id/attributes',
+      'POST /entity/personas/compatibility/recompute',
+      'GET /entity/personas/compatibility',
+      'POST /entity/personas/compatibility/confusion',
     ],
     tag: 'graph',
   },
@@ -60,8 +65,9 @@ export const apiCatalog: ApiDomain[] = [
     summary:
         'Hourly assignments, timecards, payouts, and coin debits to bank ledger.',
     endpoints: [
-      'GET /assignments', 'POST /assignments',
-      'POST /assignments/:id/timecards', 'POST /assignments/:id/pay'
+      'GET /entity/assignments', 'POST /entity/assignments',
+      'POST /entity/assignments/:id/timecards',
+      'POST /entity/assignments/:id/pay'
     ],
     tag: 'work',
   },
@@ -72,9 +78,9 @@ export const apiCatalog: ApiDomain[] = [
     summary:
         'Engagements, roles, candidates, shifts, placements, and coverage metrics.',
     endpoints: [
-      'GET /staffing/dashboard', 'POST /staffing/engagements',
-      'POST /staffing/roles', 'POST /staffing/candidates',
-      'POST /staffing/shifts', 'POST /staffing/placements'
+      'GET /entity/staffing/dashboard', 'POST /entity/staffing/engagements',
+      'POST /entity/staffing/roles', 'POST /entity/staffing/candidates',
+      'POST /entity/staffing/shifts', 'POST /entity/staffing/placements'
     ],
     tag: 'ops',
   },
@@ -85,15 +91,15 @@ export const apiCatalog: ApiDomain[] = [
     summary:
         'Plots, slots, crop plans, conditions, tasks, and inventory flows.',
     endpoints: [
-      'GET /agriculture/overview',
-      'GET /agriculture/slots',
-      'POST /agriculture/slots/unlock',
-      'GET /agriculture/plots',
-      'POST /agriculture/plots',
-      'POST /agriculture/plots/:id/condition',
-      'GET /agriculture/plans',
-      'POST /agriculture/tasks',
-      'POST /agriculture/shipments',
+      'GET /entity/agriculture/overview',
+      'GET /entity/agriculture/slots',
+      'POST /entity/agriculture/slots/unlock',
+      'GET /entity/agriculture/plots',
+      'POST /entity/agriculture/plots',
+      'POST /entity/agriculture/plots/:id/condition',
+      'GET /entity/agriculture/plans',
+      'POST /entity/agriculture/tasks',
+      'POST /entity/agriculture/shipments',
     ],
     tag: 'sim',
   },
@@ -104,9 +110,9 @@ export const apiCatalog: ApiDomain[] = [
     summary:
         'Machines, cards, top-ups, sessions, prize vault, and redemptions.',
     endpoints: [
-      'GET /arcade/overview', 'POST /arcade/cards',
-      'POST /arcade/cards/:id/topup', 'POST /arcade/sessions',
-      'POST /arcade/prizes/:id/redeem'
+      'GET /entity/arcade/overview', 'POST /entity/arcade/cards',
+      'POST /entity/arcade/cards/:id/topup', 'POST /entity/arcade/sessions',
+      'POST /entity/arcade/prizes/:id/redeem'
     ],
     tag: 'games',
   },
@@ -116,7 +122,10 @@ export const apiCatalog: ApiDomain[] = [
     accent: '#f472b6',
     summary:
         'Stores, tickets, line items, and revenue aggregation per channel.',
-    endpoints: ['GET /pos/overview', 'POST /pos/tickets', 'POST /pos/stores'],
+    endpoints: [
+      'GET /entity/pos/overview', 'POST /entity/pos/tickets',
+      'POST /entity/pos/stores'
+    ],
     tag: 'retail',
   },
   {
@@ -125,8 +134,8 @@ export const apiCatalog: ApiDomain[] = [
     accent: '#e0e7ff',
     summary: 'Inventory items, locations, and freight-linked stock updates.',
     endpoints: [
-      'GET /warehouse/items', 'POST /warehouse/items',
-      'PATCH /warehouse/items/:id'
+      'GET /entity/warehouse/items', 'POST /entity/warehouse/items',
+      'PATCH /entity/warehouse/items/:id'
     ],
     tag: 'logistics',
   },
@@ -136,16 +145,16 @@ export const apiCatalog: ApiDomain[] = [
     accent: '#94a3b8',
     summary: 'Direct actor/entity CRUD for prototyping new backend tables.',
     endpoints: [
-      'GET /actors',
-      'POST /actors',
-      'GET /actors/:id',
-      'PATCH /actors/:id',
-      'DELETE /actors/:id',
-      'GET /actors/:actorId/entities',
-      'POST /actors/:actorId/entities',
-      'GET /entities/:id',
-      'PATCH /entities/:id',
-      'DELETE /entities/:id',
+      'GET /actor/actors',
+      'POST /actor/actors',
+      'GET /actor/actors/:id',
+      'PATCH /actor/actors/:id',
+      'DELETE /actor/actors/:id',
+      'GET /actor/actors/:actorId/entities',
+      'POST /actor/actors/:actorId/entities',
+      'GET /entity/entities/:id',
+      'PATCH /entity/entities/:id',
+      'DELETE /entity/entities/:id',
     ],
     tag: 'platform',
   },
@@ -155,8 +164,8 @@ export const apiCatalog: ApiDomain[] = [
     accent: '#fcd34d',
     summary: 'Menu items, prep tasks, and supplier needs lifecycle.',
     endpoints: [
-      'GET /culinary/overview', 'POST /culinary/menu-items',
-      'POST /culinary/prep-tasks', 'POST /culinary/supplier-needs'
+      'GET /entity/culinary/overview', 'POST /entity/culinary/menu-items',
+      'POST /entity/culinary/prep-tasks', 'POST /entity/culinary/supplier-needs'
     ],
     tag: 'kitchen',
   },
@@ -167,12 +176,12 @@ export const apiCatalog: ApiDomain[] = [
     summary:
         'ESR/GATS/PSD data relays with caching for regions, commodities, and flows.',
     endpoints: [
-      'GET /usda/esr/regions',
-      'GET /usda/esr/exports/all-countries',
-      'GET /usda/gats/commodities',
-      'GET /usda/gats/census/exports',
-      'GET /usda/gats/un/imports',
-      'GET /usda/psd/commodity/world',
+      'GET /entity/usda/esr/regions',
+      'GET /entity/usda/esr/exports/all-countries',
+      'GET /entity/usda/gats/commodities',
+      'GET /entity/usda/gats/census/exports',
+      'GET /entity/usda/gats/un/imports',
+      'GET /entity/usda/psd/commodity/world',
     ],
     tag: 'data',
   },

@@ -285,7 +285,7 @@ describe('assignment routes', () => {
 
     const payRes = await server.inject({
       method: 'POST',
-      url: '/assignments/a3/pay',
+      url: '/assignments/a3/actions/pay',
       payload: {timecardId: 't1', note: 'pay now'}
     });
     expect(payRes.statusCode).toBe(200);
@@ -345,7 +345,7 @@ describe('assignment routes', () => {
     const server = buildServer(prisma);
     const res = await server.inject({
       method: 'POST',
-      url: '/assignments/a4/pay',
+      url: '/assignments/a4/actions/pay',
       payload: {timecardId: 't1'}
     });
     expect(res.statusCode).toBe(400);
@@ -408,7 +408,7 @@ describe('assignment routes', () => {
     const server = buildServer(prisma);
     const res = await server.inject({
       method: 'POST',
-      url: '/assignments/a5/pay',
+      url: '/assignments/a5/actions/pay',
       payload: {timecardId: 't1'}
     });
     if (res.statusCode !== 200) {

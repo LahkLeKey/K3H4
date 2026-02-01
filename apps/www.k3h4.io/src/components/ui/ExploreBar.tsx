@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 
 import { useAuthStore } from "../../react-hooks/auth";
+import { buildApiUrl } from "../../react-hooks/lib/apiBase";
 
 export type ExploreLink = { label: string; href: string };
 
@@ -16,7 +17,7 @@ type ExploreBarProps = {
 // Reusable explore bar primitive for overlay use across screens.
 export function ExploreBar({ docsHref, sourceHref, label = "Explore", links, className = "", floating = false }: ExploreBarProps) {
     const { apiBase } = useAuthStore();
-    const resolvedDocs = useMemo(() => docsHref || `${apiBase}/docs/static/index.html`, [docsHref, apiBase]);
+    const resolvedDocs = useMemo(() => docsHref || buildApiUrl(apiBase, "/docs/static/index.html"), [docsHref, apiBase]);
     const resolvedSource = sourceHref || "https://github.com/LahkLeKey/K3H4";
 
     const items = useMemo<ExploreLink[]>(() => {
