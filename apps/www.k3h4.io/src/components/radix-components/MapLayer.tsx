@@ -3,6 +3,8 @@ import maplibregl, { type MapSourceDataEvent, type RequestParameters, type Resou
 import { MapboxOverlay } from "@deck.gl/mapbox";
 import { TerrainLayer } from "@deck.gl/geo-layers";
 import { setLoaderOptions } from "@loaders.gl/core";
+import { Canvas } from "@react-three/fiber";
+import { Stars } from "@react-three/drei";
 
 type DeckMapboxOverlay = InstanceType<typeof MapboxOverlay>;
 
@@ -20,6 +22,7 @@ import { usePoiViewportSync } from "../../react-hooks/usePoiViewportSync";
 import { usePersistMapView } from "../../react-hooks/usePersistMapView";
 import { useDebouncedCallback } from "../../react-hooks/useDebouncedCallback";
 import { buildApiUrl } from "../../react-hooks/lib/apiBase";
+import { R3FErrorBoundary } from "../r3f-components/R3FErrorBoundary";
 
 const MAX_DEM_ERROR = 28;
 const TERRAIN_EXAGGERATION = 1.6;
@@ -29,6 +32,29 @@ const DEFAULT_TERRAIN_TILE_PATH = "/tiles/terrain-rgb-v2/{z}/{x}/{y}.png";
 const FALLBACK_STYLE_URL = "https://demotiles.maplibre.org/style.json";
 const EMPTY_TILE_PNG =
     "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR4nGP8z8BQDwAEsALp2UNzMgAAAABJRU5ErkJggg==";
+const STAR_LAYERS = [
+    { radius: 150, depth: 120, count: 1900, factor: 1.0, saturation: 0.06, fade: true, speed: 0.24 },
+    { radius: 95, depth: 70, count: 1200, factor: 0.82, saturation: 0.08, fade: true, speed: 0.42 },
+];
+
+function StarfieldBackground() {
+    return (
+        <div className="absolute inset-0 z-0 overflow-hidden bg-slate-950">
+            <div className="pointer-events-none absolute inset-0">
+                <R3FErrorBoundary>
+                    <Canvas dpr={[1, 2]} camera={{ position: [0, 0, 9], fov: 45 }} gl={{ antialias: true, alpha: false }}>
+                        <color attach="background" args={["#020617"]} />
+                        <ambientLight intensity={0.18} color="#cbd5e1" />
+                        {STAR_LAYERS.map((layer, idx) => (
+                            <Stars key={idx} {...layer} />
+                        ))}
+                    </Canvas>
+                </R3FErrorBoundary>
+                <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(168,85,247,0.12),transparent_40%),radial-gradient(circle_at_75%_10%,rgba(56,189,248,0.12),transparent_38%),radial-gradient(circle_at_70%_80%,rgba(34,197,94,0.12),transparent_38%)]" />
+            </div>
+        </div>
+    );
+}
 
 const tileXY = (lng: number, lat: number, zoom: number) => {
     const z = Math.round(zoom);
@@ -263,6 +289,7 @@ export function MapLayer({ readonly }: { readonly?: boolean }) {
     }, [status, center]);
 
     useEffect(() => {
+        if (!session) return;
         if (mapRef.current) return;
         const initialCenter = initialCenterRef.current;
         if (!ref.current || !initialCenter || status !== "ready") return;
@@ -580,6 +607,10 @@ export function MapLayer({ readonly }: { readonly?: boolean }) {
         if (!mapReady) return;
         prewarmTiles();
     }, [mapReady, prewarmTiles]);
+
+    if (!session) {
+        return <StarfieldBackground />;
+    }
 
     if (status === "blocked" || status === "error") {
         return <MapStatusOverlay state="blocked" />;
