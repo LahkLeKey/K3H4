@@ -8,7 +8,6 @@ export { AiInsightResultSchema } from './AiInsight.result';
 export { RefreshTokenResultSchema } from './RefreshToken.result';
 export { ProviderGrantResultSchema } from './ProviderGrant.result';
 export { PointOfInterestResultSchema } from './PointOfInterest.result';
-export { PoiEnrichmentCacheResultSchema } from './PoiEnrichmentCache.result';
 export { UserPreferenceResultSchema } from './UserPreference.result';
 export { TelemetryEventResultSchema } from './TelemetryEvent.result';
 export { ApiCacheEntryResultSchema } from './ApiCacheEntry.result';
