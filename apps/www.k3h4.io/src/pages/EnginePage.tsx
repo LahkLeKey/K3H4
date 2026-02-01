@@ -1,4 +1,4 @@
-import { Environment, OrbitControls, Stars, useTexture } from "@react-three/drei";
+import { Environment, OrbitControls, Stars, useGLTF, useTexture } from "@react-three/drei";
 import { Physics, RigidBody, type RapierRigidBody } from "@react-three/rapier";
 import { useFrame, useThree } from "@react-three/fiber";
 import { useEffect, useMemo, useRef } from "react";
@@ -23,6 +23,14 @@ type MaterialMaps = {
     normalMap: THREE.Texture;
     roughnessMap: THREE.Texture;
     emissiveMap: THREE.Texture;
+};
+
+type BrickConfig = {
+    id: string;
+    url: string;
+    position: [number, number, number];
+    rotation: [number, number, number];
+    scale: number;
 };
 
 function MouseBall({ emissiveMap }: { emissiveMap: THREE.Texture }) {
@@ -106,6 +114,38 @@ function FloatyBody({ shape, collider, position, size, color, maps }: BodyConfig
                     emissiveMap={maps.emissiveMap}
                 />
             </mesh>
+        </RigidBody>
+    );
+}
+
+function BrickBody({ url, position, rotation, scale }: BrickConfig) {
+    const bodyRef = useRef<RapierRigidBody | null>(null);
+    const { scene } = useGLTF(url);
+    const model = useMemo(() => scene.clone(true), [scene]);
+
+    useFrame(() => {
+        if (!bodyRef.current) {
+            return;
+        }
+
+        const { x, y, z } = bodyRef.current.translation();
+        const impulseScale = 0.01;
+        bodyRef.current.applyImpulse(
+            { x: -x * impulseScale, y: -y * impulseScale, z: -z * impulseScale },
+            true,
+        );
+    });
+
+    return (
+        <RigidBody
+            ref={bodyRef}
+            position={position}
+            rotation={rotation}
+            linearDamping={1.4}
+            angularDamping={1.1}
+            colliders="hull"
+        >
+            <primitive object={model} scale={scale} />
         </RigidBody>
     );
 }
@@ -242,6 +282,36 @@ function EngineScene() {
         });
     }, [bodyMaps]);
 
+    const brickBodies = useMemo<BrickConfig[]>(() => {
+        const urls = [
+            "/assets/kenny/brick-kit/Models/GLBFormat/bevel-hq-brick-2x4.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/bevel-hq-brick-1x2.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/round-hq-brick-2x2.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/round-hq-brick-1x4.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/square-hq-brick-2x2.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/square-hq-brick-1x6.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/none-hq-plate-2x4.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/none-hq-plate-4x8.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/bevel-hq-brick-slope-2x3.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/round-hq-brick-slope-2x4.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/square-hq-brick-slope-2x4.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/bevel-hq-brick-corner.glb",
+        ];
+
+        return urls.map((url, index) => {
+            const angle = (index / urls.length) * Math.PI * 2;
+            const radius = 7.5;
+
+            return {
+                id: `brick-${index}`,
+                url,
+                scale: 5,
+                rotation: [0, angle, 0],
+                position: [Math.cos(angle) * radius, 0.5 + (index % 3) * 0.7, Math.sin(angle) * radius],
+            } satisfies BrickConfig;
+        });
+    }, []);
+
     return (
         <>
             <color attach="background" args={["#030712"]} />
@@ -270,6 +340,9 @@ function EngineScene() {
             </group>
             <Physics gravity={[0, 0, 0]}>
                 <MouseBall emissiveMap={textures.gradientRadial} />
+                {brickBodies.map((brick) => (
+                    <BrickBody key={brick.id} {...brick} />
+                ))}
                 {bodies.map((body) => (
                     <FloatyBody key={body.id} {...body} />
                 ))}
