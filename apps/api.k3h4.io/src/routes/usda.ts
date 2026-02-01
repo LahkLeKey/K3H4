@@ -1,6 +1,8 @@
-import {ActorType, EntityKind, Prisma, type PrismaClient} from '@prisma/client';
+import {Prisma, type PrismaClient} from '@prisma/client';
 import {type FastifyInstance, type FastifyReply} from 'fastify';
 
+import type {EntityKind} from '../lib/actor-entity-constants';
+import {ACTOR_TYPES, ENTITY_KINDS} from '../lib/actor-entity-constants';
 import {createTelemetryTimer} from '../lib/telemetry-timer';
 import {readEnrichmentCache, writeEnrichmentCache} from '../services/enrichment-cache';
 import {fetchAndCache} from '../services/usda-cache';
@@ -20,6 +22,9 @@ const ENRICH_CACHE_TTL_MINUTES = 7 * 24 * 60;
 const ENRICH_ERROR_CACHE_TTL_MINUTES = 30;
 const ENRICH_CACHE_TTL_MS = ENRICH_CACHE_TTL_MINUTES * 60 * 1000;
 const ENRICH_ERROR_CACHE_TTL_MS = ENRICH_ERROR_CACHE_TTL_MINUTES * 60 * 1000;
+
+const ActorType = ACTOR_TYPES;
+const EntityKind = ENTITY_KINDS;
 
 const cloneMetadata = (value?: Record<string, unknown>|null) => {
   if (value && typeof value === 'object' && !Array.isArray(value))

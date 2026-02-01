@@ -2,13 +2,17 @@ import {faker} from '@faker-js/faker';
 import {type Entity, Prisma, type PrismaClient} from '@prisma/client';
 import {type FastifyInstance} from 'fastify';
 
-import * as assignmentActor from '../services/assignment-actor';
-import {EntityDirection, EntityKind, recordBankTransactionEntity,} from '../services/bank-actor';
-import * as personaLedger from '../services/persona-ledger';
-import type {PersonaRecord} from '../services/persona-ledger';
+import * as assignmentActor from '../actors/Assignment/Assignment';
+import {recordBankTransactionEntity} from '../actors/Bank/Bank';
+import * as personaLedger from '../entities/Persona/Persona';
+import type {PersonaRecord} from '../entities/Persona/Persona';
+import {ENTITY_DIRECTIONS, ENTITY_KINDS} from '../lib/actor-entity-constants';
 
 import {buildTelemetryBase} from './telemetry';
 import {type RecordTelemetryFn} from './types';
+
+const EntityKind = ENTITY_KINDS;
+const EntityDirection = ENTITY_DIRECTIONS;
 
 const serializeMoney = (value: Prisma.Decimal) => value.toFixed(2);
 

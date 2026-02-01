@@ -1,9 +1,9 @@
 import {type PrismaClient} from '@prisma/client';
 import {type FastifyInstance, type FastifyReply, type FastifyRequest} from 'fastify';
 
+import {ensureGeoGlobalActor} from '../actors/Geo/Geo';
 import type {BuildingCachePayload} from '../services/building-cache';
 import {formatBuildingFromPayload, normalizeOsmType, readBuildingCacheById, readBuildingCacheByOsm,} from '../services/building-cache';
-import {ensureGeoGlobalActor} from '../services/geo-actor';
 
 const parseIncludeGeometry = (value: unknown) =>
     `${value}`.toLowerCase() === 'true' || value === true;

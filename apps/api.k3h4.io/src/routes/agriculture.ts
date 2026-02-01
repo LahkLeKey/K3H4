@@ -1,12 +1,16 @@
-import {ActorType, type Entity, EntityKind, LifecycleStatus, Prisma, type PrismaClient,} from '@prisma/client';
+import {type Entity, LifecycleStatus, Prisma, type PrismaClient,} from '@prisma/client';
 import {type FastifyInstance} from 'fastify';
 
+import {AgricultureSlotSnapshot, buildAgricultureSlotSnapshotFromEntities, ensureAgricultureActor, resolveAgricultureSlotSnapshot,} from '../actors/Agriculture/Agriculture';
+import {findFreightLoad} from '../actors/Freight/Freight';
+import {ACTOR_TYPES, ENTITY_KINDS} from '../lib/actor-entity-constants';
 import {lifecycleStatusOrDefault, parseLifecycleStatus} from '../lib/status-utils';
-import {AgricultureSlotSnapshot, buildAgricultureSlotSnapshotFromEntities, ensureAgricultureActor, resolveAgricultureSlotSnapshot,} from '../services/agriculture-actor';
-import {findFreightLoad} from '../services/freight-actor';
 
 import {withTelemetryBase} from './telemetry';
 import {type RecordTelemetryFn} from './types';
+
+const ActorType = ACTOR_TYPES;
+const EntityKind = ENTITY_KINDS;
 
 const MAX_PLOT_SLOTS = 12;
 const BASE_SLOT_COST = 100;

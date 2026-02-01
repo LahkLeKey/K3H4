@@ -1,7 +1,7 @@
 import {PrismaClient} from '@prisma/client';
 import {FastifyInstance, FastifyReply, FastifyRequest} from 'fastify';
 
-import {ensureGeoActor} from '../services/geo-actor';
+import {ensureGeoActor} from '../actors/Geo/Geo';
 import {fetchOsrmWithCache} from '../services/osrm-cache';
 
 import {withTelemetryBase} from './telemetry';

@@ -4,9 +4,9 @@ import {Entity, Prisma} from '@prisma/client';
 import Fastify from 'fastify';
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 
+import * as staffingActor from '../../actors/Staffing/Staffing';
 import * as authEntities from '../../services/auth-entities';
 import * as culinaryLedger from '../../services/culinary-ledger';
-import * as staffingActor from '../../services/staffing-actor';
 import {registerAuthRoutes} from '../auth';
 import {type RecordTelemetryFn} from '../types';
 

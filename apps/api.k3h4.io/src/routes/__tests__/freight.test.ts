@@ -4,9 +4,9 @@ import {LifecycleStatus, Prisma} from '@prisma/client';
 import Fastify from 'fastify';
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 
-import {createFreightLoad, findFreightLoad, loadFreightLoads, markFreightLoadCompleted,} from '../../services/freight-actor';
-import type {FreightLoadPayload} from '../../services/freight-actor';
-import {ensureGeoActor} from '../../services/geo-actor';
+import {createFreightLoad, findFreightLoad, loadFreightLoads, markFreightLoadCompleted,} from '../../actors/Freight/Freight';
+import type {FreightLoadPayload} from '../../actors/Freight/Freight';
+import {ensureGeoActor} from '../../actors/Geo/Geo';
 import {readGeoDirectionCache, writeGeoDirectionCache,} from '../../services/geo-direction-cache';
 import {registerFreightRoutes} from '../freight';
 import {type RecordTelemetryFn} from '../types';
@@ -32,14 +32,14 @@ const createLoadPayload = (overrides: Partial<FreightLoadPayload> = {}) => ({
   updatedAt: new Date(),
   ...overrides,
 });
-vi.mock('../../services/geo-actor', () => ({
-                                      ensureGeoActor: vi.fn(),
-                                    }));
+vi.mock('../../actors/Geo/Geo', () => ({
+                                  ensureGeoActor: vi.fn(),
+                                }));
 vi.mock('../../services/geo-direction-cache', () => ({
                                                 readGeoDirectionCache: vi.fn(),
                                                 writeGeoDirectionCache: vi.fn(),
                                               }));
-vi.mock('../../services/freight-actor', () => ({
+vi.mock('../../actors/Freight/Freight', () => ({
                                           loadFreightLoads: vi.fn(),
                                           createFreightLoad: vi.fn(),
                                           findFreightLoad: vi.fn(),

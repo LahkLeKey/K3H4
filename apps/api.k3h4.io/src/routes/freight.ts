@@ -1,11 +1,12 @@
 import {LifecycleStatus, Prisma, type PrismaClient} from '@prisma/client';
 import {type FastifyInstance} from 'fastify';
 
+import {recordBankTransactionEntity} from '../actors/Bank/Bank';
+import {createFreightLoad, findFreightLoad, loadFreightLoads, markFreightLoadCompleted,} from '../actors/Freight/Freight';
+import {ensureGeoActor} from '../actors/Geo/Geo';
+import {ENTITY_DIRECTIONS, ENTITY_KINDS} from '../lib/actor-entity-constants';
 import {routeSignature} from '../lib/geo-signature';
 import {fetchOsrm} from '../lib/osrm-client';
-import {EntityDirection, EntityKind, recordBankTransactionEntity,} from '../services/bank-actor';
-import {createFreightLoad, findFreightLoad, loadFreightLoads, markFreightLoadCompleted,} from '../services/freight-actor';
-import {ensureGeoActor} from '../services/geo-actor';
 import {type GeoDirectionCachePayload, readGeoDirectionCache, writeGeoDirectionCache,} from '../services/geo-direction-cache';
 
 import {withTelemetryBase} from './telemetry';
@@ -462,8 +463,8 @@ export function registerFreightRoutes(
             await recordBankTransactionEntity(tx, {
               userId,
               amount: costDecimal,
-              direction: EntityDirection.DEBIT,
-              kind: EntityKind.FREIGHT_PAYMENT,
+              direction: ENTITY_DIRECTIONS.DEBIT,
+              kind: ENTITY_KINDS.FREIGHT_PAYMENT,
               note: `Freight load ${load.title}`,
               balanceAfter: savedUser.k3h4CoinBalance,
               targetType: 'freight_load',

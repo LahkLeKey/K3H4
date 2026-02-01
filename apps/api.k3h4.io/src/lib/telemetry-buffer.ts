@@ -1,10 +1,13 @@
-import {EntityKind, Prisma, PrismaClient} from '@prisma/client';
+import {Prisma, PrismaClient} from '@prisma/client';
 
+import {ensureTelemetryActorId, TELEMETRY_SESSION_TARGET} from '../actors/Telemetry/Telemetry';
 import type {TelemetryParams} from '../routes/types';
-import {ensureTelemetryActorId, TELEMETRY_SESSION_TARGET} from '../services/telemetry-actor';
+
+import {ENTITY_KINDS} from './actor-entity-constants';
 
 const TELEMETRY_BATCH_SIZE = 64;
 const TELEMETRY_FLUSH_INTERVAL_MS = 250;
+const EntityKind = ENTITY_KINDS;
 
 type TelemetryRow = TelemetryParams;
 

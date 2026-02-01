@@ -1,7 +1,8 @@
-import {Actor, Entity, EntityKind, Prisma, PrismaClient} from '@prisma/client';
+import {Actor, Entity, Prisma, PrismaClient} from '@prisma/client';
 import {type FastifyInstance, type FastifyRequest} from 'fastify';
 
-import {ensureOllamaOperationsActor, findOllamaOperationsActor,} from '../services/ollama-operations-actor';
+import {ensureOllamaOperationsActor, findOllamaOperationsActor,} from '../actors/OllamaOperations/OllamaOperations';
+import {ENTITY_KINDS} from '../lib/actor-entity-constants';
 
 import {withTelemetryBase} from './telemetry';
 import type {RecordTelemetryFn} from './types';
@@ -55,7 +56,7 @@ export async function recordOllamaOperation(
   await prisma.entity.create({
     data: {
       actorId: actor.id,
-      kind: EntityKind.OLLAMA_OPERATION,
+      kind: ENTITY_KINDS.OLLAMA_OPERATION,
       source,
       targetType: sessionId ? OLLAMA_SESSION_TARGET_TYPE : undefined,
       targetId: sessionId ?? undefined,
@@ -103,7 +104,7 @@ export function registerOllamaProxyRoutes(
         if (actor) {
           const where: Prisma.EntityWhereInput = {
             actorId: actor.id,
-            kind: EntityKind.OLLAMA_OPERATION,
+            kind: ENTITY_KINDS.OLLAMA_OPERATION,
           };
           if (normalizedSource) where.source = normalizedSource;
           if (normalizedSessionId) {

@@ -1,13 +1,16 @@
-import {CoverageStatus, EngagementPriority, Entity, EntityKind, LifecycleStatus, Prisma, type PrismaClient} from '@prisma/client';
+import {CoverageStatus, EngagementPriority, Entity, LifecycleStatus, Prisma, type PrismaClient} from '@prisma/client';
 import {type FastifyInstance} from 'fastify';
 
+import {ensureStaffingActor, loadStaffingEntities, loadStaffingEntityByKind, STAFFING_ACTOR_SOURCE} from '../actors/Staffing/Staffing';
+import * as personaLedger from '../entities/Persona/Persona';
+import type {PersonaRecord} from '../entities/Persona/Persona';
+import {ENTITY_KINDS} from '../lib/actor-entity-constants';
 import {coverageStatusOrDefault, engagementPriorityOrDefault, lifecycleStatusOrDefault} from '../lib/status-utils';
-import * as personaLedger from '../services/persona-ledger';
-import type {PersonaRecord} from '../services/persona-ledger';
-import {ensureStaffingActor, loadStaffingEntities, loadStaffingEntityByKind, STAFFING_ACTOR_SOURCE} from '../services/staffing-actor';
 
 import {buildTelemetryBase} from './telemetry';
 import {type RecordTelemetryFn} from './types';
+
+const EntityKind = ENTITY_KINDS;
 
 const money = (value?: Prisma.Decimal|null) =>
     (value ? value.toFixed(2) : null);

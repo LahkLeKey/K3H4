@@ -1,13 +1,16 @@
-import {ActorType, type PrismaClient} from '@prisma/client';
+import {type PrismaClient} from '@prisma/client';
 import {type FastifyInstance} from 'fastify';
 
-import {ensureGeoActor, ensureGeoGlobalActor} from '../services/geo-actor';
+import {ensureGeoActor, ensureGeoGlobalActor} from '../actors/Geo/Geo';
+import {ACTOR_TYPES} from '../lib/actor-entity-constants';
 import {readGeoQueryCache, readGeoViewHistory} from '../services/geo-cache';
 import {enrichPoi} from '../services/poi-enrich/enrich';
 import {readUserPreferencesByActor} from '../services/user-preferences';
 
 import {withTelemetryBase} from './telemetry';
 import {type RecordTelemetryFn} from './types';
+
+const ActorType = ACTOR_TYPES;
 
 const MAP_STYLE_PATH = '/maps/hybrid/style.json';
 const VECTOR_TILE_PATH = '/tiles/v3/{z}/{x}/{y}.pbf';

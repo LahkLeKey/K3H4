@@ -1,7 +1,7 @@
 import {type PrismaClient} from '@prisma/client';
 import {type FastifyInstance} from 'fastify';
 
-import {ensureGeoActor, ensureGeoGlobalActor} from '../services/geo-actor';
+import {ensureGeoActor, ensureGeoGlobalActor} from '../actors/Geo/Geo';
 import {GEO_DEM_TTL_MS, readGeoDemTileCache, writeGeoDemTileCache} from '../services/geo-cache';
 import {demSignature, TERRAIN_PROVIDER} from '../services/geo-dem-cache';
 

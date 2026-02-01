@@ -1,9 +1,10 @@
-import {ActorType, Prisma, type PrismaClient} from '@prisma/client';
+import {Prisma, type PrismaClient} from '@prisma/client';
 import {type FastifyInstance, type RouteShorthandOptions} from 'fastify';
 
+import {ensureGeoActor} from '../actors/Geo/Geo';
+import {ACTOR_TYPES} from '../lib/actor-entity-constants';
 import {clampDecimals, routeSignature} from '../lib/geo-signature';
 import {enqueueOverpass} from '../lib/overpass-queue';
-import {ensureGeoActor} from '../services/geo-actor';
 import {logGeoStatus, readGeoPoiCache, readGeoPoiCacheStale, readGeoQueryCache, readGeoRouteCache, readGeoViewHistory, writeGeoPoiCache, writeGeoQueryCache, writeGeoRouteCache,} from '../services/geo-cache';
 import {readUserPreferencesByActor, updateUserPreferencesForUser, type UserPreferencePatch} from '../services/user-preferences';
 
@@ -366,7 +367,7 @@ export function registerGeoRoutes(
         const pois = allPoiIds.length ? await prisma.actor.findMany({
           where: {
             id: {in : allPoiIds},
-            type: ActorType.POINT_OF_INTEREST,
+            type: ACTOR_TYPES.POINT_OF_INTEREST,
           },
           select: {
             id: true,

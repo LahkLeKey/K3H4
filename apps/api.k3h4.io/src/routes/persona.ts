@@ -1,10 +1,11 @@
 import {faker} from '@faker-js/faker';
-import {Entity, EntityKind, LifecycleStatus, type Prisma, type PrismaClient} from '@prisma/client';
+import {Entity, LifecycleStatus, type Prisma, type PrismaClient} from '@prisma/client';
 import {type FastifyInstance} from 'fastify';
 
+import * as personaLedger from '../entities/Persona/Persona';
+import type {PersonaRecord} from '../entities/Persona/Persona';
+import {ENTITY_KINDS} from '../lib/actor-entity-constants';
 import {type CompatFeatureVector, runOnnxCompatibility} from '../lib/compat-onnx';
-import * as personaLedger from '../services/persona-ledger';
-import type {PersonaRecord} from '../services/persona-ledger';
 
 import {withTelemetryBase} from './telemetry';
 import {type RecordTelemetryFn} from './types';
@@ -158,7 +159,7 @@ const loadCompatibilityRecords = async (
     actorId: string,
     ) => {
   const entities = await prisma.entity.findMany({
-    where: {actorId, kind: EntityKind.PERSONA_COMPATIBILITY},
+    where: {actorId, kind: ENTITY_KINDS.PERSONA_COMPATIBILITY},
   });
   return entities.map(compatibilityRecordFromEntity);
 };
@@ -368,7 +369,7 @@ export function registerPersonaRoutes(
           await prisma.entity.createMany({
             data: seedData.map((row) => ({
                                  actorId: actor.id,
-                                 kind: EntityKind.PERSONA,
+                                 kind: ENTITY_KINDS.PERSONA,
                                  metadata: row,
                                })),
           });
@@ -381,7 +382,7 @@ export function registerPersonaRoutes(
               data: attributeSeeds.map(
                   (entry) => ({
                     actorId: actor.id,
-                    kind: EntityKind.PERSONA_ATTRIBUTE,
+                    kind: ENTITY_KINDS.PERSONA_ATTRIBUTE,
                     targetType: personaLedger.PERSONA_TARGET_TYPE,
                     targetId: entry.personaId,
                     metadata: {
@@ -434,7 +435,7 @@ export function registerPersonaRoutes(
         const personaEntity = await prisma.entity.create({
           data: {
             actorId: actor.id,
-            kind: EntityKind.PERSONA,
+            kind: ENTITY_KINDS.PERSONA,
             metadata: personaLedger.buildPersonaMetadata({
               alias,
               account,
@@ -483,7 +484,7 @@ export function registerPersonaRoutes(
         await prisma.entity.createMany({
           data: metadataPayload.map((row) => ({
                                       actorId: actor.id,
-                                      kind: EntityKind.PERSONA,
+                                      kind: ENTITY_KINDS.PERSONA,
                                       metadata: row,
                                     })),
         });
@@ -497,7 +498,7 @@ export function registerPersonaRoutes(
             data: attributeSeeds.map(
                 (entry) => ({
                   actorId: actor.id,
-                  kind: EntityKind.PERSONA_ATTRIBUTE,
+                  kind: ENTITY_KINDS.PERSONA_ATTRIBUTE,
                   targetType: personaLedger.PERSONA_TARGET_TYPE,
                   targetId: entry.personaId,
                   metadata: {
@@ -544,7 +545,7 @@ export function registerPersonaRoutes(
           prisma.entity.deleteMany({
             where: {
               actorId: actor.id,
-              kind: EntityKind.PERSONA_ATTRIBUTE,
+              kind: ENTITY_KINDS.PERSONA_ATTRIBUTE,
               targetType: personaLedger.PERSONA_TARGET_TYPE,
               targetId: personaId,
             },
@@ -582,19 +583,21 @@ export function registerPersonaRoutes(
             await personaLedger.loadPersonaRecordsByActor(prisma, actor.id);
         if (personas.length < 2) {
           await prisma.entity.deleteMany({
-            where: {actorId: actor.id, kind: EntityKind.PERSONA_COMPATIBILITY},
+            where:
+                {actorId: actor.id, kind: ENTITY_KINDS.PERSONA_COMPATIBILITY},
           });
           return {compatibilities: []};
         }
         const payload = buildCompatibilityPayload(personas);
         await prisma.$transaction([
           prisma.entity.deleteMany({
-            where: {actorId: actor.id, kind: EntityKind.PERSONA_COMPATIBILITY},
+            where:
+                {actorId: actor.id, kind: ENTITY_KINDS.PERSONA_COMPATIBILITY},
           }),
           prisma.entity.createMany({
             data: payload.map((entry) => ({
                                 actorId: actor.id,
-                                kind: EntityKind.PERSONA_COMPATIBILITY,
+                                kind: ENTITY_KINDS.PERSONA_COMPATIBILITY,
                                 metadata: entry.metadata,
                               })),
           }),

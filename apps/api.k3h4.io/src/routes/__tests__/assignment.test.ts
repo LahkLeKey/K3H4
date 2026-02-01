@@ -1,17 +1,19 @@
 import '../../test/vitest-setup.ts';
 
-import {EntityKind, Prisma} from '@prisma/client';
+import {Prisma} from '@prisma/client';
 import Fastify from 'fastify';
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 
-import * as assignmentActor from '../../services/assignment-actor';
-import * as personaLedger from '../../services/persona-ledger';
-import type {PersonaRecord} from '../../services/persona-ledger';
+import * as assignmentActor from '../../actors/Assignment/Assignment';
+import * as personaLedger from '../../entities/Persona/Persona';
+import type {PersonaRecord} from '../../entities/Persona/Persona';
+import {ENTITY_KINDS} from '../../lib/actor-entity-constants';
 import {registerAssignmentRoutes} from '../assignment';
 import {type RecordTelemetryFn} from '../types';
 
 const recordTelemetry = vi.fn() as unknown as RecordTelemetryFn;
 const userId = 'user-1';
+const EntityKind = ENTITY_KINDS;
 const personaActor = {
   id: 'actor-1',
   userId,

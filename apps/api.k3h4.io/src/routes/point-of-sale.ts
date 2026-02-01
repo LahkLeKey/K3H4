@@ -1,9 +1,10 @@
-import {ActorType, EntityDirection, EntityKind, LifecycleStatus, Prisma, PrismaClient} from '@prisma/client';
+import {LifecycleStatus, Prisma, PrismaClient} from '@prisma/client';
 import {type FastifyInstance} from 'fastify';
 
+import {recordBankTransactionEntity} from '../actors/Bank/Bank';
+import {getPointOfSaleOverview, POS_DEFAULT_CHANNEL, summarizePointOfSaleStore, ticketFromEntity,} from '../entities/PointOfSale/PointOfSale';
+import {ACTOR_TYPES, ENTITY_DIRECTIONS, ENTITY_KINDS} from '../lib/actor-entity-constants';
 import {parseLifecycleStatus} from '../lib/status-utils';
-import {recordBankTransactionEntity} from '../services/bank-actor';
-import {getPointOfSaleOverview, POS_DEFAULT_CHANNEL, summarizePointOfSaleStore, ticketFromEntity,} from '../services/point-of-sale-ledger';
 
 import {buildTelemetryBase} from './telemetry';
 import {type RecordTelemetryFn} from './types';
@@ -46,7 +47,7 @@ const ensureStoreActor = async (
     updateChannel: boolean) => {
   if (storeId) {
     const store = await tx.actor.findFirst({
-      where: {id: storeId, userId, type: ActorType.POINT_OF_SALE_STORE},
+      where: {id: storeId, userId, type: ACTOR_TYPES.POINT_OF_SALE_STORE},
     });
     if (store) {
       if (updateChannel) {
@@ -64,7 +65,7 @@ const ensureStoreActor = async (
   return tx.actor.create({
     data: {
       userId,
-      type: ActorType.POINT_OF_SALE_STORE,
+      type: ACTOR_TYPES.POINT_OF_SALE_STORE,
       label: storeName,
       metadata: {channel},
       source: SOURCE,
@@ -148,8 +149,8 @@ export function registerPointOfSaleRoutes(
             const entity = await recordBankTransactionEntity(tx, {
               userId,
               amount: total,
-              direction: EntityDirection.CREDIT,
-              kind: EntityKind.POINT_OF_SALE_TICKET,
+              direction: ENTITY_DIRECTIONS.CREDIT,
+              kind: ENTITY_KINDS.POINT_OF_SALE_TICKET,
               balanceAfter: nextBalance,
               targetType: 'point-of-sale_store',
               targetId: storeEntry.id,
@@ -202,7 +203,7 @@ export function registerPointOfSaleRoutes(
         const store = await prisma.actor.create({
           data: {
             userId,
-            type: ActorType.POINT_OF_SALE_STORE,
+            type: ACTOR_TYPES.POINT_OF_SALE_STORE,
             label: body.name,
             metadata: {channel},
             source: SOURCE,

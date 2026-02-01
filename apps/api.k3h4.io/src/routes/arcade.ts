@@ -1,10 +1,15 @@
 import {type Actor, type Entity, Prisma, type PrismaClient} from '@prisma/client';
 import {type FastifyInstance} from 'fastify';
 
-import {ActorType, EntityDirection, EntityKind, recordBankTransactionEntity,} from '../services/bank-actor';
+import {recordBankTransactionEntity} from '../actors/Bank/Bank';
+import {ACTOR_TYPES, ENTITY_DIRECTIONS, ENTITY_KINDS} from '../lib/actor-entity-constants';
 
 import {buildTelemetryBase} from './telemetry';
 import {type RecordTelemetryFn} from './types';
+
+const ActorType = ACTOR_TYPES;
+const EntityKind = ENTITY_KINDS;
+const EntityDirection = ENTITY_DIRECTIONS;
 
 const serializeDecimal = (val: Prisma.Decimal|number|null|undefined) => {
   if (val === null || val === undefined) return '0.00';

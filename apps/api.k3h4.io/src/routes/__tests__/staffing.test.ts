@@ -1,17 +1,19 @@
 import '../../test/vitest-setup.ts';
 
-import {Entity, EntityKind} from '@prisma/client';
+import {Entity} from '@prisma/client';
 import Fastify from 'fastify';
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 
-import * as personaLedger from '../../services/persona-ledger';
-import type {PersonaRecord} from '../../services/persona-ledger';
-import * as staffingActor from '../../services/staffing-actor';
+import * as staffingActor from '../../actors/Staffing/Staffing';
+import * as personaLedger from '../../entities/Persona/Persona';
+import type {PersonaRecord} from '../../entities/Persona/Persona';
+import {ENTITY_KINDS} from '../../lib/actor-entity-constants';
 import {registerStaffingRoutes} from '../staffing';
 import {type RecordTelemetryFn} from '../types';
 
 const recordTelemetry = vi.fn() as unknown as RecordTelemetryFn;
 const userId = 'user-1';
+const EntityKind = ENTITY_KINDS;
 const staffingLedger = {
   id: 'actor-staff',
   userId,

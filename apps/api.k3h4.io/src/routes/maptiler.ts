@@ -1,7 +1,7 @@
 import {PrismaClient} from '@prisma/client';
 import {type FastifyInstance, type FastifyReply, type FastifyRequest, type RouteShorthandOptions} from 'fastify';
 
-import {ensureGeoActor} from '../services/geo-actor';
+import {ensureGeoActor} from '../actors/Geo/Geo';
 import {fetchMaptilerWithCache} from '../services/maptiler-cache';
 import {readUserPreferencesByActor, updateUserPreferencesByActor, type UserPreferencePatch} from '../services/user-preferences';
 

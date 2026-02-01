@@ -1,23 +1,26 @@
-import {ActorType, EntityKind, Prisma, PrismaClient} from '@prisma/client';
+import {Prisma, PrismaClient} from '@prisma/client';
 import {type FastifyInstance} from 'fastify';
 import {randomBytes} from 'node:crypto';
 import {URLSearchParams} from 'node:url';
 
-import {deleteAgricultureActorWithEntities} from '../services/agriculture-actor';
-import {deleteProviderGrantsForUser, deleteRefreshTokensForUser, findRefreshTokenEntity, readProviderGrantsForUser, storeRefreshToken, upsertProviderGrant} from '../services/auth-entities';
-import {deleteBankActorWithEntities} from '../services/bank-actor';
-import {deleteCulinaryActorWithEntities} from '../services/culinary-ledger';
-import {deleteFreightActorWithEntities} from '../services/freight-actor';
-import {deleteStaffingActorWithEntities} from '../services/staffing-actor';
-import {getTelemetryActorSource} from '../services/telemetry-actor';
+import {deleteAgricultureActorWithEntities} from '../actors/Agriculture/Agriculture';
+import {deleteBankActorWithEntities} from '../actors/Bank/Bank';
+import {deleteFreightActorWithEntities} from '../actors/Freight/Freight';
+import {deleteStaffingActorWithEntities} from '../actors/Staffing/Staffing';
+import {getTelemetryActorSource} from '../actors/Telemetry/Telemetry';
+import {deleteWarehouseActorWithEntities} from '../actors/Warehouse/Warehouse';
+import {deleteProviderGrantsForUser, deleteRefreshTokensForUser, findRefreshTokenEntity, readProviderGrantsForUser, storeRefreshToken, upsertProviderGrant} from '../entities/Auth/Auth';
+import {deleteCulinaryActorWithEntities} from '../entities/Culinary/Culinary';
+import {ACTOR_TYPES, ENTITY_KINDS} from '../lib/actor-entity-constants';
 import {deleteUserPreferencesForUser} from '../services/user-preferences';
-import {deleteWarehouseActorWithEntities} from '../services/warehouse-actor';
 
 import {withTelemetryBase} from './telemetry';
 import {type RecordTelemetryFn} from './types';
 
 const ACCOUNT_DELETE_PHRASE = 'Delete-My-K3H4-Data';
 const OAUTH_STATE_TTL_MS = 10 * 60 * 1000;
+const ActorType = ACTOR_TYPES;
+const EntityKind = ENTITY_KINDS;
 
 type DeleteJobStatus = {
   userId: string; status: 'queued' | 'running' | 'done' | 'error';

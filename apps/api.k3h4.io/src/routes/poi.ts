@@ -1,10 +1,11 @@
-import {ActorType, Prisma, type PrismaClient,} from '@prisma/client';
+import {Prisma, type PrismaClient,} from '@prisma/client';
 import {type FastifyInstance, type FastifyReply, type FastifyRequest} from 'fastify';
 import {createHash} from 'node:crypto';
 
+import {ensureGeoActor, ensureGeoGlobalActor} from '../actors/Geo/Geo';
+import {ACTOR_TYPES} from '../lib/actor-entity-constants';
 import {enqueueOverpass} from '../lib/overpass-queue';
 import {formatBuildingFromPayload, readBuildingCacheByOsm} from '../services/building-cache';
-import {ensureGeoActor, ensureGeoGlobalActor} from '../services/geo-actor';
 import {readGeoQueryCache, readGeoQueryCacheStale, readGeoViewEntry, readGeoViewHistory, writeGeoQueryCache, writeGeoViewEntry,} from '../services/geo-cache';
 import {enrichPoi} from '../services/poi-enrich/enrich';
 
@@ -34,7 +35,7 @@ const MAX_CLUSTER_IDS = 25;
 const VIEW_STALE_MINUTES = 45;
 const POI_LIST_CACHE_TTL_MS = 1000 * 45;
 const POI_LIST_STALE_MAX_MS = 1000 * 60 * 10;
-const POI_ACTOR_TYPE = ActorType.POINT_OF_INTEREST;
+const POI_ACTOR_TYPE = ACTOR_TYPES.POINT_OF_INTEREST;
 const POI_ACTOR_PREFIX = 'poi';
 
 const buildPoiActorId = (osmType: string, osmId: bigint|string|number) =>

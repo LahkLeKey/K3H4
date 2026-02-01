@@ -1,5 +1,7 @@
-import {ActorType, ChatRole, Entity, EntityKind, Prisma, PrismaClient,} from '@prisma/client';
+import {ChatRole, Entity, Prisma, PrismaClient,} from '@prisma/client';
 import {type FastifyInstance} from 'fastify';
+
+import {ACTOR_TYPES, ENTITY_KINDS} from '../lib/actor-entity-constants';
 
 import {recordOllamaOperation} from './ollama-operations';
 import {withTelemetryBase} from './telemetry';
@@ -8,6 +10,8 @@ import type {RecordTelemetryFn} from './types';
 const CHAT_ACTOR_LABEL = 'Chat Session';
 const CHAT_ACTOR_SOURCE = 'k3h4-chat';
 const CHAT_MESSAGE_SOURCE = 'k3h4-chat';
+const ActorType = ACTOR_TYPES;
+const EntityKind = ENTITY_KINDS;
 const CHAT_SESSION_ACTOR_TYPE = ActorType.CHAT_SESSION;
 const CHAT_HISTORY_LIMIT =
     clampNumber(Number(process.env.OLLAMA_CHAT_HISTORY_LIMIT ?? 32), 32, 8, 64);

@@ -37,88 +37,6 @@ enum LifecycleStatus {
   UNFILLED  @map("unfilled")
 }
 
-enum ActorType {
-  BANK_ACCOUNT                 @map("bank-account")
-  ARCADE_MACHINE               @map("arcade-machine")
-  ARCADE_PLAYER_CARD           @map("arcade-player-card")
-  ARCADE_PRIZE                 @map("arcade-prize")
-  USDA_FEED                    @map("usda-feed")
-  AGRICULTURE_FARM             @map("agriculture-farm")
-  AGRICULTURE_RESOURCE_LIBRARY @map("agriculture-resource-library")
-  WAREHOUSE                    @map("warehouse")
-  PERSONA                      @map("persona")
-  STAFFING                     @map("staffing")
-  ASSIGNMENT                   @map("assignment")
-  AUTH                         @map("auth")
-  TELEMETRY                    @map("telemetry")
-  CULINARY                     @map("culinary")
-  POINT_OF_SALE_STORE          @map("point-of-sale-store")
-  GEO                          @map("geo")
-  FREIGHT                      @map("freight")
-  WIKIDATA_CACHE               @map("wikidata-cache")
-  ENRICHMENT_CACHE             @map("enrichment-cache")
-  API_CACHE                    @map("api-cache")
-  AI_INSIGHT                   @map("ai-insight")
-  AI_OPERATION                 @map("ai-operation")
-  CHAT_SESSION                 @map("chat-session")
-  POINT_OF_INTEREST            @map("point-of-interest")
-  AUTH_REFRESH_TOKEN           @map("auth_refresh_token")
-  AUTH_PROVIDER_GRANT          @map("auth_provider_grant")
-}
-
-enum EntityDirection {
-  CREDIT @map("credit")
-  DEBIT  @map("debit")
-}
-
-enum EntityKind {
-  DEPOSIT                        @map("deposit")
-  WITHDRAWAL                     @map("withdrawal")
-  SET                            @map("set")
-  ASSIGNMENT_PAYOUT              @map("assignment_payout")
-  FREIGHT_PAYMENT                @map("freight_payment")
-  FREIGHT_LOAD                   @map("freight_load")
-  AI_INSIGHT                     @map("ai_insight")
-  CHAT_MESSAGE                   @map("chat-message")
-  OLLAMA_OPERATION               @map("ollama_operation")
-  ARCADE_TOPUP                   @map("arcade_topup")
-  ARCADE_SESSION                 @map("arcade_session")
-  ARCADE_PRIZE_REDEMPTION        @map("arcade_prize_redemption")
-  USDA_REGION                    @map("usda-region")
-  USDA_COUNTRY                   @map("usda-country")
-  USDA_COMMODITY                 @map("usda-commodity")
-  USDA_UNIT                      @map("usda-unit")
-  USDA_ATTRIBUTE                 @map("usda-attribute")
-  AGRICULTURE_PLOT               @map("agriculture_plot")
-  AGRICULTURE_PLOT_CONDITION     @map("agriculture_plot_condition")
-  AGRICULTURE_SLOT               @map("agriculture_slot")
-  AGRICULTURE_CROP_PLAN          @map("agriculture_crop_plan")
-  AGRICULTURE_TASK               @map("agriculture_task")
-  AGRICULTURE_INVENTORY_ITEM     @map("agriculture_inventory_item")
-  AGRICULTURE_INVENTORY_MOVEMENT @map("agriculture_inventory_movement")
-  AGRICULTURE_SHIPMENT           @map("agriculture_shipment")
-  AGRICULTURE_RESOURCE_CATEGORY  @map("agriculture_resource_category")
-  AGRICULTURE_RESOURCE           @map("agriculture_resource")
-  WAREHOUSE_ITEM                 @map("warehouse_item")
-  PERSONA                        @map("persona")
-  PERSONA_ATTRIBUTE              @map("persona_attribute")
-  PERSONA_COMPATIBILITY          @map("persona_compatibility")
-  STAFFING_ENGAGEMENT            @map("staffing_engagement")
-  STAFFING_ROLE                  @map("staffing_role")
-  STAFFING_CANDIDATE             @map("staffing_candidate")
-  STAFFING_SHIFT                 @map("staffing_shift")
-  STAFFING_PLACEMENT             @map("staffing_placement")
-  ASSIGNMENT                     @map("assignment")
-  ASSIGNMENT_TIMECARD            @map("assignment_timecard")
-  CULINARY_MENU_ITEM             @map("culinary-menu-item")
-  CULINARY_PREP_TASK             @map("culinary-prep-task")
-  CULINARY_SUPPLIER_NEED         @map("culinary-supplier-need")
-  POINT_OF_SALE_TICKET           @map("point-of-sale_ticket")
-  AUTH_REFRESH_TOKEN             @map("auth_refresh_token")
-  AUTH_PROVIDER_GRANT            @map("auth_provider_grant")
-  TELEMETRY_EVENT                @map("telemetry-event")
-}
-
 enum EngagementPriority {
   LOW    @map("low")
   NORMAL @map("normal")
@@ -158,7 +76,7 @@ model Actor {
   userId     String?
   user       User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
   label      String
-  type       ActorType
+  type       String
   note       String?
   source     String?
   metadata   Json?
@@ -182,18 +100,18 @@ model Actor {
 }
 
 model Entity {
-  id         String           @id @default(cuid())
+  id         String   @id @default(cuid())
   actorId    String
-  actor      Actor            @relation(fields: [actorId], references: [id], onDelete: Cascade)
-  kind       EntityKind
-  direction  EntityDirection?
+  actor      Actor    @relation(fields: [actorId], references: [id], onDelete: Cascade)
+  kind       String
+  direction  String?
   name       String?
   targetType String?
   targetId   String?
   source     String?
   metadata   Json?
-  createdAt  DateTime         @default(now())
-  updatedAt  DateTime         @updatedAt
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 
   caches EntityCache[]
 

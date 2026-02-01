@@ -1,10 +1,11 @@
-import {EntityKind, PrismaClient} from '@prisma/client';
+import {PrismaClient} from '@prisma/client';
 import {type FastifyBaseLogger, type FastifyInstance, type FastifyReply, type FastifyRequest} from 'fastify';
 
+import {getTelemetryActorSource, TELEMETRY_SESSION_TARGET} from '../actors/Telemetry/Telemetry';
+import {ENTITY_KINDS} from '../lib/actor-entity-constants';
 import {createTelemetryBuffer} from '../lib/telemetry-buffer';
 import {normalizeDurationMs, warnOnSuspiciousDuration} from '../routes/telemetry';
 import {type RecordTelemetryFn, type TelemetryParams} from '../routes/types';
-import {getTelemetryActorSource, TELEMETRY_SESSION_TARGET} from '../services/telemetry-actor';
 
 const MILLISECONDS_IN_SECOND = 1000;
 const SECONDS_IN_MINUTE = 60;
@@ -12,6 +13,7 @@ const TELEMETRY_RETENTION_MINUTES = 5;
 const TELEMETRY_RETENTION_MS =
     MILLISECONDS_IN_SECOND * SECONDS_IN_MINUTE * TELEMETRY_RETENTION_MINUTES;
 let lastPruneAt = 0;
+const EntityKind = ENTITY_KINDS;
 
 const pruneTelemetry = async (prisma: PrismaClient) => {
   const cutoff = new Date(Date.now() - TELEMETRY_RETENTION_MS);

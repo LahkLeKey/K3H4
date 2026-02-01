@@ -1,13 +1,16 @@
-import {EntityKind, LifecycleStatus, Prisma, type PrismaClient, WarehouseCategory,} from '@prisma/client';
+import {LifecycleStatus, Prisma, type PrismaClient, WarehouseCategory,} from '@prisma/client';
 import {type FastifyInstance} from 'fastify';
 
+import {AgricultureSlotSnapshot, resolveAgricultureSlotSnapshot,} from '../actors/Agriculture/Agriculture';
+import {findFreightLoad} from '../actors/Freight/Freight';
+import {buildWarehouseItemPayload, ensureWarehouseActor} from '../actors/Warehouse/Warehouse';
+import {ENTITY_KINDS} from '../lib/actor-entity-constants';
 import {lifecycleStatusOrDefault, parseLifecycleStatus} from '../lib/status-utils';
-import {AgricultureSlotSnapshot, resolveAgricultureSlotSnapshot,} from '../services/agriculture-actor';
-import {findFreightLoad} from '../services/freight-actor';
-import {buildWarehouseItemPayload, ensureWarehouseActor} from '../services/warehouse-actor';
 
 import {buildTelemetryBase} from './telemetry';
 import {type RecordTelemetryFn} from './types';
+
+const EntityKind = ENTITY_KINDS;
 
 const cloneMetadata = (value?: Record<string, unknown>|null) => {
   if (value && typeof value === 'object' && !Array.isArray(value))
