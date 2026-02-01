@@ -4,7 +4,6 @@
  */
 
 export { UserResultSchema } from './User.result';
-export { TelemetryEventResultSchema } from './TelemetryEvent.result';
 export { ActorResultSchema } from './Actor.result';
 export { EntityResultSchema } from './Entity.result';
 export { ActorCacheResultSchema } from './ActorCache.result';

@@ -9,6 +9,5 @@ export const UserFindUniqueResultSchema = z.nullable(z.object({
   avatarUrl: z.string().optional(),
   createdAt: z.date(),
   updatedAt: z.date(),
-  telemetry: z.array(z.unknown()),
   actors: z.array(z.unknown())
 }));

@@ -1,11 +1,9 @@
 import * as z from 'zod';
 import type { Prisma } from '@prisma/client';
-import { TelemetryEventFindManySchema as TelemetryEventFindManySchema } from '../findManyTelemetryEvent.schema';
 import { ActorFindManySchema as ActorFindManySchema } from '../findManyActor.schema';
 import { UserCountOutputTypeArgsObjectSchema as UserCountOutputTypeArgsObjectSchema } from './UserCountOutputTypeArgs.schema'
 
 const makeSchema = () => z.object({
-  telemetry: z.union([z.boolean(), z.lazy(() => TelemetryEventFindManySchema)]).optional(),
   actors: z.union([z.boolean(), z.lazy(() => ActorFindManySchema)]).optional(),
   _count: z.union([z.boolean(), z.lazy(() => UserCountOutputTypeArgsObjectSchema)]).optional()
 }).strict();

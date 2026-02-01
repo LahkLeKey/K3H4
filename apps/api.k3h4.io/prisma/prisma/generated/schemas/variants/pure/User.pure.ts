@@ -10,7 +10,6 @@ export const UserModelSchema = z.object({
     avatarUrl: z.string().nullable(),
     createdAt: z.date(),
     updatedAt: z.date(),
-    telemetry: z.array(z.unknown()),
     actors: z.array(z.unknown())
 }).strict();
 

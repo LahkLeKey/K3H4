@@ -9,6 +9,5 @@ export const UserUpsertResultSchema = z.object({
   avatarUrl: z.string().optional(),
   createdAt: z.date(),
   updatedAt: z.date(),
-  telemetry: z.array(z.unknown()),
   actors: z.array(z.unknown())
 });

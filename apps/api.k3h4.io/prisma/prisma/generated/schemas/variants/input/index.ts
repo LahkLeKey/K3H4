@@ -4,7 +4,6 @@
  */
 
 export { UserInputSchema } from './User.input';
-export { TelemetryEventInputSchema } from './TelemetryEvent.input';
 export { ActorInputSchema } from './Actor.input';
 export { EntityInputSchema } from './Entity.input';
 export { ActorCacheInputSchema } from './ActorCache.input';

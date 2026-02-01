@@ -9,7 +9,6 @@ export const UserAggregateResultSchema = z.object({  _count: z.object({
     avatarUrl: z.number(),
     createdAt: z.number(),
     updatedAt: z.number(),
-    telemetry: z.number(),
     actors: z.number()
   }).optional(),
   _sum: z.object({

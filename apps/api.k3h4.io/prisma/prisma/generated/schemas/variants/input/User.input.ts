@@ -10,7 +10,6 @@ export const UserInputSchema = z.object({
     avatarUrl: z.string().optional().nullable(),
     createdAt: z.date(),
     updatedAt: z.date(),
-    telemetry: z.array(z.unknown()),
     actors: z.array(z.unknown())
 }).strict();
 
