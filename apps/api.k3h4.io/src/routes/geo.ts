@@ -373,8 +373,7 @@ export function registerGeoRoutes(
             id: true,
             label: true,
             category: true,
-            latitude: true,
-            longitude: true
+            metadata: true,
           },
         }) :
                                         [];
@@ -399,13 +398,21 @@ export function registerGeoRoutes(
                                                  [])
                     .map((id) => poiMap.get(id))
                     .filter(Boolean)
-                    .map((p) => ({
-                           id: p!.id,
-                           name: p!.label,
-                           category: p!.category ?? null,
-                           lat: Number(p!.latitude),
-                           lng: Number(p!.longitude),
-                         })),
+                    .map((p) => {
+                      const metadata = (p && typeof p.metadata === 'object' &&
+                                        !Array.isArray(p.metadata)) ?
+                          (p.metadata as Record<string, unknown>) :
+                          {} as Record<string, unknown>;
+                      const lat = Number(metadata.lat);
+                      const lng = Number(metadata.lng);
+                      return {
+                        id: p!.id,
+                        name: p!.label,
+                        category: p!.category ?? null,
+                        lat: Number.isFinite(lat) ? lat : 0,
+                        lng: Number.isFinite(lng) ? lng : 0,
+                      };
+                    }),
             firstViewedAt: row.firstViewedAt,
             lastViewedAt: row.lastViewedAt,
             viewCount: row.viewCount,

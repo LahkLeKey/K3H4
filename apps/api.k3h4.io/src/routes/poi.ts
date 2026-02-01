@@ -48,9 +48,15 @@ const normalizeInputJsonRecord =
       return {};
     };
 
-const buildPoiMetadata = (tags: unknown): Prisma.InputJsonObject => ({
-  tags: normalizeInputJsonRecord(tags),
-});
+const buildPoiMetadata = (tags: unknown, osmType: string, osmId: string,
+                          lat: number, lng: number): Prisma.InputJsonObject =>
+    ({
+      tags: normalizeInputJsonRecord(tags),
+      osmType,
+      osmId,
+      lat,
+      lng,
+    });
 
 const decimalToNumber =
     (value?: Prisma.Decimal|number|string|null): number|null => {
@@ -223,19 +229,16 @@ async function upsertOverpassElements(
     const name = el.tags?.name ?? category ?? 'poi';
 
     const actorId = buildPoiActorId(osmType, osmId.toString());
-    const payload = buildPoiMetadata(el.tags ?? {});
-    const latitude = new Prisma.Decimal(Number(center.lat).toFixed(6));
-    const longitude = new Prisma.Decimal(Number(center.lon).toFixed(6));
+    const lat = Number(Number(center.lat).toFixed(6));
+    const lng = Number(Number(center.lon).toFixed(6));
+    const payload =
+        buildPoiMetadata(el.tags ?? {}, osmType, osmId.toString(), lat, lng);
     await prisma.actor.upsert({
       where: {id: actorId},
       update: {
         label: name,
         source: el.source ?? 'osm',
-        osmType,
-        osmId,
         category,
-        latitude,
-        longitude,
         metadata: payload,
         lastSeenAt: runStarted,
       },
@@ -244,11 +247,7 @@ async function upsertOverpassElements(
         label: name,
         type: POI_ACTOR_TYPE,
         source: el.source ?? 'osm',
-        osmType,
-        osmId,
         category,
-        latitude,
-        longitude,
         metadata: payload,
         lastSeenAt: runStarted,
       },
@@ -293,8 +292,6 @@ export function registerPoiRoutes(
 
     const where: Prisma.ActorWhereInput = {
       type: POI_ACTOR_TYPE,
-      latitude: {gte: bounds.minLat, lte: bounds.maxLat},
-      longitude: {gte: bounds.minLng, lte: bounds.maxLng},
     };
     const cachedEntry = actorId ?
         await readGeoQueryCache(prisma, actorId, cacheSignature) :
@@ -310,38 +307,46 @@ export function registerPoiRoutes(
         cacheAgeMs !== null && cacheAgeMs <= POI_LIST_STALE_MAX_MS;
 
     const refreshCache = async (allowOverpass: boolean) => {
-      const total = await prisma.actor.count({where});
-      const take = total === 0 ? 0 : Math.min(takeLimit, total);
-      const pois = take ? await prisma.actor.findMany({
+      const pois = await prisma.actor.findMany({
         where,
         orderBy: {updatedAt: 'desc'},
-        take,
         select: {
           id: true,
-          osmId: true,
-          osmType: true,
           label: true,
           category: true,
-          latitude: true,
-          longitude: true,
+          metadata: true,
           updatedAt: true,
         },
-      }) :
-                          [];
+      });
 
       const markers: PoiMarker[] =
-          pois.map((actor) => ({
-                     id: actor.id,
-                     osmId: actor.osmId?.toString() ?? '',
-                     osmType: actor.osmType ?? 'node',
-                     name: actor.label,
-                     category: actor.category ?? null,
-                     lat: decimalToNumber(actor.latitude) ?? 0,
-                     lng: decimalToNumber(actor.longitude) ?? 0,
-                     updatedAt: actor.updatedAt.toISOString(),
-                   }));
+          pois.map((actor) => {
+                const metadata = asRecord(actor.metadata);
+                const lat = Number(metadata.lat);
+                const lng = Number(metadata.lng);
+                return {
+                  id: actor.id,
+                  osmId: typeof metadata.osmId === 'string' ? metadata.osmId :
+                                                              '',
+                  osmType: typeof metadata.osmType === 'string' ?
+                      metadata.osmType :
+                      'node',
+                  name: actor.label,
+                  category: actor.category ?? null,
+                  lat: Number.isFinite(lat) ? lat : 0,
+                  lng: Number.isFinite(lng) ? lng : 0,
+                  updatedAt: actor.updatedAt.toISOString(),
+                };
+              })
+              .filter(
+                  (poi) => poi.lat >= bounds.minLat &&
+                      poi.lat <= bounds.maxLat && poi.lng >= bounds.minLng &&
+                      poi.lng <= bounds.maxLng);
 
-      const {items, clustered} = clusterize(markers, zoom);
+      const total = markers.length;
+      const limited = markers.slice(0, Math.min(takeLimit, total));
+
+      const {items, clustered} = clusterize(limited, zoom);
       const newest = pois[0]?.updatedAt ?? null;
       const etagBase = `${bounds.minLat}:${bounds.minLng}:${bounds.maxLat}:${
           bounds.maxLng}:${zoom}:${total}:${newest?.getTime() ?? 0}`;
@@ -566,25 +571,36 @@ export function registerPoiRoutes(
       return reply.status(400).send(
           {error: 'bbox is required as minLon,minLat,maxLon,maxLat'});
 
-    const where: Prisma.ActorWhereInput = {
-      type: POI_ACTOR_TYPE,
-      latitude: {gte: bounds.minLat, lte: bounds.maxLat},
-      longitude: {gte: bounds.minLng, lte: bounds.maxLng},
-    };
-
-    const [total, newest] = await Promise.all([
-      prisma.actor.count({where}),
-      prisma.actor.findFirst(
-          {where, orderBy: {updatedAt: 'desc'}, select: {updatedAt: true}}),
-    ]);
-
-    const categories = await prisma.actor.groupBy({
-      by: ['category'],
-      where: {...where, category: {not: null}},
-      _count: {category: true},
-      orderBy: {_count: {category: 'desc'}},
-      take: 12,
+    const pois = await prisma.actor.findMany({
+      where: {type: POI_ACTOR_TYPE},
+      select: {category: true, metadata: true, updatedAt: true},
     });
+
+    const filtered = pois.filter((actor) => {
+      const metadata = asRecord(actor.metadata);
+      const lat = Number(metadata.lat);
+      const lng = Number(metadata.lng);
+      if (!Number.isFinite(lat) || !Number.isFinite(lng)) return false;
+      return lat >= bounds.minLat && lat <= bounds.maxLat &&
+          lng >= bounds.minLng && lng <= bounds.maxLng;
+    });
+
+    const total = filtered.length;
+    const newest =
+        filtered.sort(
+            (a, b) => b.updatedAt.getTime() - a.updatedAt.getTime())[0] ??
+        null;
+
+    const categoryCounts = new Map<string, number>();
+    filtered.forEach((actor) => {
+      if (!actor.category) return;
+      categoryCounts.set(
+          actor.category, (categoryCounts.get(actor.category) ?? 0) + 1);
+    });
+    const categories = Array.from(categoryCounts.entries())
+                           .sort((a, b) => b[1] - a[1])
+                           .slice(0, 12)
+                           .map(([category, count]) => ({category, count}));
 
     const etagBase = `${bounds.minLat}:${bounds.minLng}:${bounds.maxLat}:${
         bounds.maxLng}:${total}:${newest?.updatedAt?.getTime() ?? 0}`;
@@ -599,10 +615,7 @@ export function registerPoiRoutes(
     return {
       total,
       updatedAt: newest?.updatedAt ?? null,
-      categories: categories.map((c) => ({
-                                   category: c.category ?? 'unknown',
-                                   count: c._count?.category ?? 0
-                                 })),
+      categories,
       bbox: bounds,
     };
   };
@@ -698,8 +711,6 @@ export function registerPoiRoutes(
         const pruneResult = await prisma.actor.deleteMany({
           where: {
             type: POI_ACTOR_TYPE,
-            latitude: {gte: bounds.minLat, lte: bounds.maxLat},
-            longitude: {gte: bounds.minLng, lte: bounds.maxLng},
             lastSeenAt: {lt: runStarted},
           },
         });
@@ -741,12 +752,8 @@ export function registerPoiRoutes(
       where: {id, type: POI_ACTOR_TYPE},
       select: {
         id: true,
-        osmType: true,
-        osmId: true,
         label: true,
         category: true,
-        latitude: true,
-        longitude: true,
         metadata: true,
         source: true,
         lastSeenAt: true,
@@ -756,24 +763,29 @@ export function registerPoiRoutes(
     });
     if (!poi) return reply.status(404).send({error: 'poi not found'});
 
+    const metadata = asRecord(poi.metadata);
+    const osmType =
+        typeof metadata.osmType === 'string' ? metadata.osmType : null;
+    const osmId = typeof metadata.osmId === 'string' ? metadata.osmId : null;
+    const lat = Number(metadata.lat);
+    const lng = Number(metadata.lng);
+
     const globalActor = await ensureGeoGlobalActor(prisma);
-    const buildingPayload = poi.osmType && poi.osmId ?
-        await readBuildingCacheByOsm(
-            prisma, globalActor.id, poi.osmType, poi.osmId.toString()) :
+    const buildingPayload = osmType && osmId ?
+        await readBuildingCacheByOsm(prisma, globalActor.id, osmType, osmId) :
         null;
     const building = buildingPayload ?
         formatBuildingFromPayload(buildingPayload, includeGeometry) :
         null;
-    const metadata = asRecord(poi.metadata);
 
     return {
       id: poi.id,
-      osmId: poi.osmId?.toString() ?? '',
-      osmType: poi.osmType ?? 'node',
+      osmId: osmId ?? '',
+      osmType: osmType ?? 'node',
       name: poi.label,
       category: poi.category ?? null,
-      latitude: decimalToNumber(poi.latitude) ?? 0,
-      longitude: decimalToNumber(poi.longitude) ?? 0,
+      latitude: Number.isFinite(lat) ? lat : 0,
+      longitude: Number.isFinite(lng) ? lng : 0,
       tags: metadata.tags ?? null,
       source: poi.source ?? null,
       lastSeenAt: poi.lastSeenAt,

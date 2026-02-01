@@ -35,10 +35,6 @@ model Actor {
   note       String?
   source     String?
   metadata   Json?
-  osmType    String?
-  osmId      BigInt?   @db.BigInt
-  latitude   Decimal?  @db.Decimal(11, 6)
-  longitude  Decimal?  @db.Decimal(11, 6)
   category   String?
   lastSeenAt DateTime?
   createdAt  DateTime  @default(now())
@@ -47,11 +43,9 @@ model Actor {
   entities Entity[]
   caches   ActorCache[]
 
-  @@unique([type, osmType, osmId], name: "actor_poi_osm_unique")
   @@index([userId])
   @@index([type])
   @@index([category])
-  @@index([latitude, longitude])
 }
 
 model Entity {
