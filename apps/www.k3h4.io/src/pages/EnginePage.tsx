@@ -1,4 +1,4 @@
-import { Environment, OrbitControls, Stars, useTexture } from "@react-three/drei";
+import { Environment, OrbitControls, Stars, useGLTF, useTexture } from "@react-three/drei";
 import { Physics, RigidBody, type RapierRigidBody } from "@react-three/rapier";
 import { useFrame, useThree } from "@react-three/fiber";
 import { useEffect, useMemo, useRef } from "react";
@@ -23,6 +23,14 @@ type MaterialMaps = {
     normalMap: THREE.Texture;
     roughnessMap: THREE.Texture;
     emissiveMap: THREE.Texture;
+};
+
+type BrickConfig = {
+    id: string;
+    url: string;
+    position: [number, number, number];
+    rotation: [number, number, number];
+    scale: number;
 };
 
 function MouseBall({ emissiveMap }: { emissiveMap: THREE.Texture }) {
@@ -106,6 +114,38 @@ function FloatyBody({ shape, collider, position, size, color, maps }: BodyConfig
                     emissiveMap={maps.emissiveMap}
                 />
             </mesh>
+        </RigidBody>
+    );
+}
+
+function BrickBody({ url, position, rotation, scale }: BrickConfig) {
+    const bodyRef = useRef<RapierRigidBody | null>(null);
+    const { scene } = useGLTF(url);
+    const model = useMemo(() => scene.clone(true), [scene]);
+
+    useFrame(() => {
+        if (!bodyRef.current) {
+            return;
+        }
+
+        const { x, y, z } = bodyRef.current.translation();
+        const impulseScale = 0.01;
+        bodyRef.current.applyImpulse(
+            { x: -x * impulseScale, y: -y * impulseScale, z: -z * impulseScale },
+            true,
+        );
+    });
+
+    return (
+        <RigidBody
+            ref={bodyRef}
+            position={position}
+            rotation={rotation}
+            linearDamping={1.4}
+            angularDamping={1.1}
+            colliders="hull"
+        >
+            <primitive object={model} scale={scale} />
         </RigidBody>
     );
 }
@@ -242,6 +282,320 @@ function EngineScene() {
         });
     }, [bodyMaps]);
 
+    const brickBodies = useMemo<BrickConfig[]>(() => {
+        const urls = [
+            "/assets/kenny/brick-kit/Models/GLBFormat/bevel-hq-brick-1x1-round.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/bevel-hq-brick-1x1.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/bevel-hq-brick-1x2.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/bevel-hq-brick-1x4.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/bevel-hq-brick-1x6.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/bevel-hq-brick-1x8.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/bevel-hq-brick-2x2.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/bevel-hq-brick-2x4.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/bevel-hq-brick-2x6.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/bevel-hq-brick-2x8.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/bevel-hq-brick-corner.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/bevel-hq-brick-slope-1x2.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/bevel-hq-brick-slope-2x2.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/bevel-hq-brick-slope-2x3.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/bevel-hq-brick-slope-2x4.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/bevel-hq-brick-slope-3x1.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/bevel-hq-brick-slope-3x2.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/bevel-hq-brick-slope-corner-inside-2x2.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/bevel-hq-brick-slope-corner-inside-inverted-2x2.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/bevel-hq-brick-slope-corner-outside-2x2.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/bevel-hq-brick-slope-corner-outside-inverted-2x2.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/bevel-hq-brick-slope-inverted-1x2.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/bevel-hq-brick-slope-inverted-2x2.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/bevel-hq-plate-1x1-round.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/bevel-hq-plate-1x1.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/bevel-hq-plate-1x2.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/bevel-hq-plate-1x4.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/bevel-hq-plate-1x6.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/bevel-hq-plate-1x8.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/bevel-hq-plate-2x2.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/bevel-hq-plate-2x4.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/bevel-hq-plate-2x6.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/bevel-hq-plate-2x8.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/bevel-hq-plate-4x4.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/bevel-hq-plate-4x6.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/bevel-hq-plate-4x8.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/bevel-hq-plate-corner.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/bevel-lq-brick-1x1-round.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/bevel-lq-brick-1x1.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/bevel-lq-brick-1x2.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/bevel-lq-brick-1x4.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/bevel-lq-brick-1x6.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/bevel-lq-brick-1x8.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/bevel-lq-brick-2x2.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/bevel-lq-brick-2x4.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/bevel-lq-brick-2x6.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/bevel-lq-brick-2x8.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/bevel-lq-brick-corner.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/bevel-lq-brick-slope-1x2.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/bevel-lq-brick-slope-2x2.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/bevel-lq-brick-slope-2x3.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/bevel-lq-brick-slope-2x4.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/bevel-lq-brick-slope-3x1.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/bevel-lq-brick-slope-3x2.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/bevel-lq-brick-slope-corner-inside-2x2.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/bevel-lq-brick-slope-corner-inside-inverted-2x2.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/bevel-lq-brick-slope-corner-outside-2x2.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/bevel-lq-brick-slope-corner-outside-inverted-2x2.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/bevel-lq-brick-slope-inverted-1x2.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/bevel-lq-brick-slope-inverted-2x2.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/bevel-lq-plate-1x1-round.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/bevel-lq-plate-1x1.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/bevel-lq-plate-1x2.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/bevel-lq-plate-1x4.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/bevel-lq-plate-1x6.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/bevel-lq-plate-1x8.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/bevel-lq-plate-2x2.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/bevel-lq-plate-2x4.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/bevel-lq-plate-2x6.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/bevel-lq-plate-2x8.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/bevel-lq-plate-4x4.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/bevel-lq-plate-4x6.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/bevel-lq-plate-4x8.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/bevel-lq-plate-corner.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/none-hq-brick-1x1-round.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/none-hq-brick-1x1.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/none-hq-brick-1x2.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/none-hq-brick-1x4.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/none-hq-brick-1x6.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/none-hq-brick-1x8.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/none-hq-brick-2x2.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/none-hq-brick-2x4.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/none-hq-brick-2x6.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/none-hq-brick-2x8.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/none-hq-brick-corner.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/none-hq-brick-slope-1x2.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/none-hq-brick-slope-2x2.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/none-hq-brick-slope-2x3.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/none-hq-brick-slope-2x4.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/none-hq-brick-slope-3x1.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/none-hq-brick-slope-3x2.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/none-hq-brick-slope-corner-inside-2x2.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/none-hq-brick-slope-corner-inside-inverted-2x2.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/none-hq-brick-slope-corner-outside-2x2.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/none-hq-brick-slope-corner-outside-inverted-2x2.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/none-hq-brick-slope-inverted-1x2.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/none-hq-brick-slope-inverted-2x2.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/none-hq-plate-1x1-round.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/none-hq-plate-1x1.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/none-hq-plate-1x2.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/none-hq-plate-1x4.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/none-hq-plate-1x6.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/none-hq-plate-1x8.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/none-hq-plate-2x2.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/none-hq-plate-2x4.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/none-hq-plate-2x6.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/none-hq-plate-2x8.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/none-hq-plate-4x4.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/none-hq-plate-4x6.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/none-hq-plate-4x8.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/none-hq-plate-corner.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/none-lq-brick-1x1-round.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/none-lq-brick-1x1.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/none-lq-brick-1x2.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/none-lq-brick-1x4.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/none-lq-brick-1x6.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/none-lq-brick-1x8.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/none-lq-brick-2x2.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/none-lq-brick-2x4.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/none-lq-brick-2x6.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/none-lq-brick-2x8.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/none-lq-brick-corner.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/none-lq-brick-slope-1x2.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/none-lq-brick-slope-2x2.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/none-lq-brick-slope-2x3.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/none-lq-brick-slope-2x4.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/none-lq-brick-slope-3x1.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/none-lq-brick-slope-3x2.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/none-lq-brick-slope-corner-inside-2x2.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/none-lq-brick-slope-corner-inside-inverted-2x2.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/none-lq-brick-slope-corner-outside-2x2.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/none-lq-brick-slope-corner-outside-inverted-2x2.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/none-lq-brick-slope-inverted-1x2.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/none-lq-brick-slope-inverted-2x2.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/none-lq-plate-1x1-round.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/none-lq-plate-1x1.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/none-lq-plate-1x2.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/none-lq-plate-1x4.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/none-lq-plate-1x6.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/none-lq-plate-1x8.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/none-lq-plate-2x2.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/none-lq-plate-2x4.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/none-lq-plate-2x6.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/none-lq-plate-2x8.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/none-lq-plate-4x4.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/none-lq-plate-4x6.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/none-lq-plate-4x8.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/none-lq-plate-corner.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/round-hq-brick-1x1-round.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/round-hq-brick-1x1.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/round-hq-brick-1x2.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/round-hq-brick-1x4.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/round-hq-brick-1x6.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/round-hq-brick-1x8.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/round-hq-brick-2x2.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/round-hq-brick-2x4.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/round-hq-brick-2x6.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/round-hq-brick-2x8.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/round-hq-brick-corner.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/round-hq-brick-slope-1x2.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/round-hq-brick-slope-2x2.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/round-hq-brick-slope-2x3.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/round-hq-brick-slope-2x4.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/round-hq-brick-slope-3x1.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/round-hq-brick-slope-3x2.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/round-hq-brick-slope-corner-inside-2x2.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/round-hq-brick-slope-corner-inside-inverted-2x2.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/round-hq-brick-slope-corner-outside-2x2.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/round-hq-brick-slope-corner-outside-inverted-2x2.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/round-hq-brick-slope-inverted-1x2.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/round-hq-brick-slope-inverted-2x2.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/round-hq-plate-1x1-round.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/round-hq-plate-1x1.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/round-hq-plate-1x2.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/round-hq-plate-1x4.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/round-hq-plate-1x6.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/round-hq-plate-1x8.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/round-hq-plate-2x2.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/round-hq-plate-2x4.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/round-hq-plate-2x6.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/round-hq-plate-2x8.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/round-hq-plate-4x4.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/round-hq-plate-4x6.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/round-hq-plate-4x8.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/round-hq-plate-corner.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/round-lq-brick-1x1-round.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/round-lq-brick-1x1.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/round-lq-brick-1x2.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/round-lq-brick-1x4.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/round-lq-brick-1x6.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/round-lq-brick-1x8.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/round-lq-brick-2x2.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/round-lq-brick-2x4.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/round-lq-brick-2x6.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/round-lq-brick-2x8.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/round-lq-brick-corner.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/round-lq-brick-slope-1x2.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/round-lq-brick-slope-2x2.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/round-lq-brick-slope-2x3.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/round-lq-brick-slope-2x4.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/round-lq-brick-slope-3x1.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/round-lq-brick-slope-3x2.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/round-lq-brick-slope-corner-inside-2x2.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/round-lq-brick-slope-corner-inside-inverted-2x2.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/round-lq-brick-slope-corner-outside-2x2.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/round-lq-brick-slope-corner-outside-inverted-2x2.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/round-lq-brick-slope-inverted-1x2.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/round-lq-brick-slope-inverted-2x2.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/round-lq-plate-1x1-round.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/round-lq-plate-1x1.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/round-lq-plate-1x2.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/round-lq-plate-1x4.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/round-lq-plate-1x6.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/round-lq-plate-1x8.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/round-lq-plate-2x2.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/round-lq-plate-2x4.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/round-lq-plate-2x6.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/round-lq-plate-2x8.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/round-lq-plate-4x4.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/round-lq-plate-4x6.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/round-lq-plate-4x8.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/round-lq-plate-corner.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/square-hq-brick-1x1-round.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/square-hq-brick-1x1.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/square-hq-brick-1x2.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/square-hq-brick-1x4.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/square-hq-brick-1x6.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/square-hq-brick-1x8.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/square-hq-brick-2x2.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/square-hq-brick-2x4.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/square-hq-brick-2x6.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/square-hq-brick-2x8.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/square-hq-brick-corner.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/square-hq-brick-slope-1x2.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/square-hq-brick-slope-2x2.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/square-hq-brick-slope-2x3.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/square-hq-brick-slope-2x4.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/square-hq-brick-slope-3x1.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/square-hq-brick-slope-3x2.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/square-hq-brick-slope-corner-inside-2x2.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/square-hq-brick-slope-corner-inside-inverted-2x2.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/square-hq-brick-slope-corner-outside-2x2.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/square-hq-brick-slope-corner-outside-inverted-2x2.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/square-hq-brick-slope-inverted-1x2.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/square-hq-brick-slope-inverted-2x2.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/square-hq-plate-1x1-round.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/square-hq-plate-1x1.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/square-hq-plate-1x2.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/square-hq-plate-1x4.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/square-hq-plate-1x6.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/square-hq-plate-1x8.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/square-hq-plate-2x2.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/square-hq-plate-2x4.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/square-hq-plate-2x6.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/square-hq-plate-2x8.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/square-hq-plate-4x4.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/square-hq-plate-4x6.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/square-hq-plate-4x8.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/square-hq-plate-corner.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/square-lq-brick-1x1-round.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/square-lq-brick-1x1.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/square-lq-brick-1x2.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/square-lq-brick-1x4.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/square-lq-brick-1x6.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/square-lq-brick-1x8.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/square-lq-brick-2x2.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/square-lq-brick-2x4.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/square-lq-brick-2x6.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/square-lq-brick-2x8.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/square-lq-brick-corner.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/square-lq-brick-slope-1x2.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/square-lq-brick-slope-2x2.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/square-lq-brick-slope-2x3.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/square-lq-brick-slope-2x4.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/square-lq-brick-slope-3x1.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/square-lq-brick-slope-3x2.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/square-lq-brick-slope-corner-inside-2x2.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/square-lq-brick-slope-corner-inside-inverted-2x2.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/square-lq-brick-slope-corner-outside-2x2.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/square-lq-brick-slope-corner-outside-inverted-2x2.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/square-lq-brick-slope-inverted-1x2.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/square-lq-brick-slope-inverted-2x2.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/square-lq-plate-1x1-round.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/square-lq-plate-1x1.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/square-lq-plate-1x2.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/square-lq-plate-1x4.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/square-lq-plate-1x6.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/square-lq-plate-1x8.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/square-lq-plate-2x2.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/square-lq-plate-2x4.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/square-lq-plate-2x6.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/square-lq-plate-2x8.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/square-lq-plate-4x4.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/square-lq-plate-4x6.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/square-lq-plate-4x8.glb",
+            "/assets/kenny/brick-kit/Models/GLBFormat/square-lq-plate-corner.glb",
+        ];
+
+        return urls.map((url, index) => {
+            const angle = (index / urls.length) * Math.PI * 2;
+            const radius = 7.5;
+
+            return {
+                id: `brick-${index}`,
+                url,
+                scale: 2,
+                rotation: [0, angle, 0],
+                position: [Math.cos(angle) * radius, 0.5 + (index % 3) * 0.7, Math.sin(angle) * radius],
+            } satisfies BrickConfig;
+        });
+    }, []);
+
     return (
         <>
             <color attach="background" args={["#030712"]} />
@@ -270,6 +624,9 @@ function EngineScene() {
             </group>
             <Physics gravity={[0, 0, 0]}>
                 <MouseBall emissiveMap={textures.gradientRadial} />
+                {brickBodies.map((brick) => (
+                    <BrickBody key={brick.id} {...brick} />
+                ))}
                 {bodies.map((body) => (
                     <FloatyBody key={body.id} {...body} />
                 ))}
