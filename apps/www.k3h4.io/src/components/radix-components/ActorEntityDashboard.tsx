@@ -13,19 +13,12 @@ const formatDate = (value?: string | null) => {
 };
 
 export function ActorEntityDashboard() {
-    const [mode, setMode] = useState<"actors" | "entities" | "entity-details">("actors");
     const [selectedActorId, setSelectedActorId] = useState<string | null>(null);
-    const [selectedEntityId, setSelectedEntityId] = useState<string | null>(null);
 
     const actorFilters = useMemo(() => ({ limit: 120 }), []);
     const { data: actorData, isLoading: actorsLoading } = useActorsQuery(actorFilters);
 
     const actors = actorData?.actors ?? [];
-
-    const selectedActor = useMemo(
-        () => (selectedActorId ? actors.find((actor) => actor.id === selectedActorId) ?? null : null),
-        [actors, selectedActorId],
-    );
 
     const entityFilters = useMemo(
         () => (selectedActorId ? { actorId: selectedActorId, limit: 240 } : null),
@@ -87,109 +80,66 @@ export function ActorEntityDashboard() {
         [],
     );
 
-    const selectedEntity = useMemo(
-        () => (selectedEntityId ? entities.find((entity) => entity.id === selectedEntityId) ?? null : null),
-        [entities, selectedEntityId],
-    );
-
-    const detailRows = useMemo(() => {
-        if (!selectedEntity) return [];
-        const metadata = selectedEntity.metadata ? JSON.stringify(selectedEntity.metadata, null, 2) : "-";
+    const buildEntityDetailRows = (entity: EntityRecord) => {
+        const metadata = entity.metadata ? JSON.stringify(entity.metadata, null, 2) : "-";
         return [
-            { field: "ID", value: selectedEntity.id },
-            { field: "Actor ID", value: selectedEntity.actorId },
-            { field: "Kind", value: selectedEntity.kind },
-            { field: "Direction", value: selectedEntity.direction ?? "-" },
-            { field: "Name", value: selectedEntity.name ?? "-" },
-            { field: "Target Type", value: selectedEntity.targetType ?? "-" },
-            { field: "Target ID", value: selectedEntity.targetId ?? "-" },
-            { field: "Source", value: selectedEntity.source ?? "-" },
+            { field: "ID", value: entity.id },
+            { field: "Actor ID", value: entity.actorId },
+            { field: "Kind", value: entity.kind },
+            { field: "Direction", value: entity.direction ?? "-" },
+            { field: "Name", value: entity.name ?? "-" },
+            { field: "Target Type", value: entity.targetType ?? "-" },
+            { field: "Target ID", value: entity.targetId ?? "-" },
+            { field: "Source", value: entity.source ?? "-" },
             { field: "Metadata", value: metadata },
-            { field: "Created", value: formatDate(selectedEntity.createdAt) },
-            { field: "Updated", value: formatDate(selectedEntity.updatedAt) },
+            { field: "Created", value: formatDate(entity.createdAt) },
+            { field: "Updated", value: formatDate(entity.updatedAt) },
         ];
-    }, [selectedEntity]);
+    };
 
-    if (mode === "entities") {
+    const renderEntityTable = (actor: ActorRecord) => {
+        const rows = actor.id === selectedActorId ? filteredEntities : [];
+        const isLoading = actor.id === selectedActorId && entitiesLoading;
+        const noData = isLoading
+            ? "Loading entities…"
+            : actor.id === selectedActorId
+                ? "No entities found."
+                : "Select to load entities.";
+
         return (
             <Table
-                title={selectedActor ? `Entities for ${selectedActor.label}` : "Entities"}
+                title={`Entities for ${actor.label}`}
                 columns={entityColumns}
-                rows={filteredEntities}
+                rows={rows}
                 rowKey={(row) => row.id}
                 idAccessor={(row) => row.id}
                 ownerAccessor={(row) => row.actorId}
                 ownerLabel="Actor"
-                noDataMessage={
-                    !selectedActor
-                        ? "Select an actor to load entities."
-                        : entitiesLoading
-                          ? "Loading entities…"
-                          : "No entities found."
-                }
-                actions={
-                    <button
-                        type="button"
-                        onClick={() => {
-                            setMode("actors");
-                            setSelectedEntityId(null);
-                        }}
-                        className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-200 transition hover:bg-white/10"
-                    >
-                        Back to actors
-                    </button>
-                }
-                rowActions={(row) => (
-                    <button
-                        type="button"
-                        onClick={() => {
-                            setSelectedEntityId(row.id);
-                            setMode("entity-details");
-                        }}
-                        className={`rounded-full px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] transition ${
-                            row.id === selectedEntityId
-                                ? "bg-emerald-300/20 text-emerald-200"
-                                : "bg-white/5 text-slate-200 hover:bg-white/10"
-                        }`.trim()}
-                    >
-                        Details
-                    </button>
+                noDataMessage={noData}
+                rowExpansionLabel="Details"
+                rowExpansion={(entity) => (
+                    <Table
+                        title={`Entity ${entity.id}`}
+                        columns={[
+                            { key: "field", label: "Field" },
+                            {
+                                key: "value",
+                                label: "Value",
+                                render: (row) => (
+                                    <pre className="max-w-full whitespace-pre-wrap break-words text-xs text-slate-200">
+                                        {row.value}
+                                    </pre>
+                                ),
+                            },
+                        ]}
+                        rows={buildEntityDetailRows(entity)}
+                        rowKey={(row) => row.field}
+                        noDataMessage="No details available."
+                    />
                 )}
             />
         );
-    }
-
-    if (mode === "entity-details") {
-        return (
-            <Table
-                title={selectedEntity ? `Entity ${selectedEntity.id}` : "Entity details"}
-                columns={[
-                    { key: "field", label: "Field" },
-                    {
-                        key: "value",
-                        label: "Value",
-                        render: (row) => (
-                            <pre className="max-w-full whitespace-pre-wrap break-words text-xs text-slate-200">
-                                {row.value}
-                            </pre>
-                        ),
-                    },
-                ]}
-                rows={detailRows}
-                rowKey={(row) => row.field}
-                noDataMessage={selectedEntity ? "No details available." : "Select an entity."}
-                actions={
-                    <button
-                        type="button"
-                        onClick={() => setMode("entities")}
-                        className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-200 transition hover:bg-white/10"
-                    >
-                        Back to entities
-                    </button>
-                }
-            />
-        );
-    }
+    };
 
     return (
         <Table
@@ -201,23 +151,13 @@ export function ActorEntityDashboard() {
             ownerAccessor={(row) => row.userId ?? "-"}
             ownerLabel="User"
             noDataMessage={actorsLoading ? "Loading actors…" : "No actors found."}
-            rowActions={(row) => (
-                <button
-                    type="button"
-                    onClick={() => {
-                        setSelectedActorId(row.id);
-                        setSelectedEntityId(null);
-                        setMode("entities");
-                    }}
-                    className={`rounded-full px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] transition ${
-                        row.id === selectedActorId
-                            ? "bg-emerald-300/20 text-emerald-200"
-                            : "bg-white/5 text-slate-200 hover:bg-white/10"
-                    }`.trim()}
-                >
-                    Entities
-                </button>
-            )}
+            rowExpansionLabel="Entities"
+            onRowExpand={(row, expanded) => {
+                if (expanded) {
+                    setSelectedActorId(row.id);
+                }
+            }}
+            rowExpansion={(row) => renderEntityTable(row)}
         />
     );
 }
