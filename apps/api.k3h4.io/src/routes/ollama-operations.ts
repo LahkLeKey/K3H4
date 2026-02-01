@@ -156,7 +156,7 @@ function buildMetadata(payload: {
   statusCode?: number | null;
   errorMessage?: string | null;
   metadata?: unknown;
-}): Prisma.JsonValue {
+}): Prisma.InputJsonObject {
   const trimmedPrompt = typeof payload.systemPrompt === 'string' &&
           payload.systemPrompt.trim().length ?
       payload.systemPrompt.trim() :
@@ -168,14 +168,14 @@ function buildMetadata(payload: {
     responseBody: toNullableJsonValue(payload.responseBody),
     statusCode: payload.statusCode ?? null,
     errorMessage: payload.errorMessage ?? null,
-    metadata: safeJsonValue(payload.metadata),
+    metadata: safeInputJsonValue(payload.metadata),
   };
 }
 
-function safeJsonValue(value: unknown): Prisma.JsonValue|null {
+function safeInputJsonValue(value: unknown): Prisma.InputJsonValue|null {
   if (value === undefined) return null;
   try {
-    return JSON.parse(JSON.stringify(value)) as Prisma.JsonValue;
+    return JSON.parse(JSON.stringify(value)) as Prisma.InputJsonValue;
   } catch {
     return null;
   }
