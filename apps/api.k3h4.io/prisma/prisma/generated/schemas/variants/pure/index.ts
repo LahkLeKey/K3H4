@@ -9,7 +9,6 @@ export { TelemetryEventModelSchema } from './TelemetryEvent.pure';
 export { ApiCacheEntryModelSchema } from './ApiCacheEntry.pure';
 export { ChatSessionModelSchema } from './ChatSession.pure';
 export { ChatMessageModelSchema } from './ChatMessage.pure';
-export { OllamaOperationModelSchema } from './OllamaOperation.pure';
 export { ActorModelSchema } from './Actor.pure';
 export { EntityModelSchema } from './Entity.pure';
 export { ActorCacheModelSchema } from './ActorCache.pure';

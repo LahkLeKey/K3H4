@@ -5,8 +5,7 @@ import { NullableStringFieldUpdateOperationsInputObjectSchema as NullableStringF
 import { NullableFloatFieldUpdateOperationsInputObjectSchema as NullableFloatFieldUpdateOperationsInputObjectSchema } from './NullableFloatFieldUpdateOperationsInput.schema';
 import { NullableJsonNullValueInputSchema } from '../enums/NullableJsonNullValueInput.schema';
 import { DateTimeFieldUpdateOperationsInputObjectSchema as DateTimeFieldUpdateOperationsInputObjectSchema } from './DateTimeFieldUpdateOperationsInput.schema';
-import { ChatMessageUncheckedUpdateManyWithoutSessionNestedInputObjectSchema as ChatMessageUncheckedUpdateManyWithoutSessionNestedInputObjectSchema } from './ChatMessageUncheckedUpdateManyWithoutSessionNestedInput.schema';
-import { OllamaOperationUncheckedUpdateManyWithoutSessionNestedInputObjectSchema as OllamaOperationUncheckedUpdateManyWithoutSessionNestedInputObjectSchema } from './OllamaOperationUncheckedUpdateManyWithoutSessionNestedInput.schema'
+import { ChatMessageUncheckedUpdateManyWithoutSessionNestedInputObjectSchema as ChatMessageUncheckedUpdateManyWithoutSessionNestedInputObjectSchema } from './ChatMessageUncheckedUpdateManyWithoutSessionNestedInput.schema'
 
 import { JsonValueSchema as jsonSchema } from '../helpers/json-helpers';
 
@@ -19,8 +18,7 @@ const makeSchema = () => z.object({
   metadata: z.union([NullableJsonNullValueInputSchema, jsonSchema]).optional(),
   createdAt: z.union([z.coerce.date(), z.lazy(() => DateTimeFieldUpdateOperationsInputObjectSchema)]).optional(),
   updatedAt: z.union([z.coerce.date(), z.lazy(() => DateTimeFieldUpdateOperationsInputObjectSchema)]).optional(),
-  messages: z.lazy(() => ChatMessageUncheckedUpdateManyWithoutSessionNestedInputObjectSchema).optional(),
-  ollamaOperations: z.lazy(() => OllamaOperationUncheckedUpdateManyWithoutSessionNestedInputObjectSchema).optional()
+  messages: z.lazy(() => ChatMessageUncheckedUpdateManyWithoutSessionNestedInputObjectSchema).optional()
 }).strict();
 export const ChatSessionUncheckedUpdateWithoutUserInputObjectSchema: z.ZodType<Prisma.ChatSessionUncheckedUpdateWithoutUserInput> = makeSchema() as unknown as z.ZodType<Prisma.ChatSessionUncheckedUpdateWithoutUserInput>;
 export const ChatSessionUncheckedUpdateWithoutUserInputObjectZodSchema = makeSchema();

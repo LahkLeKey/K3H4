@@ -21,7 +21,6 @@ export const UserGroupByResultSchema = z.array(z.object({
     updatedAt: z.number(),
     telemetry: z.number(),
     chatSessions: z.number(),
-    ollamaOperations: z.number(),
     actors: z.number()
   }).optional(),
   _sum: z.object({

@@ -9,7 +9,6 @@ export { TelemetryEventResultSchema } from './TelemetryEvent.result';
 export { ApiCacheEntryResultSchema } from './ApiCacheEntry.result';
 export { ChatSessionResultSchema } from './ChatSession.result';
 export { ChatMessageResultSchema } from './ChatMessage.result';
-export { OllamaOperationResultSchema } from './OllamaOperation.result';
 export { ActorResultSchema } from './Actor.result';
 export { EntityResultSchema } from './Entity.result';
 export { ActorCacheResultSchema } from './ActorCache.result';

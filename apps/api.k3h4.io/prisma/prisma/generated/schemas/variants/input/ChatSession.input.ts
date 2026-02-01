@@ -11,8 +11,7 @@ export const ChatSessionInputSchema = z.object({
     metadata: z.unknown().optional().nullable(),
     createdAt: z.date(),
     updatedAt: z.date(),
-    messages: z.array(z.unknown()),
-    ollamaOperations: z.array(z.unknown())
+    messages: z.array(z.unknown())
 }).strict();
 
 export type ChatSessionInputType = z.infer<typeof ChatSessionInputSchema>;

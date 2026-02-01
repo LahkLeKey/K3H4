@@ -20,8 +20,7 @@ export const ChatSessionGroupByResultSchema = z.array(z.object({
     metadata: z.number(),
     createdAt: z.number(),
     updatedAt: z.number(),
-    messages: z.number(),
-    ollamaOperations: z.number()
+    messages: z.number()
   }).optional(),
   _sum: z.object({
     temperature: z.number().nullable()

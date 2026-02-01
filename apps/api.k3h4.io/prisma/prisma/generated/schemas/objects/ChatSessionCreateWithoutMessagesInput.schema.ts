@@ -1,8 +1,7 @@
 import * as z from 'zod';
 import type { Prisma } from '@prisma/client';
 import { NullableJsonNullValueInputSchema } from '../enums/NullableJsonNullValueInput.schema';
-import { UserCreateNestedOneWithoutChatSessionsInputObjectSchema as UserCreateNestedOneWithoutChatSessionsInputObjectSchema } from './UserCreateNestedOneWithoutChatSessionsInput.schema';
-import { OllamaOperationCreateNestedManyWithoutSessionInputObjectSchema as OllamaOperationCreateNestedManyWithoutSessionInputObjectSchema } from './OllamaOperationCreateNestedManyWithoutSessionInput.schema'
+import { UserCreateNestedOneWithoutChatSessionsInputObjectSchema as UserCreateNestedOneWithoutChatSessionsInputObjectSchema } from './UserCreateNestedOneWithoutChatSessionsInput.schema'
 
 import { JsonValueSchema as jsonSchema } from '../helpers/json-helpers';
 
@@ -15,8 +14,7 @@ const makeSchema = () => z.object({
   metadata: z.union([NullableJsonNullValueInputSchema, jsonSchema]).optional(),
   createdAt: z.coerce.date().optional(),
   updatedAt: z.coerce.date().optional(),
-  user: z.lazy(() => UserCreateNestedOneWithoutChatSessionsInputObjectSchema),
-  ollamaOperations: z.lazy(() => OllamaOperationCreateNestedManyWithoutSessionInputObjectSchema).optional()
+  user: z.lazy(() => UserCreateNestedOneWithoutChatSessionsInputObjectSchema)
 }).strict();
 export const ChatSessionCreateWithoutMessagesInputObjectSchema: z.ZodType<Prisma.ChatSessionCreateWithoutMessagesInput> = makeSchema() as unknown as z.ZodType<Prisma.ChatSessionCreateWithoutMessagesInput>;
 export const ChatSessionCreateWithoutMessagesInputObjectZodSchema = makeSchema();

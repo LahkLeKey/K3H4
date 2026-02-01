@@ -1,8 +1,7 @@
 import * as z from 'zod';
 import type { Prisma } from '@prisma/client';
 import { NullableJsonNullValueInputSchema } from '../enums/NullableJsonNullValueInput.schema';
-import { ChatMessageUncheckedCreateNestedManyWithoutSessionInputObjectSchema as ChatMessageUncheckedCreateNestedManyWithoutSessionInputObjectSchema } from './ChatMessageUncheckedCreateNestedManyWithoutSessionInput.schema';
-import { OllamaOperationUncheckedCreateNestedManyWithoutSessionInputObjectSchema as OllamaOperationUncheckedCreateNestedManyWithoutSessionInputObjectSchema } from './OllamaOperationUncheckedCreateNestedManyWithoutSessionInput.schema'
+import { ChatMessageUncheckedCreateNestedManyWithoutSessionInputObjectSchema as ChatMessageUncheckedCreateNestedManyWithoutSessionInputObjectSchema } from './ChatMessageUncheckedCreateNestedManyWithoutSessionInput.schema'
 
 import { JsonValueSchema as jsonSchema } from '../helpers/json-helpers';
 
@@ -15,8 +14,7 @@ const makeSchema = () => z.object({
   temperature: z.number().optional().nullable(),
   metadata: z.union([NullableJsonNullValueInputSchema, jsonSchema]).optional(),
   createdAt: z.coerce.date().optional(),
-  messages: z.lazy(() => ChatMessageUncheckedCreateNestedManyWithoutSessionInputObjectSchema).optional(),
-  ollamaOperations: z.lazy(() => OllamaOperationUncheckedCreateNestedManyWithoutSessionInputObjectSchema).optional()
+  messages: z.lazy(() => ChatMessageUncheckedCreateNestedManyWithoutSessionInputObjectSchema).optional()
 }).strict();
 export const ChatSessionUncheckedCreateInputObjectSchema: z.ZodType<Prisma.ChatSessionUncheckedCreateInput> = makeSchema() as unknown as z.ZodType<Prisma.ChatSessionUncheckedCreateInput>;
 export const ChatSessionUncheckedCreateInputObjectZodSchema = makeSchema();

@@ -12,7 +12,6 @@ export const UserInputSchema = z.object({
     updatedAt: z.date(),
     telemetry: z.array(z.unknown()),
     chatSessions: z.array(z.unknown()),
-    ollamaOperations: z.array(z.unknown()),
     actors: z.array(z.unknown())
 }).strict();
 

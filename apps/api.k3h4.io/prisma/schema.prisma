@@ -57,6 +57,7 @@ enum ActorType {
   WIKIDATA_CACHE               @map("wikidata-cache")
   ENRICHMENT_CACHE             @map("enrichment-cache")
   AI_INSIGHT                   @map("ai-insight")
+  AI_OPERATION                 @map("ai-operation")
   AUTH_REFRESH_TOKEN           @map("auth_refresh_token")
   AUTH_PROVIDER_GRANT          @map("auth_provider_grant")
 }
@@ -74,6 +75,7 @@ enum EntityKind {
   FREIGHT_PAYMENT                @map("freight_payment")
   FREIGHT_LOAD                   @map("freight_load")
   AI_INSIGHT                     @map("ai_insight")
+  OLLAMA_OPERATION               @map("ollama-operation")
   ARCADE_TOPUP                   @map("arcade_topup")
   ARCADE_SESSION                 @map("arcade_session")
   ARCADE_PRIZE_REDEMPTION        @map("arcade_prize_redemption")
@@ -131,19 +133,18 @@ enum WarehouseCategory {
 }
 
 model User {
-  id               String            @id @default(cuid())
-  email            String            @unique
-  provider         String
-  providerId       String
-  k3h4CoinBalance  Decimal           @default("25000") @db.Decimal(18, 2) // sandbox-only play balance
-  displayName      String?
-  avatarUrl        String?
-  createdAt        DateTime          @default(now())
-  updatedAt        DateTime          @updatedAt
-  telemetry        TelemetryEvent[]
-  chatSessions     ChatSession[]
-  ollamaOperations OllamaOperation[]
-  actors           Actor[]
+  id              String           @id @default(cuid())
+  email           String           @unique
+  provider        String
+  providerId      String
+  k3h4CoinBalance Decimal          @default("25000") @db.Decimal(18, 2) // sandbox-only play balance
+  displayName     String?
+  avatarUrl       String?
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  telemetry       TelemetryEvent[]
+  chatSessions    ChatSession[]
+  actors          Actor[]
 
   @@unique([provider, providerId])
 }
@@ -215,8 +216,7 @@ model ChatSession {
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
-  messages         ChatMessage[]
-  ollamaOperations OllamaOperation[]
+  messages ChatMessage[]
 
   @@index([userId, updatedAt])
 }
@@ -231,30 +231,6 @@ model ChatMessage {
   createdAt DateTime    @default(now())
 
   @@index([sessionId, createdAt])
-}
-
-model OllamaOperation {
-  id           String       @id @default(cuid())
-  userId       String
-  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
-  source       String
-  sessionId    String?
-  session      ChatSession? @relation(fields: [sessionId], references: [id], onDelete: SetNull)
-  model        String
-  temperature  Float?
-  systemPrompt String?
-  requestBody  Json
-  responseBody Json?
-  statusCode   Int?
-  errorMessage String?
-  metadata     Json?
-  createdAt    DateTime     @default(now())
-  updatedAt    DateTime     @updatedAt
-
-  @@index([userId])
-  @@index([sessionId])
-  @@index([source])
-  @@index([createdAt])
 }
 
 model Actor {

@@ -10,6 +10,5 @@ export const ChatSessionUpsertResultSchema = z.object({
   metadata: z.unknown().optional(),
   createdAt: z.date(),
   updatedAt: z.date(),
-  messages: z.array(z.unknown()),
-  ollamaOperations: z.array(z.unknown())
+  messages: z.array(z.unknown())
 });

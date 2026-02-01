@@ -1,7 +1,6 @@
 import * as z from 'zod';
 import type { Prisma } from '@prisma/client';
-import { NullableJsonNullValueInputSchema } from '../enums/NullableJsonNullValueInput.schema';
-import { OllamaOperationUncheckedCreateNestedManyWithoutSessionInputObjectSchema as OllamaOperationUncheckedCreateNestedManyWithoutSessionInputObjectSchema } from './OllamaOperationUncheckedCreateNestedManyWithoutSessionInput.schema'
+import { NullableJsonNullValueInputSchema } from '../enums/NullableJsonNullValueInput.schema'
 
 import { JsonValueSchema as jsonSchema } from '../helpers/json-helpers';
 
@@ -14,8 +13,7 @@ const makeSchema = () => z.object({
   temperature: z.number().optional().nullable(),
   metadata: z.union([NullableJsonNullValueInputSchema, jsonSchema]).optional(),
   createdAt: z.coerce.date().optional(),
-  updatedAt: z.coerce.date().optional(),
-  ollamaOperations: z.lazy(() => OllamaOperationUncheckedCreateNestedManyWithoutSessionInputObjectSchema).optional()
+  updatedAt: z.coerce.date().optional()
 }).strict();
 export const ChatSessionUncheckedCreateWithoutMessagesInputObjectSchema: z.ZodType<Prisma.ChatSessionUncheckedCreateWithoutMessagesInput> = makeSchema() as unknown as z.ZodType<Prisma.ChatSessionUncheckedCreateWithoutMessagesInput>;
 export const ChatSessionUncheckedCreateWithoutMessagesInputObjectZodSchema = makeSchema();
