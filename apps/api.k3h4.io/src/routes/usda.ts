@@ -1,4 +1,4 @@
-import {ActorType, EntityKind, type PrismaClient} from '@prisma/client';
+import {ActorType, EntityKind, Prisma, type PrismaClient} from '@prisma/client';
 import {type FastifyInstance, type FastifyReply} from 'fastify';
 
 import {createTelemetryTimer} from '../lib/telemetry-timer';
@@ -17,6 +17,24 @@ const REFERENCE_CACHE_OPTIONS = {
 const PSD_REFERENCE_MAX_AGE_MINUTES = 7 * 24 * 60;
 const ENRICH_CACHE_TTL_MINUTES = 7 * 24 * 60;
 const ENRICH_ERROR_CACHE_TTL_MINUTES = 30;
+
+const cloneMetadata = (value?: Record<string, unknown>|null) => {
+  if (value && typeof value === 'object' && !Array.isArray(value))
+    return {...value};
+  return {} as Record<string, unknown>;
+};
+
+const metadataRecord =
+    (value: Prisma.JsonValue|null|undefined): Record<string, unknown> => {
+      if (value && typeof value === 'object' && !Array.isArray(value))
+        return value as Record<string, unknown>;
+      return {} as Record<string, unknown>;
+    };
+
+const toJsonValue = (record: Record<string, unknown>) => {
+  return Object.keys(record).length ? (record as Prisma.InputJsonValue) :
+                                      Prisma.JsonNull;
+};
 
 const badRequest = (reply: FastifyReply, message: string) =>
     reply.status(400).send({error: message});
@@ -132,13 +150,12 @@ export function registerUsdaRoutes(
         const code = normalized.code;
         const targetId = code ? buildTargetId(dataset, code) : null;
         const metadata = targetId ?
-            (entityMap.get(targetId)?.metadata as Record<string, any>|
-             undefined) :
-            undefined;
+            metadataRecord(entityMap.get(targetId)?.metadata) :
+            ({}) as Record<string, unknown>;
         return {
           ...row,
-          wikidataId: metadata?.wikidataId ?? null,
-          enrichment: metadata?.enrichment ?? null,
+          wikidataId: metadata.wikidataId ?? null,
+          enrichment: metadata.enrichment ?? null,
         };
       });
       server.log.info(
@@ -165,11 +182,12 @@ export function registerUsdaRoutes(
 
       const targetId = buildTargetId(dataset, code);
       const existing = entityMap.get(targetId);
+      const existingMetadata = metadataRecord(existing?.metadata);
       const baseMetadata = {
         dataset,
         code,
-        enrichment: existing?.metadata?.enrichment ?? null,
-        wikidataId: existing?.metadata?.wikidataId ?? null,
+        enrichment: existingMetadata.enrichment ?? null,
+        wikidataId: existingMetadata.wikidataId ?? null,
         row,
       };
       const entityPayload = {
@@ -179,7 +197,7 @@ export function registerUsdaRoutes(
         targetType,
         targetId,
         source: dataset,
-        metadata: baseMetadata,
+        metadata: toJsonValue(baseMetadata),
       };
 
       let entity = existing ?
@@ -198,16 +216,18 @@ export function registerUsdaRoutes(
           (!cacheHit.expiresAt || cacheHit.expiresAt.getTime() > now);
 
       if (cacheFresh) {
+        const currentMetadata = metadataRecord(entity.metadata);
         const updatedMetadata = {
-          ...entity.metadata,
+          ...currentMetadata,
           enrichment:
-              entity.metadata?.enrichment ?? (cacheHit.payload as any) ?? null,
-          wikidataId:
-              entity.metadata?.wikidataId ?? cacheHit.wikidataId ?? null,
+              currentMetadata.enrichment ?? (cacheHit.payload as any) ?? null,
+          wikidataId: currentMetadata.wikidataId ?? cacheHit.wikidataId ?? null,
           row,
         };
-        entity = await prisma.entity.update(
-            {where: {id: entity.id}, data: {metadata: updatedMetadata}});
+        entity = await prisma.entity.update({
+          where: {id: entity.id},
+          data: {metadata: toJsonValue(updatedMetadata)}
+        });
         enriched.push({
           ...row,
           wikidataId: updatedMetadata.wikidataId ?? null,
@@ -216,7 +236,8 @@ export function registerUsdaRoutes(
         continue;
       }
 
-      if (!entity.metadata?.wikidataId && name) {
+      const entityMetadata = metadataRecord(entity.metadata);
+      if (!entityMetadata.wikidataId && name) {
         try {
           const query = code ? `${name} ${code}` : name;
           const search = await fetchWikidataWithCache(
@@ -262,13 +283,15 @@ export function registerUsdaRoutes(
               statements: statements ?? undefined
             };
             const updatedMetadata = {
-              ...entity.metadata,
+              ...entityMetadata,
               enrichment: enrichmentPayload,
               wikidataId: hit.id as string,
               row,
             };
-            entity = await prisma.entity.update(
-                {where: {id: entity.id}, data: {metadata: updatedMetadata}});
+            entity = await prisma.entity.update({
+              where: {id: entity.id},
+              data: {metadata: toJsonValue(updatedMetadata)}
+            });
 
             await prisma.enrichmentCache.upsert({
               where: cacheKey,
@@ -305,7 +328,7 @@ export function registerUsdaRoutes(
               sourceKey: code,
               paramsHash: null,
               wikidataId: null,
-              payload: null,
+              payload: Prisma.JsonNull,
               status: 'error',
               fetchedAt: new Date(now),
               expiresAt:
@@ -321,7 +344,7 @@ export function registerUsdaRoutes(
         }
       }
 
-      const finalMetadata = entity.metadata ?? {};
+      const finalMetadata = metadataRecord(entity.metadata);
       enriched.push({
         ...row,
         wikidataId: finalMetadata.wikidataId ?? null,

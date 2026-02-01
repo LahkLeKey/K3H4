@@ -295,7 +295,7 @@ model ApiCacheEntry {
 }
 
 model EnrichmentCache {
-  id         String    @id
+  id         String    @id @default(cuid())
   provider   String    @default("wikidata")
   namespace  String
   kind       String

@@ -5,7 +5,7 @@ import { NullableJsonNullValueInputSchema } from '../enums/NullableJsonNullValue
 import { JsonValueSchema as jsonSchema } from '../helpers/json-helpers';
 
 const makeSchema = () => z.object({
-  id: z.string(),
+  id: z.string().optional(),
   provider: z.string().optional(),
   namespace: z.string(),
   kind: z.string(),
