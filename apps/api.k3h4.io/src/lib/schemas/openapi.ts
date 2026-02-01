@@ -4,10 +4,9 @@ import {zodToJsonSchema} from 'zod-to-json-schema';
 import {ACTOR_TYPES, ENTITY_DIRECTIONS, ENTITY_KINDS} from '../actor-entity-constants';
 import {BUILDING_TYPES, CHAT_ROLES, COVERAGE_STATUSES, ENGAGEMENT_PRIORITIES, LIFECYCLE_STATUSES, WAREHOUSE_CATEGORIES} from '../domain-constants';
 
-export const toJsonSchema =
-    <T extends z.ZodTypeAny>(schema: T, name?: string) => {
-      return zodToJsonSchema(schema, {name, target: 'openApi3'}).schema;
-    };
+export const toJsonSchema = (schema: z.ZodTypeAny, name?: string) => {
+  return zodToJsonSchema(schema as any, {name, target: 'openApi3'}) as object;
+};
 
 export const withExamples =
     <T extends Record<string, any>>(schema: T, examples: unknown[]) => ({
