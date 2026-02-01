@@ -11,51 +11,6 @@ datasource db {
   provider = "postgresql"
 }
 
-enum BuildingType {
-  RESIDENTIAL
-  COMMERCIAL
-  INDUSTRIAL
-}
-
-enum ChatRole {
-  SYSTEM
-  USER
-  ASSISTANT
-}
-
-enum LifecycleStatus {
-  ACTIVE    @map("active")
-  INACTIVE  @map("inactive")
-  OPEN      @map("open")
-  CLOSED    @map("closed")
-  PENDING   @map("pending")
-  PLANNING  @map("planning")
-  COMPLETED @map("completed")
-  STORED    @map("stored")
-  IDLE      @map("idle")
-  SCHEDULED @map("scheduled")
-  UNFILLED  @map("unfilled")
-}
-
-enum EngagementPriority {
-  LOW    @map("low")
-  NORMAL @map("normal")
-  MEDIUM @map("medium")
-  HIGH   @map("high")
-  URGENT @map("urgent")
-}
-
-enum CoverageStatus {
-  UNFILLED @map("unfilled")
-  FILLED   @map("filled")
-  PARTIAL  @map("partial")
-}
-
-enum WarehouseCategory {
-  AGRICULTURE @map("agriculture")
-  OTHER       @map("other")
-}
-
 model User {
   id              String   @id @default(cuid())
   email           String   @unique
