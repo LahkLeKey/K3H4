@@ -1,6 +1,9 @@
-export type ActorType = string;
-export type EntityKind = string;
-export type EntityDirection = string;
+import type {Prisma} from '@prisma/client';
+
+export type ActorType = Prisma.ActorCreateInput['type'];
+export type EntityKind = Prisma.EntityCreateInput['kind'];
+export type EntityDirection =
+    NonNullable<Prisma.EntityCreateInput['direction']>;
 
 export const ACTOR_TYPES = {
   BANK_ACCOUNT: 'bank-account',
@@ -29,7 +32,7 @@ export const ACTOR_TYPES = {
   POINT_OF_INTEREST: 'point-of-interest',
   AUTH_REFRESH_TOKEN: 'auth_refresh_token',
   AUTH_PROVIDER_GRANT: 'auth_provider_grant',
-} as const;
+} as const satisfies Record<string, ActorType>;
 
 export const ENTITY_KINDS = {
   DEPOSIT: 'deposit',
@@ -77,9 +80,9 @@ export const ENTITY_KINDS = {
   AUTH_REFRESH_TOKEN: 'auth_refresh_token',
   AUTH_PROVIDER_GRANT: 'auth_provider_grant',
   TELEMETRY_EVENT: 'telemetry-event',
-} as const;
+} as const satisfies Record<string, EntityKind>;
 
 export const ENTITY_DIRECTIONS = {
   CREDIT: 'credit',
   DEBIT: 'debit',
-} as const;
+} as const satisfies Record<string, EntityDirection>;

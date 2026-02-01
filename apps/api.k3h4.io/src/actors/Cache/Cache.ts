@@ -1,11 +1,11 @@
 import {PrismaClient} from '@prisma/client';
 
-import {ACTOR_TYPES} from '../../lib/actor-entity-constants';
+import {ACTOR_TYPES, type ActorType} from '../../lib/actor-entity-constants';
 
 export type CacheScope = 'wikidata'|'enrichment'|'api';
 
 const SCOPES: Record < CacheScope, {
-  type: string;
+  type: ActorType;
   label: string;
   source: string;
   note: string|null;

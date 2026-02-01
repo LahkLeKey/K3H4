@@ -1,4 +1,4 @@
-import '../../test/vitest-setup.ts';
+import '../../test/vitest-setup';
 
 import {LifecycleStatus, Prisma} from '@prisma/client';
 import Fastify from 'fastify';
@@ -11,7 +11,7 @@ import {readGeoDirectionCache, writeGeoDirectionCache,} from '../../services/geo
 import {registerFreightRoutes} from '../freight';
 import {type RecordTelemetryFn} from '../types';
 
-const recordTelemetry = vi.fn() as unknown as RecordTelemetryFn;
+const recordTelemetry = vi.fn<RecordTelemetryFn>();
 const userId = 'user-1';
 const createLoadPayload = (overrides: Partial<FreightLoadPayload> = {}) => ({
   id: 'l1',
@@ -103,12 +103,14 @@ describe('freight routes', () => {
   });
 
   it('creates a load with osrm data', async () => {
-    const fetchMock = vi.fn().mockResolvedValue({
-      ok: true,
-      json: async () =>
-          ({routes: [{distance: 10000, duration: 600, geometry: {}}]}),
-    });
-    globalThis.fetch = fetchMock;
+    const fetchMock = Object.assign(
+        vi.fn().mockResolvedValue({
+          ok: true,
+          json: async () =>
+              ({routes: [{distance: 10000, duration: 600, geometry: {}}]}),
+        }),
+        {preconnect: vi.fn()});
+    globalThis.fetch = fetchMock as unknown as typeof fetch;
 
     const server = buildServer({});
     const res = await server.inject({
@@ -134,8 +136,11 @@ describe('freight routes', () => {
   });
 
   it('returns 502 when osrm fails', async () => {
-    const fetchMock = vi.fn().mockRejectedValue(new Error('network'));
-    globalThis.fetch = fetchMock;
+    const fetchMock = Object.assign(
+        vi.fn().mockRejectedValue(new Error('network')),
+        {preconnect: vi.fn()},
+    );
+    globalThis.fetch = fetchMock as unknown as typeof fetch;
 
     const server = buildServer({});
     const res = await server.inject({
@@ -157,9 +162,12 @@ describe('freight routes', () => {
   });
 
   it('returns 502 when osrm returns empty route', async () => {
-    const fetchMock = vi.fn().mockResolvedValue(
-        {ok: true, json: async () => ({routes: []})} as Response);
-    globalThis.fetch = fetchMock;
+    const fetchMock = Object.assign(
+        vi.fn().mockResolvedValue(
+            {ok: true, json: async () => ({routes: []})} as Response),
+        {preconnect: vi.fn()},
+    );
+    globalThis.fetch = fetchMock as unknown as typeof fetch;
     const server = buildServer({});
     const res = await server.inject({
       method: 'POST',

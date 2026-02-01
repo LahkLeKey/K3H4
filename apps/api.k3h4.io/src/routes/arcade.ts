@@ -2,7 +2,7 @@ import {type Actor, type Entity, Prisma, type PrismaClient} from '@prisma/client
 import {type FastifyInstance} from 'fastify';
 
 import {recordBankTransactionEntity} from '../actors/Bank/Bank';
-import {ACTOR_TYPES, ENTITY_DIRECTIONS, ENTITY_KINDS} from '../lib/actor-entity-constants';
+import {ACTOR_TYPES, ENTITY_DIRECTIONS, ENTITY_KINDS, type EntityDirection as EntityDirectionType,} from '../lib/actor-entity-constants';
 
 import {buildTelemetryBase} from './telemetry';
 import {type RecordTelemetryFn} from './types';
@@ -35,7 +35,7 @@ const parseAmountFromMetadata = (metadata: Prisma.JsonValue|null|undefined) => {
 };
 
 const computeBalance = (entries: Array<{
-  direction: EntityDirection | null; metadata: Prisma.JsonValue | null;
+  direction: EntityDirectionType | null; metadata: Prisma.JsonValue | null;
 }>) => entries.reduce((balance, entry) => {
   const amount = parseAmountFromMetadata(entry.metadata);
   if (entry.direction === EntityDirection.DEBIT) return balance.sub(amount);

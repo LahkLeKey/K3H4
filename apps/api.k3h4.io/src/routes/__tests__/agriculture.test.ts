@@ -1,4 +1,4 @@
-import '../../test/vitest-setup.ts';
+import '../../test/vitest-setup';
 
 import Fastify from 'fastify';
 import {beforeEach, describe, expect, it, vi} from 'vitest';
@@ -7,7 +7,7 @@ import {ENTITY_KINDS} from '../../lib/actor-entity-constants';
 import {registerAgricultureRoutes} from '../agriculture';
 import {type RecordTelemetryFn} from '../types';
 
-const recordTelemetry = vi.fn() as unknown as RecordTelemetryFn;
+const recordTelemetry = vi.fn<RecordTelemetryFn>();
 const userId = 'user-1';
 const EntityKind = ENTITY_KINDS;
 

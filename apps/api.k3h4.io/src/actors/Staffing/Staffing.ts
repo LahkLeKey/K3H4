@@ -1,6 +1,6 @@
 import {Entity, Prisma, PrismaClient} from '@prisma/client';
 
-import {ACTOR_TYPES, ENTITY_KINDS} from '../../lib/actor-entity-constants';
+import {ACTOR_TYPES, ENTITY_KINDS, type EntityKind} from '../../lib/actor-entity-constants';
 import {actorWhereUserType, buildUserActorCreateInput, ensureActor, PrismaTx} from '../../lib/actor-utils';
 
 const STAFFING_ACTOR_LABEL = 'Staffing Ledger';
@@ -68,7 +68,7 @@ export async function loadStaffingEntities(
 }
 
 export async function loadStaffingEntityByKind(
-    prisma: PrismaClient, userId: string, kind: string, id: string) {
+    prisma: PrismaClient, userId: string, kind: EntityKind, id: string) {
   return prisma.entity.findFirst({
     where: {
       id,

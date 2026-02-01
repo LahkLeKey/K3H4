@@ -1,4 +1,4 @@
-import '../../test/vitest-setup.ts';
+import '../../test/vitest-setup';
 
 import {Entity} from '@prisma/client';
 import Fastify from 'fastify';
@@ -11,7 +11,7 @@ import {ENTITY_KINDS} from '../../lib/actor-entity-constants';
 import {registerStaffingRoutes} from '../staffing';
 import {type RecordTelemetryFn} from '../types';
 
-const recordTelemetry = vi.fn() as unknown as RecordTelemetryFn;
+const recordTelemetry = vi.fn<RecordTelemetryFn>();
 const userId = 'user-1';
 const EntityKind = ENTITY_KINDS;
 const staffingLedger = {
@@ -70,7 +70,22 @@ describe('staffing routes', () => {
         .mockResolvedValue(personaLedgerActor as any);
     vi.spyOn(personaLedger, 'personaRecordToResponse')
         .mockImplementation(
-            (persona) => ({id: persona.id, alias: persona.alias}));
+            (persona) => ({
+              id: persona.id,
+              alias: persona.alias,
+              account: persona.account,
+              handle: persona.handle ?? undefined,
+              note: persona.note ?? undefined,
+              tags: persona.tags,
+              attributes: persona.attributes.map((attr) => ({
+                                                   id: attr.id,
+                                                   category: attr.category,
+                                                   value: attr.value,
+                                                   weight: attr.weight,
+                                                 })),
+              createdAt: persona.createdAt,
+              updatedAt: persona.updatedAt,
+            }));
   });
 
   afterEach(() => {

@@ -67,3 +67,12 @@ export const toNumber = (value: unknown) => {
   }
   return null;
 };
+
+export const toInputJsonValue = (value: unknown): Prisma.InputJsonValue =>
+    JSON.parse(JSON.stringify(value)) as Prisma.InputJsonValue;
+
+export const toNullableInputJsonValue =
+    (value: unknown): Prisma.InputJsonValue|Prisma.NullTypes.JsonNull => {
+      if (value === null || value === undefined) return Prisma.JsonNull;
+      return toInputJsonValue(value);
+    };

@@ -1,4 +1,4 @@
-import '../../test/vitest-setup.ts';
+import '../../test/vitest-setup';
 
 import Fastify from 'fastify';
 import {beforeEach, describe, expect, it, vi} from 'vitest';
@@ -19,7 +19,7 @@ const fetchOsrmWithCache =
     cache.fetchOsrmWithCache as unknown as ReturnType<typeof vi.fn>;
 const ensureGeoActorMock =
     ensureGeoActor as unknown as ReturnType<typeof vi.fn>;
-const recordTelemetry = vi.fn() as unknown as RecordTelemetryFn;
+const recordTelemetry = vi.fn<RecordTelemetryFn>();
 const userId = 'user-1';
 
 const buildServer = () => {

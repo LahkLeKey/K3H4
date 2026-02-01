@@ -2,7 +2,7 @@ import {Entity, Prisma, PrismaClient} from '@prisma/client';
 
 import {ACTOR_TYPES, ENTITY_KINDS} from '../../lib/actor-entity-constants';
 import {actorWhereUserType, buildUserActorCreateInput, ensureActor, PrismaTx} from '../../lib/actor-utils';
-import {asRecord} from '../../lib/json-record';
+import {asRecord, toInputJsonValue} from '../../lib/json-record';
 
 const AI_ACTOR_LABEL = 'AI Insight Ledger';
 const AI_ACTOR_SOURCE = 'k3h4-ai';
@@ -14,14 +14,16 @@ const stringOrNull = (value: unknown) => {
   return String(value);
 };
 
-const buildMetadata = (payload: AiInsightCreateOptions): Prisma.JsonValue => ({
-  description: payload.description,
-  targetLabel: payload.targetLabel ?? null,
-  model: payload.model ?? null,
-  systemPrompt: payload.systemPrompt ?? null,
-  metadata: payload.metadata ?? null,
-  payload: payload.payload ?? null,
-});
+const buildMetadata =
+    (payload: AiInsightCreateOptions): Prisma.InputJsonValue =>
+        toInputJsonValue({
+          description: payload.description,
+          targetLabel: payload.targetLabel ?? null,
+          model: payload.model ?? null,
+          systemPrompt: payload.systemPrompt ?? null,
+          metadata: payload.metadata ?? null,
+          payload: payload.payload ?? null,
+        });
 
 export type AiInsightPayload = {
   id: string; description: string; targetType: string | null;
@@ -51,7 +53,7 @@ export async function ensureAiInsightActor(
     type: ACTOR_TYPES.AI_INSIGHT,
     label: AI_ACTOR_LABEL,
     source: AI_ACTOR_SOURCE,
-    metadata: metadata ?? undefined,
+    metadata: metadata == null ? undefined : toInputJsonValue(metadata),
   };
   return ensureActor(tx, {
     where: criteria,

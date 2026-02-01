@@ -109,7 +109,7 @@ export async function recordBankTransactionEntity(
   });
 }
 
-type MetadataFilter = Prisma.JsonFilter;
+type MetadataFilter = Prisma.EntityWhereInput['metadata'];
 
 type BankTransactionWhereOptions = {
   direction?: EntityDirection;
