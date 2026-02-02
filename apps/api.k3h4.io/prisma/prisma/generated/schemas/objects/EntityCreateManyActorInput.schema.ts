@@ -1,15 +1,13 @@
 import * as z from 'zod';
 import type { Prisma } from '@prisma/client';
-import { EntityKindSchema } from '../enums/EntityKind.schema';
-import { EntityDirectionSchema } from '../enums/EntityDirection.schema';
 import { NullableJsonNullValueInputSchema } from '../enums/NullableJsonNullValueInput.schema'
 
 import { JsonValueSchema as jsonSchema } from '../helpers/json-helpers';
 
 const makeSchema = () => z.object({
   id: z.string().optional(),
-  kind: EntityKindSchema,
-  direction: EntityDirectionSchema.optional().nullable(),
+  kind: z.string(),
+  direction: z.string().optional().nullable(),
   name: z.string().optional().nullable(),
   targetType: z.string().optional().nullable(),
   targetId: z.string().optional().nullable(),

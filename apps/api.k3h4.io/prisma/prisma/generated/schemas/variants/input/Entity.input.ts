@@ -1,13 +1,11 @@
 import * as z from 'zod';
-import { EntityKindSchema } from '../../enums/EntityKind.schema';
-import { EntityDirectionSchema } from '../../enums/EntityDirection.schema';
 // prettier-ignore
 export const EntityInputSchema = z.object({
     id: z.string(),
     actorId: z.string(),
     actor: z.unknown(),
-    kind: EntityKindSchema,
-    direction: EntityDirectionSchema.optional().nullable(),
+    kind: z.string(),
+    direction: z.string().optional().nullable(),
     name: z.string().optional().nullable(),
     targetType: z.string().optional().nullable(),
     targetId: z.string().optional().nullable(),
