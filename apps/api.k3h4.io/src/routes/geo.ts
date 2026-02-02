@@ -5,7 +5,7 @@ import * as z from 'zod';
 import {ensureGeoActor} from '../actors/Geo/Geo';
 import {ACTOR_TYPES} from '../lib/actor-entity-constants';
 import {clampDecimals, routeSignature} from '../lib/geo-signature';
-import {GeoResourceGet, GeoResourcePost} from '../lib/openapi/route-kinds';
+import {GeoResourcePost} from '../lib/openapi/route-kinds';
 import {enqueueOverpass} from '../lib/overpass-queue';
 import {AuthHeaderSchema, IntegerLikeSchema, makeBodySchema, makeOk, makeParamsSchema, makeQuerySchema, makeResponses, OkResponseSchema, OptionalAuthHeaderSchema, withExamples, zLat, zLon, zRadius, zZoom} from '../lib/schemas/openapi';
 import {logGeoStatus, readGeoPoiCache, readGeoPoiCacheStale, readGeoQueryCache, readGeoRouteCache, readGeoViewHistory, writeGeoPoiCache, writeGeoQueryCache, writeGeoRouteCache,} from '../services/geo-cache';
@@ -93,7 +93,7 @@ export function registerGeoRoutes(
                     lng: zLon.optional(),
                   }).optional(),
          view: z.object({
-                  zoom: zZoom.optional(),
+                  zoom: z.number().optional(),
                   bearing: z.number().optional(),
                   pitch: z.number().optional(),
                 }).optional(),
@@ -134,7 +134,7 @@ export function registerGeoRoutes(
       z.object({
          id: z.string().min(1),
          signature: z.string().min(1),
-         zoomBand: z.string().min(1),
+         zoomBand: z.number().int(),
          bbox: z.object({
                   minLat: z.number(),
                   minLng: z.number(),
@@ -174,6 +174,17 @@ export function registerGeoRoutes(
                  pois: z.unknown().optional(),
                }).nullable(),
        }).passthrough();
+  const geoRouteQuerySchema = makeQuerySchema(
+      z.object({
+         originLat: zLat.describe('Origin latitude'),
+         originLng: zLon.describe('Origin longitude'),
+         destinationLat: zLat.describe('Destination latitude'),
+         destinationLng: zLat.describe('Destination longitude'),
+       }).strict(),
+      'GeoRouteQuery');
+  const geoHistoryQuerySchema = makeQuerySchema(
+      z.object({limit: IntegerLikeSchema.optional()}).passthrough(),
+      'GeoHistoryQuery');
   const persistUserGeoPrefs = async (userId: string|null, prefs: {
     center?: {lat: number; lng: number}|null;
     view?:
@@ -786,52 +797,107 @@ export function registerGeoRoutes(
   };
 
   server.get(
-      '/geo/:resource',
+      '/geo/route',
       {
         schema: {
-          summary: 'Geo resource fetch',
+          summary: 'Fetch geo route',
           description:
-              'Fetches geo route, history, or preferences. Requires bearer auth.',
-          operationId: 'geo_resource_get',
+              'Fetches a cached or fresh route between two locations using OSRM.',
+          operationId: 'geo_route_get',
           tags: ['geo'],
           headers: geoAuthHeader,
           security: [{bearerAuth: []}],
-          params: makeParamsSchema(
-              z.object({
-                 resource: GeoResourceGet.describe('Geo resource type'),
-               }).strict(),
-              'GeoResourceParams'),
-          querystring: makeQuerySchema(
-              z.object({
-                 originLat: zLat.optional(),
-                 originLng: zLon.optional(),
-                 destinationLat: zLat.optional(),
-                 destinationLng: zLon.optional(),
-                 limit: IntegerLikeSchema.optional(),
-               }).passthrough(),
-              'GeoResourceQuery'),
+          querystring: geoRouteQuerySchema,
           response: makeResponses(
               {
                 200: withExamples(
-                    makeOk(
-                        z.union([
-                          geoRouteResponseSchema,
-                          z.array(geoHistoryEntrySchema),
-                          geoPrefsResponseSchema,
-                        ]),
-                        'GeoResourceResponse'),
-                    [{distanceKm: 12.4, durationMinutes: 18, cached: true}]),
+                    makeOk(geoRouteResponseSchema, 'GeoRouteResponse'), [{
+                      distanceKm: 12.4,
+                      durationMinutes: 18,
+                      geojson: {},
+                      cached: true,
+                    }]),
               },
               {includeStandardErrors: true}),
         },
       },
-      async (request, reply) => {
-        const {resource} = request.params as {resource?: string};
-        if (resource === 'route') return handleGeoRoute(request, reply);
-        if (resource === 'history') return handleGeoHistory(request, reply);
-        if (resource === 'prefs') return handleGeoPrefsGet(request, reply);
-        return reply.status(404).send({error: 'Resource not found'});
+      handleGeoRoute,
+  );
+
+  server.get(
+      '/geo/history',
+      {
+        schema: {
+          summary: 'Fetch geo history',
+          description: 'Returns the user\'s saved map view history.',
+          operationId: 'geo_history_get',
+          tags: ['geo'],
+          headers: geoAuthHeader,
+          security: [{bearerAuth: []}],
+          querystring: geoHistoryQuerySchema,
+          response: makeResponses(
+              {
+                200: withExamples(
+                    makeOk(
+                        z.array(geoHistoryEntrySchema), 'GeoHistoryResponse'),
+                    [{
+                      id: 1,
+                      signature: 'test:history',
+                      zoomBand: 15,
+                      bbox: {
+                        minLat: 0,
+                        minLng: 0,
+                        maxLat: 1,
+                        maxLng: 1,
+                      },
+                      lastPoiIds: [],
+                      firstViewedAt: '2026-02-02T00:00:00Z',
+                      lastViewedAt: '2026-02-02T00:00:00Z',
+                      viewCount: 1,
+                    }]),
+              },
+              {includeStandardErrors: true}),
+        },
       },
+      handleGeoHistory,
+  );
+
+  server.get(
+      '/geo/prefs',
+      {
+        schema: {
+          summary: 'Fetch geo preferences',
+          description:
+              'Returns the most recently persisted map view and POI search.',
+          operationId: 'geo_prefs_get',
+          tags: ['geo'],
+          headers: geoAuthHeader,
+          security: [{bearerAuth: []}],
+          response: makeResponses(
+              {
+                200: withExamples(
+                    makeOk(geoPrefsResponseSchema, 'GeoPrefsResponse'), [{
+                      view: {
+                        center: {lat: 37.78, lng: -122.42},
+                        zoom: 12,
+                        bearing: 0,
+                        pitch: 0,
+                      },
+                      poi: {
+                        signature: '37.78:-122.42:1800:bank',
+                        kinds: ['bank'],
+                        radiusM: 1800,
+                        count: 1,
+                        cached: true,
+                        fetchedAt: '2026-02-02T00:00:00Z',
+                        pois: [],
+                      },
+                    }]),
+              },
+              {includeStandardErrors: true}),
+        },
+      },
+      handleGeoPrefsGet,
   );
 
   server.post(

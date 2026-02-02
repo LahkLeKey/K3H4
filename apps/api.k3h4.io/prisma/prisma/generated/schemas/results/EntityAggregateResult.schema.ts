@@ -17,6 +17,8 @@ export const EntityAggregateResultSchema = z.object({  _count: z.object({
   _min: z.object({
     id: z.string().nullable(),
     actorId: z.string().nullable(),
+    kind: z.string().nullable(),
+    direction: z.string().nullable(),
     name: z.string().nullable(),
     targetType: z.string().nullable(),
     targetId: z.string().nullable(),
@@ -27,6 +29,8 @@ export const EntityAggregateResultSchema = z.object({  _count: z.object({
   _max: z.object({
     id: z.string().nullable(),
     actorId: z.string().nullable(),
+    kind: z.string().nullable(),
+    direction: z.string().nullable(),
     name: z.string().nullable(),
     targetType: z.string().nullable(),
     targetId: z.string().nullable(),
