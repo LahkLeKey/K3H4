@@ -135,6 +135,11 @@ export function MapLayer({ readonly }: { readonly?: boolean }) {
         [apiBase, stylePath],
     );
     const mapStyleUrl = mapConfig ? maptilerStyleUrl : FALLBACK_STYLE_URL;
+
+    if (mapStyleUrl === FALLBACK_STYLE_URL) {
+        console.warn("Failed to load mapConfig ? maptilerStyleUrl. Using fallback map style URL");
+    }
+
     const maptilerVectorTiles = useMemo(
         () => buildApiUrl(apiBase, `/maptiler/tiles?path=${vectorTilePath}`),
         [apiBase, vectorTilePath],
