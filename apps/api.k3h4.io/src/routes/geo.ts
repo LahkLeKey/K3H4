@@ -132,7 +132,7 @@ export function registerGeoRoutes(
                                   }).passthrough();
   const geoHistoryEntrySchema =
       z.object({
-         id: z.number().int(),
+         id: z.string().min(1),
          signature: z.string().min(1),
          zoomBand: z.number().int(),
          bbox: z.object({

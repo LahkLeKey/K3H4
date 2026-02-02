@@ -534,7 +534,6 @@ export function MapLayer({ readonly }: { readonly?: boolean }) {
     const readyProgress = Math.round((loadSteps.filter((step) => step.done).length / loadSteps.length) * 100);
     const mapReady = mapLoaded && (terrainReady || mapGateTimerDone);
     const showPreparingOverlay = Boolean(session) && !mapReady;
-    const showTilesBrokenDialog = Boolean(session);
 
     const prewarmedRef = useRef<Record<string, boolean>>({});
     const prewarmTiles = useDebouncedCallback(async () => {
@@ -623,24 +622,6 @@ export function MapLayer({ readonly }: { readonly?: boolean }) {
     return (
         <>
             <div ref={ref} className="absolute inset-0 z-0" />
-            {showTilesBrokenDialog ? (
-                <div className="pointer-events-none absolute left-1/2 top-1/2 z-50 w-[520px] max-w-[calc(100%-48px)] -translate-x-1/2 -translate-y-1/2">
-                    <div className="space-y-4 rounded-2xl border border-rose-400/40 bg-slate-900/95 p-6 text-white shadow-2xl">
-                        <div className="flex items-center gap-3">
-                            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-rose-500/20 text-rose-200">
-                                <span className="text-2xl">⚠️</span>
-                            </div>
-                            <div>
-                                <p className="text-sm uppercase tracking-[0.24em] text-rose-200/80">Map outage</p>
-                                <h2 className="text-2xl font-semibold text-white">Map tiles are currently broken</h2>
-                            </div>
-                        </div>
-                        <p className="text-base text-white/80">
-                            We’re in the middle of a backend refactor and tiles are not rendering. Please come back later.
-                        </p>
-                    </div>
-                </div>
-            ) : null}
             {showPreparingOverlay ? (
                 <div className="absolute inset-0 z-50 flex items-center justify-center bg-slate-950/85 backdrop-blur-sm">
                     <div className="w-80 max-w-[calc(100%-48px)] space-y-3 rounded-xl border border-white/10 bg-slate-900/80 p-4 text-white shadow-2xl">
