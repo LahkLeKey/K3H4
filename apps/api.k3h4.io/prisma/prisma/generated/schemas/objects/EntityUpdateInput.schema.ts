@@ -3,6 +3,7 @@ import type { Prisma } from '@prisma/client';
 import { StringFieldUpdateOperationsInputObjectSchema as StringFieldUpdateOperationsInputObjectSchema } from './StringFieldUpdateOperationsInput.schema';
 import { NullableStringFieldUpdateOperationsInputObjectSchema as NullableStringFieldUpdateOperationsInputObjectSchema } from './NullableStringFieldUpdateOperationsInput.schema';
 import { NullableJsonNullValueInputSchema } from '../enums/NullableJsonNullValueInput.schema';
+import { BoolFieldUpdateOperationsInputObjectSchema as BoolFieldUpdateOperationsInputObjectSchema } from './BoolFieldUpdateOperationsInput.schema';
 import { DateTimeFieldUpdateOperationsInputObjectSchema as DateTimeFieldUpdateOperationsInputObjectSchema } from './DateTimeFieldUpdateOperationsInput.schema';
 import { ActorUpdateOneRequiredWithoutEntitiesNestedInputObjectSchema as ActorUpdateOneRequiredWithoutEntitiesNestedInputObjectSchema } from './ActorUpdateOneRequiredWithoutEntitiesNestedInput.schema';
 import { EntityCacheUpdateManyWithoutEntityNestedInputObjectSchema as EntityCacheUpdateManyWithoutEntityNestedInputObjectSchema } from './EntityCacheUpdateManyWithoutEntityNestedInput.schema'
@@ -18,6 +19,7 @@ const makeSchema = () => z.object({
   targetId: z.union([z.string(), z.lazy(() => NullableStringFieldUpdateOperationsInputObjectSchema)]).optional().nullable(),
   source: z.union([z.string(), z.lazy(() => NullableStringFieldUpdateOperationsInputObjectSchema)]).optional().nullable(),
   metadata: z.union([NullableJsonNullValueInputSchema, jsonSchema]).optional(),
+  isGlobal: z.union([z.boolean(), z.lazy(() => BoolFieldUpdateOperationsInputObjectSchema)]).optional(),
   createdAt: z.union([z.coerce.date(), z.lazy(() => DateTimeFieldUpdateOperationsInputObjectSchema)]).optional(),
   updatedAt: z.union([z.coerce.date(), z.lazy(() => DateTimeFieldUpdateOperationsInputObjectSchema)]).optional(),
   actor: z.lazy(() => ActorUpdateOneRequiredWithoutEntitiesNestedInputObjectSchema).optional(),

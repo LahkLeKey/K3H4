@@ -11,6 +11,7 @@ export const ActorInputSchema = z.object({
     metadata: z.unknown().optional().nullable(),
     category: z.string().optional().nullable(),
     lastSeenAt: z.date().optional().nullable(),
+    isGlobal: z.boolean(),
     createdAt: z.date(),
     updatedAt: z.date(),
     entities: z.array(z.unknown()),

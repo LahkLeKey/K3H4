@@ -9,6 +9,7 @@ export const ActorGroupByResultSchema = z.array(z.object({
   metadata: z.unknown(),
   category: z.string(),
   lastSeenAt: z.date(),
+  isGlobal: z.boolean(),
   createdAt: z.date(),
   updatedAt: z.date(),
   _count: z.object({
@@ -22,6 +23,7 @@ export const ActorGroupByResultSchema = z.array(z.object({
     metadata: z.number(),
     category: z.number(),
     lastSeenAt: z.number(),
+    isGlobal: z.number(),
     createdAt: z.number(),
     updatedAt: z.number(),
     entities: z.number(),

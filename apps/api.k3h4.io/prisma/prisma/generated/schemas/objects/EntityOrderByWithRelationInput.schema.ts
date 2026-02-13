@@ -15,6 +15,7 @@ const makeSchema = () => z.object({
   targetId: z.union([SortOrderSchema, z.lazy(() => SortOrderInputObjectSchema)]).optional(),
   source: z.union([SortOrderSchema, z.lazy(() => SortOrderInputObjectSchema)]).optional(),
   metadata: z.union([SortOrderSchema, z.lazy(() => SortOrderInputObjectSchema)]).optional(),
+  isGlobal: SortOrderSchema.optional(),
   createdAt: SortOrderSchema.optional(),
   updatedAt: SortOrderSchema.optional(),
   actor: z.lazy(() => ActorOrderByWithRelationInputObjectSchema).optional(),

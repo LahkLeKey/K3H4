@@ -10,6 +10,7 @@ export const EntityCreateResultSchema = z.object({
   targetId: z.string().optional(),
   source: z.string().optional(),
   metadata: z.unknown().optional(),
+  isGlobal: z.boolean(),
   createdAt: z.date(),
   updatedAt: z.date(),
   caches: z.array(z.unknown())

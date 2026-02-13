@@ -11,6 +11,7 @@ const makeSchema = () => z.object({
   targetType: z.literal(true).optional(),
   targetId: z.literal(true).optional(),
   source: z.literal(true).optional(),
+  isGlobal: z.literal(true).optional(),
   createdAt: z.literal(true).optional(),
   updatedAt: z.literal(true).optional()
 }).strict();

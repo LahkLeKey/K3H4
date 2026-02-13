@@ -12,6 +12,7 @@ const makeSchema = () => z.object({
   metadata: z.literal(true).optional(),
   category: z.literal(true).optional(),
   lastSeenAt: z.literal(true).optional(),
+  isGlobal: z.literal(true).optional(),
   createdAt: z.literal(true).optional(),
   updatedAt: z.literal(true).optional(),
   _all: z.literal(true).optional()

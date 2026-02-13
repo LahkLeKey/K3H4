@@ -3,6 +3,7 @@ import type { Prisma } from '@prisma/client';
 import { StringFilterObjectSchema as StringFilterObjectSchema } from './StringFilter.schema';
 import { StringNullableFilterObjectSchema as StringNullableFilterObjectSchema } from './StringNullableFilter.schema';
 import { JsonNullableFilterObjectSchema as JsonNullableFilterObjectSchema } from './JsonNullableFilter.schema';
+import { BoolFilterObjectSchema as BoolFilterObjectSchema } from './BoolFilter.schema';
 import { DateTimeFilterObjectSchema as DateTimeFilterObjectSchema } from './DateTimeFilter.schema';
 import { ActorScalarRelationFilterObjectSchema as ActorScalarRelationFilterObjectSchema } from './ActorScalarRelationFilter.schema';
 import { ActorWhereInputObjectSchema as ActorWhereInputObjectSchema } from './ActorWhereInput.schema';
@@ -21,6 +22,7 @@ const entitywhereinputSchema = z.object({
   targetId: z.union([z.lazy(() => StringNullableFilterObjectSchema), z.string()]).optional().nullable(),
   source: z.union([z.lazy(() => StringNullableFilterObjectSchema), z.string()]).optional().nullable(),
   metadata: z.lazy(() => JsonNullableFilterObjectSchema).optional(),
+  isGlobal: z.union([z.lazy(() => BoolFilterObjectSchema), z.boolean()]).optional(),
   createdAt: z.union([z.lazy(() => DateTimeFilterObjectSchema), z.coerce.date()]).optional(),
   updatedAt: z.union([z.lazy(() => DateTimeFilterObjectSchema), z.coerce.date()]).optional(),
   actor: z.union([z.lazy(() => ActorScalarRelationFilterObjectSchema), z.lazy(() => ActorWhereInputObjectSchema)]).optional(),

@@ -10,6 +10,7 @@ export const ActorAggregateResultSchema = z.object({  _count: z.object({
     metadata: z.number(),
     category: z.number(),
     lastSeenAt: z.number(),
+    isGlobal: z.number(),
     createdAt: z.number(),
     updatedAt: z.number(),
     entities: z.number(),

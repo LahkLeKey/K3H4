@@ -16,6 +16,7 @@ const makeSchema = () => z.object({
   metadata: z.boolean().optional(),
   category: z.boolean().optional(),
   lastSeenAt: z.boolean().optional(),
+  isGlobal: z.boolean().optional(),
   createdAt: z.boolean().optional(),
   updatedAt: z.boolean().optional(),
   entities: z.union([z.boolean(), z.lazy(() => EntityFindManySchema)]).optional(),

@@ -9,6 +9,7 @@ export const EntityGroupByResultSchema = z.array(z.object({
   targetId: z.string(),
   source: z.string(),
   metadata: z.unknown(),
+  isGlobal: z.boolean(),
   createdAt: z.date(),
   updatedAt: z.date(),
   _count: z.object({
@@ -22,6 +23,7 @@ export const EntityGroupByResultSchema = z.array(z.object({
     targetId: z.number(),
     source: z.number(),
     metadata: z.number(),
+    isGlobal: z.number(),
     createdAt: z.number(),
     updatedAt: z.number(),
     caches: z.number()

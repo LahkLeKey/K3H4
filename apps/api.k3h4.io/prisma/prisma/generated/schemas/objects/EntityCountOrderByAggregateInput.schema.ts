@@ -12,6 +12,7 @@ const makeSchema = () => z.object({
   targetId: SortOrderSchema.optional(),
   source: SortOrderSchema.optional(),
   metadata: SortOrderSchema.optional(),
+  isGlobal: SortOrderSchema.optional(),
   createdAt: SortOrderSchema.optional(),
   updatedAt: SortOrderSchema.optional()
 }).strict();
