@@ -80,6 +80,7 @@ export const ENTITY_KINDS = {
   AUTH_REFRESH_TOKEN: 'auth_refresh_token',
   AUTH_PROVIDER_GRANT: 'auth_provider_grant',
   TELEMETRY_EVENT: 'telemetry-event',
+  MAPTILER_TILE: 'maptiler-tile',
 } as const satisfies Record<string, EntityKind>;
 
 export const ENTITY_DIRECTIONS = {
