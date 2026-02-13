@@ -21,6 +21,9 @@ const ensureGeoActorMock =
     ensureGeoActor as unknown as ReturnType<typeof vi.fn>;
 const recordTelemetry = vi.fn<RecordTelemetryFn>();
 const userId = 'user-1';
+const authHeaders = {
+  authorization: 'Bearer token'
+};
 
 const buildServer = () => {
   const server = Fastify();
@@ -47,7 +50,7 @@ describe('osrm routes', () => {
     const server = buildServer();
     const url =
         '/osrm/route?profile=driving&coordinates=13.1,52.1;13.2,52.2&overview=false';
-    const res = await server.inject({method: 'GET', url});
+    const res = await server.inject({method: 'GET', url, headers: authHeaders});
     expect(res.statusCode).toBe(200);
     expect(fetchOsrmWithCache)
         .toHaveBeenCalledWith(
@@ -58,8 +61,13 @@ describe('osrm routes', () => {
 
   it('rejects missing coordinates', async () => {
     const server = buildServer();
-    const res = await server.inject(
-        {method: 'GET', url: '/osrm/route?profile=driving'});
+    const res = await server.inject({
+      method: 'GET',
+      url: '/osrm/route?profile=driving',
+      headers: authHeaders
+    });
+    if (res.statusCode !== 400)
+      console.error('osrm missing coords payload', res.payload);
     expect(res.statusCode).toBe(400);
     expect(fetchOsrmWithCache).not.toHaveBeenCalled();
   });

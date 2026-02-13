@@ -110,7 +110,10 @@ export const IfNoneMatchHeaderSchema =
 
 export const ErrorResponseSchema = z.object({
                                       error: z.string().min(1),
-                                      code: z.number().int().optional(),
+                                      code: z.union([
+                                               z.number().int(),
+                                               z.string().min(1),
+                                             ]).optional(),
                                       retryAfter: z.number().int().optional(),
                                     }).strict();
 

@@ -9,9 +9,9 @@ import {deleteFreightActorWithEntities} from '../actors/Freight/Freight';
 import {deleteStaffingActorWithEntities} from '../actors/Staffing/Staffing';
 import {getTelemetryActorSource} from '../actors/Telemetry/Telemetry';
 import {deleteWarehouseActorWithEntities} from '../actors/Warehouse/Warehouse';
-import {deleteProviderGrantsForUser, deleteRefreshTokensForUser, findRefreshTokenEntity, readProviderGrantsForUser, storeRefreshToken, upsertProviderGrant} from '../entities/Auth/Auth';
-import {deleteCulinaryActorWithEntities} from '../entities/Culinary/Culinary';
 import {ACTOR_TYPES, ENTITY_KINDS} from '../lib/actor-entity-constants';
+import {deleteProviderGrantsForUser, deleteRefreshTokensForUser, findRefreshTokenEntity, readProviderGrantsForUser, storeRefreshToken, upsertProviderGrant} from '../services/auth-entities';
+import {deleteCulinaryActorWithEntities} from '../services/culinary-ledger';
 import {deleteUserPreferencesForUser} from '../services/user-preferences';
 
 import {withTelemetryBase} from './telemetry';
