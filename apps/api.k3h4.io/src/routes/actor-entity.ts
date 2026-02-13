@@ -109,6 +109,20 @@ export function registerActorEntityRoutes(
   const authHeader = toJsonSchema(AuthHeaderSchema, 'AuthHeader');
   const actorIdParamsSchema =
       makeParamsSchema(z.object({id: zActorId}).strict(), 'ActorIdParams');
+  const cacheRecordSchema = z.object({
+                               id: z.string().min(1),
+                               key: z.string().min(1),
+                               payload: z.unknown().nullable().optional(),
+                               expiresAt: z.string().nullable().optional(),
+                               createdAt: z.string().min(1),
+                               updatedAt: z.string().min(1),
+                             }).passthrough();
+  const cacheQuerySchema = toJsonSchema(
+      z.object({limit: IntegerLikeSchema.optional()}).strict(),
+      'CacheListQuery');
+  const cacheListResponseSchema = toJsonSchema(
+      z.object({caches: z.array(cacheRecordSchema)}).strict(),
+      'CacheListResponse');
 
   const registerActorRoutes = (scope: FastifyInstance) => {
     const auth = {preHandler: [scope.authenticate]};
@@ -457,6 +471,7 @@ export function registerActorEntityRoutes(
             return reply.status(400).send({error: 'actorId is required'});
 
           const actor = await requireActor(prisma, reply, actorId, userId);
+
           if (!actor) return;
 
           const query = request.query as {
@@ -491,6 +506,58 @@ export function registerActorEntityRoutes(
           });
 
           return {entities};
+        });
+
+    scope.get(
+        '/actors/:actorId/caches', {
+          ...auth,
+          schema: {
+            summary: 'List actor caches',
+            description: 'Lists caches for a specific actor.',
+            operationId: 'actor_cache_list',
+            tags: ['actor', 'cache'],
+            headers: authHeader,
+            security: [{bearerAuth: []}],
+            params: toJsonSchema(
+                z.object({actorId: z.string().min(1)}).strict(),
+                'ActorIdParams'),
+            querystring: cacheQuerySchema,
+            response: {
+              200: cacheListResponseSchema,
+              ...StandardErrorResponses,
+            },
+          },
+        },
+        async (request, reply) => {
+          const rt = withTelemetryBase(recordTelemetry, request);
+          const userId = (request.user as {sub: string}).sub;
+          const params = request.params as {actorId?: string};
+          const actorId = normalizeString(params?.actorId);
+          if (!actorId)
+            return reply.status(400).send({error: 'actorId is required'});
+
+          const actor = await requireActor(prisma, reply, actorId, userId);
+          if (!actor) return;
+
+          const query = request.query as {limit?: number | string};
+          const limit = clampLimit(query?.limit, 100, 1, 500);
+          const caches = await prisma.actorCache.findMany({
+            where: {actorId},
+            orderBy: {createdAt: 'desc'},
+            take: limit,
+          });
+
+          await rt({
+            eventType: 'actor.cache.list',
+            source: 'api',
+            payload: {
+              actorId,
+              count: caches.length,
+              limit,
+            },
+          });
+
+          return {caches};
         });
 
     scope.post(
@@ -618,6 +685,57 @@ export function registerActorEntityRoutes(
           });
 
           return {entity};
+        });
+
+    scope.get(
+        '/entities/:id/caches', {
+          ...auth,
+          schema: {
+            summary: 'List entity caches',
+            description: 'Lists caches for a specific entity.',
+            operationId: 'entity_cache_list',
+            tags: ['entity', 'cache'],
+            headers: authHeader,
+            security: [{bearerAuth: []}],
+            params: toJsonSchema(
+                z.object({id: z.string().min(1)}).strict(), 'EntityIdParams'),
+            querystring: cacheQuerySchema,
+            response: {
+              200: cacheListResponseSchema,
+              ...StandardErrorResponses,
+            },
+          },
+        },
+        async (request, reply) => {
+          const rt = withTelemetryBase(recordTelemetry, request);
+          const userId = (request.user as {sub: string}).sub;
+          const params = request.params as {id?: string};
+          const entityId = normalizeString(params?.id);
+          if (!entityId)
+            return reply.status(400).send({error: 'id is required'});
+
+          const entity = await requireEntity(prisma, reply, entityId, userId);
+          if (!entity) return;
+
+          const query = request.query as {limit?: number | string};
+          const limit = clampLimit(query?.limit, 100, 1, 500);
+          const caches = await prisma.entityCache.findMany({
+            where: {entityId},
+            orderBy: {createdAt: 'desc'},
+            take: limit,
+          });
+
+          await rt({
+            eventType: 'entity.cache.list',
+            source: 'api',
+            payload: {
+              entityId,
+              count: caches.length,
+              limit,
+            },
+          });
+
+          return {caches};
         });
 
     scope.patch(

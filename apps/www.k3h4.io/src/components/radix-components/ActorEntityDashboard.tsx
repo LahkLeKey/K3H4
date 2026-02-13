@@ -2,14 +2,24 @@ import { useMemo, useState } from "react";
 
 import { Table } from "../ui";
 import type { TableColumn } from "../ui/Table";
-import { useActorsQuery, useEntitiesQuery } from "../../react-hooks/actor-entity";
-import type { ActorRecord, EntityRecord } from "../../schemas/actor-entity";
+import { useActorCachesQuery, useActorsQuery, useEntityCachesQuery, useEntitiesQuery } from "../../react-hooks/actor-entity";
+import type { ActorRecord, CacheRecord, EntityRecord } from "../../schemas/actor-entity";
 
 const formatDate = (value?: string | null) => {
     if (!value) return "-";
     const ts = Date.parse(value);
     if (Number.isNaN(ts)) return value;
     return new Date(ts).toLocaleString();
+};
+
+const formatPayload = (value: unknown) => {
+    if (value === null || value === undefined) return "-";
+    if (typeof value === "string") return value;
+    try {
+        return JSON.stringify(value, null, 2);
+    } catch (error) {
+        return String(error);
+    }
 };
 
 export function ActorEntityDashboard() {
@@ -27,6 +37,13 @@ export function ActorEntityDashboard() {
     const { data: entityData, isLoading: entitiesLoading } = useEntitiesQuery(entityFilters, Boolean(selectedActorId));
 
     const entities = entityData?.entities ?? [];
+
+    const { data: actorCachesData, isLoading: actorCachesLoading } = useActorCachesQuery(
+        selectedActorId,
+        Boolean(selectedActorId),
+    );
+
+    const actorCaches = actorCachesData?.caches ?? [];
 
     const filteredActors = useMemo(() => actors, [actors]);
     const filteredEntities = useMemo(() => entities, [entities]);
@@ -80,6 +97,36 @@ export function ActorEntityDashboard() {
         [],
     );
 
+    const cacheColumns = useMemo<TableColumn<CacheRecord>>(
+        () => [
+            { key: "key", label: "Key" },
+            {
+                key: "createdAt",
+                label: "Created",
+                render: (row) => <span className="text-xs text-slate-300">{formatDate(row.createdAt)}</span>,
+            },
+            {
+                key: "expiresAt",
+                label: "Expires",
+                render: (row) => (
+                    <span className="text-xs text-slate-300">
+                        {row.expiresAt ? formatDate(row.expiresAt) : "never"}
+                    </span>
+                ),
+            },
+            {
+                key: "payload",
+                label: "Payload",
+                render: (row) => (
+                    <pre className="max-w-full whitespace-pre-wrap break-words text-xs text-slate-200">
+                        {formatPayload(row.payload)}
+                    </pre>
+                ),
+            },
+        ],
+        [],
+    );
+
     const buildEntityDetailRows = (entity: EntityRecord) => {
         const metadata = entity.metadata ? JSON.stringify(entity.metadata, null, 2) : "-";
         return [
@@ -107,39 +154,75 @@ export function ActorEntityDashboard() {
                 : "Select to load entities.";
 
         return (
-            <Table
-                title={`Entities for ${actor.label}`}
-                columns={entityColumns}
-                rows={rows}
-                rowKey={(row) => row.id}
-                idAccessor={(row) => row.id}
-                ownerAccessor={(row) => row.actorId}
-                ownerLabel="Actor"
-                noDataMessage={noData}
-                scrollClassName="max-h-[70vh] overflow-auto"
-                rowExpansionLabel="Details"
-                rowExpansion={(entity) => (
+            <div className="space-y-4">
+                <Table
+                    title={`Entities for ${actor.label}`}
+                    columns={entityColumns}
+                    rows={rows}
+                    rowKey={(row) => row.id}
+                    idAccessor={(row) => row.id}
+                    ownerAccessor={(row) => row.actorId}
+                    ownerLabel="Actor"
+                    noDataMessage={noData}
+                    scrollClassName="max-h-[70vh] overflow-auto"
+                    rowExpansionLabel="Details"
+                    rowExpansion={(entity) => {
+                        const metadataObject = entity.metadata as Record<string, unknown> | undefined;
+                        const tileBase64 = typeof metadataObject?.tileBase64 === "string"
+                            ? metadataObject.tileBase64
+                            : undefined;
+                        const previewSrc = tileBase64 ? `data:image/png;base64,${tileBase64}` : undefined;
+                        return (
+                            <div className="space-y-4">
+                                {previewSrc && (
+                                    <div>
+                                        <div className="text-xs font-semibold uppercase tracking-wider text-slate-400">
+                                            Tile preview
+                                        </div>
+                                        <div className="mt-2 rounded-xl border border-slate-700 bg-slate-900/60 p-2 shadow-md">
+                                            <img
+                                                src={previewSrc}
+                                                alt={`Tile preview for ${entity.targetId ?? entity.id}`}
+                                                className="h-64 w-full object-contain"
+                                            />
+                                        </div>
+                                    </div>
+                                )}
+                                <Table
+                                    title={`Entity ${entity.id}`}
+                                    columns={[
+                                        { key: "field", label: "Field" },
+                                        {
+                                            key: "value",
+                                            label: "Value",
+                                            render: (row) => (
+                                                <pre className="max-w-full whitespace-pre-wrap break-words text-xs text-slate-200">
+                                                    {row.value}
+                                                </pre>
+                                            ),
+                                        },
+                                    ]}
+                                    rows={buildEntityDetailRows(entity)}
+                                    rowKey={(row) => row.field}
+                                    noDataMessage="No details available."
+                                    scrollClassName="max-h-80 overflow-auto"
+                                />
+                                <EntityCacheSection entity={entity} cacheColumns={cacheColumns} />
+                            </div>
+                        );
+                    }}
+                />
+                {actor.id === selectedActorId && (
                     <Table
-                        title={`Entity ${entity.id}`}
-                        columns={[
-                            { key: "field", label: "Field" },
-                            {
-                                key: "value",
-                                label: "Value",
-                                render: (row) => (
-                                    <pre className="max-w-full whitespace-pre-wrap break-words text-xs text-slate-200">
-                                        {row.value}
-                                    </pre>
-                                ),
-                            },
-                        ]}
-                        rows={buildEntityDetailRows(entity)}
-                        rowKey={(row) => row.field}
-                        noDataMessage="No details available."
-                        scrollClassName="max-h-80 overflow-auto"
+                        title={`Caches for ${actor.label}`}
+                        columns={cacheColumns}
+                        rows={actorCaches}
+                        rowKey={(row) => row.id}
+                        noDataMessage={actorCachesLoading ? "Loading caches…" : "No caches found for this actor."}
+                        scrollClassName="max-h-72 overflow-auto"
                     />
                 )}
-            />
+            </div>
         );
     };
 
@@ -160,6 +243,28 @@ export function ActorEntityDashboard() {
                 }
             }}
             rowExpansion={(row) => renderEntityTable(row)}
+        />
+    );
+}
+
+function EntityCacheSection({
+    entity,
+    cacheColumns,
+}: {
+    entity: EntityRecord;
+    cacheColumns: TableColumn<CacheRecord>[];
+}) {
+    const { data, isLoading } = useEntityCachesQuery(entity.id, true);
+    const caches = data?.caches ?? [];
+
+    return (
+        <Table
+            title={`Caches for ${entity.id}`}
+            columns={cacheColumns}
+            rows={caches}
+            rowKey={(row) => row.id}
+            noDataMessage={isLoading ? "Loading caches…" : "No caches found for this entity."}
+            scrollClassName="max-h-64 overflow-auto"
         />
     );
 }
