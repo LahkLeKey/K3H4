@@ -17,6 +17,9 @@ const recordTelemetry = vi.fn() as unknown as RecordTelemetryFn & {
   mockClear: () => void;
 };
 const userId = 'user-1';
+const authHeaders = {
+  authorization: 'Bearer token'
+};
 
 const buildServer = () => {
   const server = Fastify();
@@ -43,7 +46,8 @@ describe('usda routes', () => {
     const res = await server.inject({
       method: 'GET',
       url:
-          '/usda/esr/exports/by-country?commodityCode=104&countryCode=1220&marketYear=2017'
+          '/usda/esr/exports/by-country?commodityCode=104&countryCode=1220&marketYear=2017',
+      headers: authHeaders,
     });
     expect(res.statusCode).toBe(200);
     expect(fetchAndCache)
@@ -59,8 +63,11 @@ describe('usda routes', () => {
 
   it('validates missing ESR params', async () => {
     const server = buildServer();
-    const res = await server.inject(
-        {method: 'GET', url: '/usda/esr/exports/by-country'});
+    const res = await server.inject({
+      method: 'GET',
+      url: '/usda/esr/exports/by-country',
+      headers: authHeaders,
+    });
     expect(res.statusCode).toBe(400);
     expect(fetchAndCache).not.toHaveBeenCalled();
   });
@@ -69,7 +76,8 @@ describe('usda routes', () => {
     const server = buildServer();
     const res = await server.inject({
       method: 'GET',
-      url: '/usda/gats/census/imports?partnerCode=CH&year=2010&month=1'
+      url: '/usda/gats/census/imports?partnerCode=CH&year=2010&month=1',
+      headers: authHeaders,
     });
     expect(res.statusCode).toBe(200);
     expect(fetchAndCache)
@@ -83,13 +91,14 @@ describe('usda routes', () => {
     const server = buildServer();
     const res = await server.inject({
       method: 'GET',
-      url: '/usda/psd/commodity/world?commodityCode=0440000&marketYear=2017'
+      url: '/usda/psd/commodity/world?commodityCode=0440000&marketYear=2017',
+      headers: authHeaders,
     });
     expect(res.statusCode).toBe(200);
     expect(fetchAndCache)
         .toHaveBeenCalledWith(
             expect.anything(), 'psd',
-            '/api/psd/commodity/0440000/world/year/2017', undefined,
-            expect.anything());
+            '/api/psd/commodity/440000/world/year/2017', undefined,
+            expect.objectContaining({maxAgeMinutes: 60}));
   });
 });
