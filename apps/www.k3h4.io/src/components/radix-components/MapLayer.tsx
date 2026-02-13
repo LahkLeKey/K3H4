@@ -29,7 +29,15 @@ const TERRAIN_EXAGGERATION = 1.6;
 const DEFAULT_STYLE_PATH = "/maps/hybrid/style.json";
 const DEFAULT_VECTOR_TILE_PATH = "/tiles/v3/{z}/{x}/{y}.pbf";
 const DEFAULT_TERRAIN_TILE_PATH = "/tiles/terrain-rgb-v2/{z}/{x}/{y}.png";
-const FALLBACK_STYLE_URL = "https://demotiles.maplibre.org/style.json";
+const FALLBACK_STYLE_URL = "https://tiles.openfreemap.org/styles/bright";
+const FALLBACK_SATELLITE_SOURCE = "satelliteSource";
+const FALLBACK_SATELLITE_LAYER = "satellite";
+const FALLBACK_SATELLITE_TILES =
+    "https://tiles.maps.eox.at/wmts/1.0.0/s2cloudless-2020_3857/default/g/{z}/{y}/{x}.jpg";
+const FALLBACK_TERRAIN_SOURCE = "terrainSource";
+const FALLBACK_HILLSHADE_SOURCE = "hillshadeSource";
+const FALLBACK_TERRAIN_TILES =
+    "https://demotiles.maplibre.org/terrain-tiles/tiles.json";
 const EMPTY_TILE_PNG =
     "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR4nGP8z8BQDwAEsALp2UNzMgAAAABJRU5ErkJggg==";
 const STAR_LAYERS = [
@@ -63,6 +71,63 @@ const tileXY = (lng: number, lat: number, zoom: number) => {
     const latRad = (lat * Math.PI) / 180;
     const y = Math.floor(((1 - Math.log(Math.tan(latRad) + 1 / Math.cos(latRad)) / Math.PI) / 2) * n);
     return { x, y, z };
+};
+
+const applyHybridFallbackStyle = (map: maplibregl.Map) => {
+    if (!map.getSource(FALLBACK_SATELLITE_SOURCE)) {
+        map.addSource(FALLBACK_SATELLITE_SOURCE, {
+            type: "raster",
+            tiles: [FALLBACK_SATELLITE_TILES],
+            tileSize: 256,
+        } as any);
+    }
+
+    if (!map.getSource(FALLBACK_TERRAIN_SOURCE)) {
+        map.addSource(FALLBACK_TERRAIN_SOURCE, {
+            type: "raster-dem",
+            url: FALLBACK_TERRAIN_TILES,
+            tileSize: 256,
+        } as any);
+    }
+
+    if (!map.getSource(FALLBACK_HILLSHADE_SOURCE)) {
+        map.addSource(FALLBACK_HILLSHADE_SOURCE, {
+            type: "raster-dem",
+            url: FALLBACK_TERRAIN_TILES,
+            tileSize: 256,
+        } as any);
+    }
+
+    map.setTerrain({ source: FALLBACK_TERRAIN_SOURCE, exaggeration: 1 });
+
+    if (!map.getLayer("hills")) {
+        map.addLayer({
+            id: "hills",
+            type: "hillshade",
+            source: FALLBACK_HILLSHADE_SOURCE,
+            layout: { visibility: "visible" },
+            paint: {
+                "hillshade-shadow-color": "#473B24",
+            },
+        } as any);
+    }
+
+    const firstNonFillLayer = map.getStyle()?.layers?.find((layer) =>
+        layer.type !== "fill" && layer.type !== "background",
+    );
+
+    if (!map.getLayer(FALLBACK_SATELLITE_LAYER)) {
+        map.addLayer(
+            {
+                id: FALLBACK_SATELLITE_LAYER,
+                type: "raster",
+                source: FALLBACK_SATELLITE_SOURCE,
+                layout: { visibility: "visible" },
+                paint: { "raster-opacity": 1 },
+            } as any,
+            firstNonFillLayer?.id,
+        );
+    }
 };
 
 export function MapLayer({ readonly }: { readonly?: boolean }) {
@@ -398,6 +463,9 @@ export function MapLayer({ readonly }: { readonly?: boolean }) {
             }
 
             rebuildTerrainSources(map);
+            if (mapStyleUrl === FALLBACK_STYLE_URL) {
+                applyHybridFallbackStyle(map);
+            }
 
             map.on("error", (ev) => {
                 const sid = typeof ev === "object" && ev && "sourceId" in ev ? (ev as { sourceId?: string }).sourceId : undefined;
