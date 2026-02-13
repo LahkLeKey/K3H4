@@ -37,6 +37,7 @@ model Actor {
   metadata   Json?
   category   String?
   lastSeenAt DateTime?
+  isGlobal   Boolean   @default(false)
   createdAt  DateTime  @default(now())
   updatedAt  DateTime  @updatedAt
 
@@ -59,6 +60,7 @@ model Entity {
   targetId   String?
   source     String?
   metadata   Json?
+  isGlobal   Boolean  @default(false)
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 
