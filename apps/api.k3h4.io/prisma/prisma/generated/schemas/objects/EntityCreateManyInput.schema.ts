@@ -14,6 +14,7 @@ const makeSchema = () => z.object({
   targetId: z.string().optional().nullable(),
   source: z.string().optional().nullable(),
   metadata: z.union([NullableJsonNullValueInputSchema, jsonSchema]).optional(),
+  isGlobal: z.boolean().optional(),
   createdAt: z.coerce.date().optional(),
   updatedAt: z.coerce.date().optional()
 }).strict();

@@ -11,6 +11,7 @@ export const EntityModelSchema = z.object({
     targetId: z.string().nullable(),
     source: z.string().nullable(),
     metadata: z.unknown().nullable(),
+    isGlobal: z.boolean(),
     createdAt: z.date(),
     updatedAt: z.date(),
     caches: z.array(z.unknown())

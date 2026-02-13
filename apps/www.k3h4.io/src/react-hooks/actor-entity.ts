@@ -1,6 +1,6 @@
 import {useMutation, useQuery, useQueryClient} from '@tanstack/react-query';
 
-import {type ActorCreateInput, ActorCreateSchema, type ActorResponse, ActorResponseSchema, type ActorsResponse, ActorsResponseSchema, type ActorUpdateInput, ActorUpdateSchema, type EntitiesResponse, EntitiesResponseSchema, type EntityCreateInput, EntityCreateSchema, type EntityResponse, EntityResponseSchema, type EntityUpdateInput, EntityUpdateSchema,} from '../schemas/actor-entity';
+import {type ActorCachesResponse, ActorCachesResponseSchema, type ActorCreateInput, ActorCreateSchema, type ActorResponse, ActorResponseSchema, type ActorsResponse, ActorsResponseSchema, type ActorUpdateInput, ActorUpdateSchema, type EntitiesResponse, EntitiesResponseSchema, type EntityCachesResponse, EntityCachesResponseSchema, type EntityCreateInput, EntityCreateSchema, type EntityResponse, EntityResponseSchema, type EntityUpdateInput, EntityUpdateSchema,} from '../schemas/actor-entity';
 
 import {useAuthStore} from './auth';
 import {apiFetch} from './lib/api-client';
@@ -75,6 +75,56 @@ export function useEntitiesQuery(filters: EntityFilters|null, enabled = true) {
           token: session?.accessToken ?? null,
           baseUrl: apiBase,
           schema: EntitiesResponseSchema,
+        });
+      } catch (err) {
+        if ((err as Error)?.message?.includes('Unauthorized')) {
+          kickToLogin('session-expired');
+        }
+        throw err;
+      }
+    },
+  });
+}
+
+export function useActorCachesQuery(actorId: string|null, enabled = true) {
+  const {apiBase, session, kickToLogin} = useAuthStore();
+
+  return useQuery<ActorCachesResponse, Error>({
+    queryKey: ['actorCaches', actorId],
+    enabled: enabled && Boolean(actorId),
+    staleTime: 5_000,
+    queryFn: async () => {
+      const path = `/actors/${actorId}/caches`;
+      try {
+        return await apiFetch<ActorCachesResponse>(path, {
+          token: session?.accessToken ?? null,
+          baseUrl: apiBase,
+          schema: ActorCachesResponseSchema,
+        });
+      } catch (err) {
+        if ((err as Error)?.message?.includes('Unauthorized')) {
+          kickToLogin('session-expired');
+        }
+        throw err;
+      }
+    },
+  });
+}
+
+export function useEntityCachesQuery(entityId: string|null, enabled = true) {
+  const {apiBase, session, kickToLogin} = useAuthStore();
+
+  return useQuery<EntityCachesResponse, Error>({
+    queryKey: ['entityCaches', entityId],
+    enabled: enabled && Boolean(entityId),
+    staleTime: 5_000,
+    queryFn: async () => {
+      const path = `/entities/${entityId}/caches`;
+      try {
+        return await apiFetch<EntityCachesResponse>(path, {
+          token: session?.accessToken ?? null,
+          baseUrl: apiBase,
+          schema: EntityCachesResponseSchema,
         });
       } catch (err) {
         if ((err as Error)?.message?.includes('Unauthorized')) {

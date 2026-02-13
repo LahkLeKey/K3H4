@@ -6,6 +6,7 @@ export const ActorRecordSchema =
        userId: z.string().nullable().optional(),
        label: z.string(),
        type: z.string(),
+       isGlobal: z.boolean(),
        note: z.string().nullable().optional(),
        source: z.string().nullable().optional(),
        metadata: z.unknown().nullable().optional(),
@@ -20,6 +21,7 @@ export const EntityRecordSchema =
        id: z.string(),
        actorId: z.string(),
        kind: z.string(),
+       isGlobal: z.boolean(),
        direction: z.string().nullable().optional(),
        name: z.string().nullable().optional(),
        targetType: z.string().nullable().optional(),
@@ -30,12 +32,29 @@ export const EntityRecordSchema =
        updatedAt: z.string(),
      }).passthrough();
 
+export const CacheRecordSchema = z.object({
+                                    id: z.string(),
+                                    key: z.string(),
+                                    payload: z.unknown().nullable().optional(),
+                                    expiresAt: z.string().nullable().optional(),
+                                    createdAt: z.string(),
+                                    updatedAt: z.string(),
+                                  }).passthrough();
+
 export const ActorsResponseSchema = z.object({
   actors: z.array(ActorRecordSchema),
 });
 
 export const EntitiesResponseSchema = z.object({
   entities: z.array(EntityRecordSchema),
+});
+
+export const ActorCachesResponseSchema = z.object({
+  caches: z.array(CacheRecordSchema),
+});
+
+export const EntityCachesResponseSchema = z.object({
+  caches: z.array(CacheRecordSchema),
 });
 
 export const ActorResponseSchema = z.object({
@@ -71,6 +90,7 @@ export const EntityUpdateSchema = EntityCreateSchema.partial();
 
 export type ActorRecord = z.infer<typeof ActorRecordSchema>;
 export type EntityRecord = z.infer<typeof EntityRecordSchema>;
+export type CacheRecord = z.infer<typeof CacheRecordSchema>;
 export type ActorsResponse = z.infer<typeof ActorsResponseSchema>;
 export type EntitiesResponse = z.infer<typeof EntitiesResponseSchema>;
 export type ActorResponse = z.infer<typeof ActorResponseSchema>;
@@ -79,3 +99,5 @@ export type ActorCreateInput = z.infer<typeof ActorCreateSchema>;
 export type EntityCreateInput = z.infer<typeof EntityCreateSchema>;
 export type ActorUpdateInput = z.infer<typeof ActorUpdateSchema>;
 export type EntityUpdateInput = z.infer<typeof EntityUpdateSchema>;
+export type ActorCachesResponse = z.infer<typeof ActorCachesResponseSchema>;
+export type EntityCachesResponse = z.infer<typeof EntityCachesResponseSchema>;

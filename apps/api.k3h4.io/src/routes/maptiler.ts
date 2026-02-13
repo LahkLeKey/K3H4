@@ -2,7 +2,8 @@ import {PrismaClient} from '@prisma/client';
 import {type FastifyInstance, type FastifyReply, type FastifyRequest, type RouteShorthandOptions} from 'fastify';
 import * as z from 'zod';
 
-import {ensureGeoActor} from '../actors/Geo/Geo';
+import {ensureGeoActor, ensureGeoGlobalActor} from '../actors/Geo/Geo';
+import {ENTITY_KINDS} from '../lib/actor-entity-constants';
 import {MaptilerKind} from '../lib/openapi/route-kinds';
 import {makeParamsSchema, makeQuerySchema, makeResponses, OptionalAuthHeaderSchema, withExamples} from '../lib/schemas/openapi';
 import {fetchMaptilerWithCache} from '../services/maptiler-cache';
@@ -65,6 +66,18 @@ const parseMaxAge = (query: Record<string, any>) =>
     coerceNumber(query.maxAgeMinutes ?? DEFAULT_MAX_AGE_MINUTES) ??
     DEFAULT_MAX_AGE_MINUTES;
 
+const TILE_ENTITY_KIND = ENTITY_KINDS.MAPTILER_TILE;
+const TILE_ENTITY_TARGET_TYPE = 'maptiler:tile';
+
+const normalizeTilePath = (value: string) => value.trim().toLowerCase();
+
+const shouldTrackTileEntity = (path: string, contentType?: string) => {
+  const normalized = normalizeTilePath(path);
+  if (normalized.endsWith('.png')) return true;
+  return Boolean(
+      contentType && contentType.toLowerCase().includes('image/png'));
+};
+
 export function registerMaptilerRoutes(
     server: FastifyInstance, prisma: PrismaClient,
     recordTelemetry: RecordTelemetryFn) {
@@ -72,6 +85,72 @@ export function registerMaptilerRoutes(
   // present.
   type RateLimitedRouteShorthandOptions = RouteShorthandOptions&{
     rateLimit?: {max: number; timeWindow: string};
+  };
+
+  const cloneParamsForMetadata = (params: Record<string, unknown>) => {
+    const copied: Record<string, unknown> = {};
+    Object.entries(params).forEach(([key, value]) => {
+      if (value !== undefined) copied[key] = value;
+    });
+    return copied;
+  };
+
+  let globalGeoActorId: string|null = null;
+  const resolveGlobalActorId = async () => {
+    if (globalGeoActorId) return globalGeoActorId;
+    const actor = await ensureGeoGlobalActor(prisma);
+    globalGeoActorId = actor.id;
+    return globalGeoActorId;
+  };
+
+  const persistTileEntity = async (options: {
+    path: string; params: Record<string, unknown>;
+    response: {data?: Buffer; contentType?: string; cacheControl?: string};
+    signature: string;
+    cached: boolean;
+  }) => {
+    const {path, params, response, signature, cached} = options;
+    if (!response.data) return;
+    if (!shouldTrackTileEntity(path, response.contentType)) return;
+    const actorId = await resolveGlobalActorId();
+    const buffer = Buffer.from(response.data);
+    if (!buffer || buffer.byteLength === 0) return;
+
+    const metadata = {
+      path,
+      params: cloneParamsForMetadata(params),
+      contentType: response.contentType ?? null,
+      cacheControl: response.cacheControl ?? null,
+      fetchedAt: new Date().toISOString(),
+      cached,
+      sizeBytes: buffer.byteLength,
+      tileBase64: buffer.toString('base64'),
+    };
+
+    const existing = await prisma.entity.findFirst({
+      where: {
+        actorId,
+        targetType: TILE_ENTITY_TARGET_TYPE,
+        targetId: signature,
+      },
+    });
+
+    const entityData = {
+      actorId,
+      kind: TILE_ENTITY_KIND,
+      name: path,
+      source: 'maptiler',
+      targetType: TILE_ENTITY_TARGET_TYPE,
+      targetId: signature,
+      metadata,
+      isGlobal: true,
+    };
+
+    if (existing) {
+      await prisma.entity.update({where: {id: existing.id}, data: entityData});
+      return;
+    }
+    await prisma.entity.create({data: entityData});
   };
 
   const optionalAuth = {
@@ -160,6 +239,16 @@ export function registerMaptilerRoutes(
     reply.header('X-Cache', cached ? 'HIT' : 'MISS');
 
     if (responseType === 'arrayBuffer' && response.data) {
+      void persistTileEntity({
+        path,
+        params,
+        response,
+        signature,
+        cached,
+      }).catch((err) => {
+        server.log.warn(
+            {err, path, signature}, 'maptiler tile entity store failed');
+      });
       return reply.send(response.data);
     }
 

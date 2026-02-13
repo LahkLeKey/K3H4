@@ -11,6 +11,7 @@ export const EntityInputSchema = z.object({
     targetId: z.string().optional().nullable(),
     source: z.string().optional().nullable(),
     metadata: z.unknown().optional().nullable(),
+    isGlobal: z.boolean(),
     createdAt: z.date(),
     updatedAt: z.date(),
     caches: z.array(z.unknown())

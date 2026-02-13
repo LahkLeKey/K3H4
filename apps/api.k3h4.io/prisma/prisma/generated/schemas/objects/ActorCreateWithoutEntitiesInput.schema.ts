@@ -15,6 +15,7 @@ const makeSchema = () => z.object({
   metadata: z.union([NullableJsonNullValueInputSchema, jsonSchema]).optional(),
   category: z.string().optional().nullable(),
   lastSeenAt: z.coerce.date().optional().nullable(),
+  isGlobal: z.boolean().optional(),
   createdAt: z.coerce.date().optional(),
   updatedAt: z.coerce.date().optional(),
   user: z.lazy(() => UserCreateNestedOneWithoutActorsInputObjectSchema).optional(),

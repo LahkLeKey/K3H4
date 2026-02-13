@@ -59,6 +59,7 @@ export async function ensureGeoGlobalActor(
       label: GEO_GLOBAL_ACTOR_LABEL,
       type: ACTOR_TYPES.GEO,
       source: GEO_GLOBAL_ACTOR_SOURCE,
+      isGlobal: true,
     },
   });
 }

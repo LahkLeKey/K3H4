@@ -10,6 +10,7 @@ export const EntityAggregateResultSchema = z.object({  _count: z.object({
     targetId: z.number(),
     source: z.number(),
     metadata: z.number(),
+    isGlobal: z.number(),
     createdAt: z.number(),
     updatedAt: z.number(),
     caches: z.number()

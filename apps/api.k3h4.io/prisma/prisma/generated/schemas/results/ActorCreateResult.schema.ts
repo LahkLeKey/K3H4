@@ -10,6 +10,7 @@ export const ActorCreateResultSchema = z.object({
   metadata: z.unknown().optional(),
   category: z.string().optional(),
   lastSeenAt: z.date().optional(),
+  isGlobal: z.boolean(),
   createdAt: z.date(),
   updatedAt: z.date(),
   entities: z.array(z.unknown()),

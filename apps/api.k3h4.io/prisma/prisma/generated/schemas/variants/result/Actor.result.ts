@@ -11,6 +11,7 @@ export const ActorResultSchema = z.object({
     metadata: z.unknown().nullable(),
     category: z.string().nullable(),
     lastSeenAt: z.date().nullable(),
+    isGlobal: z.boolean(),
     createdAt: z.date(),
     updatedAt: z.date(),
     entities: z.array(z.unknown()),
