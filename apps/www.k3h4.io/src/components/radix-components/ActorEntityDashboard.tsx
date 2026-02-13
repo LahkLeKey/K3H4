@@ -4,23 +4,8 @@ import { Table } from "../ui";
 import type { TableColumn } from "../ui/Table";
 import { useActorCachesQuery, useActorsQuery, useEntityCachesQuery, useEntitiesQuery } from "../../react-hooks/actor-entity";
 import type { ActorRecord, CacheRecord, EntityRecord } from "../../schemas/actor-entity";
-
-const formatDate = (value?: string | null) => {
-    if (!value) return "-";
-    const ts = Date.parse(value);
-    if (Number.isNaN(ts)) return value;
-    return new Date(ts).toLocaleString();
-};
-
-const formatPayload = (value: unknown) => {
-    if (value === null || value === undefined) return "-";
-    if (typeof value === "string") return value;
-    try {
-        return JSON.stringify(value, null, 2);
-    } catch (error) {
-        return String(error);
-    }
-};
+import { ActorTypeDetails } from "./ActorTypeDetails";
+import { formatDate, formatPayload } from "./actor-entity-utils";
 
 export function ActorEntityDashboard() {
     const [selectedActorId, setSelectedActorId] = useState<string | null>(null);
@@ -155,7 +140,9 @@ export function ActorEntityDashboard() {
 
         return (
             <div className="space-y-4">
+                <ActorTypeDetails actor={actor} entities={rows} />
                 <Table
+                    className="w-full min-h-[60vh]"
                     title={`Entities for ${actor.label}`}
                     columns={entityColumns}
                     rows={rows}
@@ -164,7 +151,7 @@ export function ActorEntityDashboard() {
                     ownerAccessor={(row) => row.actorId}
                     ownerLabel="Actor"
                     noDataMessage={noData}
-                    scrollClassName="max-h-[70vh] overflow-auto"
+                    scrollClassName="max-h-[52vh] overflow-auto"
                     rowExpansionLabel="Details"
                     rowExpansion={(entity) => {
                         const metadataObject = entity.metadata as Record<string, unknown> | undefined;
@@ -227,23 +214,32 @@ export function ActorEntityDashboard() {
     };
 
     return (
-        <Table
-            title="Actors"
-            columns={actorColumns}
-            rows={filteredActors}
-            rowKey={(row) => row.id}
-            idAccessor={(row) => row.id}
-            ownerAccessor={(row) => row.userId ?? "-"}
-            ownerLabel="User"
-            noDataMessage={actorsLoading ? "Loading actors…" : "No actors found."}
-            rowExpansionLabel="Entities"
-            onRowExpand={(row, expanded) => {
-                if (expanded) {
-                    setSelectedActorId(row.id);
-                }
-            }}
-            rowExpansion={(row) => renderEntityTable(row)}
-        />
+        <div className="flex h-full w-full flex-1">
+            <Table
+                className="w-full min-h-[calc(100vh-12rem)]"
+                scrollClassName="max-h-[calc(100vh-12rem)] overflow-auto"
+                title="Actors"
+                columns={actorColumns}
+                rows={filteredActors}
+                rowKey={(row) => row.id}
+                idAccessor={(row) => row.id}
+                ownerAccessor={(row) => row.userId ?? "-"}
+                ownerLabel="User"
+                noDataMessage={actorsLoading ? "Loading actors…" : "No actors found."}
+                rowExpansionLabel="Entities"
+                onRowExpand={(row, expanded) => {
+                    const update = () => {
+                        if (expanded) {
+                            setSelectedActorId(row.id);
+                        } else {
+                            setSelectedActorId((prev) => (prev === row.id ? null : prev));
+                        }
+                    };
+                    queueMicrotask(update);
+                }}
+                rowExpansion={(row) => renderEntityTable(row)}
+            />
+        </div>
     );
 }
 
