@@ -3,7 +3,8 @@ import {type FastifyInstance, type FastifyReply, type FastifyRequest} from 'fast
 import {createHash} from 'node:crypto';
 
 import {ensureGeoActor, ensureGeoGlobalActor} from '../actors/Geo/Geo';
-import {ACTOR_TYPES} from '../lib/actor-entity-constants';
+import {ensurePoiGlobalActor} from '../actors/Poi/Poi';
+import {ENTITY_KINDS} from '../lib/actor-entity-constants';
 import {enqueueOverpass} from '../lib/overpass-queue';
 import {formatBuildingFromPayload, readBuildingCacheByOsm} from '../services/building-cache';
 import {readGeoQueryCache, readGeoQueryCacheStale, readGeoViewEntry, readGeoViewHistory, writeGeoQueryCache, writeGeoViewEntry,} from '../services/geo-cache';
@@ -35,8 +36,8 @@ const MAX_CLUSTER_IDS = 25;
 const VIEW_STALE_MINUTES = 45;
 const POI_LIST_CACHE_TTL_MS = 1000 * 45;
 const POI_LIST_STALE_MAX_MS = 1000 * 60 * 10;
-const POI_ACTOR_TYPE = ACTOR_TYPES.POINT_OF_INTEREST;
 const POI_ACTOR_PREFIX = 'poi';
+const POI_ENTITY_TARGET_TYPE = 'poi';
 
 const buildPoiActorId = (osmType: string, osmId: bigint|string|number) =>
     `${POI_ACTOR_PREFIX}:${osmType}:${osmId}`;
@@ -214,6 +215,7 @@ const buildOverpassQuery = (bounds: Bbox, kinds: string[]) => {
 
 async function upsertOverpassElements(
     prisma: PrismaClient, elements: any[], runStarted: Date) {
+  const globalActor = await ensurePoiGlobalActor(prisma);
   for (const el of elements) {
     const center = el.center ??
         (Number.isFinite(el.lat) && Number.isFinite(el.lon) ?
@@ -228,30 +230,39 @@ async function upsertOverpassElements(
         el.tags?.leisure ?? null;
     const name = el.tags?.name ?? category ?? 'poi';
 
-    const actorId = buildPoiActorId(osmType, osmId.toString());
+    const entityId = buildPoiActorId(osmType, osmId.toString());
     const lat = Number(Number(center.lat).toFixed(6));
     const lng = Number(Number(center.lon).toFixed(6));
     const payload =
         buildPoiMetadata(el.tags ?? {}, osmType, osmId.toString(), lat, lng);
-    await prisma.actor.upsert({
-      where: {id: actorId},
-      update: {
-        label: name,
-        source: el.source ?? 'osm',
-        category,
-        metadata: payload,
-        lastSeenAt: runStarted,
-      },
-      create: {
-        id: actorId,
-        label: name,
-        type: POI_ACTOR_TYPE,
-        source: el.source ?? 'osm',
-        category,
-        metadata: payload,
-        lastSeenAt: runStarted,
-      },
-    });
+    payload.category = category;
+    payload.fetchedAt = runStarted.toISOString();
+
+    const entityData = {
+      actorId: globalActor.id,
+      kind: ENTITY_KINDS.POINT_OF_INTEREST,
+      name,
+      source: el.source ?? 'osm',
+      targetType: POI_ENTITY_TARGET_TYPE,
+      targetId: entityId,
+      metadata: payload,
+      isGlobal: true,
+    } as const;
+
+    const existing = await prisma.entity.findUnique({where: {id: entityId}});
+    if (existing) {
+      await prisma.entity.update({
+        where: {id: entityId},
+        data: entityData,
+      });
+    } else {
+      await prisma.entity.create({
+        data: {
+          id: entityId,
+          ...entityData,
+        },
+      });
+    }
   }
 }
 
@@ -290,9 +301,6 @@ export function registerPoiRoutes(
       actorId = actor.id;
     }
 
-    const where: Prisma.ActorWhereInput = {
-      type: POI_ACTOR_TYPE,
-    };
     const cachedEntry = actorId ?
         await readGeoQueryCache(prisma, actorId, cacheSignature) :
         null;
@@ -307,35 +315,38 @@ export function registerPoiRoutes(
         cacheAgeMs !== null && cacheAgeMs <= POI_LIST_STALE_MAX_MS;
 
     const refreshCache = async (allowOverpass: boolean) => {
-      const pois = await prisma.actor.findMany({
-        where,
+      const globalActor = await ensurePoiGlobalActor(prisma);
+      const pois = await prisma.entity.findMany({
+        where: {
+          actorId: globalActor.id,
+          kind: ENTITY_KINDS.POINT_OF_INTEREST,
+        },
         orderBy: {updatedAt: 'desc'},
         select: {
           id: true,
-          label: true,
-          category: true,
+          name: true,
           metadata: true,
           updatedAt: true,
         },
       });
 
       const markers: PoiMarker[] =
-          pois.map((actor) => {
-                const metadata = asRecord(actor.metadata);
+          pois.map((entity) => {
+                const metadata = asRecord(entity.metadata);
                 const lat = Number(metadata.lat);
                 const lng = Number(metadata.lng);
                 return {
-                  id: actor.id,
+                  id: entity.id,
                   osmId: typeof metadata.osmId === 'string' ? metadata.osmId :
                                                               '',
                   osmType: typeof metadata.osmType === 'string' ?
                       metadata.osmType :
                       'node',
-                  name: actor.label,
-                  category: actor.category ?? null,
+                  name: entity.name ?? metadata.tags?.name ?? 'poi',
+                  category: metadata.category ?? null,
                   lat: Number.isFinite(lat) ? lat : 0,
                   lng: Number.isFinite(lng) ? lng : 0,
-                  updatedAt: actor.updatedAt.toISOString(),
+                  updatedAt: entity.updatedAt.toISOString(),
                 };
               })
               .filter(
@@ -571,13 +582,17 @@ export function registerPoiRoutes(
       return reply.status(400).send(
           {error: 'bbox is required as minLon,minLat,maxLon,maxLat'});
 
-    const pois = await prisma.actor.findMany({
-      where: {type: POI_ACTOR_TYPE},
-      select: {category: true, metadata: true, updatedAt: true},
+    const globalActor = await ensurePoiGlobalActor(prisma);
+    const pois = await prisma.entity.findMany({
+      where: {
+        actorId: globalActor.id,
+        kind: ENTITY_KINDS.POINT_OF_INTEREST,
+      },
+      select: {metadata: true, updatedAt: true},
     });
 
-    const filtered = pois.filter((actor) => {
-      const metadata = asRecord(actor.metadata);
+    const filtered = pois.filter((entry) => {
+      const metadata = asRecord(entry.metadata);
       const lat = Number(metadata.lat);
       const lng = Number(metadata.lng);
       if (!Number.isFinite(lat) || !Number.isFinite(lng)) return false;
@@ -592,10 +607,12 @@ export function registerPoiRoutes(
         null;
 
     const categoryCounts = new Map<string, number>();
-    filtered.forEach((actor) => {
-      if (!actor.category) return;
-      categoryCounts.set(
-          actor.category, (categoryCounts.get(actor.category) ?? 0) + 1);
+    filtered.forEach((entry) => {
+      const metadata = asRecord(entry.metadata);
+      const category =
+          typeof metadata.category === 'string' ? metadata.category : null;
+      if (!category) return;
+      categoryCounts.set(category, (categoryCounts.get(category) ?? 0) + 1);
     });
     const categories = Array.from(categoryCounts.entries())
                            .sort((a, b) => b[1] - a[1])
@@ -685,220 +702,229 @@ export function registerPoiRoutes(
             },
           });
         } else {
-          await prisma.actor.create({
-            data: {
-              id: actorId,
-              label: name,
-              type: POI_ACTOR_TYPE,
+          const elements =
+              Array.isArray(data?.elements) ? (data.elements as any[]) : [];
+
+          const globalActor = await ensurePoiGlobalActor(prisma);
+          let created = 0;
+          let updated = 0;
+
+          for (const el of elements) {
+            const center = el.center ??
+                (Number.isFinite(el.lat) && Number.isFinite(el.lon) ?
+                     {lat: el.lat, lon: el.lon} :
+                     null);
+            if (!center) continue;
+
+            const osmType = typeof el.type === 'string' && el.type.length > 0 ?
+                el.type :
+                'node';
+            const osmId = BigInt(el.id);
+            const category = el.tags?.amenity ?? el.tags?.shop ??
+                el.tags?.tourism ?? el.tags?.leisure ?? null;
+            const name = el.tags?.name ?? category ?? 'poi';
+            const entityId = buildPoiActorId(osmType, osmId.toString());
+            const lat = Number(center.lat);
+            const lng = Number(center.lon);
+            const metadata = buildPoiMetadata(
+                el.tags ?? {}, osmType, osmId.toString(), lat, lng);
+            metadata.category = category;
+            metadata.fetchedAt = runStarted.toISOString();
+
+            const entityData = {
+              actorId: globalActor.id,
+              kind: ENTITY_KINDS.POINT_OF_INTEREST,
+              name,
               source: el.source ?? 'osm',
-              category,
+              targetType: POI_ENTITY_TARGET_TYPE,
+              targetId: entityId,
               metadata,
-              lastSeenAt: runStarted,
-            },
-          });
+              isGlobal: true,
+            } as const;
+
+            const existing =
+                await prisma.entity.findUnique({where: {id: entityId}});
+            if (existing)
+              updated += 1;
+            else
+              created += 1;
+            if (existing) {
+              await prisma.entity.update({
+                where: {id: entityId},
+                data: entityData,
+              });
+            } else {
+              await prisma.entity.create({
+                data: {
+                  id: entityId,
+                  ...entityData,
+                },
+              });
+            }
+          }
+
+          let pruned = 0;
+          if (body?.pruneMissing) {
+            const pruneResult = await prisma.entity.deleteMany({
+              where: {
+                actorId: globalActor.id,
+                kind: ENTITY_KINDS.POINT_OF_INTEREST,
+                updatedAt: {lt: runStarted},
+              },
+            });
+            pruned = pruneResult.count;
+          }
+        }
+        ,
+      });
+      if (!poi) return reply.status(404).send({error: 'poi not found'});
+
+      const metadata = asRecord(poi.metadata);
+      const osmType =
+          typeof metadata.osmType === 'string' ? metadata.osmType : null;
+      const osmId = typeof metadata.osmId === 'string' ? metadata.osmId : null;
+      const lat = Number(metadata.lat);
+      const lng = Number(metadata.lng);
+
+      const globalActor = await ensureGeoGlobalActor(prisma);
+      const buildingPayload = osmType && osmId ?
+          await readBuildingCacheByOsm(prisma, globalActor.id, osmType, osmId) :
+          null;
+      const building = buildingPayload ?
+          formatBuildingFromPayload(buildingPayload, includeGeometry) :
+          null;
+
+      return {
+        id: poi.id,
+        osmId: osmId ?? '',
+        osmType: osmType ?? 'node',
+        name: poi.label,
+        category: poi.category ?? null,
+        latitude: Number.isFinite(lat) ? lat : 0,
+        longitude: Number.isFinite(lng) ? lng : 0,
+        tags: metadata.tags ?? null,
+        source: poi.source ?? null,
+        lastSeenAt: poi.lastSeenAt,
+        createdAt: poi.createdAt,
+        updatedAt: poi.updatedAt,
+        building,
+      };
+    };
+
+    // Shared GET endpoints for both anonymous and authenticated map routes
+    const readTargets: Array<{prefix: string; options?: typeof authOpts;}> = [
+      {prefix: '/pois'},
+      {prefix: '/api/pois', options: authOpts},
+    ];
+
+    type PoiReadHandler = (
+        request: FastifyRequest,
+        reply: FastifyReply,
+        ) => Promise<unknown>|unknown;
+
+    const readRoutes: Array<{suffix: string; handler: PoiReadHandler}> = [
+      {suffix: '', handler: listHandler},
+      {suffix: '/metadata', handler: metadataHandler},
+      {suffix: '/:id', handler: detailHandler},
+    ];
+
+    for (const target of readTargets) {
+      for (const route of readRoutes) {
+        const path = `${target.prefix}${route.suffix}`;
+        if (target.options) {
+          server.get(path, target.options, route.handler);
+        } else {
+          server.get(path, route.handler);
         }
       }
+    }
 
-      let pruned = 0;
-      if (body?.pruneMissing) {
-        const pruneResult = await prisma.actor.deleteMany({
-          where: {
-            type: POI_ACTOR_TYPE,
-            lastSeenAt: {lt: runStarted},
-          },
-        });
-        pruned = pruneResult.count;
-      }
+    for (const path of ['/pois/actions/sync', '/api/pois/actions/sync']) {
+      server.post(path, authOpts, syncHandler);
+    }
 
-      await rt({
-        eventType: 'poi.sync',
-        source: 'api',
-        payload: {
-          bbox: bounds,
-          kinds,
-          fetched: elements.length,
-          created,
-          updated,
-          pruned
+    // Batch enrich POIs by ids
+    server.post(
+        '/api/pois/batch',
+        authOpts,
+        async (request, reply) => {
+          const rt = withTelemetryBase(recordTelemetry, request);
+          const body = request.body as {
+            ids?: Array<{type?: string; id?: string | number}>;
+            include?: Record<string, boolean>;
+          };
+
+          const ids = Array.isArray(body?.ids) ?
+              body.ids
+                  .map((p) => {
+                    const idNum =
+                        typeof p.id === 'string' ? Number(p.id) : p.id;
+                    if (!Number.isFinite(idNum)) return null;
+                    const type =
+                        typeof p.type === 'string' && p.type.trim().length > 0 ?
+                        p.type.trim() :
+                        'node';
+                    return {type, id: Number(idNum)} as {
+                      type: string;
+                      id: number
+                    };
+                  })
+                  .filter(
+                      (p):
+                          p is {
+                            type: string;
+                            id: number
+                          } => Boolean(p)) :
+              [];
+
+          if (!ids.length)
+            return reply.status(400).send({error: 'ids required'});
+          if (ids.length > 50)
+            return reply.status(400).send({error: 'max 50 ids'});
+
+          const includeFlags = {
+            address: Boolean(body?.include?.address),
+            contact: Boolean(body?.include?.contact),
+            openingHours: Boolean(body?.include?.openingHours),
+            fuel: Boolean(body?.include?.fuel),
+            accessibility: Boolean(body?.include?.accessibility),
+            building:
+                Boolean(body?.include?.building ?? body?.include?.geometry),
+            route: Boolean(body?.include?.route),
+            routeGeometry: Boolean(body?.include?.routeGeometry),
+            photos: Boolean(body?.include?.photos),
+            description: Boolean(body?.include?.description),
+          } as const;
+
+          const includeHash = Object.entries(includeFlags)
+                                  .filter(([, v]) => v)
+                                  .map(([k]) => k)
+                                  .sort()
+                                  .join(',');
+
+          const results: Record<string, any> = {};
+
+          // coalesce per id+hash
+          await Promise.all(
+              ids.map(async (poi) => {
+                const key = `${poi.type}/${poi.id}:${includeHash}`;
+                const enriched = await coalesce(key, async () => {
+                  // Try enrichment cache helper
+                  const enriched = await enrichPoi(
+                      prisma, {type: poi.type as any, id: poi.id}, includeFlags,
+                      null, 'driving');
+                  return enriched;
+                });
+                results[`${poi.type}/${poi.id}`] = enriched;
+              }),
+          );
+
+          await rt({
+            eventType: 'poi.batch',
+            source: 'api',
+            payload: {count: ids.length, include: includeHash}
+          });
+          return {items: results};
         },
-      });
-
-      return {ok: true, fetched: elements.length, created, updated, pruned};
-    } catch (err) {
-      request.log.warn({err}, 'poi sync failed');
-      return reply.status(502).send(
-          {error: err instanceof Error ? err.message : 'Overpass unavailable'});
-    }
-  };
-
-  const authOpts = {preHandler: server.authenticate};
-
-  const detailHandler =
-      async (request: FastifyRequest, reply: FastifyReply) => {
-    const params = request.params as {id?: string} | undefined;
-    const id = params?.id;
-    const includeGeometry = parseIncludeGeometry(
-        (request.query as Record<string, unknown>).includeGeometry);
-    if (!id) return reply.status(400).send({error: 'id is required'});
-
-    const poi = await prisma.actor.findFirst({
-      where: {id, type: POI_ACTOR_TYPE},
-      select: {
-        id: true,
-        label: true,
-        category: true,
-        metadata: true,
-        source: true,
-        lastSeenAt: true,
-        createdAt: true,
-        updatedAt: true,
-      },
-    });
-    if (!poi) return reply.status(404).send({error: 'poi not found'});
-
-    const metadata = asRecord(poi.metadata);
-    const osmType =
-        typeof metadata.osmType === 'string' ? metadata.osmType : null;
-    const osmId = typeof metadata.osmId === 'string' ? metadata.osmId : null;
-    const lat = Number(metadata.lat);
-    const lng = Number(metadata.lng);
-
-    const globalActor = await ensureGeoGlobalActor(prisma);
-    const buildingPayload = osmType && osmId ?
-        await readBuildingCacheByOsm(prisma, globalActor.id, osmType, osmId) :
-        null;
-    const building = buildingPayload ?
-        formatBuildingFromPayload(buildingPayload, includeGeometry) :
-        null;
-
-    return {
-      id: poi.id,
-      osmId: osmId ?? '',
-      osmType: osmType ?? 'node',
-      name: poi.label,
-      category: poi.category ?? null,
-      latitude: Number.isFinite(lat) ? lat : 0,
-      longitude: Number.isFinite(lng) ? lng : 0,
-      tags: metadata.tags ?? null,
-      source: poi.source ?? null,
-      lastSeenAt: poi.lastSeenAt,
-      createdAt: poi.createdAt,
-      updatedAt: poi.updatedAt,
-      building,
-    };
-  };
-
-  // Shared GET endpoints for both anonymous and authenticated map routes
-  const readTargets: Array<{prefix: string; options?: typeof authOpts;}> = [
-    {prefix: '/pois'},
-    {prefix: '/api/pois', options: authOpts},
-  ];
-
-  type PoiReadHandler = (
-      request: FastifyRequest,
-      reply: FastifyReply,
-      ) => Promise<unknown>|unknown;
-
-  const readRoutes: Array<{suffix: string; handler: PoiReadHandler}> = [
-    {suffix: '', handler: listHandler},
-    {suffix: '/metadata', handler: metadataHandler},
-    {suffix: '/:id', handler: detailHandler},
-  ];
-
-  for (const target of readTargets) {
-    for (const route of readRoutes) {
-      const path = `${target.prefix}${route.suffix}`;
-      if (target.options) {
-        server.get(path, target.options, route.handler);
-      } else {
-        server.get(path, route.handler);
-      }
-    }
+    );
   }
-
-  for (const path of ['/pois/actions/sync', '/api/pois/actions/sync']) {
-    server.post(path, authOpts, syncHandler);
-  }
-
-  // Batch enrich POIs by ids
-  server.post(
-      '/api/pois/batch',
-      authOpts,
-      async (request, reply) => {
-        const rt = withTelemetryBase(recordTelemetry, request);
-        const body = request.body as {
-          ids?: Array<{type?: string; id?: string | number}>;
-          include?: Record<string, boolean>;
-        };
-
-        const ids = Array.isArray(body?.ids) ?
-            body.ids
-                .map((p) => {
-                  const idNum = typeof p.id === 'string' ? Number(p.id) : p.id;
-                  if (!Number.isFinite(idNum)) return null;
-                  const type =
-                      typeof p.type === 'string' && p.type.trim().length > 0 ?
-                      p.type.trim() :
-                      'node';
-                  return {type, id: Number(idNum)} as {
-                    type: string;
-                    id: number
-                  };
-                })
-                .filter(
-                    (p):
-                        p is {
-                          type: string;
-                          id: number
-                        } => Boolean(p)) :
-            [];
-
-        if (!ids.length) return reply.status(400).send({error: 'ids required'});
-        if (ids.length > 50)
-          return reply.status(400).send({error: 'max 50 ids'});
-
-        const includeFlags = {
-          address: Boolean(body?.include?.address),
-          contact: Boolean(body?.include?.contact),
-          openingHours: Boolean(body?.include?.openingHours),
-          fuel: Boolean(body?.include?.fuel),
-          accessibility: Boolean(body?.include?.accessibility),
-          building: Boolean(body?.include?.building ?? body?.include?.geometry),
-          route: Boolean(body?.include?.route),
-          routeGeometry: Boolean(body?.include?.routeGeometry),
-          photos: Boolean(body?.include?.photos),
-          description: Boolean(body?.include?.description),
-        } as const;
-
-        const includeHash = Object.entries(includeFlags)
-                                .filter(([, v]) => v)
-                                .map(([k]) => k)
-                                .sort()
-                                .join(',');
-
-        const results: Record<string, any> = {};
-
-        // coalesce per id+hash
-        await Promise.all(
-            ids.map(async (poi) => {
-              const key = `${poi.type}/${poi.id}:${includeHash}`;
-              const enriched = await coalesce(key, async () => {
-                // Try enrichment cache helper
-                const enriched = await enrichPoi(
-                    prisma, {type: poi.type as any, id: poi.id}, includeFlags,
-                    null, 'driving');
-                return enriched;
-              });
-              results[`${poi.type}/${poi.id}`] = enriched;
-            }),
-        );
-
-        await rt({
-          eventType: 'poi.batch',
-          source: 'api',
-          payload: {count: ids.length, include: includeHash}
-        });
-        return {items: results};
-      },
-  );
-}
