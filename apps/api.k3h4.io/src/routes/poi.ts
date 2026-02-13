@@ -233,10 +233,11 @@ async function upsertOverpassElements(
     const entityId = buildPoiActorId(osmType, osmId.toString());
     const lat = Number(Number(center.lat).toFixed(6));
     const lng = Number(Number(center.lon).toFixed(6));
-    const payload =
-        buildPoiMetadata(el.tags ?? {}, osmType, osmId.toString(), lat, lng);
-    payload.category = category;
-    payload.fetchedAt = runStarted.toISOString();
+    const metadata: Prisma.InputJsonObject = {
+      ...buildPoiMetadata(el.tags ?? {}, osmType, osmId.toString(), lat, lng),
+      category,
+      fetchedAt: runStarted.toISOString(),
+    };
 
     const entityData = {
       actorId: globalActor.id,
@@ -245,7 +246,7 @@ async function upsertOverpassElements(
       source: el.source ?? 'osm',
       targetType: POI_ENTITY_TARGET_TYPE,
       targetId: entityId,
-      metadata: payload,
+      metadata,
       isGlobal: true,
     } as const;
 
@@ -333,8 +334,14 @@ export function registerPoiRoutes(
       const markers: PoiMarker[] =
           pois.map((entity) => {
                 const metadata = asRecord(entity.metadata);
+                const tags = asRecord(metadata.tags);
                 const lat = Number(metadata.lat);
                 const lng = Number(metadata.lng);
+                const category = typeof metadata.category === 'string' ?
+                    metadata.category :
+                    null;
+                const tagName =
+                    typeof tags.name === 'string' ? tags.name : undefined;
                 return {
                   id: entity.id,
                   osmId: typeof metadata.osmId === 'string' ? metadata.osmId :
@@ -342,8 +349,8 @@ export function registerPoiRoutes(
                   osmType: typeof metadata.osmType === 'string' ?
                       metadata.osmType :
                       'node',
-                  name: entity.name ?? metadata.tags?.name ?? 'poi',
-                  category: metadata.category ?? null,
+                  name: entity.name ?? tagName ?? 'poi',
+                  category,
                   lat: Number.isFinite(lat) ? lat : 0,
                   lng: Number.isFinite(lng) ? lng : 0,
                   updatedAt: entity.updatedAt.toISOString(),
@@ -685,10 +692,12 @@ export function registerPoiRoutes(
         const entityId = buildPoiActorId(osmType, osmId.toString());
         const lat = Number(center.lat);
         const lng = Number(center.lon);
-        const metadata = buildPoiMetadata(
-            el.tags ?? {}, osmType, osmId.toString(), lat, lng);
-        metadata.category = category;
-        metadata.fetchedAt = runStarted.toISOString();
+        const metadata: Prisma.InputJsonObject = {
+          ...buildPoiMetadata(
+              el.tags ?? {}, osmType, osmId.toString(), lat, lng),
+          category,
+          fetchedAt: runStarted.toISOString(),
+        };
 
         const entityData = {
           actorId: globalActor.id,
@@ -817,6 +826,7 @@ export function registerPoiRoutes(
   };
 
   // Shared GET endpoints for both anonymous and authenticated map routes
+  const authOpts = {preHandler: [server.authenticate]};
   const readTargets: Array<{prefix: string; options?: typeof authOpts;}> = [
     {prefix: '/pois'},
     {prefix: '/api/pois', options: authOpts},
