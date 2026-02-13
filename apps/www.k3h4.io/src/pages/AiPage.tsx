@@ -1018,40 +1018,10 @@ export function AiPage() {
         </div>
     );
 
-    const signalsPanel = (
-        <div className="grid gap-5 lg:grid-cols-2">
-            <Card className="space-y-3 rounded-3xl border border-white/10 bg-white/5 px-5 py-6 shadow-2xl">
-                <div className="flex items-center justify-between">
-                    <div>
-                        <p className="text-xs uppercase tracking-[0.3em] text-slate-400">Latency</p>
-                        <p className="text-3xl font-semibold text-white">~118 ms</p>
-                    </div>
-                    <Badge accent="#a855f7">Ollama</Badge>
-                </div>
-                <p className="text-sm text-slate-300">
-                    Requests proxied through the Ollama sidecar aim for single-digit latency variance. Tune the temperature if you need calmer replies.
-                </p>
-            </Card>
-            <Card className="space-y-3 rounded-3xl border border-white/10 bg-gradient-to-br from-slate-900/60 to-indigo-900/60 px-5 py-6 shadow-2xl">
-                <div className="flex items-center justify-between">
-                    <div>
-                        <p className="text-xs uppercase tracking-[0.3em] text-slate-400">Context depth</p>
-                        <p className="text-3xl font-semibold text-white">32 msgs</p>
-                    </div>
-                    <Badge accent="#22d3ee">History</Badge>
-                </div>
-                <p className="text-sm text-slate-300">
-                    The chat context keeps the latest 32 turns so conversations stay focused. Increase `OLLAMA_CHAT_HISTORY_LIMIT` if you need deeper memory.
-                </p>
-            </Card>
-        </div>
-    );
-
     const tabs = [
         { key: "chat", label: "Chat", content: chatContent },
         { key: "insights", label: "Insights", content: insightsPanel },
-        { key: "proxy", label: "Ollama proxy", content: proxyPanel },
-        { key: "signals", label: "Signals", content: signalsPanel },
+        { key: "proxy", label: "View Raw (Proxy)", content: proxyPanel },
     ];
 
     if (!session) {

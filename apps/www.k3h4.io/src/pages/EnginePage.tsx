@@ -1,4 +1,4 @@
-import { Environment, OrbitControls, Stars, useGLTF, useTexture } from "@react-three/drei";
+import { Environment, Html, OrbitControls, Stars, useGLTF, useProgress, useTexture } from "@react-three/drei";
 import { Physics, RigidBody, type RapierRigidBody } from "@react-three/rapier";
 import { useFrame, useThree } from "@react-three/fiber";
 import { useEffect, useMemo, useRef } from "react";
@@ -203,6 +203,8 @@ function EngineScene() {
         ],
         [textures],
     );
+
+    const { active, progress, item } = useProgress();
 
     useEffect(() => {
         for (const entry of textureEntries) {
@@ -596,8 +598,27 @@ function EngineScene() {
         });
     }, []);
 
+    const shouldShowLoading = active && progress < 100;
+    const loadingPercent = Math.round(progress);
+
     return (
         <>
+            {shouldShowLoading ? (
+                <Html fullscreen className="pointer-events-none">
+                    <div className="fixed inset-0 flex items-center justify-center bg-slate-950/90">
+                        <div className="flex w-full max-w-sm flex-col items-center gap-4 rounded-2xl border border-white/20 bg-slate-900/90 p-6 text-center text-sm font-semibold uppercase tracking-[0.1em] text-white shadow-2xl shadow-black/70">
+                            <div className="text-lg text-white">Loading engine assets</div>
+                            <div className="h-2 w-full overflow-hidden rounded-full bg-white/10">
+                                <div
+                                    className="h-full bg-white transition-all duration-300"
+                                    style={{ width: `${loadingPercent}%` }}
+                                />
+                            </div>
+                            <div className="text-xs text-white/60">{loadingPercent}% — {item?.split("/").pop() ?? "preparing"}</div>
+                        </div>
+                    </div>
+                </Html>
+            ) : null}
             <color attach="background" args={["#030712"]} />
             <ambientLight intensity={0.4} />
             <directionalLight position={[6, 7, 6]} intensity={1.1} />

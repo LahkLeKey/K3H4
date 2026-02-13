@@ -38,7 +38,8 @@ type ChatMessageResponse = {
 };
 
 type ChatHistoryEntry = {
-  role: ChatRole; content: string; createdAt: Date;
+  id: string; role: ChatRole; content: string; metadata: unknown | null;
+  createdAt: Date;
 };
 
 const SessionSummarySchema =
@@ -704,10 +705,10 @@ function mapActorToSessionSummary(
     updatedAt: actor.updatedAt.toISOString(),
     messageCount: countMap.get(actor.id) ?? 0,
     lastMessage: lastMessage ? {
-      id: '',
+      id: lastMessage.id,
       role: lastMessage.role,
       content: lastMessage.content,
-      metadata: null,
+      metadata: lastMessage.metadata,
       createdAt: lastMessage.createdAt.toISOString(),
     } :
                                null,
@@ -719,8 +720,10 @@ function entityToHistoryEntry(row: {
 }): ChatHistoryEntry {
   const record = asRecord(row.metadata);
   return {
+    id: row.id,
     role: stringToChatRole(record.role) ?? CHAT_ROLES.USER,
     content: stringOrNull(record.content) ?? '',
+    metadata: record.metadata ?? null,
     createdAt: row.createdAt,
   };
 }
