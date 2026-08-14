@@ -146,58 +146,70 @@ export function registerFrontendRoutes(
       const safeLimit = Number.isFinite(historyLimit) ?
           Math.min(Math.max(1, Math.trunc(historyLimit)), 200) :
           40;
-      const rows = await readGeoViewHistory(prisma, actorId, safeLimit);
+      const rows: Awaited<ReturnType<typeof readGeoViewHistory>> =
+          await readGeoViewHistory(prisma, actorId, safeLimit);
+
+      type HistoryPoiSummary = {
+        id: string; label: string | null; category: string | null;
+        latitude: number | null;
+        longitude: number | null;
+      };
 
       const allPoiIds = Array.from(new Set(rows.flatMap(
-          (r) => (
-              Array.isArray(r.lastPoiIds) ? (r.lastPoiIds as string[]) : []))));
-      const pois = allPoiIds.length ? await prisma.actor.findMany({
-        where: {
-          id: {in : allPoiIds},
-          type: ActorType.POINT_OF_INTEREST,
-        },
-        select: {
-          id: true,
-          label: true,
-          category: true,
-          latitude: true,
-          longitude: true,
-        },
-      }) :
-                                      [];
-      const poiMap = new Map(pois.map((p) => [p.id, p]));
+          (r: {lastPoiIds?: string[]|null}) =>
+              (Array.isArray(r.lastPoiIds) ? r.lastPoiIds : []))));
+      const pois: HistoryPoiSummary[] = allPoiIds.length ?
+          await prisma.actor.findMany({
+            where: {
+              id: {in : allPoiIds},
+              type: ActorType.POINT_OF_INTEREST,
+            },
+            select: {
+              id: true,
+              label: true,
+              category: true,
+              latitude: true,
+              longitude: true,
+            },
+          }) as HistoryPoiSummary[] :
+          [];
+      const poiMap = new Map<string, HistoryPoiSummary>(
+          pois.map((p: HistoryPoiSummary) => [p.id, p]));
 
-      payload.history = rows.map((row) => {
-        const bbox = row.bbox ?? {minLat: 0, minLng: 0, maxLat: 0, maxLng: 0};
-        return {
-          id: row.id,
-          signature: row.signature,
-          zoomBand: row.zoomBand,
-          bbox: {
-            minLat: Number(bbox.minLat),
-            minLng: Number(bbox.minLng),
-            maxLat: Number(bbox.maxLat),
-            maxLng: Number(bbox.maxLng),
-          },
-          lastPoiIds: row.lastPoiIds ?? [],
-          lastPoiCount: row.lastPoiCount ?? 0,
-          pois: (Array.isArray(row.lastPoiIds) ? (row.lastPoiIds as string[]) :
-                                                 [])
-                    .map((id) => poiMap.get(id))
-                    .filter(Boolean)
-                    .map((p) => ({
-                           id: p!.id,
-                           name: p!.label,
-                           category: p!.category ?? null,
-                           lat: Number(p!.latitude),
-                           lng: Number(p!.longitude),
-                         })),
-          firstViewedAt: row.firstViewedAt,
-          lastViewedAt: row.lastViewedAt,
-          viewCount: row.viewCount,
-          staleAfter: row.staleAfter,
-        };
-      });
+      payload.history = rows.map(
+          (row: Awaited<ReturnType<typeof readGeoViewHistory>>[number]) => {
+            const bbox =
+                row.bbox ?? {minLat: 0, minLng: 0, maxLat: 0, maxLng: 0};
+            return {
+              id: row.id,
+              signature: row.signature,
+              zoomBand: row.zoomBand,
+              bbox: {
+                minLat: Number(bbox.minLat),
+                minLng: Number(bbox.minLng),
+                maxLat: Number(bbox.maxLat),
+                maxLng: Number(bbox.maxLng),
+              },
+              lastPoiIds: row.lastPoiIds ?? [],
+              lastPoiCount: row.lastPoiCount ?? 0,
+              pois: (Array.isArray(row.lastPoiIds) ?
+                         (row.lastPoiIds as string[]) :
+                         [])
+                        .map((id) => poiMap.get(id))
+                        .filter((p): p is HistoryPoiSummary => Boolean(p))
+                        .map((p) => ({
+                               id: p.id,
+                               name: p.label,
+                               category: p.category ?? null,
+                               lat: Number(p.latitude),
+                               lng: Number(p.longitude),
+                             })),
+              firstViewedAt: row.firstViewedAt,
+              lastViewedAt: row.lastViewedAt,
+              viewCount: row.viewCount,
+              staleAfter: row.staleAfter,
+            };
+          });
     }
 
     if (viewport?.center && Number.isFinite(viewport.center.lat) &&
