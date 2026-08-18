@@ -1,7 +1,7 @@
 import {type Actor, type Entity, Prisma, type PrismaClient} from '@prisma/client';
 import {type FastifyInstance} from 'fastify';
 
-import {recordBankTransactionEntity} from '../actors/Bank/Bank';
+import {recordBankLedgerEntry} from '../kits/bank-ledger';
 import {ACTOR_TYPES, ENTITY_DIRECTIONS, ENTITY_KINDS, type EntityDirection as EntityDirectionType,} from '../lib/actor-entity-constants';
 
 import {buildTelemetryBase} from './telemetry';
@@ -269,25 +269,25 @@ export function registerArcadeRoutes(
           where: {id: userId},
           data: {k3h4CoinBalance: nextUserBalance},
         });
-        await recordBankTransactionEntity(tx, {
+        await recordBankLedgerEntry(tx, {
           userId,
-          amount,
+          amount: amount.toFixed(2),
           direction: EntityDirection.DEBIT,
           kind: EntityKind.ARCADE_TOPUP,
-          balanceAfter: nextUserBalance,
+          balanceAfter: nextUserBalance.toFixed(2),
           targetType: 'arcade_card',
           targetId: card.id,
           name: card.label ?? card.id,
         });
 
-        await recordBankTransactionEntity(tx, {
+        await recordBankLedgerEntry(tx, {
           userId,
           actorId: card.id,
-          amount,
+          amount: amount.toFixed(2),
           direction: EntityDirection.CREDIT,
           kind: EntityKind.ARCADE_TOPUP,
-          balanceAfter: nextCardBalance,
-          metadata: {source: body?.source ?? 'k3h4-coin'},
+          balanceAfter: nextCardBalance.toFixed(2),
+          details: {source: body?.source ?? 'k3h4-coin'},
           name: 'Arcade card top-up',
         });
 
@@ -370,7 +370,7 @@ export function registerArcadeRoutes(
         const amount = new Prisma.Decimal(credits.toFixed(2));
 
         try {
-          const {entity, balance} = await prisma.$transaction(async (tx) => {
+          const {receipt, balance} = await prisma.$transaction(async (tx) => {
             const card = await tx.actor.findFirst({
               where:
                   {id: body.cardId, userId, type: ActorType.ARCADE_PLAYER_CARD},
@@ -391,23 +391,23 @@ export function registerArcadeRoutes(
             const scoreValue = Number.isFinite(body.score) ?
                 Math.floor(Number(body.score)) :
                 null;
-            const session = await recordBankTransactionEntity(tx, {
+            const receipt = await recordBankLedgerEntry(tx, {
               userId,
               actorId: card.id,
-              amount,
+              amount: amount.toFixed(2),
               direction: EntityDirection.DEBIT,
               kind: EntityKind.ARCADE_SESSION,
-              balanceAfter: nextBalance,
+              balanceAfter: nextBalance.toFixed(2),
               targetType: 'arcade_machine',
               targetId: machine.id,
-              metadata: {
+              details: {
                 machineId: machine.id,
                 creditsSpent: amount.toFixed(2),
                 score: scoreValue,
               },
             });
 
-            return {entity: session, balance: nextBalance};
+            return {receipt, balance: nextBalance};
           });
 
           await recordTelemetry(request, {
@@ -418,7 +418,16 @@ export function registerArcadeRoutes(
           });
 
           return {
-            session: buildSessionSummary(entity),
+            session: {
+              id: receipt.id,
+              machineId: body.machineId,
+              cardId: body.cardId,
+              creditsSpent: amount.toFixed(2),
+              score: Number.isFinite(body.score) ?
+                  Math.floor(Number(body.score)) :
+                  null,
+              startedAt: receipt.createdAt,
+            },
             balance: serializeDecimal(balance),
           };
         } catch (err) {
@@ -440,7 +449,7 @@ export function registerArcadeRoutes(
     };
 
     try {
-      const {entity, balance, stock} = await prisma.$transaction(async (tx) => {
+      const {receipt, balance, stock} = await prisma.$transaction(async (tx) => {
         const prize = await tx.actor.findFirst({
           where: {id: prizeId, userId, type: ActorType.ARCADE_PRIZE},
         });
@@ -464,16 +473,16 @@ export function registerArcadeRoutes(
           throw new Error('Insufficient card balance');
 
         const nextBalance = cardBalance.sub(cost);
-        const entity = await recordBankTransactionEntity(tx, {
+        const receipt = await recordBankLedgerEntry(tx, {
           userId,
           actorId: card.id,
-          amount: cost,
+          amount: cost.toFixed(2),
           direction: EntityDirection.DEBIT,
           kind: EntityKind.ARCADE_PRIZE_REDEMPTION,
-          balanceAfter: nextBalance,
+          balanceAfter: nextBalance.toFixed(2),
           targetType: 'arcade_prize',
           targetId: prize.id,
-          metadata: {
+          details: {
             prizeId: prize.id,
             sessionId: body.sessionId ?? null,
           },
@@ -490,7 +499,7 @@ export function registerArcadeRoutes(
         });
 
         return {
-          entity,
+          receipt,
           balance: nextBalance,
           stock: Math.max(0, currentStock - 1),
         };
@@ -504,7 +513,13 @@ export function registerArcadeRoutes(
       });
 
       return {
-        redemption: buildRedemptionSummary(entity),
+        redemption: {
+          id: receipt.id,
+          prizeId,
+          cardId: body.cardId,
+          sessionId: body.sessionId ?? null,
+          createdAt: receipt.createdAt,
+        },
         balance: serializeDecimal(balance),
         prizeStock: stock,
       };

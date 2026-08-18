@@ -1,55 +1,10 @@
-import {Prisma, PrismaClient} from '@prisma/client';
+import {type PrismaClient} from '@prisma/client';
 import {type FastifyInstance} from 'fastify';
 
-import {buildBankTransactionWhere, recordBankTransactionEntity} from '../actors/Bank/Bank';
-import type {EntityDirection, EntityKind} from '../lib/actor-entity-constants';
-import {ACTOR_TYPES, ENTITY_DIRECTIONS, ENTITY_KINDS} from '../lib/actor-entity-constants';
+import {changeBankBalance, getBankBalance, listBankTransactions} from '../kits/bank-ledger';
 
 import {withTelemetryBase} from './telemetry';
 import {type RecordTelemetryFn} from './types';
-
-const MAX_ABSOLUTE_BALANCE = 1_000_000_000;
-
-const normalizeAmount = (value: unknown) => {
-  const num = typeof value === 'number' ? value :
-      typeof value === 'string'         ? Number(value) :
-                                          NaN;
-  if (!Number.isFinite(num)) return null;
-  if (Math.abs(num) > MAX_ABSOLUTE_BALANCE) return null;
-  return new Prisma.Decimal(num.toFixed(2));
-};
-
-const serializeTransaction = (entity: {
-  id: string; metadata: Prisma.JsonValue | null; createdAt: Date;
-  targetType?: string | null;
-  targetId?: string | null;
-  name?: string | null;
-  direction?: EntityDirection | null;
-  kind?: EntityKind | null;
-}) => {
-  const metadata = (entity.metadata as {
-                     amount?: string;
-                     balanceAfter?: string;
-                     direction?: string;
-                     kind?: string;
-                     note?: string|null;
-                   } |
-                    null) ??
-      {};
-
-  return {
-    id: entity.id,
-    amount: metadata.amount ?? '0.00',
-    balanceAfter: metadata.balanceAfter ?? '0.00',
-    direction: entity.direction?.toLowerCase() ?? metadata.direction ?? '',
-    kind: entity.kind?.toLowerCase() ?? metadata.kind ?? '',
-    note: metadata.note ?? null,
-    createdAt: entity.createdAt,
-    targetType: entity.targetType ?? null,
-    targetId: entity.targetId ?? null,
-    name: entity.name ?? null,
-  };
-};
 
 export function registerBankRoutes(
     server: FastifyInstance, prisma: PrismaClient,
@@ -60,22 +15,15 @@ export function registerBankRoutes(
       async (request, reply) => {
         const rt = withTelemetryBase(recordTelemetry, request);
         const userId = (request.user as {sub: string}).sub;
-        const user = await prisma.user.findUnique(
-            {where: {id: userId}, select: {k3h4CoinBalance: true}});
-        if (!user) return reply.status(404).send({error: 'User not found'});
+        const balance = await getBankBalance(prisma, userId);
+        if (!balance) return reply.status(404).send({error: 'User not found'});
 
         await rt({
           eventType: 'bank.balance.fetch',
           source: 'api',
-          payload: {
-            balance: user.k3h4CoinBalance ? user.k3h4CoinBalance.toFixed(2) :
-                                            '0.00'
-          }
+          payload: {balance: balance.balance}
         });
-        return {
-          balance: user.k3h4CoinBalance ? user.k3h4CoinBalance.toFixed(2) :
-                                          '0.00'
-        };
+        return balance;
       },
   );
 
@@ -92,65 +40,23 @@ export function registerBankRoutes(
         }
         |undefined;
 
-        const hasDelta = body?.delta !== undefined;
-        const hasSet = body?.set !== undefined;
-        if (!hasDelta && !hasSet)
-          return reply.status(400).send({error: 'Provide delta or set'});
-        if (hasDelta && hasSet)
-          return reply.status(400).send({error: 'Choose either delta or set'});
-
-        const delta = hasDelta ? normalizeAmount(body?.delta) : null;
-        const setAmount = hasSet ? normalizeAmount(body?.set) : null;
-
-        if ((hasDelta && !delta) || (hasSet && !setAmount)) {
-          return reply.status(400).send(
-              {error: 'Amount must be a finite number within limits'});
-        }
-
         try {
-          const {
-            nextBalance,
-            transaction
-          } = await prisma.$transaction(async (tx) => {
-            const user = await tx.user.findUnique(
-                {where: {id: userId}, select: {k3h4CoinBalance: true}});
-            if (!user) throw new Error('User not found');
-
-            const prevBalance = user.k3h4CoinBalance;
-            const nextBalance = setAmount ?
-                setAmount :
-                prevBalance.add(delta ?? new Prisma.Decimal(0));
-            const change = nextBalance.sub(prevBalance);
-            const isCredit = change.greaterThan(0) || change.equals(0);
-
-            const saved = await tx.user.update(
-                {where: {id: userId}, data: {k3h4CoinBalance: nextBalance}});
-            const txn = await recordBankTransactionEntity(tx, {
-              userId,
-              amount: change.abs(),
-              direction: isCredit ? ENTITY_DIRECTIONS.CREDIT :
-                                    ENTITY_DIRECTIONS.DEBIT,
-              kind: hasSet ? ENTITY_KINDS.SET :
-                  isCredit ? ENTITY_KINDS.DEPOSIT :
-                             ENTITY_KINDS.WITHDRAWAL,
-              note: body?.reason ?? null,
-              balanceAfter: saved.k3h4CoinBalance,
-            });
-
-            return {nextBalance: saved.k3h4CoinBalance, transaction: txn};
+          const result = await changeBankBalance(prisma, {
+            userId,
+            delta: body?.delta,
+            set: body?.set,
+            reason: body?.reason,
           });
 
           await rt({
             eventType: 'bank.balance.update',
             source: 'api',
             payload:
-                {mode: hasSet ? 'set' : 'delta', reason: body?.reason ?? null}
+                {mode: body?.set !== undefined ? 'set' : 'delta',
+                  reason: body?.reason ?? null}
           });
 
-          return {
-            balance: nextBalance ? nextBalance.toFixed(2) : '0.00',
-            transaction: serializeTransaction(transaction),
-          };
+          return result;
         } catch (err) {
           request.log.error({err}, 'balance update failed');
           return reply.status(400).send({
@@ -175,80 +81,18 @@ export function registerBankRoutes(
           direction?: string;
         };
 
-        const limit = (() => {
-          const parsed = query?.limit ? Number(query.limit) : 20;
-          if (!Number.isFinite(parsed)) return 20;
-          return Math.min(Math.max(Math.floor(parsed), 1), 100);
-        })();
-
-        const offset = (() => {
-          const parsed = query?.offset ? Number(query.offset) : 0;
-          if (!Number.isFinite(parsed)) return 0;
-          return Math.max(Math.floor(parsed), 0);
-        })();
-
-        const direction = query?.direction === 'credit' ?
-            ENTITY_DIRECTIONS.CREDIT :
-            query?.direction === 'debit' ? ENTITY_DIRECTIONS.DEBIT :
-                                           undefined;
-        const directionLabel = direction?.toLowerCase() ?? '';
-
-        const from = query?.from ? new Date(query.from) : undefined;
-        const to = query?.to ? new Date(query.to) : undefined;
-        const validFrom =
-            from && !Number.isNaN(from.valueOf()) ? from : undefined;
-        const validTo = to && !Number.isNaN(to.valueOf()) ? to : undefined;
-
-        const actor = await prisma.actor.findFirst({
-          where: {userId, type: ACTOR_TYPES.BANK_ACCOUNT},
-          select: {id: true}
-        });
-        if (!actor) {
-          await rt({
-            eventType: 'bank.transactions.list',
-            source: 'api',
-            payload: {
-              limit,
-              offset,
-              direction: directionLabel,
-              from: query?.from ?? null,
-              to: query?.to ?? null,
-              total: 0,
-            },
-          });
-          return {transactions: [], total: 0};
-        }
-
-        const where = buildBankTransactionWhere(actor.id, {
-          direction,
-          from: validFrom,
-          to: validTo,
-        });
-
-        const [total, txns] = await Promise.all([
-          prisma.entity.count({where}),
-          prisma.entity.findMany({
-            where,
-            orderBy: {createdAt: 'desc'},
-            skip: offset,
-            take: limit,
-          }),
-        ]);
+        const result = await listBankTransactions(prisma, {userId, ...query});
 
         await rt({
           eventType: 'bank.transactions.list',
           source: 'api',
           payload: {
-            limit,
-            offset,
-            direction: directionLabel,
-            from: query?.from ?? null,
-            to: query?.to ?? null,
-            total
+            ...result.request,
+            total: result.total
           }
         });
 
-        return {transactions: txns.map(serializeTransaction), total};
+        return {transactions: result.transactions, total: result.total};
       },
   );
 }

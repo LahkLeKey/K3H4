@@ -1,7 +1,7 @@
 import {Prisma, type PrismaClient} from '@prisma/client';
 import {type FastifyInstance} from 'fastify';
 
-import {recordBankTransactionEntity} from '../actors/Bank/Bank';
+import {recordBankLedgerEntry} from '../kits/bank-ledger';
 import {createFreightLoad, findFreightLoad, loadFreightLoads, markFreightLoadCompleted,} from '../actors/Freight/Freight';
 import {ensureGeoActor} from '../actors/Geo/Geo';
 import {ENTITY_DIRECTIONS, ENTITY_KINDS} from '../lib/actor-entity-constants';
@@ -454,13 +454,13 @@ export function registerFreightRoutes(
         const nextBalance = user.k3h4CoinBalance.sub(costDecimal);
         const savedUser = await tx.user.update(
             {where: {id: userId}, data: {k3h4CoinBalance: nextBalance}});
-        await recordBankTransactionEntity(tx, {
+        await recordBankLedgerEntry(tx, {
           userId,
-          amount: costDecimal,
+          amount: costDecimal.toFixed(2),
           direction: ENTITY_DIRECTIONS.DEBIT,
           kind: ENTITY_KINDS.FREIGHT_PAYMENT,
           note: `Freight load ${load.title}`,
-          balanceAfter: savedUser.k3h4CoinBalance,
+          balanceAfter: savedUser.k3h4CoinBalance.toFixed(2),
           targetType: 'freight_load',
           targetId: load.id,
           name: load.title,
