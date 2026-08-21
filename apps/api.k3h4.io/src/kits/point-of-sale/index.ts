@@ -1,10 +1,1 @@
-export {
-  getPointOfSaleOverview,
-  summarizePointOfSaleStore,
-  ticketFromEntity,
-  POS_DEFAULT_CHANNEL,
-  type PointOfSaleOverview,
-  type PointOfSaleOrder,
-  type PointOfSaleStoreSummary,
-  type PointOfSaleTopItem,
-} from '../../entities/PointOfSale/PointOfSale';
+export {getPointOfSaleOverview, type PointOfSaleOrder, type PointOfSaleOverview, type PointOfSaleStoreSummary, type PointOfSaleTopItem, POS_DEFAULT_CHANNEL, summarizePointOfSaleStore, ticketFromEntity,} from '../../entities/PointOfSale/PointOfSale';
