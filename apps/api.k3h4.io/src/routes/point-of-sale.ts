@@ -2,7 +2,7 @@ import {Prisma, PrismaClient} from '@prisma/client';
 import {type FastifyInstance} from 'fastify';
 
 import {recordBankLedgerEntry} from '../kits/bank-ledger';
-import {getPointOfSaleOverview, POS_DEFAULT_CHANNEL, summarizePointOfSaleStore, ticketFromEntity,} from '../entities/PointOfSale/PointOfSale';
+import {getPointOfSaleOverview, POS_DEFAULT_CHANNEL, summarizePointOfSaleStore} from '../kits/point-of-sale';
 import {ACTOR_TYPES, ENTITY_DIRECTIONS, ENTITY_KINDS} from '../lib/actor-entity-constants';
 import {LIFECYCLE_STATUSES, type LifecycleStatus} from '../lib/domain-constants';
 import {parseLifecycleStatus} from '../lib/status-utils';
