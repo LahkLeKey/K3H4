@@ -5,8 +5,8 @@ import Fastify from 'fastify';
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 
 import {LIFECYCLE_STATUSES} from '../../lib/domain-constants';
+import * as pointOfSaleKit from '../../kits/point-of-sale';
 import * as culinaryLedger from '../../services/culinary-ledger';
-import * as pointOfSaleLedger from '../../services/point-of-sale-ledger';
 import {registerCulinaryRoutes} from '../culinary';
 import {type RecordTelemetryFn} from '../types';
 
@@ -70,7 +70,7 @@ describe('Culinary routes', () => {
               updatedAt: new Date(),
             });
     pointOfSaleOverviewSpy =
-        vi.spyOn(pointOfSaleLedger, 'getPointOfSaleOverview')
+      vi.spyOn(pointOfSaleKit, 'getPointOfSaleOverview')
             .mockResolvedValue({
               metrics: {grossRevenue: '0.00', tickets: 0, avgTicket: '0.00'},
               orders: [],

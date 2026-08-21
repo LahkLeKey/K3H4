@@ -1,10 +1,9 @@
 import {PrismaClient} from '@prisma/client';
 import {type FastifyInstance} from 'fastify';
 
+import {createCulinaryMenuItem, createCulinaryPrepTask, createCulinarySupplierNeed, getCulinaryOverview} from '../kits/culinary-operations';
 import {LIFECYCLE_STATUSES, type LifecycleStatus} from '../lib/domain-constants';
 import {parseLifecycleStatus} from '../lib/status-utils';
-import {createCulinaryMenuItem, createCulinaryPrepTask, createCulinarySupplierNeed, loadCulinaryMenuItems, loadCulinaryPrepTasks, loadCulinarySupplierNeeds,} from '../services/culinary-ledger';
-import {getPointOfSaleOverview} from '../services/point-of-sale-ledger';
 
 import {withTelemetryBase} from './telemetry';
 import {type RecordTelemetryFn} from './types';
@@ -18,13 +17,8 @@ export function registerCulinaryRoutes(
       async (request) => {
         const userId = (request.user as {sub: string}).sub;
 
-        const [menuItems, prepTasks, supplierNeeds, pointOfSale] =
-            await Promise.all([
-              loadCulinaryMenuItems(prisma, userId),
-              loadCulinaryPrepTasks(prisma, userId),
-              loadCulinarySupplierNeeds(prisma, userId),
-              getPointOfSaleOverview(prisma, userId),
-            ]);
+        const {menuItems, prepTasks, supplierNeeds, pointOfSale} =
+            await getCulinaryOverview(prisma, userId);
 
         const rt = withTelemetryBase(recordTelemetry, request);
         await rt({
