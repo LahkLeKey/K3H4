@@ -4,6 +4,7 @@ import {type FastifyInstance} from 'fastify';
 
 import * as personaLedger from '../entities/Persona/Persona';
 import type {PersonaRecord} from '../entities/Persona/Persona';
+import {buildPersonaCompatibilityPayload} from '../kits/persona-matching';
 import {ENTITY_KINDS} from '../lib/actor-entity-constants';
 import {type CompatFeatureVector, runOnnxCompatibility} from '../lib/compat-onnx';
 import {LIFECYCLE_STATUSES, type LifecycleStatus} from '../lib/domain-constants';
@@ -17,17 +18,6 @@ type PersonaAttributeInput = {
   weight?: number;
 };
 
-type CompatibilityPayload = {
-  sourceId: string; targetId: string; metadata: {
-    sourceId: string; targetId: string; jaccardScore: number;
-    intersectionCount: number;
-    unionCount: number;
-    overlappingTokens: string[];
-    status: LifecycleStatus;
-    rationale?: string | null;
-  };
-};
-
 type CompatibilityRecord = {
   id: string; sourceId: string; targetId: string; jaccardScore: number;
   intersectionCount: number;
@@ -35,67 +25,6 @@ type CompatibilityRecord = {
   overlappingTokens: string[];
   status: LifecycleStatus;
   rationale?: string | null; createdAt: Date;
-};
-
-const normalizeToken = (value: string) =>
-    value.trim().toLowerCase().replace(/\s+/g, '-');
-
-const tokensForPersona = (persona: PersonaRecord) => {
-  const tokens = new Set<string>();
-  tokens.add(normalizeToken(persona.alias));
-  if (persona.handle) tokens.add(normalizeToken(persona.handle));
-  persona.tags.forEach((tag) => tokens.add(normalizeToken(tag)));
-  persona.attributes.forEach((attr) => {
-    tokens.add(
-        `${normalizeToken(attr.category)}:${normalizeToken(attr.value)}`);
-  });
-  return tokens;
-};
-
-const calculateJaccard = (a: Set<string>, b: Set<string>) => {
-  const intersection = new Set<string>();
-  a.forEach((token) => {
-    if (b.has(token)) intersection.add(token);
-  });
-  const unionCount = new Set([...a, ...b]).size || 1;
-  const intersectionCount = intersection.size;
-  const score = unionCount === 0 ?
-      0 :
-      Number((intersectionCount / unionCount).toFixed(4));
-  return {
-    score,
-    intersectionCount,
-    unionCount,
-    overlap: Array.from(intersection)
-  };
-};
-
-const buildCompatibilityPayload = (personas: PersonaRecord[]) => {
-  const payload: CompatibilityPayload[] = [];
-  for (let i = 0; i < personas.length; i += 1) {
-    for (let j = i + 1; j < personas.length; j += 1) {
-      const left = personas[i];
-      const right = personas[j];
-      const leftTokens = tokensForPersona(left);
-      const rightTokens = tokensForPersona(right);
-      const {score, intersectionCount, unionCount, overlap} =
-          calculateJaccard(leftTokens, rightTokens);
-      payload.push({
-        sourceId: left.id,
-        targetId: right.id,
-        metadata: {
-          sourceId: left.id,
-          targetId: right.id,
-          jaccardScore: score,
-          intersectionCount,
-          unionCount,
-          overlappingTokens: overlap,
-          status: LIFECYCLE_STATUSES.ACTIVE,
-        },
-      });
-    }
-  }
-  return payload;
 };
 
 const metadataRecord = (value: unknown) => {
@@ -584,7 +513,7 @@ export function registerPersonaRoutes(
       });
       return {compatibilities: []};
     }
-    const payload = buildCompatibilityPayload(personas);
+    const payload = buildPersonaCompatibilityPayload(personas);
     await prisma.$transaction([
       prisma.entity.deleteMany({
         where: {actorId: actor.id, kind: ENTITY_KINDS.PERSONA_COMPATIBILITY},
