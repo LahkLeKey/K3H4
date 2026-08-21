@@ -134,7 +134,6 @@ export function MapLayer({ readonly }: { readonly?: boolean }) {
                 : "idle";
     const poiError = poiQuery.error instanceof Error ? poiQuery.error.message : null;
 
-    const stylePath = mapConfig?.stylePath ?? DEFAULT_STYLE_PATH;
     const vectorTilePath = mapConfig?.vectorTilePath ?? DEFAULT_VECTOR_TILE_PATH;
     const terrainTilePath = mapConfig?.terrainTilePath ?? DEFAULT_TERRAIN_TILE_PATH;
     const mapStyleUrl = useMemo(() => resolveMapStyleUrl(apiBase, mapConfig), [apiBase, mapConfig]);

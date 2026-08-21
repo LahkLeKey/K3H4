@@ -82,7 +82,7 @@ export function ActorEntityDashboard() {
         [],
     );
 
-    const cacheColumns = useMemo<TableColumn<CacheRecord>>(
+    const cacheColumns = useMemo<TableColumn<CacheRecord>[]>(
         () => [
             { key: "key", label: "Key" },
             {
