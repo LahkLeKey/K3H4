@@ -2,14 +2,17 @@ import '../../test/vitest-setup';
 
 import {describe, expect, it, vi} from 'vitest';
 
-vi.mock('../../services/culinary-ledger', () => ({
-  createCulinaryMenuItem: vi.fn().mockResolvedValue({id: 'menu-1', name: 'Soup'}),
-  createCulinaryPrepTask: vi.fn(),
-  createCulinarySupplierNeed: vi.fn(),
-  loadCulinaryMenuItems: vi.fn(),
-  loadCulinaryPrepTasks: vi.fn(),
-  loadCulinarySupplierNeeds: vi.fn(),
-}));
+vi.mock(
+    '../../services/culinary-ledger',
+    () => ({
+      createCulinaryMenuItem:
+          vi.fn().mockResolvedValue({id: 'menu-1', name: 'Soup'}),
+      createCulinaryPrepTask: vi.fn(),
+      createCulinarySupplierNeed: vi.fn(),
+      loadCulinaryMenuItems: vi.fn(),
+      loadCulinaryPrepTasks: vi.fn(),
+      loadCulinarySupplierNeeds: vi.fn(),
+    }));
 
 import {createCulinaryMenuItem, getCulinaryOverview} from './index';
 
