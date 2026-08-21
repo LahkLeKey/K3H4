@@ -27,6 +27,29 @@ export type PayAssignmentTimecardResult = {
   balance: string;
 };
 
+export type CreateAssignmentCommand = {
+  userId: string;
+  assignmentActorId: string;
+  title: string;
+  personaId: string;
+  hourlyRate: number|string;
+};
+
+export type CreateAssignmentResult = {
+  id: string;
+  title: string;
+  hourlyRate: string;
+  personaId: string;
+};
+
+export type CreateAssignmentTimecardCommand = {
+  assignmentActorId: string;
+  assignmentId: string;
+  hourlyRate: number|string;
+  hours: number|string;
+  note?: string;
+};
+
 const parseAmount = (value: number|string) => {
   const decimal = new Prisma.Decimal(String(value));
   if (!decimal.greaterThan(0)) throw new Error('Payout amount must be positive');
@@ -37,6 +60,36 @@ const readMetadata = (value: Prisma.JsonValue|null|undefined) => {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return {};
   return value as Record<string, unknown>;
 };
+
+export async function createAssignment(
+    transaction: AssignmentTransaction,
+    command: CreateAssignmentCommand,
+    ): Promise<CreateAssignmentResult> {
+  const hourlyRate = new Prisma.Decimal(String(command.hourlyRate));
+  if (!hourlyRate.greaterThan(0))
+    throw new Error('hourlyRate must be positive');
+  const entity = await transaction.entity.create({
+    data: {
+      actorId: command.assignmentActorId,
+      kind: ENTITY_KINDS.ASSIGNMENT,
+      targetType: 'assignment',
+      targetId: null,
+      name: command.title,
+      source: 'k3h4-assignment',
+      metadata: {
+        title: command.title,
+        hourlyRate: hourlyRate.toFixed(2),
+        personaId: command.personaId,
+      },
+    },
+  });
+  return {
+    id: entity.id,
+    title: command.title,
+    hourlyRate: hourlyRate.toFixed(2),
+    personaId: command.personaId,
+  };
+}
 
 export async function payAssignmentTimecard(
     transaction: AssignmentTransaction,
@@ -102,5 +155,37 @@ export async function payAssignmentTimecard(
       invoiceUrl: String(metadata.invoiceUrl ?? ''),
     },
     balance: savedUser.k3h4CoinBalance.toFixed(2),
+  };
+}
+
+export async function createAssignmentTimecard(
+    transaction: AssignmentTransaction,
+    command: CreateAssignmentTimecardCommand) {
+  const hours = new Prisma.Decimal(String(command.hours));
+  const hourlyRate = new Prisma.Decimal(String(command.hourlyRate));
+  if (!hours.greaterThan(0)) throw new Error('hours must be positive');
+  const amount = hours.mul(hourlyRate);
+  const note = command.note?.trim() || null;
+  const entity = await transaction.entity.create({
+    data: {
+      actorId: command.assignmentActorId,
+      kind: ENTITY_KINDS.ASSIGNMENT_TIMECARD,
+      targetType: 'assignment',
+      targetId: command.assignmentId,
+      source: 'k3h4-assignment',
+      metadata: {
+        hours: hours.toFixed(2),
+        amount: amount.toFixed(2),
+        note,
+        status: 'approved',
+      },
+    },
+  });
+  return {
+    id: entity.id,
+    hours: hours.toFixed(2),
+    amount: amount.toFixed(2),
+    note,
+    status: 'approved',
   };
 }

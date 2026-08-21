@@ -4,7 +4,7 @@ import {Prisma} from '@prisma/client';
 import {describe, expect, it, vi} from 'vitest';
 
 import {recordBankLedgerEntry} from '../bank-ledger';
-import {payAssignmentTimecard} from './index';
+import {createAssignment, createAssignmentTimecard, payAssignmentTimecard} from './index';
 
 vi.mock('../bank-ledger', () => ({recordBankLedgerEntry: vi.fn()}));
 
@@ -63,6 +63,65 @@ describe('Assignment ledger Kit', () => {
     expect(txEntity.update).toHaveBeenCalledWith(expect.objectContaining({
       where: {id: 'timecard-1'},
       data: {metadata: {status: 'paid'}},
+    }));
+  });
+
+  it('creates an assignment for a Persona through the Kit command', async () => {
+    const entity = {
+      create: vi.fn().mockResolvedValue({
+        id: 'assignment-1',
+        metadata: {title: 'Design gig', hourlyRate: '50.00', personaId: 'p1'},
+      }),
+    };
+    const result = await createAssignment({actor: {}, entity} as any, {
+      userId: 'user-1',
+      assignmentActorId: 'assignment-actor-1',
+      title: 'Design gig',
+      personaId: 'p1',
+      hourlyRate: '50.00',
+    });
+
+    expect(result).toEqual({
+      id: 'assignment-1',
+      title: 'Design gig',
+      hourlyRate: '50.00',
+      personaId: 'p1',
+    });
+    expect(entity.create).toHaveBeenCalledWith(expect.objectContaining({
+      data: expect.objectContaining({
+        actorId: 'assignment-actor-1',
+        targetId: null,
+        metadata: {title: 'Design gig', hourlyRate: '50.00', personaId: 'p1'},
+      }),
+    }));
+  });
+
+  it('creates a timecard and calculates its amount from the hourly rate', async () => {
+    const entity = {
+      create: vi.fn().mockResolvedValue({id: 'timecard-1'}),
+    };
+    const result = await createAssignmentTimecard({entity} as any, {
+      assignmentActorId: 'assignment-actor-1',
+      assignmentId: 'assignment-1',
+      hourlyRate: '50.00',
+      hours: '1.50',
+      note: 'Design work',
+    });
+
+    expect(result).toEqual({
+      id: 'timecard-1',
+      hours: '1.50',
+      amount: '75.00',
+      note: 'Design work',
+      status: 'approved',
+    });
+    expect(entity.create).toHaveBeenCalledWith(expect.objectContaining({
+      data: expect.objectContaining({
+        targetId: 'assignment-1',
+        metadata: {
+          hours: '1.50', amount: '75.00', note: 'Design work', status: 'approved',
+        },
+      }),
     }));
   });
 });

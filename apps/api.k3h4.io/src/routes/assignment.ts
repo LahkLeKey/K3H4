@@ -3,7 +3,7 @@ import {type FastifyInstance} from 'fastify';
 
 import * as assignmentActor from '../actors/Assignment/Assignment';
 import {findPersonaMap, findPersonaRecord} from '../kits/persona-matching';
-import {payAssignmentTimecard} from '../kits/assignment-ledger';
+import {createAssignment, createAssignmentTimecard, payAssignmentTimecard} from '../kits/assignment-ledger';
 import * as personaLedger from '../entities/Persona/Persona';
 import type {PersonaRecord} from '../entities/Persona/Persona';
 import {ENTITY_DIRECTIONS, ENTITY_KINDS} from '../lib/actor-entity-constants';
@@ -194,19 +194,12 @@ export function registerAssignmentRoutes(
 
         const assignmentActorRecord =
             await assignmentActor.ensureAssignmentActor(prisma, userId);
-        const entity = await prisma.entity.create({
-          data: {
-            actorId: assignmentActorRecord.id,
-            kind: EntityKind.ASSIGNMENT,
-            targetType: assignmentActor.ASSIGNMENT_TARGET_TYPE,
-            name: title,
-            source: assignmentActor.ASSIGNMENT_ACTOR_SOURCE,
-            metadata: {
-              title,
-              hourlyRate: new Prisma.Decimal(hourlyRate).toFixed(2),
-              personaId,
-            },
-          },
+        const assignment = await createAssignment(prisma, {
+          userId,
+          assignmentActorId: assignmentActorRecord.id,
+          title,
+          personaId,
+          hourlyRate,
         });
 
         await recordTelemetry(request, {
@@ -216,13 +209,12 @@ export function registerAssignmentRoutes(
           payload: {personaId},
         });
 
-        const assignment = buildAssignmentRecordFromEntity(entity);
-        const response = serializeAssignment({
+        const response = {
           ...assignment,
           persona: personaLedger.personaRecordToResponse(personaRecord),
           timecards: [],
           payouts: [],
-        });
+        };
         return {assignment: response};
       },
   );
@@ -249,23 +241,14 @@ export function registerAssignmentRoutes(
         if (!Number.isFinite(hours) || hours <= 0)
           return reply.status(400).send({error: 'hours must be positive'});
 
-        const hoursDecimal = new Prisma.Decimal(hours.toFixed(2));
-        const amount = hoursDecimal.mul(assignment.hourlyRate);
-        const timecardEntity = await prisma.entity.create({
-          data: {
-            actorId: details.assignment.actorId,
-            kind: EntityKind.ASSIGNMENT_TIMECARD,
-            targetType: assignmentActor.ASSIGNMENT_TARGET_TYPE,
-            targetId: assignmentId,
-            source: assignmentActor.ASSIGNMENT_ACTOR_SOURCE,
-            metadata: {
-              hours: hoursDecimal.toFixed(2),
-              amount: amount.toFixed(2),
-              note: body?.note?.trim() || null,
-              status: 'approved',
-            },
-          },
-        });
+        const timecard = await prisma.$transaction(
+            async (tx) => createAssignmentTimecard(tx, {
+              assignmentActorId: details.assignment.actorId,
+              assignmentId,
+              hourlyRate: assignment.hourlyRate.toFixed(2),
+              hours: hours.toFixed(2),
+              note: body?.note,
+            }));
 
         const personaMap = await findPersonaMap(prisma, userId);
         const updatedDetails = await assignmentActor.loadAssignmentDetails(
@@ -280,22 +263,14 @@ export function registerAssignmentRoutes(
           payload: {
             assignmentId,
             hours,
-            amount: amount.toFixed(2),
+            amount: timecard.amount,
           },
         });
 
         const response = buildSerializedAssignment(
             updatedDetails.assignment, updatedDetails.timecards,
             updatedDetails.payouts, personaMap);
-        const timecardResponse =
-            serializeAssignment({
-              hourlyRate: assignment.hourlyRate,
-              persona: null,
-              timecards: [buildTimecardRecord(timecardEntity)],
-              payouts: [],
-            }).timecards[0];
-
-        return {assignment: response, timecard: timecardResponse};
+        return {assignment: response, timecard};
       },
   );
 

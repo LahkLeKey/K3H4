@@ -262,9 +262,8 @@ describe('assignment routes', () => {
     };
     const txTimecard = {update: vi.fn()};
 
-    const createTimecardSpy = vi.fn().mockResolvedValue(timecard);
     const prisma = {
-      entity: {create: createTimecardSpy},
+      entity: {},
       user: {},
       $transaction: vi.fn(async (cb) => cb({
                             user: txUser,
@@ -282,7 +281,7 @@ describe('assignment routes', () => {
       payload: {hours: 1}
     });
     expect(timecardRes.statusCode).toBe(200);
-    expect(createTimecardSpy).toHaveBeenCalled();
+    expect(txEntity.create).toHaveBeenCalled();
 
     const payRes = await server.inject({
       method: 'POST',
