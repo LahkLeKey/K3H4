@@ -2,6 +2,7 @@ import {type Actor, type Entity, Prisma, type PrismaClient} from '@prisma/client
 import {type FastifyInstance} from 'fastify';
 
 import {recordBankLedgerEntry} from '../kits/bank-ledger';
+import {topUpArcadeCard} from '../kits/arcade-operations';
 import {ACTOR_TYPES, ENTITY_DIRECTIONS, ENTITY_KINDS, type EntityDirection as EntityDirectionType,} from '../lib/actor-entity-constants';
 
 import {buildTelemetryBase} from './telemetry';
@@ -248,50 +249,12 @@ export function registerArcadeRoutes(
 
     try {
       const {balance} = await prisma.$transaction(async (tx) => {
-        const user = await tx.user.findUnique({
-          where: {id: userId},
-          select: {k3h4CoinBalance: true},
-        });
-        if (!user) throw new Error('User not found');
-        if (user.k3h4CoinBalance.lessThan(amount))
-          throw new Error('Insufficient k3h4-coin balance');
-
-        const card = await tx.actor.findFirst({
-          where: {id, userId, type: ActorType.ARCADE_PLAYER_CARD},
-        });
-        if (!card) throw new Error('Card not found');
-
-        const cardBalance = await getActorBalance(tx, card.id);
-        const nextUserBalance = user.k3h4CoinBalance.sub(amount);
-        const nextCardBalance = cardBalance.add(amount);
-
-        await tx.user.update({
-          where: {id: userId},
-          data: {k3h4CoinBalance: nextUserBalance},
-        });
-        await recordBankLedgerEntry(tx, {
+        return topUpArcadeCard(tx, {
           userId,
+          cardId: id,
           amount: amount.toFixed(2),
-          direction: EntityDirection.DEBIT,
-          kind: EntityKind.ARCADE_TOPUP,
-          balanceAfter: nextUserBalance.toFixed(2),
-          targetType: 'arcade_card',
-          targetId: card.id,
-          name: card.label ?? card.id,
+          source: body?.source,
         });
-
-        await recordBankLedgerEntry(tx, {
-          userId,
-          actorId: card.id,
-          amount: amount.toFixed(2),
-          direction: EntityDirection.CREDIT,
-          kind: EntityKind.ARCADE_TOPUP,
-          balanceAfter: nextCardBalance.toFixed(2),
-          details: {source: body?.source ?? 'k3h4-coin'},
-          name: 'Arcade card top-up',
-        });
-
-        return {balance: nextCardBalance};
       });
 
       await recordTelemetry(request, {
@@ -301,7 +264,7 @@ export function registerArcadeRoutes(
         payload: {cardId: id, amount: amount.toFixed(2)},
       });
 
-      return {balance: serializeDecimal(balance)};
+      return {balance};
     } catch (err) {
       request.log.error({err}, 'arcade top-up failed');
       return reply.status(400).send(
