@@ -253,6 +253,7 @@ describe('assignment routes', () => {
         },
         createdAt: new Date()
       }),
+      findUnique: vi.fn().mockResolvedValue({metadata: {status: 'approved'}}),
       update: vi.fn(),
     };
     const txPayout = {
@@ -386,6 +387,7 @@ describe('assignment routes', () => {
         },
         createdAt: new Date()
       }),
+      findUnique: vi.fn().mockResolvedValue({metadata: {status: 'approved'}}),
       update: vi.fn(),
     };
     const txPayout = {

@@ -1,9 +1,8 @@
-import {faker} from '@faker-js/faker';
 import {type Entity, Prisma, type PrismaClient} from '@prisma/client';
 import {type FastifyInstance} from 'fastify';
 
 import * as assignmentActor from '../actors/Assignment/Assignment';
-import {recordBankLedgerEntry} from '../kits/bank-ledger';
+import {payAssignmentTimecard} from '../kits/assignment-ledger';
 import * as personaLedger from '../entities/Persona/Persona';
 import type {PersonaRecord} from '../entities/Persona/Persona';
 import {ENTITY_DIRECTIONS, ENTITY_KINDS} from '../lib/actor-entity-constants';
@@ -328,56 +327,16 @@ export function registerAssignmentRoutes(
     const assignmentTitle =
         metadataString(assignmentMetadata, 'title') ?? 'assignment';
     try {
-      const result = await prisma.$transaction(async (tx) => {
-        const user = await tx.user.findUnique({
-          where: {id: userId},
-          select: {k3h4CoinBalance: true},
-        });
-        if (!user) throw new Error('User not found');
-
-        const nextBalance = user.k3h4CoinBalance.sub(timecard.amount);
-        const savedUser = await tx.user.update({
-          where: {id: userId},
-          data: {k3h4CoinBalance: nextBalance},
-        });
-
-        await recordBankLedgerEntry(tx, {
+      const result = await prisma.$transaction(async (tx) =>
+        payAssignmentTimecard(tx, {
           userId,
+          assignmentActorId: details.assignment.actorId,
+          assignmentId,
+          assignmentTitle,
+          timecardId,
           amount: timecard.amount.toFixed(2),
-          direction: EntityDirection.DEBIT,
-          kind: EntityKind.ASSIGNMENT_PAYOUT,
-          note: body?.note ?? `Payout for ${assignmentTitle}`,
-          balanceAfter: savedUser.k3h4CoinBalance.toFixed(2),
-          targetType: assignmentActor.ASSIGNMENT_TARGET_TYPE,
-          targetId: assignmentId,
-          name: assignmentTitle,
-        });
-
-        const payoutEntity = await tx.entity.create({
-          data: {
-            actorId: details.assignment.actorId,
-            kind: EntityKind.ASSIGNMENT_PAYOUT,
-            targetType: assignmentActor.ASSIGNMENT_TARGET_TYPE,
-            targetId: assignmentId,
-            source: assignmentActor.ASSIGNMENT_ACTOR_SOURCE,
-            metadata: {
-              amount: timecard.amount.toFixed(2),
-              note: body?.note?.trim() ?? `Timecard payout ${timecard.id}`,
-              invoiceUrl: `https://invoices.k3h4.local/${
-                  faker.string.alphanumeric(8).toLowerCase()}`,
-              status: 'paid',
-            },
-          },
-        });
-
-        const existingMetadata = asRecord(timecardEntity.metadata);
-        await tx.entity.update({
-          where: {id: timecardEntity.id},
-          data: {metadata: {...existingMetadata, status: 'paid'}},
-        });
-
-        return {payoutEntity};
-      });
+          note: body?.note,
+        }));
 
       await recordTelemetry(request, {
         ...buildTelemetryBase(request),
@@ -398,17 +357,7 @@ export function registerAssignmentRoutes(
               updatedDetails.assignment, updatedDetails.timecards,
               updatedDetails.payouts, personaMap) :
           null;
-      const payoutResponse =
-          serializeAssignment({
-            hourlyRate: buildAssignmentRecordFromEntity(
-                            updatedDetails?.assignment ?? details.assignment)
-                            .hourlyRate,
-            persona: null,
-            timecards: [],
-            payouts: [buildPayoutRecord(result.payoutEntity)],
-          }).payouts[0];
-
-      return {assignment: assignmentResponse, payout: payoutResponse};
+      return {assignment: assignmentResponse, payout: result.payout};
     } catch (err) {
       request.log.error({err}, 'assignment payout failed');
       return reply.status(400).send({
