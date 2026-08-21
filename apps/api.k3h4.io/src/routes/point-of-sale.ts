@@ -1,7 +1,7 @@
 import {Prisma, PrismaClient} from '@prisma/client';
 import {type FastifyInstance} from 'fastify';
 
-import {recordBankTransactionEntity} from '../actors/Bank/Bank';
+import {recordBankLedgerEntry} from '../kits/bank-ledger';
 import {getPointOfSaleOverview, POS_DEFAULT_CHANNEL, summarizePointOfSaleStore, ticketFromEntity,} from '../entities/PointOfSale/PointOfSale';
 import {ACTOR_TYPES, ENTITY_DIRECTIONS, ENTITY_KINDS} from '../lib/actor-entity-constants';
 import {LIFECYCLE_STATUSES, type LifecycleStatus} from '../lib/domain-constants';
@@ -128,7 +128,7 @@ export function registerPointOfSaleRoutes(
         }
 
         try {
-          const {entity, store} = await prisma.$transaction(async (tx) => {
+          const {receipt, store} = await prisma.$transaction(async (tx) => {
             const storeEntry = await ensureStoreActor(
                 tx, userId, body.storeId, storeName, storeChannel,
                 channelOverride);
@@ -147,18 +147,18 @@ export function registerPointOfSaleRoutes(
               data: {k3h4CoinBalance: nextBalance},
             });
 
-            const entity = await recordBankTransactionEntity(tx, {
+            const receipt = await recordBankLedgerEntry(tx, {
               userId,
-              amount: total,
+              amount: total.toFixed(2),
               direction: ENTITY_DIRECTIONS.CREDIT,
               kind: ENTITY_KINDS.POINT_OF_SALE_TICKET,
-              balanceAfter: nextBalance,
+              balanceAfter: nextBalance.toFixed(2),
               targetType: 'point-of-sale_store',
               targetId: storeEntry.id,
               name: ['Point of Sale (Arcade Ticket)', storeEntry.label, channel]
                         .filter(Boolean)
                         .join(' · '),
-              metadata: {
+              details: {
                 storeId: storeEntry.id,
                 storeName: storeEntry.label,
                 channel,
@@ -167,10 +167,20 @@ export function registerPointOfSaleRoutes(
                 items,
               },
             });
-            return {entity, store: storeEntry};
+            return {receipt, store: storeEntry};
           });
 
-          const ticket = ticketFromEntity(entity);
+          const ticket = {
+            id: receipt.id,
+            storeId: store.id,
+            storeName: store.label,
+            channel,
+            status: ticketStatus,
+            total: new Prisma.Decimal(Number(body.total).toFixed(2)),
+            createdAt: receipt.createdAt,
+            items,
+            itemsCount,
+          };
           await recordTelemetry(request, {
             ...buildTelemetryBase(request),
             eventType: 'point-of-sale.ticket.create',

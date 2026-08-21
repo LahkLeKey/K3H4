@@ -3,7 +3,7 @@ import {type Entity, Prisma, type PrismaClient} from '@prisma/client';
 import {type FastifyInstance} from 'fastify';
 
 import * as assignmentActor from '../actors/Assignment/Assignment';
-import {recordBankTransactionEntity} from '../actors/Bank/Bank';
+import {recordBankLedgerEntry} from '../kits/bank-ledger';
 import * as personaLedger from '../entities/Persona/Persona';
 import type {PersonaRecord} from '../entities/Persona/Persona';
 import {ENTITY_DIRECTIONS, ENTITY_KINDS} from '../lib/actor-entity-constants';
@@ -341,13 +341,13 @@ export function registerAssignmentRoutes(
           data: {k3h4CoinBalance: nextBalance},
         });
 
-        const bankTxn = await recordBankTransactionEntity(tx, {
+        await recordBankLedgerEntry(tx, {
           userId,
-          amount: timecard.amount,
+          amount: timecard.amount.toFixed(2),
           direction: EntityDirection.DEBIT,
           kind: EntityKind.ASSIGNMENT_PAYOUT,
           note: body?.note ?? `Payout for ${assignmentTitle}`,
-          balanceAfter: savedUser.k3h4CoinBalance,
+          balanceAfter: savedUser.k3h4CoinBalance.toFixed(2),
           targetType: assignmentActor.ASSIGNMENT_TARGET_TYPE,
           targetId: assignmentId,
           name: assignmentTitle,
@@ -376,7 +376,7 @@ export function registerAssignmentRoutes(
           data: {metadata: {...existingMetadata, status: 'paid'}},
         });
 
-        return {bankTxn, payoutEntity};
+        return {payoutEntity};
       });
 
       await recordTelemetry(request, {
