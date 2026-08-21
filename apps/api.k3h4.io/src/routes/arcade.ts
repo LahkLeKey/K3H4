@@ -2,7 +2,7 @@ import {type Actor, type Entity, Prisma, type PrismaClient} from '@prisma/client
 import {type FastifyInstance} from 'fastify';
 
 import {recordBankLedgerEntry} from '../kits/bank-ledger';
-import {redeemArcadePrize, startArcadeSession, topUpArcadeCard} from '../kits/arcade-operations';
+import {createArcadeCard, createArcadeMachine, createArcadePrize, redeemArcadePrize, startArcadeSession, topUpArcadeCard} from '../kits/arcade-operations';
 import {ACTOR_TYPES, ENTITY_DIRECTIONS, ENTITY_KINDS, type EntityDirection as EntityDirectionType,} from '../lib/actor-entity-constants';
 
 import {buildTelemetryBase} from './telemetry';
@@ -201,18 +201,35 @@ export function registerArcadeRoutes(
   );
 
   server.post(
+      '/arcade/machines',
+      {preHandler: [server.authenticate]},
+      async (request) => {
+        const userId = (request.user as {sub: string}).sub;
+        const body = request.body as {name: string; status?: string};
+        const machine = await createArcadeMachine(prisma, {
+          userId,
+          name: body.name,
+          status: body.status,
+        });
+        await recordTelemetry(request, {
+          ...buildTelemetryBase(request),
+          eventType: 'arcade.machine.create',
+          source: 'api',
+          payload: {name: machine.label},
+        });
+        return {machine: buildMachineSummary(machine)};
+      },
+  );
+
+  server.post(
       '/arcade/cards',
       {preHandler: [server.authenticate]},
       async (request) => {
         const userId = (request.user as {sub: string}).sub;
         const body = request.body as {label?: string} | undefined;
-        const card = await prisma.actor.create({
-          data: {
-            userId,
-            type: ActorType.ARCADE_PLAYER_CARD,
-            label: body?.label?.trim() || 'Arcade card',
-            source: 'k3h4-api',
-          },
+        const card = await createArcadeCard(prisma, {
+          userId,
+          label: body?.label,
         });
         await recordTelemetry(request, {
           ...buildTelemetryBase(request),
@@ -279,23 +296,14 @@ export function registerArcadeRoutes(
           costCoins: number;
           stock?: number;
         };
-        const cost = new Prisma.Decimal(Number(body.costCoins).toFixed(2));
-        const stock = Number.isFinite(body.stock) ?
-            Math.max(0, Math.floor(Number(body.stock))) :
-            0;
-        const prize = await prisma.actor.create({
-          data: {
-            userId,
-            type: ActorType.ARCADE_PRIZE,
-            label: body.name,
-            metadata: {
-              sku: body.sku ?? null,
-              costCoins: cost.toFixed(2),
-              stock,
-            },
-            source: 'k3h4-api',
-          },
+        const prize = await createArcadePrize(prisma, {
+          userId,
+          name: body.name,
+          sku: body.sku,
+          costCoins: body.costCoins,
+          stock: body.stock,
         });
+        const stock = Number(parseJsonObject(prize.metadata).stock ?? 0);
         await recordTelemetry(request, {
           ...buildTelemetryBase(request),
           eventType: 'arcade.prize.create',

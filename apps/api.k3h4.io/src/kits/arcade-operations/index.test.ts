@@ -4,7 +4,7 @@ import {Prisma} from '@prisma/client';
 import {describe, expect, it, vi} from 'vitest';
 
 import {recordBankLedgerEntry} from '../bank-ledger';
-import {redeemArcadePrize, startArcadeSession, topUpArcadeCard} from './index';
+import {createArcadeCard, createArcadeMachine, createArcadePrize, redeemArcadePrize, startArcadeSession, topUpArcadeCard} from './index';
 
 vi.mock('../bank-ledger', () => ({recordBankLedgerEntry: vi.fn()}));
 
@@ -135,5 +135,37 @@ describe('Arcade operations Kit', () => {
           targetType: 'arcade_prize',
           targetId: 'prize-1',
         }));
+  });
+
+  it('creates machines, cards, and prizes through Kit commands', async () => {
+    const actor = {
+      create: vi.fn()
+          .mockResolvedValueOnce({id: 'machine-1', label: 'Cabinet', metadata: {status: 'idle'}})
+          .mockResolvedValueOnce({id: 'card-1', label: 'Visitor card', metadata: {}})
+          .mockResolvedValueOnce({
+            id: 'prize-1',
+            label: 'Prize',
+            metadata: {sku: 'P-1', costCoins: '4.00', stock: 2},
+          }),
+    };
+
+    const transaction = {actor};
+    await expect(createArcadeMachine(transaction as any, {
+      userId: 'user-1',
+      name: 'Cabinet',
+      status: 'idle',
+    })).resolves.toEqual(expect.objectContaining({id: 'machine-1'}));
+    await expect(createArcadeCard(transaction as any, {
+      userId: 'user-1',
+      label: 'Visitor card',
+    })).resolves.toEqual(expect.objectContaining({id: 'card-1'}));
+    await expect(createArcadePrize(transaction as any, {
+      userId: 'user-1',
+      name: 'Prize',
+      sku: 'P-1',
+      costCoins: '4.00',
+      stock: 2,
+    })).resolves.toEqual(expect.objectContaining({id: 'prize-1'}));
+    expect(actor.create).toHaveBeenCalledTimes(3);
   });
 });

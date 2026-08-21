@@ -53,6 +53,25 @@ export type RedeemArcadePrizeResult = {
   prizeStock: number;
 };
 
+export type CreateArcadeMachineCommand = {
+  userId: string;
+  name: string;
+  status?: string;
+};
+
+export type CreateArcadeCardCommand = {
+  userId: string;
+  label?: string;
+};
+
+export type CreateArcadePrizeCommand = {
+  userId: string;
+  name: string;
+  sku?: string;
+  costCoins: number|string;
+  stock?: number;
+};
+
 const parseAmount = (value: number|string) => {
   const numericValue = Number(value);
   if (!Number.isFinite(numericValue) || numericValue <= 0)
@@ -89,6 +108,53 @@ const parseCredits = (value: number|string) => {
     throw new Error('creditsSpent must be > 0');
   return new Prisma.Decimal(numericValue.toFixed(2));
 };
+
+const createActor = async (
+    transaction: ArcadeTransaction,
+    data: Record<string, unknown>) => transaction.actor.create({data: data as any});
+
+export async function createArcadeMachine(
+    transaction: ArcadeTransaction,
+    command: CreateArcadeMachineCommand) {
+  return createActor(transaction, {
+    userId: command.userId,
+    type: ACTOR_TYPES.ARCADE_MACHINE,
+    label: command.name,
+    metadata: {status: command.status ?? 'idle'},
+    source: 'k3h4-api',
+  });
+}
+
+export async function createArcadeCard(
+    transaction: ArcadeTransaction,
+    command: CreateArcadeCardCommand) {
+  return createActor(transaction, {
+    userId: command.userId,
+    type: ACTOR_TYPES.ARCADE_PLAYER_CARD,
+    label: command.label?.trim() || 'Arcade card',
+    source: 'k3h4-api',
+  });
+}
+
+export async function createArcadePrize(
+    transaction: ArcadeTransaction,
+    command: CreateArcadePrizeCommand) {
+  const cost = parseCredits(command.costCoins);
+  const stock = Number.isFinite(command.stock) ?
+      Math.max(0, Math.floor(Number(command.stock))) :
+      0;
+  return createActor(transaction, {
+    userId: command.userId,
+    type: ACTOR_TYPES.ARCADE_PRIZE,
+    label: command.name,
+    metadata: {
+      sku: command.sku ?? null,
+      costCoins: cost.toFixed(2),
+      stock,
+    },
+    source: 'k3h4-api',
+  });
+}
 
 export async function topUpArcadeCard(
     transaction: ArcadeTransaction,
