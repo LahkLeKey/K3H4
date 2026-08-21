@@ -4,6 +4,7 @@ import {type FastifyInstance} from 'fastify';
 import * as assignmentActor from '../actors/Assignment/Assignment';
 import {findPersonaMap, findPersonaRecord} from '../kits/persona-matching';
 import {createAssignment, createAssignmentTimecard, payAssignmentTimecard} from '../kits/assignment-ledger';
+import {serializeAssignmentList} from '../kits/assignment-view';
 import * as personaLedger from '../entities/Persona/Persona';
 import type {PersonaRecord} from '../entities/Persona/Persona';
 import {ENTITY_DIRECTIONS, ENTITY_KINDS} from '../lib/actor-entity-constants';
@@ -15,23 +16,6 @@ const EntityKind = ENTITY_KINDS;
 const EntityDirection = ENTITY_DIRECTIONS;
 
 const serializeMoney = (value: Prisma.Decimal) => value.toFixed(2);
-
-const serializeAssignment = (assignment: any) => ({
-  ...assignment,
-  hourlyRate: serializeMoney(assignment.hourlyRate),
-  persona: assignment.persona,
-  timecards: assignment.timecards?.map((tc: any) => ({
-                                         ...tc,
-                                         hours: serializeMoney(tc.hours),
-                                         amount: serializeMoney(tc.amount),
-                                       })) ??
-      [],
-  payouts: assignment.payouts?.map((p: any) => ({
-                                     ...p,
-                                     amount: serializeMoney(p.amount),
-                                   })) ??
-      [],
-});
 
 const asRecord = (value: Prisma.JsonValue|null|undefined) => {
   if (value && typeof value === 'object' && !Array.isArray(value)) {
@@ -92,33 +76,6 @@ const buildPayoutRecord = (entity: Entity) => {
   };
 };
 
-const groupByTargetId = (entities: Entity[]) => {
-  const map = new Map<string, Entity[]>();
-  entities.forEach((entity) => {
-    if (!entity.targetId) return;
-    const list = map.get(entity.targetId) ?? [];
-    list.push(entity);
-    map.set(entity.targetId, list);
-  });
-  return map;
-};
-
-const buildSerializedAssignment = (
-    entity: Entity,
-    timecards: Entity[],
-    payouts: Entity[],
-    personaMap: Map<string, PersonaRecord>,
-    ) => {
-  const assignment = buildAssignmentRecordFromEntity(entity);
-  const persona = resolvePersonaResponse(assignment.personaId, personaMap);
-  return serializeAssignment({
-    ...assignment,
-    persona,
-    timecards: timecards.map(buildTimecardRecord),
-    payouts: payouts.map(buildPayoutRecord),
-  });
-};
-
 const resolvePersonaResponse = (
     personaId: string|null|undefined,
     personaMap: Map<string, PersonaRecord>,
@@ -144,9 +101,6 @@ export function registerAssignmentRoutes(
             await assignmentActor.loadAssignmentActorEntities(
                 prisma, assignmentActorRecord.id);
 
-        const timecardsByAssignment = groupByTargetId(timecards);
-        const payoutsByAssignment = groupByTargetId(payouts);
-
         await recordTelemetry(request, {
           ...buildTelemetryBase(request),
           eventType: 'assignment.list',
@@ -155,10 +109,8 @@ export function registerAssignmentRoutes(
         });
 
         return {
-          assignments: assignments.map(
-              (assignment) => buildSerializedAssignment(
-                  assignment, timecardsByAssignment.get(assignment.id) ?? [],
-                  payoutsByAssignment.get(assignment.id) ?? [], personaMap))
+          assignments: serializeAssignmentList(
+              assignments, timecards, payouts, personaMap)
         };
       },
   );
@@ -267,9 +219,9 @@ export function registerAssignmentRoutes(
           },
         });
 
-        const response = buildSerializedAssignment(
-            updatedDetails.assignment, updatedDetails.timecards,
-            updatedDetails.payouts, personaMap);
+        const response = serializeAssignmentList(
+          [updatedDetails.assignment], updatedDetails.timecards,
+          updatedDetails.payouts, personaMap)[0];
         return {assignment: response, timecard};
       },
   );
@@ -328,10 +280,10 @@ export function registerAssignmentRoutes(
       const updatedDetails = await assignmentActor.loadAssignmentDetails(
           prisma, userId, assignmentId);
 
-      const assignmentResponse = updatedDetails ?
-          buildSerializedAssignment(
-              updatedDetails.assignment, updatedDetails.timecards,
-              updatedDetails.payouts, personaMap) :
+        const assignmentResponse = updatedDetails ?
+          serializeAssignmentList(
+            [updatedDetails.assignment], updatedDetails.timecards,
+            updatedDetails.payouts, personaMap)[0] :
           null;
       return {assignment: assignmentResponse, payout: result.payout};
     } catch (err) {
