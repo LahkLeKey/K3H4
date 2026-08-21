@@ -34,6 +34,25 @@ export type StartArcadeSessionResult = {
   balance: string;
 };
 
+export type RedeemArcadePrizeCommand = {
+  userId: string;
+  prizeId: string;
+  cardId: string;
+  sessionId?: string;
+};
+
+export type RedeemArcadePrizeResult = {
+  redemption: {
+    id: string;
+    prizeId: string;
+    cardId: string;
+    sessionId: string|null;
+    createdAt: string;
+  };
+  balance: string;
+  prizeStock: number;
+};
+
 const parseAmount = (value: number|string) => {
   const numericValue = Number(value);
   if (!Number.isFinite(numericValue) || numericValue <= 0)
@@ -176,5 +195,65 @@ export async function startArcadeSession(
       startedAt: receipt.createdAt,
     },
     balance: nextBalance.toFixed(2),
+  };
+}
+
+export async function redeemArcadePrize(
+    transaction: ArcadeTransaction,
+    command: RedeemArcadePrizeCommand,
+    ): Promise<RedeemArcadePrizeResult> {
+  const prize = await transaction.actor.findFirst({
+    where: {
+      id: command.prizeId,
+      userId: command.userId,
+      type: ACTOR_TYPES.ARCADE_PRIZE,
+    },
+  });
+  if (!prize) throw new Error('Prize not found');
+  const prizeMetadata = parseJsonObject(prize.metadata);
+  const currentStock = Math.max(0, Math.floor(Number(prizeMetadata.stock ?? 0)));
+  if (currentStock <= 0) throw new Error('Prize out of stock');
+  const cost = new Prisma.Decimal(String(prizeMetadata.costCoins ?? '0'));
+
+  const card = await transaction.actor.findFirst({
+    where: {
+      id: command.cardId,
+      userId: command.userId,
+      type: ACTOR_TYPES.ARCADE_PLAYER_CARD,
+    },
+  });
+  if (!card) throw new Error('Card not found');
+  const cardBalance = await getActorBalance(transaction, card.id);
+  if (cardBalance.lessThan(cost))
+    throw new Error('Insufficient card balance');
+
+  const nextBalance = cardBalance.sub(cost);
+  const receipt = await recordBankLedgerEntry(transaction, {
+    userId: command.userId,
+    actorId: card.id,
+    amount: cost.toFixed(2),
+    direction: ENTITY_DIRECTIONS.DEBIT,
+    kind: ENTITY_KINDS.ARCADE_PRIZE_REDEMPTION,
+    balanceAfter: nextBalance.toFixed(2),
+    targetType: 'arcade_prize',
+    targetId: prize.id,
+    details: {prizeId: prize.id, sessionId: command.sessionId ?? null},
+  });
+  const prizeStock = currentStock - 1;
+  await transaction.actor.update({
+    where: {id: prize.id},
+    data: {metadata: {...prizeMetadata, stock: prizeStock}},
+  });
+
+  return {
+    redemption: {
+      id: receipt.id,
+      prizeId: prize.id,
+      cardId: card.id,
+      sessionId: command.sessionId ?? null,
+      createdAt: receipt.createdAt,
+    },
+    balance: nextBalance.toFixed(2),
+    prizeStock,
   };
 }

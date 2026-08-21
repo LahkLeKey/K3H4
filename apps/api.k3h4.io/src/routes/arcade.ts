@@ -2,7 +2,7 @@ import {type Actor, type Entity, Prisma, type PrismaClient} from '@prisma/client
 import {type FastifyInstance} from 'fastify';
 
 import {recordBankLedgerEntry} from '../kits/bank-ledger';
-import {startArcadeSession, topUpArcadeCard} from '../kits/arcade-operations';
+import {redeemArcadePrize, startArcadeSession, topUpArcadeCard} from '../kits/arcade-operations';
 import {ACTOR_TYPES, ENTITY_DIRECTIONS, ENTITY_KINDS, type EntityDirection as EntityDirectionType,} from '../lib/actor-entity-constants';
 
 import {buildTelemetryBase} from './telemetry';
@@ -370,61 +370,13 @@ export function registerArcadeRoutes(
     };
 
     try {
-      const {receipt, balance, stock} = await prisma.$transaction(async (tx) => {
-        const prize = await tx.actor.findFirst({
-          where: {id: prizeId, userId, type: ActorType.ARCADE_PRIZE},
-        });
-        if (!prize) throw new Error('Prize not found');
-        const prizeMetadata = parseJsonObject(prize.metadata);
-        const stockRaw = prizeMetadata.stock;
-        const currentStock =
-            typeof stockRaw === 'number' ? stockRaw : Number(stockRaw ?? 0);
-        if (currentStock <= 0) throw new Error('Prize out of stock');
-        const costRaw = prizeMetadata.costCoins;
-        const cost = typeof costRaw === 'string' ? new Prisma.Decimal(costRaw) :
-                                                   new Prisma.Decimal('0.00');
-
-        const card = await tx.actor.findFirst({
-          where: {id: body.cardId, userId, type: ActorType.ARCADE_PLAYER_CARD},
-        });
-        if (!card) throw new Error('Card not found');
-
-        const cardBalance = await getActorBalance(tx, card.id);
-        if (cardBalance.lessThan(cost))
-          throw new Error('Insufficient card balance');
-
-        const nextBalance = cardBalance.sub(cost);
-        const receipt = await recordBankLedgerEntry(tx, {
+      const result = await prisma.$transaction(async (tx) =>
+        redeemArcadePrize(tx, {
           userId,
-          actorId: card.id,
-          amount: cost.toFixed(2),
-          direction: EntityDirection.DEBIT,
-          kind: EntityKind.ARCADE_PRIZE_REDEMPTION,
-          balanceAfter: nextBalance.toFixed(2),
-          targetType: 'arcade_prize',
-          targetId: prize.id,
-          details: {
-            prizeId: prize.id,
-            sessionId: body.sessionId ?? null,
-          },
-        });
-
-        await tx.actor.update({
-          where: {id: prize.id},
-          data: {
-            metadata: {
-              ...prizeMetadata,
-              stock: Math.max(0, currentStock - 1),
-            },
-          },
-        });
-
-        return {
-          receipt,
-          balance: nextBalance,
-          stock: Math.max(0, currentStock - 1),
-        };
-      });
+          prizeId,
+          cardId: body.cardId,
+          sessionId: body.sessionId,
+        }));
 
       await recordTelemetry(request, {
         ...buildTelemetryBase(request),
@@ -434,15 +386,9 @@ export function registerArcadeRoutes(
       });
 
       return {
-        redemption: {
-          id: receipt.id,
-          prizeId,
-          cardId: body.cardId,
-          sessionId: body.sessionId ?? null,
-          createdAt: receipt.createdAt,
-        },
-        balance: serializeDecimal(balance),
-        prizeStock: stock,
+        redemption: result.redemption,
+        balance: result.balance,
+        prizeStock: result.prizeStock,
       };
     } catch (err) {
       request.log.error({err}, 'arcade redemption failed');

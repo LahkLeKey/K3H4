@@ -4,7 +4,7 @@ import {Prisma} from '@prisma/client';
 import {describe, expect, it, vi} from 'vitest';
 
 import {recordBankLedgerEntry} from '../bank-ledger';
-import {startArcadeSession, topUpArcadeCard} from './index';
+import {redeemArcadePrize, startArcadeSession, topUpArcadeCard} from './index';
 
 vi.mock('../bank-ledger', () => ({recordBankLedgerEntry: vi.fn()}));
 
@@ -84,6 +84,56 @@ describe('Arcade operations Kit', () => {
           balanceAfter: '7.00',
           targetType: 'arcade_machine',
           targetId: 'machine-1',
+        }));
+  });
+
+  it('redeems an in-stock prize and debits the player card', async () => {
+    const recordEntry = vi.mocked(recordBankLedgerEntry);
+    recordEntry.mockResolvedValue({
+      id: 'redemption-entry',
+      createdAt: '2026-08-21T00:00:00.000Z',
+    });
+    const actor = {
+      findFirst: vi.fn()
+          .mockResolvedValueOnce({
+            id: 'prize-1',
+            label: 'Prize',
+            metadata: {costCoins: '4.00', stock: 2},
+          })
+          .mockResolvedValueOnce({id: 'card-1'}),
+      update: vi.fn(),
+    };
+    const entity = {
+      findMany: vi.fn().mockResolvedValue([
+        {direction: 'credit', metadata: {amount: '10.00'}},
+      ]),
+    };
+
+    const result = await redeemArcadePrize(
+        {actor, entity} as any,
+        {userId: 'user-1', prizeId: 'prize-1', cardId: 'card-1', sessionId: 'session-1'});
+
+    expect(result).toEqual({
+      redemption: {
+        id: 'redemption-entry',
+        prizeId: 'prize-1',
+        cardId: 'card-1',
+        sessionId: 'session-1',
+        createdAt: '2026-08-21T00:00:00.000Z',
+      },
+      balance: '6.00',
+      prizeStock: 1,
+    });
+    expect(actor.update).toHaveBeenCalledWith(expect.objectContaining({
+      where: {id: 'prize-1'},
+      data: {metadata: {costCoins: '4.00', stock: 1}},
+    }));
+    expect(recordEntry).toHaveBeenCalledWith(
+        expect.anything(), expect.objectContaining({
+          amount: '4.00',
+          balanceAfter: '6.00',
+          targetType: 'arcade_prize',
+          targetId: 'prize-1',
         }));
   });
 });
