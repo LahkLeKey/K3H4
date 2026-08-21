@@ -167,4 +167,67 @@ describe('arcade routes', () => {
         expect.anything(),
         expect.objectContaining({eventType: 'arcade.prize.redeem'}));
   });
+
+  it('lists the arcade overview and records telemetry', async () => {
+    const prisma = {
+      actor: {findMany: vi.fn().mockResolvedValue([])},
+      entity: {findMany: vi.fn().mockResolvedValue([])},
+    };
+    const server = buildServer(prisma);
+    const response = await server.inject({
+      method: 'GET',
+      url: '/arcade/overview',
+    });
+
+    expect(response.statusCode).toBe(200);
+    expect(response.json()).toEqual({
+      machines: [], cards: [], prizes: [], sessions: [], redemptions: [],
+    });
+    expect(recordTelemetry).toHaveBeenCalledWith(
+        expect.anything(),
+        expect.objectContaining({eventType: 'arcade.overview.fetch'}));
+  });
+
+  it('creates a machine, card, and prize through Kit commands', async () => {
+    const actor = {
+      create: vi.fn()
+          .mockResolvedValueOnce({id: 'machine-1', label: 'Cabinet', metadata: {status: 'idle'}, createdAt: new Date()})
+          .mockResolvedValueOnce({id: 'card-1', label: 'Visitor card', metadata: {}, createdAt: new Date()})
+          .mockResolvedValueOnce({id: 'prize-1', label: 'Prize', metadata: {costCoins: '4.00', stock: 2}}),
+    };
+    const server = buildServer({actor});
+
+    const machine = await server.inject({
+      method: 'POST',
+      url: '/arcade/machines',
+      payload: {name: 'Cabinet'},
+    });
+    const card = await server.inject({
+      method: 'POST',
+      url: '/arcade/cards',
+      payload: {label: 'Visitor card'},
+    });
+    const prize = await server.inject({
+      method: 'POST',
+      url: '/arcade/prizes',
+      payload: {name: 'Prize', costCoins: 4, stock: 2},
+    });
+
+    expect(machine.statusCode).toBe(200);
+    expect(machine.json().machine.id).toBe('machine-1');
+    expect(card.statusCode).toBe(200);
+    expect(card.json().card.id).toBe('card-1');
+    expect(prize.statusCode).toBe(200);
+    expect(prize.json().prize.id).toBe('prize-1');
+    expect(actor.create).toHaveBeenCalledTimes(3);
+    expect(recordTelemetry).toHaveBeenCalledWith(
+        expect.anything(),
+        expect.objectContaining({eventType: 'arcade.machine.create'}));
+    expect(recordTelemetry).toHaveBeenCalledWith(
+        expect.anything(),
+        expect.objectContaining({eventType: 'arcade.card.create'}));
+    expect(recordTelemetry).toHaveBeenCalledWith(
+        expect.anything(),
+        expect.objectContaining({eventType: 'arcade.prize.create'}));
+  });
 });
