@@ -7,14 +7,17 @@ vi.mock(
     () => ({
       createCulinaryMenuItem:
           vi.fn().mockResolvedValue({id: 'menu-1', name: 'Soup'}),
-      createCulinaryPrepTask: vi.fn(),
-      createCulinarySupplierNeed: vi.fn(),
+        createCulinaryPrepTask:
+          vi.fn().mockResolvedValue({id: 'prep-1', task: 'Chop'}),
+        createCulinarySupplierNeed:
+          vi.fn().mockResolvedValue({id: 'need-1', item: 'Greens'}),
       loadCulinaryMenuItems: vi.fn(),
       loadCulinaryPrepTasks: vi.fn(),
       loadCulinarySupplierNeeds: vi.fn(),
     }));
 
-import {createCulinaryMenuItem, getCulinaryOverview} from './index';
+import {createCulinaryMenuItem, createCulinaryPrepTask,
+  createCulinarySupplierNeed, getCulinaryOverview} from './index';
 
 describe('Culinary operations Kit', () => {
   it('combines kitchen ledgers with the Point of Sale overview', async () => {
@@ -49,5 +52,19 @@ describe('Culinary operations Kit', () => {
       cost: 4,
       price: 12,
     })).resolves.toEqual(expect.objectContaining({name: 'Soup'}));
+  });
+
+  it('creates prep tasks and supplier needs through Kit commands', async () => {
+    const transaction = {} as any;
+    await expect(createCulinaryPrepTask(transaction, 'user-1', {
+      task: 'Chop',
+      station: 'Garde',
+      status: 'PENDING',
+    })).resolves.toEqual(expect.objectContaining({task: 'Chop'}));
+    await expect(createCulinarySupplierNeed(transaction, 'user-1', {
+      item: 'Greens',
+      quantity: '3',
+      status: 'OPEN',
+    })).resolves.toEqual(expect.objectContaining({item: 'Greens'}));
   });
 });

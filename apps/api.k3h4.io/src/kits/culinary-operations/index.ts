@@ -3,6 +3,12 @@ import {Prisma, type PrismaClient} from '@prisma/client';
 import {createCulinaryMenuItem as createMenuItem, createCulinaryPrepTask as createPrepTask, createCulinarySupplierNeed as createSupplierNeed, loadCulinaryMenuItems, loadCulinaryPrepTasks, loadCulinarySupplierNeeds,} from '../../services/culinary-ledger';
 import {getPointOfSaleOverview, type PointOfSaleOverview,} from '../point-of-sale';
 
+export type {
+  CulinaryMenuItemRecord,
+  CulinaryPrepTaskRecord,
+  CulinarySupplierNeedRecord,
+} from '../../services/culinary-ledger';
+
 export type CulinaryOverview = {
   menuItems: Awaited<ReturnType<typeof loadCulinaryMenuItems>>;
   prepTasks: Awaited<ReturnType<typeof loadCulinaryPrepTasks>>;
