@@ -14,6 +14,26 @@ export type TopUpArcadeCardCommand = {
 
 export type TopUpArcadeCardResult = {balance: string};
 
+export type StartArcadeSessionCommand = {
+  userId: string;
+  cardId: string;
+  machineId: string;
+  creditsSpent: number|string;
+  score?: number;
+};
+
+export type StartArcadeSessionResult = {
+  session: {
+    id: string;
+    machineId: string;
+    cardId: string;
+    creditsSpent: string;
+    score: number|null;
+    startedAt: string;
+  };
+  balance: string;
+};
+
 const parseAmount = (value: number|string) => {
   const numericValue = Number(value);
   if (!Number.isFinite(numericValue) || numericValue <= 0)
@@ -42,6 +62,13 @@ const getActorBalance = async (transaction: ArcadeTransaction, actorId: string) 
         balance.sub(amount) :
         balance.add(amount);
   }, new Prisma.Decimal(0));
+};
+
+const parseCredits = (value: number|string) => {
+  const numericValue = Number(value);
+  if (!Number.isFinite(numericValue) || numericValue <= 0)
+    throw new Error('creditsSpent must be > 0');
+  return new Prisma.Decimal(numericValue.toFixed(2));
 };
 
 export async function topUpArcadeCard(
@@ -96,4 +123,58 @@ export async function topUpArcadeCard(
   });
 
   return {balance: nextCardBalance.toFixed(2)};
+}
+
+export async function startArcadeSession(
+    transaction: ArcadeTransaction,
+    command: StartArcadeSessionCommand,
+    ): Promise<StartArcadeSessionResult> {
+  const amount = parseCredits(command.creditsSpent);
+  const card = await transaction.actor.findFirst({
+    where: {
+      id: command.cardId,
+      userId: command.userId,
+      type: ACTOR_TYPES.ARCADE_PLAYER_CARD,
+    },
+  });
+  if (!card) throw new Error('Card not found');
+  const machine = await transaction.actor.findFirst({
+    where: {
+      id: command.machineId,
+      userId: command.userId,
+      type: ACTOR_TYPES.ARCADE_MACHINE,
+    },
+  });
+  if (!machine) throw new Error('Machine not found');
+  const cardBalance = await getActorBalance(transaction, card.id);
+  if (cardBalance.lessThan(amount))
+    throw new Error('Insufficient card balance');
+
+  const nextBalance = cardBalance.sub(amount);
+  const receipt = await recordBankLedgerEntry(transaction, {
+    userId: command.userId,
+    actorId: card.id,
+    amount: amount.toFixed(2),
+    direction: ENTITY_DIRECTIONS.DEBIT,
+    kind: ENTITY_KINDS.ARCADE_SESSION,
+    balanceAfter: nextBalance.toFixed(2),
+    targetType: 'arcade_machine',
+    targetId: machine.id,
+    details: {
+      machineId: machine.id,
+      creditsSpent: amount.toFixed(2),
+      score: Number.isFinite(command.score) ? Math.floor(Number(command.score)) : null,
+    },
+  });
+  return {
+    session: {
+      id: receipt.id,
+      machineId: machine.id,
+      cardId: card.id,
+      creditsSpent: amount.toFixed(2),
+      score: Number.isFinite(command.score) ? Math.floor(Number(command.score)) : null,
+      startedAt: receipt.createdAt,
+    },
+    balance: nextBalance.toFixed(2),
+  };
 }

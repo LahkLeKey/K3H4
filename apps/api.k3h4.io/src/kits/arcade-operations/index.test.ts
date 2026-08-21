@@ -4,7 +4,7 @@ import {Prisma} from '@prisma/client';
 import {describe, expect, it, vi} from 'vitest';
 
 import {recordBankLedgerEntry} from '../bank-ledger';
-import {topUpArcadeCard} from './index';
+import {startArcadeSession, topUpArcadeCard} from './index';
 
 vi.mock('../bank-ledger', () => ({recordBankLedgerEntry: vi.fn()}));
 
@@ -36,6 +36,54 @@ describe('Arcade operations Kit', () => {
           amount: '10.00',
           balanceAfter: '90.00',
           targetId: 'card-1',
+        }));
+  });
+
+  it('starts a session by debiting the player card', async () => {
+    const recordEntry = vi.mocked(recordBankLedgerEntry);
+    recordEntry.mockResolvedValue({
+      id: 'session-entry',
+      createdAt: '2026-08-21T00:00:00.000Z',
+    });
+    const user = {findUnique: vi.fn()};
+    const actor = {
+      findFirst: vi.fn()
+          .mockResolvedValueOnce({id: 'card-1', userId: 'user-1', type: 'arcade-player-card'})
+          .mockResolvedValueOnce({id: 'machine-1', userId: 'user-1', type: 'arcade-machine'}),
+    };
+    const entity = {
+      findMany: vi.fn().mockResolvedValue([
+        {direction: 'credit', metadata: {amount: '10.00'}},
+      ]),
+    };
+
+    const result = await startArcadeSession(
+        {user, actor, entity} as any,
+        {
+          userId: 'user-1',
+          cardId: 'card-1',
+          machineId: 'machine-1',
+          creditsSpent: '3.00',
+          score: 42,
+        });
+
+    expect(result).toEqual({
+      session: {
+        id: 'session-entry',
+        machineId: 'machine-1',
+        cardId: 'card-1',
+        creditsSpent: '3.00',
+        score: 42,
+        startedAt: '2026-08-21T00:00:00.000Z',
+      },
+      balance: '7.00',
+    });
+    expect(recordEntry).toHaveBeenCalledWith(
+        expect.anything(), expect.objectContaining({
+          amount: '3.00',
+          balanceAfter: '7.00',
+          targetType: 'arcade_machine',
+          targetId: 'machine-1',
         }));
   });
 });

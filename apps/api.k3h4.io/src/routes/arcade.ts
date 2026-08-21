@@ -2,7 +2,7 @@ import {type Actor, type Entity, Prisma, type PrismaClient} from '@prisma/client
 import {type FastifyInstance} from 'fastify';
 
 import {recordBankLedgerEntry} from '../kits/bank-ledger';
-import {topUpArcadeCard} from '../kits/arcade-operations';
+import {startArcadeSession, topUpArcadeCard} from '../kits/arcade-operations';
 import {ACTOR_TYPES, ENTITY_DIRECTIONS, ENTITY_KINDS, type EntityDirection as EntityDirectionType,} from '../lib/actor-entity-constants';
 
 import {buildTelemetryBase} from './telemetry';
@@ -333,44 +333,14 @@ export function registerArcadeRoutes(
         const amount = new Prisma.Decimal(credits.toFixed(2));
 
         try {
-          const {receipt, balance} = await prisma.$transaction(async (tx) => {
-            const card = await tx.actor.findFirst({
-              where:
-                  {id: body.cardId, userId, type: ActorType.ARCADE_PLAYER_CARD},
-            });
-            if (!card) throw new Error('Card not found');
-
-            const machine = await tx.actor.findFirst({
-              where:
-                  {id: body.machineId, userId, type: ActorType.ARCADE_MACHINE},
-            });
-            if (!machine) throw new Error('Machine not found');
-
-            const cardBalance = await getActorBalance(tx, card.id);
-            if (cardBalance.lessThan(amount))
-              throw new Error('Insufficient card balance');
-
-            const nextBalance = cardBalance.sub(amount);
-            const scoreValue = Number.isFinite(body.score) ?
-                Math.floor(Number(body.score)) :
-                null;
-            const receipt = await recordBankLedgerEntry(tx, {
+          const result = await prisma.$transaction(async (tx) => {
+            return startArcadeSession(tx, {
               userId,
-              actorId: card.id,
-              amount: amount.toFixed(2),
-              direction: EntityDirection.DEBIT,
-              kind: EntityKind.ARCADE_SESSION,
-              balanceAfter: nextBalance.toFixed(2),
-              targetType: 'arcade_machine',
-              targetId: machine.id,
-              details: {
-                machineId: machine.id,
-                creditsSpent: amount.toFixed(2),
-                score: scoreValue,
-              },
+              cardId: body.cardId,
+              machineId: body.machineId,
+              creditsSpent: amount.toFixed(2),
+              score: body.score,
             });
-
-            return {receipt, balance: nextBalance};
           });
 
           await recordTelemetry(request, {
@@ -380,19 +350,7 @@ export function registerArcadeRoutes(
             payload: {machineId: body.machineId, credits: credits.toFixed(2)},
           });
 
-          return {
-            session: {
-              id: receipt.id,
-              machineId: body.machineId,
-              cardId: body.cardId,
-              creditsSpent: amount.toFixed(2),
-              score: Number.isFinite(body.score) ?
-                  Math.floor(Number(body.score)) :
-                  null,
-              startedAt: receipt.createdAt,
-            },
-            balance: serializeDecimal(balance),
-          };
+          return result;
         } catch (err) {
           request.log.error({err}, 'arcade session failed');
           return reply.status(400).send({
