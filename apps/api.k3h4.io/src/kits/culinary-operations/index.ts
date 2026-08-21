@@ -1,14 +1,7 @@
-import {type PrismaClient} from '@prisma/client';
+import {Prisma, type PrismaClient} from '@prisma/client';
 
-import {
-  loadCulinaryMenuItems,
-  loadCulinaryPrepTasks,
-  loadCulinarySupplierNeeds,
-} from '../../services/culinary-ledger';
-import {
-  getPointOfSaleOverview,
-  type PointOfSaleOverview,
-} from '../../services/point-of-sale-ledger';
+import {createCulinaryMenuItem as createMenuItem, createCulinaryPrepTask as createPrepTask, createCulinarySupplierNeed as createSupplierNeed, loadCulinaryMenuItems, loadCulinaryPrepTasks, loadCulinarySupplierNeeds,} from '../../services/culinary-ledger';
+import {getPointOfSaleOverview, type PointOfSaleOverview,} from '../../services/point-of-sale-ledger';
 
 export type CulinaryOverview = {
   menuItems: Awaited<ReturnType<typeof loadCulinaryMenuItems>>;
@@ -16,6 +9,37 @@ export type CulinaryOverview = {
   supplierNeeds: Awaited<ReturnType<typeof loadCulinarySupplierNeeds>>;
   pointOfSale: PointOfSaleOverview;
 };
+
+export type CulinaryMenuItemCommand = {
+  name: string; prepMinutes: number; cost: number; price: number;
+};
+
+export type CulinaryPrepTaskCommand = {
+  task: string; station: string; dueAt?: string;
+  status: Parameters<typeof createPrepTask>[2]['status'];
+};
+
+export type CulinarySupplierNeedCommand = {
+  item: string; quantity: string; dueDate?: string;
+  status: Parameters<typeof createSupplierNeed>[2]['status'];
+};
+
+type CulinaryTransaction = PrismaClient|Prisma.TransactionClient;
+
+export const createCulinaryMenuItem = (
+  transaction: CulinaryTransaction, userId: string,
+    command: CulinaryMenuItemCommand) =>
+    createMenuItem(transaction, userId, command);
+
+export const createCulinaryPrepTask = (
+  transaction: CulinaryTransaction, userId: string,
+    command: CulinaryPrepTaskCommand) =>
+    createPrepTask(transaction, userId, command);
+
+export const createCulinarySupplierNeed = (
+  transaction: CulinaryTransaction, userId: string,
+    command: CulinarySupplierNeedCommand) =>
+    createSupplierNeed(transaction, userId, command);
 
 type CulinaryOverviewLoaders = {
   loadMenuItems: typeof loadCulinaryMenuItems;
@@ -25,7 +49,8 @@ type CulinaryOverviewLoaders = {
 };
 
 export async function getCulinaryOverview(
-    prisma: PrismaClient, userId: string,
+    prisma: PrismaClient,
+    userId: string,
     loaders: Partial<CulinaryOverviewLoaders> = {},
     ): Promise<CulinaryOverview> {
   const activeLoaders: CulinaryOverviewLoaders = {

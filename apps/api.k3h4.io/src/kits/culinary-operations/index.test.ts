@@ -2,7 +2,16 @@ import '../../test/vitest-setup';
 
 import {describe, expect, it, vi} from 'vitest';
 
-import {getCulinaryOverview} from './index';
+vi.mock('../../services/culinary-ledger', () => ({
+  createCulinaryMenuItem: vi.fn().mockResolvedValue({id: 'menu-1', name: 'Soup'}),
+  createCulinaryPrepTask: vi.fn(),
+  createCulinarySupplierNeed: vi.fn(),
+  loadCulinaryMenuItems: vi.fn(),
+  loadCulinaryPrepTasks: vi.fn(),
+  loadCulinarySupplierNeeds: vi.fn(),
+}));
+
+import {createCulinaryMenuItem, getCulinaryOverview} from './index';
 
 describe('Culinary operations Kit', () => {
   it('combines kitchen ledgers with the Point of Sale overview', async () => {
@@ -27,5 +36,15 @@ describe('Culinary operations Kit', () => {
     });
 
     expect(result).toEqual({...culinary, pointOfSale});
+  });
+
+  it('creates a menu item through the Kit command interface', async () => {
+    const transaction = {} as any;
+    await expect(createCulinaryMenuItem(transaction, 'user-1', {
+      name: 'Soup',
+      prepMinutes: 15,
+      cost: 4,
+      price: 12,
+    })).resolves.toEqual(expect.objectContaining({name: 'Soup'}));
   });
 });
