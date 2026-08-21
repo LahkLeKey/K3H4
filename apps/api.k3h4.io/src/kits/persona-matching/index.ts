@@ -1,4 +1,9 @@
-import type {PersonaRecord} from '../../entities/Persona/Persona';
+import type {PrismaClient} from '@prisma/client';
+import {
+  loadPersonaMap,
+  loadPersonaRecordById,
+  type PersonaRecord,
+} from '../../entities/Persona/Persona';
 import {LIFECYCLE_STATUSES, type LifecycleStatus} from '../../lib/domain-constants';
 
 export type PersonaCompatibilityPayload = {
@@ -15,6 +20,13 @@ export type PersonaCompatibilityPayload = {
     rationale?: string|null;
   };
 };
+
+export const findPersonaMap = (prisma: PrismaClient, userId: string) =>
+  loadPersonaMap(prisma, userId);
+
+export const findPersonaRecord = (
+  prisma: PrismaClient, actorId: string, personaId: string) =>
+  loadPersonaRecordById(prisma, actorId, personaId);
 
 const normalizeToken = (value: string) =>
     value.trim().toLowerCase().replace(/\s+/g, '-');

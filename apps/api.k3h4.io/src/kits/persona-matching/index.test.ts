@@ -2,7 +2,12 @@ import '../../test/vitest-setup';
 
 import {describe, expect, it} from 'vitest';
 
-import {buildPersonaCompatibilityPayload} from './index';
+import {buildPersonaCompatibilityPayload, findPersonaMap, findPersonaRecord} from './index';
+
+vi.mock('../../entities/Persona/Persona', () => ({
+  loadPersonaMap: vi.fn().mockResolvedValue(new Map([['p1', {id: 'p1'}]])),
+  loadPersonaRecordById: vi.fn().mockResolvedValue({id: 'p1'}),
+}));
 
 describe('Persona matching Kit', () => {
   it('builds deterministic Jaccard compatibility payloads', () => {
@@ -58,5 +63,13 @@ describe('Persona matching Kit', () => {
         status: 'ACTIVE',
       },
     }]);
+  });
+
+  it('provides Persona lookup commands for dependent Kits', async () => {
+    const prisma = {} as any;
+    await expect(findPersonaMap(prisma, 'user-1')).resolves.toEqual(
+        new Map([['p1', {id: 'p1'}]]));
+    await expect(findPersonaRecord(prisma, 'persona-actor-1', 'p1'))
+        .resolves.toEqual({id: 'p1'});
   });
 });

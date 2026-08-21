@@ -2,6 +2,7 @@ import {type Entity, Prisma, type PrismaClient} from '@prisma/client';
 import {type FastifyInstance} from 'fastify';
 
 import * as assignmentActor from '../actors/Assignment/Assignment';
+import {findPersonaMap, findPersonaRecord} from '../kits/persona-matching';
 import {payAssignmentTimecard} from '../kits/assignment-ledger';
 import * as personaLedger from '../entities/Persona/Persona';
 import type {PersonaRecord} from '../entities/Persona/Persona';
@@ -136,7 +137,7 @@ export function registerAssignmentRoutes(
       {preHandler: [server.authenticate]},
       async (request) => {
         const userId = (request.user as {sub: string}).sub;
-        const personaMap = await personaLedger.loadPersonaMap(prisma, userId);
+        const personaMap = await findPersonaMap(prisma, userId);
         const assignmentActorRecord =
             await assignmentActor.ensureAssignmentActor(prisma, userId);
         const {assignments, timecards, payouts} =
@@ -186,7 +187,7 @@ export function registerAssignmentRoutes(
 
         const personaActor =
             await personaLedger.ensurePersonaActor(prisma, userId);
-        const personaRecord = await personaLedger.loadPersonaRecordById(
+        const personaRecord = await findPersonaRecord(
             prisma, personaActor.id, personaId);
         if (!personaRecord)
           return reply.status(404).send({error: 'Persona not found'});
@@ -266,7 +267,7 @@ export function registerAssignmentRoutes(
           },
         });
 
-        const personaMap = await personaLedger.loadPersonaMap(prisma, userId);
+        const personaMap = await findPersonaMap(prisma, userId);
         const updatedDetails = await assignmentActor.loadAssignmentDetails(
             prisma, userId, assignmentId);
         if (!updatedDetails)
@@ -322,7 +323,7 @@ export function registerAssignmentRoutes(
     if (timecard.status === 'paid')
       return reply.status(400).send({error: 'Timecard already paid'});
 
-    const personaMap = await personaLedger.loadPersonaMap(prisma, userId);
+    const personaMap = await findPersonaMap(prisma, userId);
     const assignmentMetadata = asRecord(details.assignment.metadata);
     const assignmentTitle =
         metadataString(assignmentMetadata, 'title') ?? 'assignment';
