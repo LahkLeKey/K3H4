@@ -77,4 +77,94 @@ describe('arcade routes', () => {
            expect.anything(),
            expect.objectContaining({eventType: 'arcade.card.topup'}));
      });
+
+  it('starts a session through the Arcade Kit', async () => {
+    const actor = {
+      findFirst: vi.fn()
+          .mockResolvedValueOnce({id: 'card-1'})
+          .mockResolvedValueOnce({id: 'machine-1'}),
+    };
+    const entity = {
+      findMany: vi.fn().mockResolvedValue([
+        {direction: 'credit', metadata: {amount: '10.00'}},
+      ]),
+    };
+    const prisma = {
+      actor,
+      entity,
+      $transaction: vi.fn(async (callback) => callback({actor, entity})),
+    };
+    const server = buildServer(prisma);
+
+    const response = await server.inject({
+      method: 'POST',
+      url: '/arcade/sessions',
+      payload: {cardId: 'card-1', machineId: 'machine-1', creditsSpent: 3, score: 9},
+    });
+
+    expect(response.statusCode).toBe(200);
+    expect(response.json()).toEqual({
+      session: {
+        id: 'ledger-entry-1',
+        machineId: 'machine-1',
+        cardId: 'card-1',
+        creditsSpent: '3.00',
+        score: 9,
+        startedAt: '2026-08-18T00:00:00.000Z',
+      },
+      balance: '7.00',
+    });
+    expect(recordTelemetry).toHaveBeenCalledWith(
+        expect.anything(),
+        expect.objectContaining({eventType: 'arcade.session.start'}));
+  });
+
+  it('redeems a prize through the Arcade Kit and decrements stock', async () => {
+    const actor = {
+      findFirst: vi.fn()
+          .mockResolvedValueOnce({
+            id: 'prize-1',
+            metadata: {costCoins: '4.00', stock: 2},
+          })
+          .mockResolvedValueOnce({id: 'card-1'}),
+      update: vi.fn(),
+    };
+    const entity = {
+      findMany: vi.fn().mockResolvedValue([
+        {direction: 'credit', metadata: {amount: '10.00'}},
+      ]),
+    };
+    const prisma = {
+      actor,
+      entity,
+      $transaction: vi.fn(async (callback) => callback({actor, entity})),
+    };
+    const server = buildServer(prisma);
+
+    const response = await server.inject({
+      method: 'POST',
+      url: '/arcade/prizes/prize-1/actions/redeem',
+      payload: {cardId: 'card-1', sessionId: 'session-1'},
+    });
+
+    expect(response.statusCode).toBe(200);
+    expect(response.json()).toEqual({
+      redemption: {
+        id: 'ledger-entry-1',
+        prizeId: 'prize-1',
+        cardId: 'card-1',
+        sessionId: 'session-1',
+        createdAt: '2026-08-18T00:00:00.000Z',
+      },
+      balance: '6.00',
+      prizeStock: 1,
+    });
+    expect(actor.update).toHaveBeenCalledWith(expect.objectContaining({
+      where: {id: 'prize-1'},
+      data: {metadata: {costCoins: '4.00', stock: 1}},
+    }));
+    expect(recordTelemetry).toHaveBeenCalledWith(
+        expect.anything(),
+        expect.objectContaining({eventType: 'arcade.prize.redeem'}));
+  });
 });

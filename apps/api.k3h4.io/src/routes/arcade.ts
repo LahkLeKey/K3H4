@@ -19,8 +19,6 @@ const serializeDecimal = (val: Prisma.Decimal|number|null|undefined) => {
   return '0.00';
 };
 
-type PrismaTx = PrismaClient|Prisma.TransactionClient;
-
 const parseJsonObject = (value: Prisma.JsonValue|null|undefined) => {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return {};
   return value as Record<string, unknown>;
@@ -116,14 +114,6 @@ const buildRedemptionSummary = (entity: Entity) => {
     sessionId: (metadata.sessionId as string | undefined) ?? null,
     createdAt: entity.createdAt.toISOString(),
   };
-};
-
-const getActorBalance = async (tx: PrismaTx, actorId: string) => {
-  const entries = await tx.entity.findMany({
-    where: {actorId},
-    select: {direction: true, metadata: true},
-  });
-  return computeBalance(entries);
 };
 
 export function registerArcadeRoutes(
