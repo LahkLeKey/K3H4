@@ -1,41 +1,25 @@
 import '../../test/vitest-setup';
 
-import {Entity} from '@prisma/client';
 import Fastify from 'fastify';
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 
-import * as staffingActor from '../../actors/Staffing/Staffing';
-import * as personaLedger from '../../entities/Persona/Persona';
-import type {PersonaRecord} from '../../entities/Persona/Persona';
-import {ENTITY_KINDS} from '../../lib/actor-entity-constants';
+import * as staffingOperations from '../../kits/staffing-operations';
 import {registerStaffingRoutes} from '../staffing';
 import {type RecordTelemetryFn} from '../types';
 
+vi.mock('../../kits/staffing-operations', async (importOriginal) => ({
+  ...await importOriginal<typeof import('../../kits/staffing-operations')>(),
+  getStaffingDashboard: vi.fn(),
+  createStaffingEngagement: vi.fn(),
+  createStaffingRole: vi.fn(),
+  createStaffingCandidate: vi.fn(),
+  updateStaffingCandidateStage: vi.fn(),
+  createStaffingShift: vi.fn(),
+  createStaffingPlacement: vi.fn(),
+}));
+
 const recordTelemetry = vi.fn<RecordTelemetryFn>();
 const userId = 'user-1';
-const EntityKind = ENTITY_KINDS;
-const staffingLedger = {
-  id: 'actor-staff',
-  userId,
-  type: 'staffing'
-};
-const personaLedgerActor = {
-  id: 'actor-persona',
-  userId,
-  type: 'persona'
-};
-
-const samplePersona: PersonaRecord = {
-  id: 'p1',
-  alias: 'Ada',
-  account: 'ada@test.com',
-  handle: '@ada',
-  note: 'dev',
-  tags: [],
-  attributes: [],
-  createdAt: new Date(),
-  updatedAt: new Date(),
-};
 
 function buildServer(prisma: any) {
   const server = Fastify();
@@ -46,46 +30,11 @@ function buildServer(prisma: any) {
   return server;
 }
 
-const buildEntity = (overrides: Partial<Entity>): Entity => ({
-  id: overrides.id ?? 'entity-1',
-  actorId: staffingLedger.id,
-  kind: overrides.kind ?? EntityKind.STAFFING_ENGAGEMENT,
-  direction: null,
-  name: null,
-  targetType: null,
-  targetId: null,
-  source: null,
-  metadata: overrides.metadata ?? {},
-  createdAt: overrides.createdAt ?? new Date(),
-  updatedAt: overrides.updatedAt ?? new Date(),
-});
-
 describe('staffing routes', () => {
   beforeEach(() => {
     recordTelemetry.mockClear();
     vi.restoreAllMocks();
-    vi.spyOn(staffingActor, 'ensureStaffingActor')
-        .mockResolvedValue(staffingLedger as any);
-    vi.spyOn(personaLedger, 'ensurePersonaActor')
-        .mockResolvedValue(personaLedgerActor as any);
-    vi.spyOn(personaLedger, 'personaRecordToResponse')
-        .mockImplementation(
-            (persona) => ({
-              id: persona.id,
-              alias: persona.alias,
-              account: persona.account,
-              handle: persona.handle ?? undefined,
-              note: persona.note ?? undefined,
-              tags: persona.tags,
-              attributes: persona.attributes.map((attr) => ({
-                                                   id: attr.id,
-                                                   category: attr.category,
-                                                   value: attr.value,
-                                                   weight: attr.weight,
-                                                 })),
-              createdAt: persona.createdAt,
-              updatedAt: persona.updatedAt,
-            }));
+    vi.clearAllMocks();
   });
 
   afterEach(() => {
@@ -93,44 +42,15 @@ describe('staffing routes', () => {
   });
 
   it('loads the dashboard and emits telemetry', async () => {
-    vi.spyOn(personaLedger, 'loadPersonaMap')
-        .mockResolvedValue(new Map([[samplePersona.id, samplePersona]]));
-    vi.spyOn(staffingActor, 'loadStaffingEntities').mockResolvedValue({
-      engagements: [buildEntity({
-        id: 'eng-1',
-        metadata: {
-          name: 'Ops Engagement',
-          client: 'k3h4',
-          startDate: new Date().toISOString()
-        },
-      })],
-      roles: [buildEntity({
-        id: 'role-1',
-        kind: EntityKind.STAFFING_ROLE,
-        metadata: {engagementId: 'eng-1', title: 'Estimator', status: 'OPEN'},
-      })],
-      candidates: [buildEntity({
-        id: 'candidate-1',
-        kind: EntityKind.STAFFING_CANDIDATE,
-        metadata: {
-          engagementId: 'eng-1',
-          roleId: 'role-1',
-          personaId: 'p1',
-          fullName: 'Ada Candidate',
-        },
-      })],
-      shifts: [buildEntity({
-        id: 'shift-1',
-        kind: EntityKind.STAFFING_SHIFT,
-        metadata: {
-          roleId: 'role-1',
-          title: 'Shift 1',
-          startsAt: new Date().toISOString(),
-          endsAt: new Date(Date.now() + 3600000).toISOString(),
-        },
-      })],
+    vi.mocked(staffingOperations.getStaffingDashboard).mockResolvedValue({
+      engagements: [{id: 'eng-1', name: 'Ops Engagement'}],
+      roles: [{id: 'role-1', title: 'Estimator'}],
+      candidates: [{id: 'candidate-1'}],
+      shifts: [{id: 'shift-1'}],
       placements: [],
-    });
+      metrics: {openRoles: 1, activeCandidates: 1, scheduledShifts: 1,
+        activePlacements: 0, fillRate: 0},
+    } as any);
 
     const server = buildServer({});
     const res =
@@ -138,6 +58,8 @@ describe('staffing routes', () => {
     expect(res.statusCode).toBe(200);
     expect(res.json().engagements[0].name).toBe('Ops Engagement');
     expect(res.json().roles[0].title).toBe('Estimator');
+    expect(staffingOperations.getStaffingDashboard)
+      .toHaveBeenCalledWith(expect.anything(), userId);
     expect(recordTelemetry)
         .toHaveBeenCalledWith(
             expect.anything(),
@@ -145,11 +67,11 @@ describe('staffing routes', () => {
   });
 
   it('creates an engagement and records telemetry', async () => {
-    const entityCreate = vi.fn().mockResolvedValue(buildEntity({
+    vi.mocked(staffingOperations.createStaffingEngagement).mockResolvedValue({
       id: 'eng-2',
-      metadata: {name: 'New Engagement'},
-    }));
-    const prisma = {entity: {create: entityCreate}};
+      name: 'New Engagement',
+    } as any);
+    const prisma = {};
     const server = buildServer(prisma);
     const res = await server.inject({
       method: 'POST',
@@ -157,9 +79,10 @@ describe('staffing routes', () => {
       payload: {name: 'New Engagement', status: 'ACTIVE'}
     });
     expect(res.statusCode).toBe(200);
-    expect(entityCreate).toHaveBeenCalledWith(expect.objectContaining({
-      data: expect.objectContaining({kind: EntityKind.STAFFING_ENGAGEMENT})
-    }));
+    expect(staffingOperations.createStaffingEngagement)
+        .toHaveBeenCalledWith(
+            expect.anything(), userId,
+            expect.objectContaining({name: 'New Engagement'}));
     expect(res.json().engagement.name).toBe('New Engagement');
     expect(recordTelemetry)
         .toHaveBeenCalledWith(
@@ -168,24 +91,13 @@ describe('staffing routes', () => {
   });
 
   it('updates candidate stage and returns serialized candidate', async () => {
-    const candidateEntity = buildEntity({
+    vi.mocked(staffingOperations.updateStaffingCandidateStage)
+        .mockResolvedValue({
       id: 'candidate-1',
-      kind: EntityKind.STAFFING_CANDIDATE,
-      metadata: {stage: 'prospect', fullName: 'Ada Candidate'},
-    });
-    vi.spyOn(staffingActor, 'loadStaffingEntityByKind')
-        .mockResolvedValue(candidateEntity);
-    vi.spyOn(personaLedger, 'loadPersonaMap')
-        .mockResolvedValue(new Map([[samplePersona.id, samplePersona]]));
-    const findUnique = vi.fn().mockResolvedValue(buildEntity({
-      id: 'candidate-1',
-      kind: EntityKind.STAFFING_CANDIDATE,
-      metadata: {stage: 'interviewing', fullName: 'Ada Candidate'},
-    }));
-    const update = vi.fn().mockResolvedValue({});
-    const entity = {findUnique, update};
-
-    const prisma = {entity};
+      stage: 'interviewing',
+      fullName: 'Ada Candidate',
+    } as any);
+    const prisma = {};
     const server = buildServer(prisma);
 
     const res = await server.inject({
@@ -194,8 +106,9 @@ describe('staffing routes', () => {
       payload: {stage: 'interviewing'}
     });
     expect(res.statusCode).toBe(200);
-    expect(update).toHaveBeenCalled();
-    expect(findUnique).toHaveBeenCalled();
+    expect(staffingOperations.updateStaffingCandidateStage)
+      .toHaveBeenCalledWith(
+        expect.anything(), userId, 'candidate-1', 'interviewing');
     expect(res.json().candidate.stage).toBe('interviewing');
     expect(recordTelemetry)
         .toHaveBeenCalledWith(
@@ -204,7 +117,7 @@ describe('staffing routes', () => {
   });
 
   it('returns 400 when stage payload is missing', async () => {
-    const prisma = {entity: {findUnique: vi.fn(), update: vi.fn()}};
+    const prisma = {};
     const server = buildServer(prisma);
     const res = await server.inject({
       method: 'POST',
@@ -212,5 +125,86 @@ describe('staffing routes', () => {
       payload: {} as any
     });
     expect(res.statusCode).toBe(400);
+  });
+
+  it('maps missing owned records from the Kit to 404', async () => {
+    vi.mocked(staffingOperations.createStaffingRole).mockRejectedValue(
+        new staffingOperations.StaffingOperationsError(
+            'ENGAGEMENT_NOT_FOUND', 'Engagement not found'));
+    const server = buildServer({});
+
+    const res = await server.inject({
+      method: 'POST',
+      url: '/staffing/roles',
+      payload: {title: 'Operator', engagementId: 'missing'},
+    });
+
+    expect(res.statusCode).toBe(404);
+    expect(res.json()).toEqual({error: 'Engagement not found'});
+    expect(recordTelemetry).not.toHaveBeenCalled();
+  });
+
+  it('delegates role, candidate, shift, and placement creation with telemetry', async () => {
+    vi.mocked(staffingOperations.createStaffingRole).mockResolvedValue({
+      id: 'role-1',
+      engagementId: 'engagement-1',
+      title: 'Operator',
+    } as any);
+    vi.mocked(staffingOperations.createStaffingCandidate).mockResolvedValue({
+      id: 'candidate-1',
+      roleId: 'role-1',
+      stage: 'prospect',
+    } as any);
+    vi.mocked(staffingOperations.createStaffingShift).mockResolvedValue({
+      id: 'shift-1',
+      roleId: 'role-1',
+      title: 'Morning',
+    } as any);
+    vi.mocked(staffingOperations.createStaffingPlacement).mockResolvedValue({
+      id: 'placement-1',
+      roleId: 'role-1',
+    } as any);
+    const server = buildServer({});
+
+    const responses = await Promise.all([
+      server.inject({
+        method: 'POST',
+        url: '/staffing/roles',
+        payload: {title: 'Operator', engagementId: 'engagement-1'},
+      }),
+      server.inject({
+        method: 'POST',
+        url: '/staffing/candidates',
+        payload: {fullName: 'Ada Candidate', roleId: 'role-1'},
+      }),
+      server.inject({
+        method: 'POST',
+        url: '/staffing/shifts',
+        payload: {
+          title: 'Morning',
+          roleId: 'role-1',
+          startsAt: '2026-08-22T08:00:00.000Z',
+          endsAt: '2026-08-22T12:00:00.000Z',
+        },
+      }),
+      server.inject({
+        method: 'POST',
+        url: '/staffing/placements',
+        payload: {
+          roleId: 'role-1',
+          startDate: '2026-08-22',
+        },
+      }),
+    ]);
+
+    expect(responses.map((response) => response.statusCode))
+        .toEqual([200, 200, 200, 200]);
+    expect(recordTelemetry.mock.calls.map(([, event]) => event.eventType))
+        .toEqual(expect.arrayContaining([
+          'staffing.role.create',
+          'staffing.candidate.create',
+          'staffing.shift.create',
+          'staffing.placement.create',
+        ]));
   });
 });
