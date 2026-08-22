@@ -4,11 +4,64 @@ import {Prisma} from '@prisma/client';
 import {describe, expect, it, vi} from 'vitest';
 
 import {recordBankLedgerEntry} from '../bank-ledger';
-import {createArcadeCard, createArcadeMachine, createArcadePrize, redeemArcadePrize, startArcadeSession, topUpArcadeCard} from './index';
+import {createArcadeCard, createArcadeMachine, createArcadePrize, getArcadeOverview, redeemArcadePrize, startArcadeSession, topUpArcadeCard} from './index';
 
 vi.mock('../bank-ledger', () => ({recordBankLedgerEntry: vi.fn()}));
 
 describe('Arcade operations Kit', () => {
+  it('builds the Arcade overview through the Kit query', async () => {
+    const actor = {
+      findMany: vi.fn()
+          .mockResolvedValueOnce([{
+            id: 'machine-1', label: 'Cabinet', metadata: {status: 'idle'},
+            createdAt: new Date('2026-01-01T00:00:00.000Z'),
+          }])
+          .mockResolvedValueOnce([{
+            id: 'card-1', label: 'Visitor card', metadata: {},
+            createdAt: new Date('2026-01-02T00:00:00.000Z'),
+          }])
+          .mockResolvedValueOnce([{
+            id: 'prize-1', label: 'Sticker',
+            metadata: {sku: 'S-1', costCoins: '2.00', stock: 3},
+            createdAt: new Date('2026-01-03T00:00:00.000Z'),
+          }]),
+    };
+    const entity = {
+      findMany: vi.fn()
+          .mockResolvedValueOnce([{
+            id: 'topup-1', actorId: 'card-1', kind: 'arcade_topup',
+            direction: 'credit', source: 'k3h4-coin',
+            metadata: {amount: '5.00'},
+            createdAt: new Date('2026-01-04T00:00:00.000Z'),
+          }])
+          .mockResolvedValueOnce([])
+          .mockResolvedValueOnce([]),
+    };
+
+    const overview = await getArcadeOverview(
+        {actor, entity} as any, 'user-1');
+
+    expect(overview).toEqual({
+      machines: [{
+        id: 'machine-1', name: 'Cabinet', status: 'idle',
+        createdAt: '2026-01-01T00:00:00.000Z',
+      }],
+      cards: [{
+        id: 'card-1', label: 'Visitor card', balance: '5.00',
+        topUps: [{
+          id: 'topup-1', amount: '5.00', source: 'k3h4-coin',
+          createdAt: '2026-01-04T00:00:00.000Z',
+        }],
+      }],
+      prizes: [{
+        id: 'prize-1', name: 'Sticker', sku: 'S-1',
+        costCoins: '2.00', stock: 3,
+      }],
+      sessions: [],
+      redemptions: [],
+    });
+  });
+
   it('moves coins into a player card through two ledger entries', async () => {
     const recordEntry = vi.mocked(recordBankLedgerEntry);
     recordEntry.mockResolvedValue({
@@ -140,12 +193,19 @@ describe('Arcade operations Kit', () => {
   it('creates machines, cards, and prizes through Kit commands', async () => {
     const actor = {
       create: vi.fn()
-          .mockResolvedValueOnce({id: 'machine-1', label: 'Cabinet', metadata: {status: 'idle'}})
-          .mockResolvedValueOnce({id: 'card-1', label: 'Visitor card', metadata: {}})
+          .mockResolvedValueOnce({
+            id: 'machine-1', label: 'Cabinet', metadata: {status: 'idle'},
+            createdAt: new Date('2026-01-01T00:00:00.000Z'),
+          })
+          .mockResolvedValueOnce({
+            id: 'card-1', label: 'Visitor card', metadata: {},
+            createdAt: new Date('2026-01-01T00:00:00.000Z'),
+          })
           .mockResolvedValueOnce({
             id: 'prize-1',
             label: 'Prize',
             metadata: {sku: 'P-1', costCoins: '4.00', stock: 2},
+            createdAt: new Date('2026-01-01T00:00:00.000Z'),
           }),
     };
 
