@@ -4,10 +4,11 @@ import {createHash} from 'node:crypto';
 
 import {ensureGeoActor, ensureGeoGlobalActor} from '../actors/Geo/Geo';
 import {ensurePoiGlobalActor} from '../actors/Poi/Poi';
+import {createPrismaGeoCoreKit} from '../kits/geo-core/prisma-adapter';
 import {ENTITY_KINDS} from '../lib/actor-entity-constants';
 import {enqueueOverpass} from '../lib/overpass-queue';
 import {formatBuildingFromPayload, readBuildingCacheByOsm} from '../services/building-cache';
-import {readGeoQueryCache, readGeoQueryCacheStale, readGeoViewEntry, readGeoViewHistory, writeGeoQueryCache, writeGeoViewEntry,} from '../services/geo-cache';
+import {readGeoQueryCache, readGeoQueryCacheStale, writeGeoQueryCache} from '../services/geo-cache';
 import {enrichPoi} from '../services/poi-enrich/enrich';
 
 import {withTelemetryBase} from './telemetry';
@@ -33,7 +34,6 @@ const DEFAULT_KINDS = [
 const DEFAULT_LIMIT = 1500;
 const MAX_FETCH = 5000;
 const MAX_CLUSTER_IDS = 25;
-const VIEW_STALE_MINUTES = 45;
 const POI_LIST_CACHE_TTL_MS = 1000 * 45;
 const POI_LIST_STALE_MAX_MS = 1000 * 60 * 10;
 const POI_ACTOR_PREFIX = 'poi';
@@ -270,6 +270,7 @@ async function upsertOverpassElements(
 export function registerPoiRoutes(
     server: FastifyInstance, prisma: PrismaClient,
     recordTelemetry: RecordTelemetryFn) {
+  const geoCore = createPrismaGeoCoreKit(prisma);
   const inflight = new Map<string, Promise<any>>();
   const coalesce = async<T>(key: string, fn: () => Promise<T>): Promise<T> => {
     const existing = inflight.get(key) as Promise<T>| undefined;
@@ -417,43 +418,20 @@ export function registerPoiRoutes(
       return payload;
     };
 
-    const recordViewHistory = async (items: unknown[]) => {
+    const recordViewHistory =
+        async (items: Array<{id?: string; cluster?: unknown}>) => {
       if (!actorId) return {existing: null, isStale: true};
-      const signature = viewSignature(bounds, zoom);
-      const now = new Date();
-      const existing = await readGeoViewEntry(prisma, actorId, signature);
-      const poiIds = items
-                         .filter(
-                             (entry) =>
-                                 !(entry && typeof entry === 'object' &&
-                                   'cluster' in entry &&
-                                   (entry as {cluster?: unknown}).cluster))
-                         .map((entry) => `${(entry as {id?: string}).id ?? ''}`)
-                         .filter(Boolean)
-                         .slice(0, 500);
-      const staleAfter =
-          new Date(now.getTime() + VIEW_STALE_MINUTES * 60 * 1000);
-      await writeGeoViewEntry(prisma, actorId, {
-        signature,
-        zoomBand: Math.round(zoom ?? 0),
+      return await geoCore.recordMapView({
+        actorId,
         bbox: {
           minLat: bounds.minLat,
           minLng: bounds.minLng,
           maxLat: bounds.maxLat,
           maxLng: bounds.maxLng,
         },
-        lastPoiIds: poiIds,
-        lastPoiCount: items.length,
-        firstViewedAt: existing?.firstViewedAt ?? now.toISOString(),
-        lastViewedAt: now.toISOString(),
-        viewCount: (existing?.viewCount ?? 0) + 1,
-        staleAfter: staleAfter.toISOString(),
+        zoom,
+        items,
       });
-      return {
-        existing,
-        isStale: existing?.staleAfter ? new Date(existing.staleAfter) < now :
-                                        true,
-      };
     };
 
     if (hasFreshCache || hasStaleCache) {
