@@ -9,18 +9,23 @@ describe('Assignment view Kit', () => {
     const result = serializeAssignmentList(
         [{
           id: 'assignment-1',
-          metadata: {title: 'Design gig', hourlyRate: '50.00', personaId: 'p1'},
-        }] as any,
+          title: 'Design gig',
+          hourlyRate: '50.00',
+          personaId: 'p1',
+        }],
         [{
           id: 'timecard-1',
-          targetId: 'assignment-1',
-          metadata: {hours: '1.50', amount: '75.00', note: 'Work', status: 'approved'},
-        }] as any,
+          assignmentId: 'assignment-1',
+          hours: '1.50',
+          amount: '75.00',
+          note: 'Work',
+          status: 'approved',
+        }],
         [],
         new Map([['p1', {
           id: 'p1', alias: 'Ada', account: 'ada@example.com', handle: null,
           note: null, tags: [], attributes: [], createdAt: new Date(), updatedAt: new Date(),
-        } as any]]));
+        }]]));
 
     expect(result).toEqual([{
       id: 'assignment-1',
