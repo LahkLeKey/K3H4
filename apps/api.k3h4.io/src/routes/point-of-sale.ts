@@ -1,78 +1,12 @@
 import {Prisma, PrismaClient} from '@prisma/client';
 import {type FastifyInstance} from 'fastify';
 
-import {recordBankLedgerEntry} from '../kits/bank-ledger';
-import {getPointOfSaleOverview, POS_DEFAULT_CHANNEL, summarizePointOfSaleStore} from '../kits/point-of-sale';
-import {ACTOR_TYPES, ENTITY_DIRECTIONS, ENTITY_KINDS} from '../lib/actor-entity-constants';
+import {createPointOfSaleStore, createPointOfSaleTicket, getPointOfSaleOverview, POS_DEFAULT_CHANNEL} from '../kits/point-of-sale';
 import {LIFECYCLE_STATUSES, type LifecycleStatus} from '../lib/domain-constants';
 import {parseLifecycleStatus} from '../lib/status-utils';
 
 import {buildTelemetryBase} from './telemetry';
 import {type RecordTelemetryFn} from './types';
-
-const SOURCE = 'k3h4-api';
-
-type TicketItem = {
-  name: string; quantity: number; price: string
-};
-
-const normalizeTicketItems =
-    (items?: Array<{name: string; quantity?: number; price: number}>):
-        TicketItem[] => {
-          if (!items) return [];
-          return items
-              .map((item) => {
-                const name = item?.name?.trim();
-                const quantity = Number.isFinite(item?.quantity ?? 1) ?
-                    Math.max(1, Math.floor(Number(item.quantity ?? 1))) :
-                    1;
-                const parsedPrice = Number(item?.price);
-                if (!name || !Number.isFinite(parsedPrice)) return null;
-                const price =
-                    new Prisma.Decimal(parsedPrice.toFixed(2)).toFixed(2);
-                return {name, quantity, price};
-              })
-              .filter((item): item is TicketItem => Boolean(item));
-        };
-
-const parseJsonObject =
-    (value: Prisma.JsonValue|null|undefined): Prisma.JsonObject => {
-      if (!value || typeof value !== 'object' || Array.isArray(value))
-        return {};
-      return value as Prisma.JsonObject;
-    };
-
-const ensureStoreActor = async (
-    tx: Prisma.TransactionClient|PrismaClient, userId: string,
-    storeId: string|undefined, storeName: string|undefined, channel: string,
-    updateChannel: boolean) => {
-  if (storeId) {
-    const store = await tx.actor.findFirst({
-      where: {id: storeId, userId, type: ACTOR_TYPES.POINT_OF_SALE_STORE},
-    });
-    if (store) {
-      if (updateChannel) {
-        const metadata = parseJsonObject(store.metadata);
-        metadata.channel = channel;
-        return tx.actor.update({
-          where: {id: store.id},
-          data: {metadata, source: SOURCE},
-        });
-      }
-      return store;
-    }
-  }
-  if (!storeName) return null;
-  return tx.actor.create({
-    data: {
-      userId,
-      type: ACTOR_TYPES.POINT_OF_SALE_STORE,
-      label: storeName,
-      metadata: {channel},
-      source: SOURCE,
-    },
-  });
-};
 
 export function registerPointOfSaleRoutes(
     server: FastifyInstance, prisma: PrismaClient,
@@ -113,10 +47,7 @@ export function registerPointOfSaleRoutes(
 
         const requestedChannel = body.channel?.trim();
         const channel = requestedChannel || POS_DEFAULT_CHANNEL;
-        const items = normalizeTicketItems(body.items);
-        const itemsCount = items.reduce((sum, item) => sum + item.quantity, 0);
         const storeName = body.storeName?.trim() || undefined;
-        const storeChannel = channel;
         const channelOverride = requestedChannel !== undefined;
 
         let ticketStatus: LifecycleStatus = LIFECYCLE_STATUSES.CLOSED;
@@ -128,59 +59,17 @@ export function registerPointOfSaleRoutes(
         }
 
         try {
-          const {receipt, store} = await prisma.$transaction(async (tx) => {
-            const storeEntry = await ensureStoreActor(
-                tx, userId, body.storeId, storeName, storeChannel,
-                channelOverride);
-            if (!storeEntry) throw new Error('storeId or storeName required');
-
-            const user = await tx.user.findUnique({
-              where: {id: userId},
-              select: {k3h4CoinBalance: true},
-            });
-            if (!user) throw new Error('User not found');
-
-            const total = new Prisma.Decimal(Number(body.total).toFixed(2));
-            const nextBalance = user.k3h4CoinBalance.add(total);
-            await tx.user.update({
-              where: {id: userId},
-              data: {k3h4CoinBalance: nextBalance},
-            });
-
-            const receipt = await recordBankLedgerEntry(tx, {
+          const ticket = await prisma.$transaction((transaction) =>
+            createPointOfSaleTicket(transaction, {
               userId,
-              amount: total.toFixed(2),
-              direction: ENTITY_DIRECTIONS.CREDIT,
-              kind: ENTITY_KINDS.POINT_OF_SALE_TICKET,
-              balanceAfter: nextBalance.toFixed(2),
-              targetType: 'point-of-sale_store',
-              targetId: storeEntry.id,
-              name: ['Point of Sale (Arcade Ticket)', storeEntry.label, channel]
-                        .filter(Boolean)
-                        .join(' · '),
-              details: {
-                storeId: storeEntry.id,
-                storeName: storeEntry.label,
-                channel,
-                status: ticketStatus,
-                itemsCount,
-                items,
-              },
-            });
-            return {receipt, store: storeEntry};
-          });
-
-          const ticket = {
-            id: receipt.id,
-            storeId: store.id,
-            storeName: store.label,
-            channel,
-            status: ticketStatus,
-            total: new Prisma.Decimal(Number(body.total).toFixed(2)),
-            createdAt: receipt.createdAt,
-            items,
-            itemsCount,
-          };
+              storeId: body.storeId,
+              storeName,
+              channel,
+              updateChannel: channelOverride,
+              total: body.total,
+              items: body.items,
+              status: ticketStatus,
+            }));
           await recordTelemetry(request, {
             ...buildTelemetryBase(request),
             eventType: 'point-of-sale.ticket.create',
@@ -188,11 +77,13 @@ export function registerPointOfSaleRoutes(
             payload: {
               channel: ticket.channel,
               items: ticket.itemsCount,
-              total: ticket.total.toFixed(2),
+              total: ticket.total,
             },
           });
 
-          return {ticket};
+          return {
+            ticket: {...ticket, total: new Prisma.Decimal(ticket.total)},
+          };
         } catch (err) {
           request.log.error({err}, 'point of sale ticket creation failed');
           return reply.status(400).send({
@@ -211,21 +102,17 @@ export function registerPointOfSaleRoutes(
           channel?: string
         };
         const channel = body.channel?.trim() || POS_DEFAULT_CHANNEL;
-        const store = await prisma.actor.create({
-          data: {
-            userId,
-            type: ACTOR_TYPES.POINT_OF_SALE_STORE,
-            label: body.name,
-            metadata: {channel},
-            source: SOURCE,
-          },
+        const store = await createPointOfSaleStore(prisma, {
+          userId,
+          name: body.name,
+          channel,
         });
         await recordTelemetry(request, {
           ...buildTelemetryBase(request),
           eventType: 'point-of-sale.store.create',
           source: 'api',
-          payload: {name: store.label, channel},
+          payload: {name: store.name, channel},
         });
-        return {store: summarizePointOfSaleStore(store)};
+        return {store};
       });
 }
