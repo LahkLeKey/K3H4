@@ -1,8 +1,9 @@
 import {Prisma, type PrismaClient} from '@prisma/client';
 import {faker} from '@faker-js/faker';
 
-import {recordBankLedgerEntry} from '../bank-ledger';
+import {ASSIGNMENT_ACTOR_SOURCE, ASSIGNMENT_TARGET_TYPE} from '../../actors/Assignment/Assignment';
 import {ENTITY_DIRECTIONS, ENTITY_KINDS} from '../../lib/actor-entity-constants';
+import {recordBankLedgerEntry} from '../bank-ledger';
 
 type AssignmentTransaction = PrismaClient|Prisma.TransactionClient;
 
@@ -72,10 +73,10 @@ export async function createAssignment(
     data: {
       actorId: command.assignmentActorId,
       kind: ENTITY_KINDS.ASSIGNMENT,
-      targetType: 'assignment',
+      targetType: ASSIGNMENT_TARGET_TYPE,
       targetId: null,
       name: command.title,
-      source: 'k3h4-assignment',
+      source: ASSIGNMENT_ACTOR_SOURCE,
       metadata: {
         title: command.title,
         hourlyRate: hourlyRate.toFixed(2),
@@ -113,19 +114,20 @@ export async function payAssignmentTimecard(
     kind: ENTITY_KINDS.ASSIGNMENT_PAYOUT,
     note: command.note ?? `Payout for ${command.assignmentTitle}`,
     balanceAfter: savedUser.k3h4CoinBalance.toFixed(2),
-    targetType: 'assignment',
+    targetType: ASSIGNMENT_TARGET_TYPE,
     targetId: command.assignmentId,
     name: command.assignmentTitle,
   });
 
-  const note = command.note?.trim() || `Timecard payout ${command.timecardId}`;
+  const note =
+      command.note?.trim() ?? `Timecard payout ${command.timecardId}`;
   const payoutEntity = await transaction.entity.create({
     data: {
       actorId: command.assignmentActorId,
       kind: ENTITY_KINDS.ASSIGNMENT_PAYOUT,
-      targetType: 'assignment',
+      targetType: ASSIGNMENT_TARGET_TYPE,
       targetId: command.assignmentId,
-      source: 'k3h4-assignment',
+      source: ASSIGNMENT_ACTOR_SOURCE,
       metadata: {
         amount: amount.toFixed(2),
         note,
@@ -170,9 +172,9 @@ export async function createAssignmentTimecard(
     data: {
       actorId: command.assignmentActorId,
       kind: ENTITY_KINDS.ASSIGNMENT_TIMECARD,
-      targetType: 'assignment',
+      targetType: ASSIGNMENT_TARGET_TYPE,
       targetId: command.assignmentId,
-      source: 'k3h4-assignment',
+      source: ASSIGNMENT_ACTOR_SOURCE,
       metadata: {
         hours: hours.toFixed(2),
         amount: amount.toFixed(2),

@@ -25,7 +25,7 @@ describe('Assignment ledger Kit', () => {
     const txEntity = {
       create: vi.fn().mockResolvedValue({
         id: 'payout-1',
-        metadata: {amount: '100.00', note: 'Pay now', status: 'paid'},
+        metadata: {amount: '100.00', note: '', status: 'paid'},
       }),
       findUnique: vi.fn().mockResolvedValue({metadata: {status: 'approved'}}),
       update: vi.fn(),
@@ -40,14 +40,14 @@ describe('Assignment ledger Kit', () => {
           assignmentTitle: 'Design gig',
           timecardId: 'timecard-1',
           amount: '100.00',
-          note: 'Pay now',
+          note: '   ',
         });
 
     expect(result).toEqual({
       payout: {
         id: 'payout-1',
         amount: '100.00',
-        note: 'Pay now',
+        note: '',
         status: 'paid',
         invoiceUrl: expect.any(String),
       },
@@ -63,6 +63,13 @@ describe('Assignment ledger Kit', () => {
     expect(txEntity.update).toHaveBeenCalledWith(expect.objectContaining({
       where: {id: 'timecard-1'},
       data: {metadata: {status: 'paid'}},
+    }));
+    expect(txEntity.create).toHaveBeenCalledWith(expect.objectContaining({
+      data: expect.objectContaining({
+        targetType: 'assignment',
+        source: 'k3h4-assignment',
+        metadata: expect.objectContaining({note: ''}),
+      }),
     }));
   });
 
