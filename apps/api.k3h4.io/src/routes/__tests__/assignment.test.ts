@@ -292,6 +292,12 @@ describe('assignment routes', () => {
       payload: {timecardId: 't1', note: 'pay now'}
     });
     expect(payRes.statusCode).toBe(200);
+    expect(payRes.json().payout).toMatchObject({
+      id: 'txn-1',
+      amount: '100.00',
+      note: 'pay now',
+      status: 'paid',
+    });
     expect(txEntity.create).toHaveBeenCalled();
     expect(loadDetailsSpy).toHaveBeenCalledTimes(4);
     expect(loadMapSpy).toHaveBeenCalled();
