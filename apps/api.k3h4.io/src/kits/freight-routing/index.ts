@@ -113,6 +113,7 @@ export interface FreightRoutingHost {
 
 export interface FreightRoutingKit {
   listLoads(userId: string): Promise<FreightLoad[]>;
+  getLoad(userId: string, loadId: string): Promise<FreightLoad|null>;
   planLoad(command: PlanFreightLoadCommand): Promise<FreightLoad>;
   getDirections(userId: string, loadId: string): Promise<FreightDirectionResponse>;
   completeLoad(userId: string, loadId: string): Promise<FreightLoad>;
@@ -247,6 +248,7 @@ export const createFreightRoutingKit = (dependencies: {
 
   return {
     listLoads: (userId) => dependencies.host.listLoads(userId),
+    getLoad: (userId, loadId) => dependencies.host.findLoad(userId, loadId),
     async planLoad(command) {
       const actorId = await dependencies.host.resolveGeoActorId(command.userId);
       const route = await dependencies.geoCore.resolveRoute({

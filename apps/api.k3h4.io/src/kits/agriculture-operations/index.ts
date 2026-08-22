@@ -2,6 +2,15 @@ import type {FreightRoutingKit} from '../freight-routing';
 
 export type AgriculturePayload = Record<string, any>;
 
+export type AgricultureSlotSnapshot = {
+  id: string;
+  slotIndex: number;
+  costPaid: string;
+  plotId: string|null;
+  slug: string|null;
+  unlockedAt: Date;
+};
+
 export type CreateAgricultureShipmentCommand = {
   lot: string;
   destination: string;
@@ -59,6 +68,8 @@ export interface AgricultureOperationsKit {
   };
   plots: {
     listSlots(userId: string): Promise<AgriculturePayload>;
+    getSlot(userId: string, slotId: string):
+        Promise<AgricultureSlotSnapshot|null>;
     unlockSlot(userId: string, command: AgriculturePayload): Promise<AgriculturePayload>;
     updateSlot(
         userId: string, slotId: string,
@@ -106,6 +117,30 @@ export function createAgricultureOperationsKit(dependencies: {
     },
     plots: {
       listSlots: (userId) => host.listSlots(userId),
+      async getSlot(userId, slotId) {
+        const result = await host.listSlots(userId);
+        const slot = Array.isArray(result.slots) ?
+            result.slots.find(
+                (candidate: AgriculturePayload) => candidate.id === slotId) :
+            null;
+        if (!slot) return null;
+        const name =
+            typeof slot.plot?.name === 'string' ? slot.plot.name : null;
+        const crop =
+            typeof slot.plot?.crop === 'string' ? slot.plot.crop : null;
+        return {
+          id: slot.id,
+          slotIndex: Number.isFinite(Number(slot.slotIndex)) ?
+              Number(slot.slotIndex) :
+              0,
+          costPaid: slot.costPaid ? String(slot.costPaid) : '0.00',
+          plotId: typeof slot.plotId === 'string' ? slot.plotId : null,
+          slug: name && crop ? `${name} (${crop})` : name,
+          unlockedAt: slot.unlockedAt instanceof Date ?
+              slot.unlockedAt :
+              new Date(slot.unlockedAt),
+        };
+      },
       unlockSlot: (userId, command) => host.unlockSlot(userId, command),
       updateSlot: (userId, slotId, command) =>
         host.updateSlot(userId, slotId, command),
