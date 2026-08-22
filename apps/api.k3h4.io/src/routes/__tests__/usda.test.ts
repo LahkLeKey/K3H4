@@ -50,6 +50,7 @@ describe('usda routes', () => {
       headers: authHeaders,
     });
     expect(res.statusCode).toBe(200);
+    expect(res.json()).toEqual({});
     expect(fetchAndCache)
         .toHaveBeenCalledWith(
             expect.anything(), 'esr',
