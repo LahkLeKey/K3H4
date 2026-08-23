@@ -139,6 +139,38 @@ describe('Warehouse inventory Kit', () => {
            });
      });
 
+  it('clears an agriculture slot without changing the item category',
+     async () => {
+       const dependencies = buildDependencies();
+       const existing = {
+         ...item,
+         category: 'AGRICULTURE',
+         metadata: {
+           ...item.metadata,
+           category: 'AGRICULTURE',
+           source: 'agriculture',
+           slot: {id: 'slot-1'},
+         },
+       };
+       dependencies.host.findItem.mockResolvedValue(existing);
+       dependencies.host.updateItem.mockResolvedValue(existing);
+       const warehouse = createWarehouseInventoryKit(dependencies);
+
+       await warehouse.updateItem({
+         userId: 'user-1',
+         itemId: 'item-1',
+         agricultureSlotId: null,
+       });
+
+       expect(dependencies.agriculture.getSlot).not.toHaveBeenCalled();
+       expect(dependencies.host.updateItem)
+           .toHaveBeenCalledWith('user-1', 'item-1', {
+             ...item.metadata,
+             category: 'AGRICULTURE',
+             source: 'agriculture',
+           });
+     });
+
   it('rejects missing attachments without writing inventory', async () => {
     const dependencies = buildDependencies();
     dependencies.freight.getLoad.mockResolvedValue(null);

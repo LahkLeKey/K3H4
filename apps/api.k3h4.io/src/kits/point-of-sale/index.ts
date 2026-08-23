@@ -29,12 +29,18 @@ export type CreatePointOfSaleTicketCommand = {
 };
 
 const normalizeTicketItems = (items: PointOfSaleTicketItemInput[] = []) =>
-	items.map((item) => ({
-		name: item.name.trim(),
-		quantity: Number.isFinite(item.quantity ?? 1) ?
-			Math.max(1, Math.floor(Number(item.quantity ?? 1))) : 1,
-		price: new Prisma.Decimal(Number(item.price).toFixed(2)).toFixed(2),
-	})).filter((item) => item.name && Number.isFinite(Number(item.price)));
+	items.flatMap((item) => {
+		const name = typeof item?.name === 'string' ? item.name.trim() : '';
+		const price = Number(item?.price);
+		if (!name || !Number.isFinite(price)) return [];
+		const quantity = Number(item.quantity ?? 1);
+		return [{
+			name,
+			quantity: Number.isFinite(quantity) ?
+				Math.max(1, Math.floor(quantity)) : 1,
+			price: new Prisma.Decimal(price.toFixed(2)).toFixed(2),
+		}];
+	});
 
 const parseJsonObject = (value: Prisma.JsonValue|null|undefined) =>
 	value && typeof value === 'object' && !Array.isArray(value) ?

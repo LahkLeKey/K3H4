@@ -192,7 +192,9 @@ export const createWarehouseInventoryKit = (dependencies: {
       metadata.status = status;
 
       let slot = null;
-      if (command.agricultureSlotId) {
+      if (command.agricultureSlotId === null) {
+        delete metadata.slot;
+      } else if (command.agricultureSlotId) {
         slot = await dependencies.agriculture.getSlot(
             command.userId, command.agricultureSlotId);
         if (!slot) {

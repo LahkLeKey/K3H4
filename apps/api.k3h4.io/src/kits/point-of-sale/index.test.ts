@@ -35,7 +35,12 @@ describe('Point of Sale Kit', () => {
       userId: 'user-1',
       storeName: 'Main',
       total: 12.5,
-      items: [{name: 'Coffee', quantity: 1, price: 12.5}],
+      items: [
+        {name: 'Coffee', quantity: 1, price: 12.5},
+        {name: '   ', quantity: 1, price: 4},
+        {name: 'Invalid price', quantity: 1, price: Number.NaN},
+        {quantity: 1, price: 4},
+      ] as any,
     });
 
     expect(transaction.user.update).toHaveBeenCalledWith({
@@ -46,7 +51,11 @@ describe('Point of Sale Kit', () => {
         transaction,
         expect.objectContaining({amount: '12.50', targetId: 'store-1'}));
     expect(ticket).toMatchObject({
-      id: 'ticket-1', storeId: 'store-1', total: '12.50', itemsCount: 1,
+      id: 'ticket-1',
+      storeId: 'store-1',
+      total: '12.50',
+      itemsCount: 1,
+      items: [{name: 'Coffee', quantity: 1, price: '12.50'}],
     });
   });
 
