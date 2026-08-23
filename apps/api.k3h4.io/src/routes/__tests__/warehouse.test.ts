@@ -3,225 +3,184 @@ import '../../test/vitest-setup';
 import Fastify from 'fastify';
 import {beforeEach, describe, expect, it, vi} from 'vitest';
 
-import {findFreightLoad} from '../../actors/Freight/Freight';
+import {WarehouseInventoryError} from '../../kits/warehouse-inventory';
+import {createPrismaWarehouseInventoryKit} from '../../kits/warehouse-inventory/prisma-adapter';
 import {type RecordTelemetryFn} from '../types';
 import {registerWarehouseRoutes} from '../warehouse';
 
-vi.mock('../../actors/Freight/Freight', () => ({
-                                          findFreightLoad: vi.fn(),
-                                        }));
+vi.mock(
+    '../../kits/warehouse-inventory/prisma-adapter',
+    () => ({
+      createPrismaWarehouseInventoryKit: vi.fn(),
+    }));
 
 const recordTelemetry = vi.fn<RecordTelemetryFn>();
 const userId = 'user-1';
-const findFreightLoadMock =
-    findFreightLoad as unknown as ReturnType<typeof vi.fn>;
+const warehouse = {
+  listItems: vi.fn(),
+  createItem: vi.fn(),
+  updateItem: vi.fn(),
+  deleteItem: vi.fn(),
+};
+const createWarehouseKitMock =
+    createPrismaWarehouseInventoryKit as unknown as ReturnType<typeof vi.fn>;
 
-function buildServer(prisma: any) {
+const item = {
+  id: 'item-1',
+  userId,
+  sku: 'SKU-1',
+  description: null,
+  quantity: 5,
+  location: 'A-1',
+  status: 'STORED',
+  freightLoadId: null,
+  category: 'OTHER',
+  metadata: {
+    sku: 'SKU-1',
+    quantity: 5,
+    location: 'A-1',
+    status: 'STORED',
+    category: 'OTHER',
+  },
+  createdAt: '2026-01-01T00:00:00.000Z',
+  updatedAt: '2026-01-01T00:00:00.000Z',
+};
+
+function buildServer() {
   const server = Fastify();
   server.decorate('authenticate', async (request: any) => {
     request.user = {sub: userId};
   });
-  registerWarehouseRoutes(server as any, prisma as any, recordTelemetry);
+  registerWarehouseRoutes(server as any, {} as any, recordTelemetry);
   return server;
 }
 
-const buildBasePrisma = () => ({
-  actor: {
-    findFirst: vi.fn().mockResolvedValue({id: 'actor-1'}),
-    create: vi.fn().mockResolvedValue({id: 'actor-1'}),
-  },
-  entity: {
-    findMany: vi.fn(),
-    findFirst: vi.fn(),
-    create: vi.fn(),
-    update: vi.fn(),
-    delete: vi.fn(),
-  },
-  freightLoad: {findFirst: vi.fn().mockResolvedValue({id: 'f1'})},
-});
-
 describe('warehouse routes', () => {
   beforeEach(() => {
-    recordTelemetry.mockClear();
-    findFreightLoadMock.mockReset();
-    findFreightLoadMock.mockResolvedValue({id: 'f1'});
+    vi.clearAllMocks();
+    createWarehouseKitMock.mockReturnValue(warehouse as any);
   });
 
-  it('lists items', async () => {
-    const prisma = buildBasePrisma();
-    prisma.entity.findMany.mockResolvedValue([
-      {
-        id: 'w1',
-        metadata: {
-          sku: 'SKU',
-          quantity: 5,
-          location: 'A',
-          status: 'stored',
-          category: 'other',
-        },
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      },
-    ]);
-    const server = buildServer(prisma);
-    const res = await server.inject({method: 'GET', url: '/warehouse/items'});
-    expect(res.statusCode).toBe(200);
-    expect(res.json().items[0].quantity).toBe(5);
-  });
-
-  it('creates an item linked to freight', async () => {
-    const prisma = buildBasePrisma();
-    prisma.entity.create.mockResolvedValue({
-      id: 'w2',
-      metadata: {
-        sku: 'SKU2',
-        quantity: 1,
-        location: 'B',
-        status: 'stored',
-        category: 'other',
-      },
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    });
-    const server = buildServer(prisma);
-    const res = await server.inject({
-      method: 'POST',
+  it('lists items and records the existing telemetry event', async () => {
+    warehouse.listItems.mockResolvedValue([item]);
+    const response = await buildServer().inject({
+      method: 'GET',
       url: '/warehouse/items',
-      payload: {sku: 'SKU2', location: 'B', quantity: 1, freightLoadId: 'f1'},
     });
-    expect(res.statusCode).toBe(200);
-    expect(prisma.entity.create).toHaveBeenCalled();
+
+    expect(response.statusCode).toBe(200);
+    expect(response.json()).toEqual({items: [item]});
+    expect(warehouse.listItems).toHaveBeenCalledWith(userId);
     expect(recordTelemetry)
-        .toHaveBeenCalledWith(
-            expect.anything(),
-            expect.objectContaining({eventType: 'warehouse.create'}),
-        );
+        .toHaveBeenCalledWith(expect.anything(), expect.objectContaining({
+          eventType: 'warehouse.list',
+          source: 'api',
+          payload: {count: 1},
+        }));
   });
 
-  it('rejects missing sku', async () => {
-    const prisma = buildBasePrisma();
-    const server = buildServer(prisma);
-    const res = await server.inject({
+  it('creates an item and preserves response and telemetry shapes',
+     async () => {
+       warehouse.createItem.mockResolvedValue(
+           {...item, freightLoadId: 'load-1'});
+       const response = await buildServer().inject({
+         method: 'POST',
+         url: '/warehouse/items',
+         payload: {
+           sku: 'SKU-1',
+           location: 'A-1',
+           quantity: 5,
+           freightLoadId: ' load-1 ',
+         },
+       });
+
+       expect(response.statusCode).toBe(200);
+       expect(response.json()).toEqual({
+         item: {
+           ...item,
+           freightLoadId: 'load-1',
+         }
+       });
+       expect(warehouse.createItem).toHaveBeenCalledWith({
+         userId,
+         sku: 'SKU-1',
+         location: 'A-1',
+         quantity: 5,
+         freightLoadId: ' load-1 ',
+       });
+       expect(recordTelemetry)
+           .toHaveBeenCalledWith(expect.anything(), expect.objectContaining({
+             eventType: 'warehouse.create',
+             source: 'api',
+             payload: {sku: 'SKU-1', freightLoadId: 'load-1'},
+           }));
+     });
+
+  it.each([
+    ['INVALID_ITEM', 'sku and location are required', 400],
+    ['INVALID_QUANTITY', 'quantity must be a non-negative number', 400],
+    ['INVALID_STATUS', 'Invalid status', 400],
+    ['ITEM_NOT_FOUND', 'Item not found', 404],
+    ['FREIGHT_LOAD_NOT_FOUND', 'Freight load not found', 404],
+    ['AGRICULTURE_SLOT_NOT_FOUND', 'Agriculture slot not found', 404],
+  ] as const)('maps %s Kit errors', async (code, message, status) => {
+    warehouse.createItem.mockRejectedValue(
+        new WarehouseInventoryError(code, message));
+    const response = await buildServer().inject({
       method: 'POST',
       url: '/warehouse/items',
-      payload: {location: 'A'},
+      payload: {sku: 'SKU-1', location: 'A-1'},
     });
-    expect(res.statusCode).toBe(400);
+
+    expect(response.statusCode).toBe(status);
+    expect(response.json()).toEqual({error: message});
+    expect(recordTelemetry).not.toHaveBeenCalled();
   });
 
-  it('rejects missing location', async () => {
-    const prisma = buildBasePrisma();
-    const server = buildServer(prisma);
-    const res = await server.inject({
-      method: 'POST',
-      url: '/warehouse/items',
-      payload: {sku: 'SKU'},
-    });
-    expect(res.statusCode).toBe(400);
-  });
+  it('updates an item and records the resolved freight attachment',
+     async () => {
+       warehouse.updateItem.mockResolvedValue({
+         ...item,
+         quantity: 8,
+         freightLoadId: 'load-2',
+       });
+       const response = await buildServer().inject({
+         method: 'PATCH',
+         url: '/warehouse/items/item-1',
+         payload: {quantity: 8, freightLoadId: 'load-2'},
+       });
 
-  it('rejects negative quantity on create', async () => {
-    const prisma = buildBasePrisma();
-    const server = buildServer(prisma);
-    const res = await server.inject({
-      method: 'POST',
-      url: '/warehouse/items',
-      payload: {sku: 'SKU', location: 'A', quantity: -5},
-    });
-    expect(res.statusCode).toBe(400);
-  });
+       expect(response.statusCode).toBe(200);
+       expect(response.json().item.quantity).toBe(8);
+       expect(warehouse.updateItem).toHaveBeenCalledWith({
+         userId,
+         itemId: 'item-1',
+         quantity: 8,
+         freightLoadId: 'load-2',
+       });
+       expect(recordTelemetry)
+           .toHaveBeenCalledWith(expect.anything(), expect.objectContaining({
+             eventType: 'warehouse.update',
+             source: 'api',
+             payload: {id: 'item-1', freightLoadId: 'load-2'},
+           }));
+     });
 
-  it('rejects unknown freight link', async () => {
-    const prisma = buildBasePrisma();
-    findFreightLoadMock.mockResolvedValueOnce(null);
-    const server = buildServer(prisma);
-    const res = await server.inject({
-      method: 'POST',
-      url: '/warehouse/items',
-      payload: {sku: 'S', location: 'A', freightLoadId: 'missing'},
+  it('deletes an item and preserves the success response', async () => {
+    warehouse.deleteItem.mockResolvedValue(undefined);
+    const response = await buildServer().inject({
+      method: 'DELETE',
+      url: '/warehouse/items/item-1',
     });
-    expect(res.statusCode).toBe(404);
-  });
 
-  it('rejects negative quantity on update', async () => {
-    const prisma = buildBasePrisma();
-    prisma.entity.findFirst.mockResolvedValue({
-      id: 'w4',
-      metadata: {
-        sku: 'S',
-        quantity: 1,
-        location: 'A',
-        status: 'stored',
-        category: 'other',
-      },
-    });
-    const server = buildServer(prisma);
-    const res = await server.inject({
-      method: 'PATCH',
-      url: '/warehouse/items/w4',
-      payload: {quantity: -1},
-    });
-    expect(res.statusCode).toBe(400);
-  });
-
-  it('rejects linking to missing freight on update', async () => {
-    const prisma = buildBasePrisma();
-    prisma.entity.findFirst.mockResolvedValue({
-      id: 'w5',
-      metadata: {
-        sku: 'S',
-        quantity: 1,
-        location: 'A',
-        status: 'stored',
-        category: 'other',
-      },
-    });
-    findFreightLoadMock.mockResolvedValueOnce(null);
-    const server = buildServer(prisma);
-    const res = await server.inject({
-      method: 'PATCH',
-      url: '/warehouse/items/w5',
-      payload: {freightLoadId: 'missing'},
-    });
-    expect(res.statusCode).toBe(404);
-  });
-
-  it('updates an item', async () => {
-    const prisma = buildBasePrisma();
-    prisma.entity.findFirst.mockResolvedValue({
-      id: 'w3',
-      metadata: {
-        sku: 'SKU3',
-        quantity: 2,
-        location: 'C',
-        status: 'stored',
-        category: 'other',
-      },
-    });
-    prisma.entity.update.mockResolvedValue({
-      id: 'w3',
-      metadata: {
-        sku: 'SKU3',
-        quantity: 3,
-        location: 'C',
-        status: 'stored',
-        category: 'other',
-      },
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    });
-    const server = buildServer(prisma);
-    const res = await server.inject({
-      method: 'PATCH',
-      url: '/warehouse/items/w3',
-      payload: {quantity: 3},
-    });
-    expect(res.statusCode).toBe(200);
-    expect(prisma.entity.update).toHaveBeenCalled();
+    expect(response.statusCode).toBe(200);
+    expect(response.json()).toEqual({success: true});
+    expect(warehouse.deleteItem).toHaveBeenCalledWith(userId, 'item-1');
     expect(recordTelemetry)
-        .toHaveBeenCalledWith(
-            expect.anything(),
-            expect.objectContaining({eventType: 'warehouse.update'}),
-        );
+        .toHaveBeenCalledWith(expect.anything(), expect.objectContaining({
+          eventType: 'warehouse.delete',
+          source: 'api',
+          payload: {id: 'item-1'},
+        }));
   });
 });

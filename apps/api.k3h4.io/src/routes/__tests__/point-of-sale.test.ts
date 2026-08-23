@@ -168,7 +168,12 @@ describe('Point of Sale routes', () => {
         .toHaveBeenCalledWith(expect.anything(), expect.objectContaining({
           eventType: 'point-of-sale.ticket.create'
         }));
-    expect(res.json().ticket.id).toBe('ticket-entity');
+    expect(res.json().ticket).toMatchObject({
+      id: 'ticket-entity',
+      total: '12.5',
+      storeId: 'new-store',
+      storeName: 'Main',
+    });
   });
 
   it('updates store channel when existing store is provided', async () => {

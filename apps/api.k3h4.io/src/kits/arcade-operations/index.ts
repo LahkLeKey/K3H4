@@ -1,4 +1,4 @@
-import {Prisma, type PrismaClient} from '@prisma/client';
+import {type Actor, type Entity, Prisma, type PrismaClient} from '@prisma/client';
 
 import {recordBankLedgerEntry} from '../bank-ledger';
 import {ACTOR_TYPES, ENTITY_DIRECTIONS, ENTITY_KINDS} from '../../lib/actor-entity-constants';
@@ -84,6 +84,136 @@ const parseJsonObject = (value: Prisma.JsonValue|null|undefined) => {
   return value as Record<string, unknown>;
 };
 
+const buildMachineSummary = (actor: Actor) => {
+  const metadata = parseJsonObject(actor.metadata);
+  return {
+    id: actor.id,
+    name: actor.label,
+    status: (metadata.status as string | undefined) ?? null,
+    createdAt: actor.createdAt.toISOString(),
+  };
+};
+
+const buildPrizeSummary = (actor: Actor) => {
+  const metadata = parseJsonObject(actor.metadata);
+  const stockValue = Number(metadata.stock ?? 0);
+  const costValue = metadata.costCoins;
+  return {
+    id: actor.id,
+    name: actor.label,
+    sku: (metadata.sku as string | undefined) ?? null,
+    costCoins: typeof costValue === 'string' ? costValue :
+      typeof costValue === 'number' ? costValue.toFixed(2) : null,
+    stock: Number.isFinite(stockValue) ? Math.max(0, Math.floor(stockValue)) : 0,
+  };
+};
+
+const buildCardTopUp = (entity: Entity) => {
+  const metadata = parseJsonObject(entity.metadata);
+  return {
+    id: entity.id,
+    amount: (metadata.amount as string) ?? '0.00',
+    source: entity.source ?? ((metadata.source as string | undefined) ?? null),
+    createdAt: entity.createdAt.toISOString(),
+  };
+};
+
+const buildCardSummary = (card: Actor, entries: Entity[]) => {
+  const balance = entries.reduce((current, entry) => {
+    const metadata = parseJsonObject(entry.metadata);
+    const amount = new Prisma.Decimal(String(metadata.amount ?? '0'));
+    return entry.direction === ENTITY_DIRECTIONS.DEBIT ?
+      current.sub(amount) : current.add(amount);
+  }, new Prisma.Decimal(0));
+  return {
+    id: card.id,
+    label: card.label,
+    balance: balance.toFixed(2),
+    topUps: entries
+        .filter((entity) => entity.kind === ENTITY_KINDS.ARCADE_TOPUP)
+        .map(buildCardTopUp),
+  };
+};
+
+const buildSessionSummary = (entity: Entity) => {
+  const metadata = parseJsonObject(entity.metadata);
+  const scoreValue = metadata.score;
+  return {
+    id: entity.id,
+    machineId:
+      (metadata.machineId as string | undefined) ?? entity.targetId ?? '',
+    cardId: entity.actorId,
+    creditsSpent: (metadata.creditsSpent as string) ?? '0.00',
+    score: typeof scoreValue === 'number' ? Math.floor(scoreValue) : null,
+    startedAt: entity.createdAt.toISOString(),
+  };
+};
+
+const buildRedemptionSummary = (entity: Entity) => {
+  const metadata = parseJsonObject(entity.metadata);
+  return {
+    id: entity.id,
+    prizeId: (metadata.prizeId as string | undefined) ?? '',
+    cardId: entity.actorId,
+    sessionId: (metadata.sessionId as string | undefined) ?? null,
+    createdAt: entity.createdAt.toISOString(),
+  };
+};
+
+export async function getArcadeOverview(
+    transaction: ArcadeTransaction, userId: string) {
+  const [machines, cards, prizes] = await Promise.all([
+    transaction.actor.findMany({
+      where: {userId, type: ACTOR_TYPES.ARCADE_MACHINE},
+      orderBy: {createdAt: 'desc'},
+    }),
+    transaction.actor.findMany({
+      where: {userId, type: ACTOR_TYPES.ARCADE_PLAYER_CARD},
+      orderBy: {createdAt: 'desc'},
+    }),
+    transaction.actor.findMany({
+      where: {userId, type: ACTOR_TYPES.ARCADE_PRIZE},
+      orderBy: {createdAt: 'desc'},
+    }),
+  ]);
+  const cardEntities = cards.length ? await transaction.entity.findMany({
+    where: {actorId: {in: cards.map((card) => card.id)}},
+    orderBy: {createdAt: 'desc'},
+  }) : [];
+  const [sessions, redemptions] = await Promise.all([
+    transaction.entity.findMany({
+      where: {
+        actor: {userId, type: ACTOR_TYPES.ARCADE_PLAYER_CARD},
+        kind: ENTITY_KINDS.ARCADE_SESSION,
+      },
+      orderBy: {createdAt: 'desc'},
+      take: 20,
+    }),
+    transaction.entity.findMany({
+      where: {
+        actor: {userId, type: ACTOR_TYPES.ARCADE_PLAYER_CARD},
+        kind: ENTITY_KINDS.ARCADE_PRIZE_REDEMPTION,
+      },
+      orderBy: {createdAt: 'desc'},
+      take: 20,
+    }),
+  ]);
+  const entriesByCard = new Map<string, Entity[]>();
+  cardEntities.forEach((entity) => {
+    const entries = entriesByCard.get(entity.actorId) ?? [];
+    entries.push(entity);
+    entriesByCard.set(entity.actorId, entries);
+  });
+  return {
+    machines: machines.map(buildMachineSummary),
+    cards: cards.map((card) =>
+      buildCardSummary(card, entriesByCard.get(card.id) ?? [])),
+    prizes: prizes.map(buildPrizeSummary),
+    sessions: sessions.map(buildSessionSummary),
+    redemptions: redemptions.map(buildRedemptionSummary),
+  };
+}
+
 const getActorBalance = async (transaction: ArcadeTransaction, actorId: string) => {
   const entries = await transaction.entity.findMany({
     where: {actorId},
@@ -116,24 +246,26 @@ const createActor = async (
 export async function createArcadeMachine(
     transaction: ArcadeTransaction,
     command: CreateArcadeMachineCommand) {
-  return createActor(transaction, {
+  const actor = await createActor(transaction, {
     userId: command.userId,
     type: ACTOR_TYPES.ARCADE_MACHINE,
     label: command.name,
     metadata: {status: command.status ?? 'idle'},
     source: 'k3h4-api',
   });
+  return buildMachineSummary(actor);
 }
 
 export async function createArcadeCard(
     transaction: ArcadeTransaction,
     command: CreateArcadeCardCommand) {
-  return createActor(transaction, {
+  const actor = await createActor(transaction, {
     userId: command.userId,
     type: ACTOR_TYPES.ARCADE_PLAYER_CARD,
     label: command.label?.trim() || 'Arcade card',
     source: 'k3h4-api',
   });
+  return buildCardSummary(actor, []);
 }
 
 export async function createArcadePrize(
@@ -143,7 +275,7 @@ export async function createArcadePrize(
   const stock = Number.isFinite(command.stock) ?
       Math.max(0, Math.floor(Number(command.stock))) :
       0;
-  return createActor(transaction, {
+  const actor = await createActor(transaction, {
     userId: command.userId,
     type: ACTOR_TYPES.ARCADE_PRIZE,
     label: command.name,
@@ -154,6 +286,7 @@ export async function createArcadePrize(
     },
     source: 'k3h4-api',
   });
+  return buildPrizeSummary(actor);
 }
 
 export async function topUpArcadeCard(

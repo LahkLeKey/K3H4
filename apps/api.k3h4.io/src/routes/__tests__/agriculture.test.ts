@@ -97,4 +97,33 @@ describe('Agriculture routes', () => {
             expect.anything(),
             expect.objectContaining({eventType: 'agriculture.plot.create'}));
   });
+
+  it('returns the existing 404 response for an unknown freight load', async () => {
+    const prisma = {
+      actor: {
+        findFirst: vi.fn().mockResolvedValue({id: 'freight-actor'}),
+      },
+      entity: {
+        findMany: vi.fn().mockResolvedValue([]),
+        create: vi.fn(),
+      },
+    };
+    const server = buildServer(prisma);
+
+    const res = await server.inject({
+      method: 'POST',
+      url: '/agriculture/shipments',
+      payload: {
+        lot: 'LOT-1',
+        destination: 'Market',
+        mode: 'truck',
+        freightLoadId: 'missing-load',
+      },
+    });
+
+    expect(res.statusCode).toBe(404);
+    expect(res.json()).toEqual({error: 'Freight load not found'});
+    expect(prisma.entity.create).not.toHaveBeenCalled();
+    expect(recordTelemetry).not.toHaveBeenCalled();
+  });
 });

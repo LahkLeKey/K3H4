@@ -1,9 +1,10 @@
-import {faker} from '@faker-js/faker';
 import {type Entity, Prisma, type PrismaClient} from '@prisma/client';
 import {type FastifyInstance} from 'fastify';
 
 import * as assignmentActor from '../actors/Assignment/Assignment';
-import {recordBankLedgerEntry} from '../kits/bank-ledger';
+import {findPersonaMap, findPersonaRecord} from '../kits/persona-matching';
+import {createAssignment, createAssignmentTimecard, payAssignmentTimecard} from '../kits/assignment-ledger';
+import {serializeAssignmentList} from '../kits/assignment-view';
 import * as personaLedger from '../entities/Persona/Persona';
 import type {PersonaRecord} from '../entities/Persona/Persona';
 import {ENTITY_DIRECTIONS, ENTITY_KINDS} from '../lib/actor-entity-constants';
@@ -13,25 +14,6 @@ import {type RecordTelemetryFn} from './types';
 
 const EntityKind = ENTITY_KINDS;
 const EntityDirection = ENTITY_DIRECTIONS;
-
-const serializeMoney = (value: Prisma.Decimal) => value.toFixed(2);
-
-const serializeAssignment = (assignment: any) => ({
-  ...assignment,
-  hourlyRate: serializeMoney(assignment.hourlyRate),
-  persona: assignment.persona,
-  timecards: assignment.timecards?.map((tc: any) => ({
-                                         ...tc,
-                                         hours: serializeMoney(tc.hours),
-                                         amount: serializeMoney(tc.amount),
-                                       })) ??
-      [],
-  payouts: assignment.payouts?.map((p: any) => ({
-                                     ...p,
-                                     amount: serializeMoney(p.amount),
-                                   })) ??
-      [],
-});
 
 const asRecord = (value: Prisma.JsonValue|null|undefined) => {
   if (value && typeof value === 'object' && !Array.isArray(value)) {
@@ -65,7 +47,7 @@ const buildAssignmentRecordFromEntity = (entity: Entity) => {
   return {
     id: entity.id,
     title: metadataString(metadata, 'title') ?? '',
-    hourlyRate: metadataDecimal(metadata, 'hourlyRate'),
+    hourlyRate: metadataDecimal(metadata, 'hourlyRate').toFixed(2),
     personaId: metadataString(metadata, 'personaId'),
   };
 };
@@ -74,8 +56,9 @@ const buildTimecardRecord = (entity: Entity) => {
   const metadata = asRecord(entity.metadata);
   return {
     id: entity.id,
-    hours: metadataDecimal(metadata, 'hours'),
-    amount: metadataDecimal(metadata, 'amount'),
+    assignmentId: entity.targetId ?? '',
+    hours: metadataDecimal(metadata, 'hours').toFixed(2),
+    amount: metadataDecimal(metadata, 'amount').toFixed(2),
     note: metadataString(metadata, 'note'),
     status: metadataString(metadata, 'status') ?? 'approved',
   };
@@ -85,49 +68,17 @@ const buildPayoutRecord = (entity: Entity) => {
   const metadata = asRecord(entity.metadata);
   return {
     id: entity.id,
-    amount: metadataDecimal(metadata, 'amount'),
+    assignmentId: entity.targetId ?? '',
+    amount: metadataDecimal(metadata, 'amount').toFixed(2),
     note: metadataString(metadata, 'note'),
     invoiceUrl: metadataString(metadata, 'invoiceUrl'),
     status: metadataString(metadata, 'status') ?? 'paid',
   };
 };
 
-const groupByTargetId = (entities: Entity[]) => {
-  const map = new Map<string, Entity[]>();
-  entities.forEach((entity) => {
-    if (!entity.targetId) return;
-    const list = map.get(entity.targetId) ?? [];
-    list.push(entity);
-    map.set(entity.targetId, list);
-  });
-  return map;
-};
-
-const buildSerializedAssignment = (
-    entity: Entity,
-    timecards: Entity[],
-    payouts: Entity[],
-    personaMap: Map<string, PersonaRecord>,
-    ) => {
-  const assignment = buildAssignmentRecordFromEntity(entity);
-  const persona = resolvePersonaResponse(assignment.personaId, personaMap);
-  return serializeAssignment({
-    ...assignment,
-    persona,
-    timecards: timecards.map(buildTimecardRecord),
-    payouts: payouts.map(buildPayoutRecord),
-  });
-};
-
-const resolvePersonaResponse = (
-    personaId: string|null|undefined,
-    personaMap: Map<string, PersonaRecord>,
-    ) => {
-  if (!personaId) return null;
-  const personaRecord = personaMap.get(personaId);
-  return personaRecord ? personaLedger.personaRecordToResponse(personaRecord) :
-                         null;
-};
+const buildPersonaViewMap = (personaMap: Map<string, PersonaRecord>) =>
+    new Map([...personaMap].map(([id, persona]) =>
+      [id, personaLedger.personaRecordToResponse(persona)]));
 
 export function registerAssignmentRoutes(
     server: FastifyInstance, prisma: PrismaClient,
@@ -137,15 +88,12 @@ export function registerAssignmentRoutes(
       {preHandler: [server.authenticate]},
       async (request) => {
         const userId = (request.user as {sub: string}).sub;
-        const personaMap = await personaLedger.loadPersonaMap(prisma, userId);
+        const personaMap = await findPersonaMap(prisma, userId);
         const assignmentActorRecord =
             await assignmentActor.ensureAssignmentActor(prisma, userId);
         const {assignments, timecards, payouts} =
             await assignmentActor.loadAssignmentActorEntities(
                 prisma, assignmentActorRecord.id);
-
-        const timecardsByAssignment = groupByTargetId(timecards);
-        const payoutsByAssignment = groupByTargetId(payouts);
 
         await recordTelemetry(request, {
           ...buildTelemetryBase(request),
@@ -155,10 +103,11 @@ export function registerAssignmentRoutes(
         });
 
         return {
-          assignments: assignments.map(
-              (assignment) => buildSerializedAssignment(
-                  assignment, timecardsByAssignment.get(assignment.id) ?? [],
-                  payoutsByAssignment.get(assignment.id) ?? [], personaMap))
+          assignments: serializeAssignmentList(
+              assignments.map(buildAssignmentRecordFromEntity),
+              timecards.map(buildTimecardRecord),
+              payouts.map(buildPayoutRecord),
+              buildPersonaViewMap(personaMap))
         };
       },
   );
@@ -187,26 +136,19 @@ export function registerAssignmentRoutes(
 
         const personaActor =
             await personaLedger.ensurePersonaActor(prisma, userId);
-        const personaRecord = await personaLedger.loadPersonaRecordById(
+        const personaRecord = await findPersonaRecord(
             prisma, personaActor.id, personaId);
         if (!personaRecord)
           return reply.status(404).send({error: 'Persona not found'});
 
         const assignmentActorRecord =
             await assignmentActor.ensureAssignmentActor(prisma, userId);
-        const entity = await prisma.entity.create({
-          data: {
-            actorId: assignmentActorRecord.id,
-            kind: EntityKind.ASSIGNMENT,
-            targetType: assignmentActor.ASSIGNMENT_TARGET_TYPE,
-            name: title,
-            source: assignmentActor.ASSIGNMENT_ACTOR_SOURCE,
-            metadata: {
-              title,
-              hourlyRate: new Prisma.Decimal(hourlyRate).toFixed(2),
-              personaId,
-            },
-          },
+        const assignment = await createAssignment(prisma, {
+          userId,
+          assignmentActorId: assignmentActorRecord.id,
+          title,
+          personaId,
+          hourlyRate,
         });
 
         await recordTelemetry(request, {
@@ -216,13 +158,12 @@ export function registerAssignmentRoutes(
           payload: {personaId},
         });
 
-        const assignment = buildAssignmentRecordFromEntity(entity);
-        const response = serializeAssignment({
+        const response = {
           ...assignment,
           persona: personaLedger.personaRecordToResponse(personaRecord),
           timecards: [],
           payouts: [],
-        });
+        };
         return {assignment: response};
       },
   );
@@ -249,25 +190,16 @@ export function registerAssignmentRoutes(
         if (!Number.isFinite(hours) || hours <= 0)
           return reply.status(400).send({error: 'hours must be positive'});
 
-        const hoursDecimal = new Prisma.Decimal(hours.toFixed(2));
-        const amount = hoursDecimal.mul(assignment.hourlyRate);
-        const timecardEntity = await prisma.entity.create({
-          data: {
-            actorId: details.assignment.actorId,
-            kind: EntityKind.ASSIGNMENT_TIMECARD,
-            targetType: assignmentActor.ASSIGNMENT_TARGET_TYPE,
-            targetId: assignmentId,
-            source: assignmentActor.ASSIGNMENT_ACTOR_SOURCE,
-            metadata: {
-              hours: hoursDecimal.toFixed(2),
-              amount: amount.toFixed(2),
-              note: body?.note?.trim() || null,
-              status: 'approved',
-            },
-          },
-        });
+        const timecard = await prisma.$transaction(
+            async (tx) => createAssignmentTimecard(tx, {
+              assignmentActorId: details.assignment.actorId,
+              assignmentId,
+              hourlyRate: assignment.hourlyRate,
+              hours: hours.toFixed(2),
+              note: body?.note,
+            }));
 
-        const personaMap = await personaLedger.loadPersonaMap(prisma, userId);
+        const personaMap = await findPersonaMap(prisma, userId);
         const updatedDetails = await assignmentActor.loadAssignmentDetails(
             prisma, userId, assignmentId);
         if (!updatedDetails)
@@ -280,22 +212,16 @@ export function registerAssignmentRoutes(
           payload: {
             assignmentId,
             hours,
-            amount: amount.toFixed(2),
+            amount: timecard.amount,
           },
         });
 
-        const response = buildSerializedAssignment(
-            updatedDetails.assignment, updatedDetails.timecards,
-            updatedDetails.payouts, personaMap);
-        const timecardResponse =
-            serializeAssignment({
-              hourlyRate: assignment.hourlyRate,
-              persona: null,
-              timecards: [buildTimecardRecord(timecardEntity)],
-              payouts: [],
-            }).timecards[0];
-
-        return {assignment: response, timecard: timecardResponse};
+        const response = serializeAssignmentList(
+          [buildAssignmentRecordFromEntity(updatedDetails.assignment)],
+          updatedDetails.timecards.map(buildTimecardRecord),
+          updatedDetails.payouts.map(buildPayoutRecord),
+          buildPersonaViewMap(personaMap))[0];
+        return {assignment: response, timecard};
       },
   );
 
@@ -323,61 +249,21 @@ export function registerAssignmentRoutes(
     if (timecard.status === 'paid')
       return reply.status(400).send({error: 'Timecard already paid'});
 
-    const personaMap = await personaLedger.loadPersonaMap(prisma, userId);
+    const personaMap = await findPersonaMap(prisma, userId);
     const assignmentMetadata = asRecord(details.assignment.metadata);
     const assignmentTitle =
         metadataString(assignmentMetadata, 'title') ?? 'assignment';
     try {
-      const result = await prisma.$transaction(async (tx) => {
-        const user = await tx.user.findUnique({
-          where: {id: userId},
-          select: {k3h4CoinBalance: true},
-        });
-        if (!user) throw new Error('User not found');
-
-        const nextBalance = user.k3h4CoinBalance.sub(timecard.amount);
-        const savedUser = await tx.user.update({
-          where: {id: userId},
-          data: {k3h4CoinBalance: nextBalance},
-        });
-
-        await recordBankLedgerEntry(tx, {
+      const result = await prisma.$transaction(async (tx) =>
+        payAssignmentTimecard(tx, {
           userId,
-          amount: timecard.amount.toFixed(2),
-          direction: EntityDirection.DEBIT,
-          kind: EntityKind.ASSIGNMENT_PAYOUT,
-          note: body?.note ?? `Payout for ${assignmentTitle}`,
-          balanceAfter: savedUser.k3h4CoinBalance.toFixed(2),
-          targetType: assignmentActor.ASSIGNMENT_TARGET_TYPE,
-          targetId: assignmentId,
-          name: assignmentTitle,
-        });
-
-        const payoutEntity = await tx.entity.create({
-          data: {
-            actorId: details.assignment.actorId,
-            kind: EntityKind.ASSIGNMENT_PAYOUT,
-            targetType: assignmentActor.ASSIGNMENT_TARGET_TYPE,
-            targetId: assignmentId,
-            source: assignmentActor.ASSIGNMENT_ACTOR_SOURCE,
-            metadata: {
-              amount: timecard.amount.toFixed(2),
-              note: body?.note?.trim() ?? `Timecard payout ${timecard.id}`,
-              invoiceUrl: `https://invoices.k3h4.local/${
-                  faker.string.alphanumeric(8).toLowerCase()}`,
-              status: 'paid',
-            },
-          },
-        });
-
-        const existingMetadata = asRecord(timecardEntity.metadata);
-        await tx.entity.update({
-          where: {id: timecardEntity.id},
-          data: {metadata: {...existingMetadata, status: 'paid'}},
-        });
-
-        return {payoutEntity};
-      });
+          assignmentActorId: details.assignment.actorId,
+          assignmentId,
+          assignmentTitle,
+          timecardId,
+          amount: timecard.amount,
+          note: body?.note,
+        }));
 
       await recordTelemetry(request, {
         ...buildTelemetryBase(request),
@@ -386,29 +272,21 @@ export function registerAssignmentRoutes(
         payload: {
           assignmentId,
           timecardId,
-          amount: timecard.amount.toFixed(2),
+          amount: timecard.amount,
         },
       });
 
       const updatedDetails = await assignmentActor.loadAssignmentDetails(
           prisma, userId, assignmentId);
 
-      const assignmentResponse = updatedDetails ?
-          buildSerializedAssignment(
-              updatedDetails.assignment, updatedDetails.timecards,
-              updatedDetails.payouts, personaMap) :
+        const assignmentResponse = updatedDetails ?
+          serializeAssignmentList(
+            [buildAssignmentRecordFromEntity(updatedDetails.assignment)],
+            updatedDetails.timecards.map(buildTimecardRecord),
+            updatedDetails.payouts.map(buildPayoutRecord),
+            buildPersonaViewMap(personaMap))[0] :
           null;
-      const payoutResponse =
-          serializeAssignment({
-            hourlyRate: buildAssignmentRecordFromEntity(
-                            updatedDetails?.assignment ?? details.assignment)
-                            .hourlyRate,
-            persona: null,
-            timecards: [],
-            payouts: [buildPayoutRecord(result.payoutEntity)],
-          }).payouts[0];
-
-      return {assignment: assignmentResponse, payout: payoutResponse};
+      return {assignment: assignmentResponse, payout: result.payout};
     } catch (err) {
       request.log.error({err}, 'assignment payout failed');
       return reply.status(400).send({

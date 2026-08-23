@@ -51,6 +51,7 @@ const buildAssignmentEntity = (overrides: Partial<any> = {}) => {
     name: null,
     source: null,
     direction: null,
+    isGlobal: false,
     createdAt: new Date(),
     updatedAt: new Date(),
     ...overrides,
@@ -75,6 +76,7 @@ const buildTimecardEntity =
         name: null,
         source: null,
         direction: null,
+        isGlobal: false,
         createdAt: new Date(),
         updatedAt: new Date(),
         ...overrides,
@@ -99,6 +101,7 @@ const buildPayoutEntity =
         name: null,
         source: null,
         direction: null,
+        isGlobal: false,
         createdAt: new Date(),
         updatedAt: new Date(),
         ...overrides,
@@ -253,6 +256,7 @@ describe('assignment routes', () => {
         },
         createdAt: new Date()
       }),
+      findUnique: vi.fn().mockResolvedValue({metadata: {status: 'approved'}}),
       update: vi.fn(),
     };
     const txPayout = {
@@ -261,9 +265,8 @@ describe('assignment routes', () => {
     };
     const txTimecard = {update: vi.fn()};
 
-    const createTimecardSpy = vi.fn().mockResolvedValue(timecard);
     const prisma = {
-      entity: {create: createTimecardSpy},
+      entity: {},
       user: {},
       $transaction: vi.fn(async (cb) => cb({
                             user: txUser,
@@ -281,7 +284,7 @@ describe('assignment routes', () => {
       payload: {hours: 1}
     });
     expect(timecardRes.statusCode).toBe(200);
-    expect(createTimecardSpy).toHaveBeenCalled();
+    expect(txEntity.create).toHaveBeenCalled();
 
     const payRes = await server.inject({
       method: 'POST',
@@ -289,6 +292,12 @@ describe('assignment routes', () => {
       payload: {timecardId: 't1', note: 'pay now'}
     });
     expect(payRes.statusCode).toBe(200);
+    expect(payRes.json().payout).toMatchObject({
+      id: 'txn-1',
+      amount: '100.00',
+      note: 'pay now',
+      status: 'paid',
+    });
     expect(txEntity.create).toHaveBeenCalled();
     expect(loadDetailsSpy).toHaveBeenCalledTimes(4);
     expect(loadMapSpy).toHaveBeenCalled();
@@ -386,6 +395,7 @@ describe('assignment routes', () => {
         },
         createdAt: new Date()
       }),
+      findUnique: vi.fn().mockResolvedValue({metadata: {status: 'approved'}}),
       update: vi.fn(),
     };
     const txPayout = {

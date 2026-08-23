@@ -1,120 +1,11 @@
-import {type Actor, type Entity, Prisma, type PrismaClient} from '@prisma/client';
+import {Prisma, type PrismaClient} from '@prisma/client';
 import {type FastifyInstance} from 'fastify';
 
 import {recordBankLedgerEntry} from '../kits/bank-ledger';
-import {createArcadeCard, createArcadeMachine, createArcadePrize, redeemArcadePrize, startArcadeSession, topUpArcadeCard} from '../kits/arcade-operations';
-import {ACTOR_TYPES, ENTITY_DIRECTIONS, ENTITY_KINDS, type EntityDirection as EntityDirectionType,} from '../lib/actor-entity-constants';
+import {createArcadeCard, createArcadeMachine, createArcadePrize, getArcadeOverview, redeemArcadePrize, startArcadeSession, topUpArcadeCard} from '../kits/arcade-operations';
 
 import {buildTelemetryBase} from './telemetry';
 import {type RecordTelemetryFn} from './types';
-
-const ActorType = ACTOR_TYPES;
-const EntityKind = ENTITY_KINDS;
-const EntityDirection = ENTITY_DIRECTIONS;
-
-const serializeDecimal = (val: Prisma.Decimal|number|null|undefined) => {
-  if (val === null || val === undefined) return '0.00';
-  if (val instanceof Prisma.Decimal) return val.toFixed(2);
-  if (typeof val === 'number') return val.toFixed(2);
-  return '0.00';
-};
-
-const parseJsonObject = (value: Prisma.JsonValue|null|undefined) => {
-  if (!value || typeof value !== 'object' || Array.isArray(value)) return {};
-  return value as Record<string, unknown>;
-};
-
-const parseAmountFromMetadata = (metadata: Prisma.JsonValue|null|undefined) => {
-  const record = parseJsonObject(metadata);
-  const amount = record.amount;
-  if (typeof amount === 'string' && amount.length)
-    return new Prisma.Decimal(amount);
-  if (typeof amount === 'number') return new Prisma.Decimal(amount.toFixed(2));
-  return new Prisma.Decimal(0);
-};
-
-const computeBalance = (entries: Array<{
-  direction: EntityDirectionType | null; metadata: Prisma.JsonValue | null;
-}>) => entries.reduce((balance, entry) => {
-  const amount = parseAmountFromMetadata(entry.metadata);
-  if (entry.direction === EntityDirection.DEBIT) return balance.sub(amount);
-  return balance.add(amount);
-}, new Prisma.Decimal(0));
-
-const buildMachineSummary = (actor: Actor) => {
-  const metadata = parseJsonObject(actor.metadata);
-  return {
-    id: actor.id,
-    name: actor.label,
-    status: (metadata.status as string | undefined) ?? null,
-    createdAt: actor.createdAt.toISOString(),
-  };
-};
-
-const buildPrizeSummary = (actor: Actor) => {
-  const metadata = parseJsonObject(actor.metadata);
-  const stockRaw = metadata.stock;
-  const stock = typeof stockRaw === 'number' ? stockRaw : Number(stockRaw ?? 0);
-  const costRaw = metadata.costCoins;
-  const cost = typeof costRaw === 'string' ? costRaw :
-      typeof costRaw === 'number'          ? costRaw.toFixed(2) :
-                                             null;
-  return {
-    id: actor.id,
-    name: actor.label,
-    sku: (metadata.sku as string | undefined) ?? null,
-    costCoins: cost,
-    stock: Number.isFinite(stock) ? Math.max(0, Math.floor(stock)) : 0,
-  };
-};
-
-const buildCardTopUp = (entity: Entity) => {
-  const metadata = parseJsonObject(entity.metadata);
-  return {
-    id: entity.id,
-    amount: (metadata.amount as string) ?? '0.00',
-    source: entity.source ?? ((metadata.source as string | undefined) ?? null),
-    createdAt: entity.createdAt.toISOString(),
-  };
-};
-
-const buildCardSummary = (card: Actor, entries: Entity[]) => {
-  const balance = computeBalance(entries);
-  const topUps =
-      entries.filter((entity) => entity.kind === EntityKind.ARCADE_TOPUP)
-          .map(buildCardTopUp);
-  return {
-    id: card.id,
-    label: card.label,
-    balance: serializeDecimal(balance),
-    topUps,
-  };
-};
-
-const buildSessionSummary = (entity: Entity) => {
-  const metadata = parseJsonObject(entity.metadata);
-  const scoreValue = metadata.score;
-  return {
-    id: entity.id,
-    machineId:
-        (metadata.machineId as string | undefined) ?? entity.targetId ?? '',
-    cardId: entity.actorId,
-    creditsSpent: (metadata.creditsSpent as string) ?? '0.00',
-    score: typeof scoreValue === 'number' ? Math.floor(scoreValue) : null,
-    startedAt: entity.createdAt.toISOString(),
-  };
-};
-
-const buildRedemptionSummary = (entity: Entity) => {
-  const metadata = parseJsonObject(entity.metadata);
-  return {
-    id: entity.id,
-    prizeId: (metadata.prizeId as string | undefined) ?? '',
-    cardId: entity.actorId,
-    sessionId: (metadata.sessionId as string | undefined) ?? null,
-    createdAt: entity.createdAt.toISOString(),
-  };
-};
 
 export function registerArcadeRoutes(
     server: FastifyInstance, prisma: PrismaClient,
@@ -124,64 +15,7 @@ export function registerArcadeRoutes(
       {preHandler: [server.authenticate]},
       async (request) => {
         const userId = (request.user as {sub: string}).sub;
-        const machinesPromise = prisma.actor.findMany({
-          where: {userId, type: ActorType.ARCADE_MACHINE},
-          orderBy: {createdAt: 'desc'},
-        });
-        const cardsPromise = prisma.actor.findMany({
-          where: {userId, type: ActorType.ARCADE_PLAYER_CARD},
-          orderBy: {createdAt: 'desc'},
-        });
-        const prizesPromise = prisma.actor.findMany({
-          where: {userId, type: ActorType.ARCADE_PRIZE},
-          orderBy: {createdAt: 'desc'},
-        });
-        const [machines, cards, prizes] = await Promise.all([
-          machinesPromise,
-          cardsPromise,
-          prizesPromise,
-        ]);
-
-        const cardEntities = cards.length ? await prisma.entity.findMany({
-          where: {actorId: {in : cards.map((card) => card.id)}},
-          orderBy: {createdAt: 'desc'},
-        }) :
-                                            [];
-        const sessionsPromise = prisma.entity.findMany({
-          where: {
-            actor: {userId, type: ActorType.ARCADE_PLAYER_CARD},
-            kind: EntityKind.ARCADE_SESSION,
-          },
-          orderBy: {createdAt: 'desc'},
-          take: 20,
-        });
-        const redemptionsPromise = prisma.entity.findMany({
-          where: {
-            actor: {userId, type: ActorType.ARCADE_PLAYER_CARD},
-            kind: EntityKind.ARCADE_PRIZE_REDEMPTION,
-          },
-          orderBy: {createdAt: 'desc'},
-          take: 20,
-        });
-        const [sessions, redemptions] =
-            await Promise.all([sessionsPromise, redemptionsPromise]);
-
-        const entriesByCard = new Map<string, Entity[]>();
-        cardEntities.forEach((entity) => {
-          const bucket = entriesByCard.get(entity.actorId) ?? [];
-          bucket.push(entity);
-          entriesByCard.set(entity.actorId, bucket);
-        });
-
-        const response = {
-          machines: machines.map(buildMachineSummary),
-          cards: cards.map((card) => {
-            return buildCardSummary(card, entriesByCard.get(card.id) ?? []);
-          }),
-          prizes: prizes.map(buildPrizeSummary),
-          sessions: sessions.map(buildSessionSummary),
-          redemptions: redemptions.map(buildRedemptionSummary),
-        };
+        const response = await getArcadeOverview(prisma, userId);
 
         await recordTelemetry(request, {
           ...buildTelemetryBase(request),
@@ -215,9 +49,9 @@ export function registerArcadeRoutes(
           ...buildTelemetryBase(request),
           eventType: 'arcade.machine.create',
           source: 'api',
-          payload: {name: machine.label},
+          payload: {name: machine.name},
         });
-        return {machine: buildMachineSummary(machine)};
+        return {machine};
       },
   );
 
@@ -237,7 +71,7 @@ export function registerArcadeRoutes(
           source: 'api',
           payload: {label: card.label ?? ''},
         });
-        return {card: {...buildCardSummary(card, []), balance: '0.00'}};
+        return {card};
       },
   );
 
@@ -303,14 +137,13 @@ export function registerArcadeRoutes(
           costCoins: body.costCoins,
           stock: body.stock,
         });
-        const stock = Number(parseJsonObject(prize.metadata).stock ?? 0);
         await recordTelemetry(request, {
           ...buildTelemetryBase(request),
           eventType: 'arcade.prize.create',
           source: 'api',
-          payload: {name: prize.label, stock},
+          payload: {name: prize.name, stock: prize.stock},
         });
-        return {prize: buildPrizeSummary(prize)};
+        return {prize};
       },
   );
 
